@@ -204,3 +204,227 @@
   justify-content: center;
   font-weight: bold;
 }
+
+/* Notifications */
+.notification-button {
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e74c3c;
+  color: white;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+/* Top nav user info area */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-bell-button {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  background: var(--bg-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-mid);
+  font-weight: 900;
+  position: relative;
+  transition: 0.2s;
+}
+
+.top-bell-button:hover {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: white;
+}
+
+/* Notifications page */
+.notifications-page {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.notif-page-header {
+  background: white;
+  border: 1px solid #eef1f2;
+  border-radius: 18px;
+  padding: 18px 18px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.notif-page-title {
+  margin: 0;
+  color: var(--primary-dark);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.notif-page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.notif-page-btn {
+  background: var(--bg-light);
+  border: 1px solid #e5e5e5;
+  color: var(--primary-mid);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.notif-page-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.notif-page-btn-primary {
+  border: none;
+  background: linear-gradient(135deg, var(--primary-mid), var(--accent-green));
+  color: white;
+}
+
+.notif-empty {
+  margin-top: 28px;
+  color: #7f8c8d;
+  font-weight: 700;
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notif-row {
+  border: 1px solid #edf0f2;
+  border-radius: 16px;
+  padding: 12px 12px 12px 12px;
+  background: #ffffff;
+  transition: 0.15s;
+  position: relative;
+}
+
+.notif-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+}
+
+.notif-row.unread {
+  border-color: rgba(55, 146, 55, 0.3);
+  background: linear-gradient(180deg, rgba(55, 146, 55, 0.08), rgba(55, 146, 55, 0.01));
+}
+
+.notif-row.read {
+  opacity: 0.95;
+}
+
+.notif-row.selected {
+  border-color: rgba(55, 146, 55, 0.65);
+  box-shadow: 0 10px 22px rgba(55, 146, 55, 0.12);
+  transform: translateY(-2px);
+}
+
+.notif-row-top {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.notif-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.notif-check-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.notif-check-ui {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 2px solid rgba(55, 146, 55, 0.35);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s;
+}
+
+.notif-check-input:checked + .notif-check-ui {
+  border-color: var(--accent-green);
+  background: var(--accent-green);
+}
+
+.notif-check-input:checked + .notif-check-ui::after {
+  content: '✓';
+  color: white;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+.notif-row-title {
+  color: var(--primary-dark);
+  font-weight: 900;
+}
+
+.notif-row-time {
+  margin-left: auto;
+  color: #95a5a6;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.notif-row-body {
+  margin-top: 8px;
+  color: #34495e;
+  line-height: 1.35;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.notif-unread-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #e74c3c;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.15);
+}
