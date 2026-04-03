@@ -27,7 +27,7 @@ const Login = () => {
         alt="Digital Park Guide Logo"
         className="logo"
       />
-      <h1>Digital Park Guide Login</h1>
+      <h1>Digital Park Login</h1>
       <input
         type="text"
         placeholder="Email / Username"
