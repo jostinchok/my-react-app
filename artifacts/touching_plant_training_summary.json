@@ -1,0 +1,27 @@
+{
+  "class_name": "touching_plant",
+  "model_name": "openai/clip-vit-base-patch32",
+  "num_train_images": 17,
+  "mean_similarity": 0.8892638683319092,
+  "std_similarity": 0.026049310341477394,
+  "threshold": 0.8371652476489544,
+  "image_paths_used": [
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0001.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0002.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0003.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0004.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0005.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0006.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0007.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0008.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0009.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0010.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0011.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0012.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0013.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0014.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0015.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0016.png",
+    "C:\\COS30049 Assignment\\Datasets\\touching_plant\\touching_plant_0017.png"
+  ]
+}

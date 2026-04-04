@@ -1,0 +1,12 @@
+filename,similarity,prediction
+hand-touching-monstera-leaf.jpg,0.9003064632415771,touching_plant
+Screenshot 2026-04-03 230247.png,0.8564051985740662,touching_plant
+Screenshot 2026-04-03 230511.png,0.8138836622238159,not_touching_plant
+Screenshot 2026-04-03 230516.png,0.768358051776886,not_touching_plant
+Screenshot 2026-04-03 230521.png,0.8667299747467041,touching_plant
+Screenshot 2026-04-03 230536.png,0.7893775701522827,not_touching_plant
+Screenshot 2026-04-03 230557.png,0.8207441568374634,not_touching_plant
+Screenshot 2026-04-03 230611.png,0.3804386556148529,not_touching_plant
+Screenshot 2026-04-03 230620.png,0.6716763377189636,not_touching_plant
+Screenshot 2026-04-03 230625.png,0.773095965385437,not_touching_plant
+Screenshot 2026-04-03 230631.png,0.7702566981315613,not_touching_plant
