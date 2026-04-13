@@ -13,7 +13,7 @@ const Login = () => {
     }
     if (email === "guide@example.com" && password === "1234" && role === "guide") {
       alert("Guide login successful!");
-      window.location.href = "/guide";
+      window.location.href = "/";
     } else if (email === "admin@example.com" && password === "admin" && role === "admin") {
       alert("Admin login successful!");
       window.location.href = "/admin";
