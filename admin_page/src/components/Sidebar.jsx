@@ -11,7 +11,7 @@ const Sidebar = () => {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <DashboardIcon />, to: "/admin" },
     { id: "training", label: "Training", icon: <SchoolIcon />, to: "/admin/training" },
-    { id: "students", label: "Students", icon: <GroupIcon />, to: "/admin/students" },
+    { id: "students", label: "Account", icon: <GroupIcon />, to: "/admin/account" },
     { id: "badge", label: "Badge", icon: <MilitaryTechIcon />, to: "/admin/badge" },
     { id: "detection", label: "Detection", icon: <WarningIcon />, to: "/admin/detection"},
   ];

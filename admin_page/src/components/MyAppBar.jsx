@@ -69,7 +69,7 @@ const [anchorEl, setAnchorEl] = useState(null);
 
         <NotificationButton />
         
-        <IconButton sx={{ color: '#666' }} onClick={() => {
+        <IconButton sx={{ ml: 3.5, color: '#666' }} onClick={() => {
           localStorage.clear();
           window.location.href = "/login";
         }}>
