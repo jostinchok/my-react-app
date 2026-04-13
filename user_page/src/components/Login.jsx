@@ -13,10 +13,10 @@ const Login = ({ onLogin }) => {
     }
     if (email === "guide@example.com" && password === "1234" && role === "guide") {
       alert("Guide login successful!");
-      onLogin();
+      window.location.href = "/";
     } else if (email === "admin@example.com" && password === "admin" && role === "admin") {
       alert("Admin login successful!");
-      onLogin();
+      window.location.href = "/admin";
     } else {
       alert("Invalid credentials. Try again!");
     }
