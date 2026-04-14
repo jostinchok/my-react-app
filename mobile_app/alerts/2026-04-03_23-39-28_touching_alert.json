@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-04-03_23-39-28",
+  "event": "touching_plant_alert",
+  "history": [
+    "Touching",
+    "Not Touching",
+    "Not Touching",
+    "Touching",
+    "Touching"
+  ],
+  "threshold": 0.8371652476489544,
+  "detections": [
+    {
+      "bbox": [
+        284,
+        140,
+        452,
+        250
+      ],
+      "pred": "Touching",
+      "similarity": 0.8571339845657349,
+      "p_touching": 0.549756614795407,
+      "p_not_touching": 0.45024338520459295
+    }
+  ],
+  "image_path": "C:\\COS30049 Assignment\\alerts\\2026-04-03_23-39-28_touching_alert.jpg"
+}
