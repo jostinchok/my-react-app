@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import {
-  Box, Typography, Card, CardContent, CardActions, Chip, LinearProgress,
+import {Box, Typography, Card, CardContent, CardActions, Chip, LinearProgress,
   Button, Accordion, AccordionSummary, AccordionDetails, IconButton, Snackbar,
   Dialog, DialogTitle, DialogContent, Grid, Tooltip
 } from "@mui/material";
@@ -15,14 +14,14 @@ import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 const BadgeManagement = () => {
   const [badges, setBadges] = useState([
     { id: 1, name: "General Training", type: "General", requireQuiz: true, requirePhysical: false, eligibleStudents: [
-      { id: 1, name: "Alice", progressPercent: 80, physicalCompleted: false },
-      { id: 3, name: "Charlie", progressPercent: 100, physicalCompleted: true }
+      { id: 1, name: "Alice", progressPercent: 80, physicalCompleted: false, badgeIssued: false },
+      { id: 3, name: "Charlie", progressPercent: 100, physicalCompleted: true, badgeIssued: false }
     ]},
     { id: 2, name: "Bako Park Guide", type: "Specific", requireQuiz: true, requirePhysical: true, eligibleStudents: [
-      { id: 3, name: "Charlie", progressPercent: 100, physicalCompleted: true }
+      { id: 3, name: "Charlie", progressPercent: 100, physicalCompleted: true, badgeIssued: false }
     ]},
     { id: 3, name: "Gunung Gania Training", type: "Specific", requireQuiz: false, requirePhysical: true, eligibleStudents: [
-      { id: 4, name: "David", progressPercent: 100, physicalCompleted: false }
+      { id: 4, name: "David", progressPercent: 100, physicalCompleted: false, badgeIssued: false }
     ]}
   ]);
 
@@ -34,11 +33,22 @@ const BadgeManagement = () => {
     setSnackbar({ open: true, message: "Badge deleted successfully" });
   };
 
+  const markPhysicalCompleted = (studentId, badgeId) => {
+    setBadges(prev => prev.map(b =>
+      b.id === badgeId
+        ? { ...b, eligibleStudents: b.eligibleStudents.map(st =>
+            st.id === studentId ? { ...st, physicalCompleted: true } : st
+          )}
+        : b
+    ));
+    const student = badges.find(b => b.id === badgeId)?.eligibleStudents.find(s => s.id === studentId);
+    setSnackbar({ open: true, message: `${student?.name} marked Physical Training completed` });
+  };
+
   const issueBadge = (studentId, badgeId) => {
     const badge = badges.find(b => b.id === badgeId);
     const student = badge.eligibleStudents.find(s => s.id === studentId);
 
-    // 检查条件
     if (badge.requirePhysical && !student.physicalCompleted) {
       setSnackbar({ open: true, message: `${student.name} has not completed physical training` });
       return;
@@ -47,6 +57,14 @@ const BadgeManagement = () => {
       setSnackbar({ open: true, message: `${student.name} has not completed training progress` });
       return;
     }
+
+    setBadges(prev => prev.map(b =>
+      b.id === badgeId
+        ? { ...b, eligibleStudents: b.eligibleStudents.map(st =>
+            st.id === studentId ? { ...st, badgeIssued: true } : st
+          )}
+        : b
+    ));
 
     setSnackbar({ open: true, message: `Issued "${badge.name}" to ${student.name}` });
     setSelectedBadge(null);
@@ -59,7 +77,7 @@ const BadgeManagement = () => {
       <Grid container spacing={2}>
         {badges.map(badge => (
           <Grid item xs={12} md={6} lg={4} key={badge.id}>
-            <Card sx={{ height: 340, borderRadius:3, boxShadow:4, display: "flex", flexDirection:"column"}}>
+            <Card sx={{ height: 360, borderRadius:3, boxShadow:4, display: "flex", flexDirection:"column"}}>
               <CardContent sx={{ flex:1 , overflowY: "auto"}}>
                 <Box sx={{ display:"flex", justifyContent:"space-between", alignItems:"center", mb:1 }}>
                   <Box sx={{ borderLeft: `6px solid ${badge.type === "General" ? "#1976d2" : "#ff9800"}`, pl:2 }}>
@@ -104,11 +122,16 @@ const BadgeManagement = () => {
                           {s.progressPercent === 100 ? <CheckCircleIcon color="success" /> : <HourglassBottomIcon color="warning" />}
                         </Box>
                         <Typography variant="caption">{s.progressPercent}%</Typography>
+
                         {badge.requirePhysical && (
                           s.physicalCompleted ? 
                             <Chip label="Physical Confirmed" color="success" size="small" sx={{ mt:1 }} /> : 
-                            <Chip label="Physical Pending" color="warning" size="small" sx={{ mt:1 }} />
+                            <Button size="small" variant="outlined" color="secondary" sx={{ mt:1 }} onClick={() => markPhysicalCompleted(s.id, badge.id)}>
+                              Mark Physical Completed
+                            </Button>
                         )}
+
+                        {s.badgeIssued && <Chip label="Badge Issued" color="primary" size="small" sx={{ mt:1 }} />}
                       </Box>
                     ))
                   ) : (
@@ -135,6 +158,7 @@ const BadgeManagement = () => {
                     <Chip label="Physical Confirmed" color="success" size="small" sx={{ mt:1 }} /> : 
                     <Chip label="Physical Pending" color="warning" size="small" sx={{ mt:1 }} />
                 )}
+                {s.badgeIssued && <Chip label="Badge Issued" color="primary" size="small" sx={{ mt:1 }} />}
                 <Button variant="contained" size="small" sx={{ mt:1 }} onClick={() => issueBadge(s.id, selectedBadge.id)}>
                   Issue to {s.name}
                 </Button>
@@ -146,7 +170,12 @@ const BadgeManagement = () => {
         </DialogContent>
       </Dialog>
 
-      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ open:false, message:"" })} message={snackbar.message} />
+        <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={3000} 
+        onClose={() => setSnackbar({ open:false, message:"" })} 
+        message={snackbar.message} 
+      />
     </Box>
   );
 };

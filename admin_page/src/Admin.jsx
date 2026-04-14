@@ -30,44 +30,43 @@ function Dashboard() {
 
   return (
     <Box sx={{ mt: 1, py: 3, ml: 2, mr: 1, backgroundColor: '#fafafa', minHeight: '100vh' }}>
-
       <Grid container spacing={4} sx={{ mt:1, ml: 2, mb: 4}}>
         {stats.map((s, i) => (
           <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={i}>
-            <Card sx={{
-              minWidth: 255,
-              minHeight: 170,
-              borderRadius: 5,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              transition: 'transform 0.2s',
-                "&:hover": { transform: 'translateY(-5px)'},
-                boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-              }}>
+              <Card sx={{
+                minWidth: 255,
+                minHeight: 170,
+                borderRadius: 5,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'transform 0.2s',
+                  "&:hover": { transform: 'translateY(-5px)'},
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                }}>
 
-              <CardContent sx={{ flexGrow: 1, p: 3.5, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  {s.icon}
-                  <Typography variant="h6" sx={{ ml: 1 }}>
-                    {s.label}
+                <CardContent sx={{ flexGrow: 1, p: 3.5, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    {s.icon}
+                    <Typography variant="h6" sx={{ ml: 1 }}>
+                      {s.label}
+                    </Typography>
+                  </Box>
+                  <Typography variant="h3" sx={{ fontWeight: 'bold', color:"#1976d2" }}>
+                    {s.value}
                   </Typography>
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 'bold', color:"#1976d2" }}>
-                  {s.value}
-                </Typography>
-                <Typography color={s.change.startsWith("+") ? "green" : "error"}>
-                  {s.change} vs last month
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <LinearProgress 
-                  variant="determinate" 
-                  value={s.progress} 
-                  sx={{height: 8, borderRadius: 5}}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
+                  <Typography color={s.change.startsWith("+") ? "green" : "error"}>
+                    {s.change} vs last month
+                  </Typography>
+                  <Box sx={{ mt: 2 }}>
+                    <LinearProgress 
+                    variant="determinate" 
+                    value={s.progress} 
+                    sx={{height: 8, borderRadius: 5}}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
           </Grid>
         ))}
       </Grid>

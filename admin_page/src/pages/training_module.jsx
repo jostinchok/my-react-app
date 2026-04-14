@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-import { 
-  Box, Typography, 
-  TextField, Select, MenuItem, Button, IconButton, 
-  AppBar, Toolbar, Modal, Accordion, AccordionSummary, AccordionDetails, Paper, Tooltip, Divider, Snackbar, Alert
+import { Box, Typography, TextField, Select, MenuItem, Button, IconButton, AppBar, Toolbar, Modal, Accordion, AccordionSummary, Paper, Tooltip, Divider, Snackbar, Alert
 } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import SaveIcon from "@mui/icons-material/Save";
@@ -10,15 +7,11 @@ import DragHandleIcon from "@mui/icons-material/DragHandle";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RefreshIcon from '@mui/icons-material/Refresh'
 import DescriptionIcon from "@mui/icons-material/Description";
 import ImageIcon from "@mui/icons-material/Image";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import QuizIcon from "@mui/icons-material/Quiz";
-
-
-
 
 const ModuleEditor = ({ module, onBack, onSave }) => {
     const defaultBlocks = [
@@ -248,196 +241,228 @@ const ModuleEditor = ({ module, onBack, onSave }) => {
         </Box>
         ) : ( 
             // ----------- Edit Mode -----------
-            <Box sx={{ maxWidth: 1000, mx: 0}}>
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="canvas">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps}>
-                      {contentBlocks.map((block, index) => (
-                        <Draggable key={block.id} draggableId={String(block.id)} index={index}>
-                          {(prov) => (
-                            <Box
-                              ref={prov.innerRef}
-                              {...prov.draggableProps}
-                              sx={{
-                                mb: 3,
-                                position: 'relative',
-                                '&:hover .action-buttons': { opacity: 1 }, 
-                                width: '100%'
-                              }}
-                            >
-                              <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, bgcolor: '#fff', width: '100%' }}>
-                                <Box 
-                                  {...prov.dragHandleProps}
-                                  sx={{ 
-                                    p: 1, 
-                                    bgcolor: '#fafafa', 
-                                    borderBottom: '1px solid #f0f0f0',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    cursor: 'grab',
-                                    borderRadius: '2px 2px 0 0'
-                                  }}
-                                >
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
-                                    <DragHandleIcon sx={{ color: '#999', fontSize: 20 }} />
-                                    <Typography variant="caption" sx={{ color: '#999', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                                      {block.type}
-                                    </Typography>
-                                  </Box>
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              <Box sx={{ flex: 1, maxWidth: 1000, mx: 0}}>
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="canvas">
+                    {(provided) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps}>
+                        {contentBlocks.map((block, index) => (
+                          <Draggable key={block.id} draggableId={String(block.id)} index={index}>
+                            {(prov) => (
+                              <Box
+                                ref={prov.innerRef}
+                                {...prov.draggableProps}
+                                sx={{
+                                  mb: 3,
+                                  position: 'relative',
+                                  '&:hover .action-buttons': { opacity: 1 }, 
+                                  width: '100%'
+                                }}
+                              >
+                                <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, bgcolor: '#fff', width: '100%' }}>
+                                  <Box 
+                                    {...prov.dragHandleProps}
+                                    sx={{ 
+                                      p: 1, 
+                                      bgcolor: '#fafafa', 
+                                      borderBottom: '1px solid #f0f0f0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      cursor: 'grab',
+                                      borderRadius: '2px 2px 0 0'
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
+                                      <DragHandleIcon sx={{ color: '#999', fontSize: 20 }} />
+                                      <Typography variant="caption" sx={{ color: '#999', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                        {block.type}
+                                      </Typography>
+                                    </Box>
 
-                                 <Box className="action-buttons" sx={{ display: 'flex', gap: 0.5, opacity: 0, transition: 'opacity 0.2s' }}>
-                                    {(block.type === 'image' || block.type === 'video') && (
-                                      <Tooltip title="Replace File">
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => document.getElementById(block.type === 'image' ? "upload-image" : "upload-video").click()}
-                                        >
-                                          <RefreshIcon fontSize="small" />
+                                    <Box className="action-buttons" sx={{ display: 'flex', gap: 0.5, opacity: 0, transition: 'opacity 0.2s' }}>
+                                      {(block.type === 'image' || block.type === 'video') && (
+                                        <Tooltip title="Replace File">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => document.getElementById(block.type === 'image' ? "upload-image" : "upload-video").click()}
+                                          >
+                                            <RefreshIcon fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      )}
+                                      <Tooltip title="Delete">
+                                        <IconButton size="small" color="error" onClick={() => removeContentBlock(block.id)}>
+                                          <DeleteIcon fontSize="small" />
                                         </IconButton>
                                       </Tooltip>
+                                  </Box>
+                                </Box>
+
+                                  {/* 4. 内容编辑区 */}
+                                  <Box sx={{ p: 3 }}>
+                                    
+                                    {/* 文本块：区分标题和内容 */}
+                                    {block.type === "text" && (
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+                                        <TextField
+                                            size="small"
+                                            placeholder="Section Title (e.g. Introduction)"
+                                            value={block.title || ""}
+                                            onChange={(e) =>
+                                              setContentBlocks(prev =>
+                                                prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b)
+                                              )
+                                            }
+                                            variant="standard"
+                                        />
+                                        <Divider />
+                                        <TextField
+                                            fullWidth
+                                            multiline
+                                            minRows={3}
+                                            placeholder="Type content here..."
+                                            value={block.content || ""}
+                                            onChange={(e) =>
+                                              setContentBlocks(prev =>
+                                                prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b)
+                                              )
+                                            }
+                                            variant="outlined"
+                                            size="small"
+                                        />
+                                      </Box>
                                     )}
-                                    <Tooltip title="Delete">
-                                      <IconButton size="small" color="error" onClick={() => removeContentBlock(block.id)}>
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                </Box>
+                                    {block.type === "image" && block.file && (
+                                      <Box sx={{ mb:2 }}>
+                                        <Box sx={{
+                                          borderRadius: 2,
+                                          maxWidth: '700px',
+                                          width: '100%',
+                                          aspectRatio: '4/3',
+                                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                          alignSelf: 'flex-start'
+                                          
+                                        }}>
+                                          <img src={URL.createObjectURL(block.file)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
+                                        </Box>
+                                        {block.caption && (
+                                          <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#666', ml: 0.5, fontStyle: 'italic' }}>
+                                            {block.caption}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                    )}
+
+                                    {block.type === "video" && block.file && (
+                                      <Box sx={{ mb: 2 }}>
+                                        <Box sx={{ 
+                                          borderRadius: 2, 
+                                          overflow: 'hidden', 
+                                          border: '1px solid #e0e0e0',
+                                          maxWidth: '700px',   // 限制最大宽度
+                                          width: '100%',
+                                          aspectRatio: '16/9',
+                                          bgcolor: '#000',
+                                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                          alignSelf: 'flex-start'  // 靠左
+                                        }}>
+                                        <video 
+                                          src={URL.createObjectURL(block.file)} 
+                                          controls 
+                                          style={{ width: '100%', borderRadius: 4 }} 
+                                        />
+                                        </Box>
+                                        {block.caption && (
+                                          <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#666', ml: 0.5, fontStyle: 'italic' }}>
+                                            {block.caption}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                    )}
+
+                                    {/* Quiz：内联预览 */}
+                                    {block.type === "quiz" && (
+                                      <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                                        <Typography variant="subtitle2">{block.question || "Untitled Question"}</Typography>
+                                        <Button size="small" onClick={() => setEditingQuiz(block)} sx={{ mt: 1 }}>
+                                          Edit Options & Answer
+                                        </Button>
+                                      </Box>
+                                    )}
+
+                                  </Box>
+                                </Paper>
                               </Box>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </Box>
 
-                                {/* 4. 内容编辑区 */}
-                                <Box sx={{ p: 3 }}>
-                                  
-                                  {/* 文本块：区分标题和内容 */}
-                                  {block.type === "text" && (
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-                                      <TextField
-                                          size="small"
-                                          placeholder="Section Title (e.g. Introduction)"
-                                          value={block.title || ""}
-                                          onChange={(e) =>
-                                            setContentBlocks(prev =>
-                                              prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b)
-                                            )
-                                          }
-                                          variant="standard"
-                                      />
-                                      <Divider />
-                                      <TextField
-                                          fullWidth
-                                          multiline
-                                          minRows={3}
-                                          placeholder="Type content here..."
-                                          value={block.content || ""}
-                                          onChange={(e) =>
-                                            setContentBlocks(prev =>
-                                              prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b)
-                                            )
-                                          }
-                                          variant="outlined"
-                                          size="small"
-                                      />
-                                    </Box>
-                                  )}
-                                  {block.type === "image" && block.file && (
-                                    <Box sx={{ mb:2 }}>
-                                      <Box sx={{
-                                        borderRadius: 2,
-                                        maxWidth: '700px',
-                                        width: '100%',
-                                        aspectRatio: '4/3',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                        alignSelf: 'flex-start'
-                                        
-                                      }}>
-                                        <img src={URL.createObjectURL(block.file)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
-                                      </Box>
-                                      {block.caption && (
-                                        <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#666', ml: 0.5, fontStyle: 'italic' }}>
-                                          {block.caption}
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  )}
+              {/* 添加内容按钮 */}
+                    <Box sx={{width: 200, display: "flex", flexDirection: "column", gap: 2 }}>
+                      {/* 右侧工具栏 */}
+                      <Paper 
+                        elevation={2} 
+                        sx={{ 
+                          width: 220, 
+                          p: 2, 
+                          display: "flex", 
+                          flexDirection: "column", 
+                          gap: 2, 
+                          position: "sticky", 
+                          top: 80, 
+                          borderRadius: 2, 
+                          bgcolor: "#fafafa" 
+                        }}
+                      >
+                        <Typography variant="subtitle2" sx={{ color: "#555", fontWeight: 600, mb: 1 }}>
+                          Add Content
+                        </Typography>
 
-                                  {block.type === "video" && block.file && (
-                                    <Box sx={{ mb: 2 }}>
-                                      <Box sx={{ 
-                                        borderRadius: 2, 
-                                        overflow: 'hidden', 
-                                        border: '1px solid #e0e0e0',
-                                        maxWidth: '700px',   // 限制最大宽度
-                                        width: '100%',
-                                        aspectRatio: '16/9',
-                                        bgcolor: '#000',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                        alignSelf: 'flex-start'  // 靠左
-                                      }}>
-                                      <video 
-                                        src={URL.createObjectURL(block.file)} 
-                                        controls 
-                                        style={{ width: '100%', borderRadius: 4 }} 
-                                      />
-                                      </Box>
-                                      {block.caption && (
-                                        <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#666', ml: 0.5, fontStyle: 'italic' }}>
-                                          {block.caption}
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  )}
+                        <Button startIcon={<DescriptionIcon />} variant="outlined" onClick={() => addContentBlock("text")}>
+                          Text
+                        </Button>
+                        <Button startIcon={<QuizIcon />} variant="outlined" onClick={() => addContentBlock("quiz")}>
+                          Quiz
+                        </Button>
+                        <Button startIcon={<ImageIcon />} variant="outlined" onClick={() => document.getElementById("upload-image").click()}>
+                          Image
+                        </Button>
+                        <Button startIcon={<VideocamIcon />} variant="outlined" onClick={() => document.getElementById("upload-video").click()}>
+                          Video
+                        </Button>
 
-                                  {/* Quiz：内联预览 */}
-                                  {block.type === "quiz" && (
-                                    <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                      <Typography variant="subtitle2">{block.question || "Untitled Question"}</Typography>
-                                      <Button size="small" onClick={() => setEditingQuiz(block)} sx={{ mt: 1 }}>
-                                        Edit Options & Answer
-                                      </Button>
-                                    </Box>
-                                  )}
+                        <Divider sx={{ my: 2 }} />
 
-                                </Box>
-                              </Paper>
-                            </Box>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-
-          {/* 添加内容按钮 */}
-            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-              <Button variant="outlined" onClick={() => addContentBlock("text")}>Add Text</Button>
-              <Button variant="outlined" onClick={() => addContentBlock("quiz")}>Add Quiz</Button>
-              <Button variant="outlined" onClick={() => document.getElementById("upload-image").click()}>
-                Upload Image
-              </Button>
-              <Button variant="outlined" onClick={() => document.getElementById("upload-video").click()}>
-                Upload Video
-              </Button>
-            </Box>
-            <input
-                type="file"
-                accept="image/*"
-                id="upload-image"
-                style={{ display: "none" }}
-                onChange={(e) => handleFileSelect(e, "image")}
-              />
-              <input
-                type="file"
-                accept="video/*"
-                id="upload-video"
-                style={{ display: "none" }}
-                onChange={(e) => handleFileSelect(e, "video")}
-              />
-            </Box>
-          )}
-        </Box>
+                        <Typography variant="caption" sx={{ color: "#888", textAlign: "center" }}>
+                          Use these tools to build your module
+                        </Typography>
+                      </Paper>
+                    </Box>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        id="upload-image"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleFileSelect(e, "image")}
+                      />
+                      <input
+                        type="file"
+                        accept="video/*"
+                        id="upload-video"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleFileSelect(e, "video")}
+                      />
+                    </Box>
+                )}
+                </Box>
 
 
         {/* Quiz 编辑 Modal */}
@@ -556,7 +581,10 @@ const AdminTrainingModuleSetup = () => {
   const [selectedModule, setSelectedModule] = useState(null);
 
   const handleSaveModule = (updated) => {
-    const updatedModules = course.modules.map(m => m.id === updated.id ? updated : m);
+    const exists = course.modules.some(m => m.id === updated.id);
+    const updatedModules = exists
+      ? course.modules.map(m => m.id === updated.id ? updated : m)
+      : [...course.modules, updated];   // 如果是新模块就追加
     course.modules = updatedModules;
     setSelectedModule(updated);
   };
@@ -565,7 +593,27 @@ const AdminTrainingModuleSetup = () => {
       <>
         {!selectedModule ? (
         <Box sx={{ mt:6, ml: 6}}>
-          <Typography variant="h4">{course.title}</Typography>
+          <Box sx={{ display: 'flex', justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="h4">{course.title}</Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              sx={{ mt: 3, mr: 3}} 
+              onClick={() => {
+                const newModule = {
+                  id: Date.now(),
+                  title: "New Module",
+                  description: "",
+                  contentBlocks: [],
+                  status: "Draft"
+                };
+                setSelectedModule(newModule);
+              }}
+            >
+              Add Module
+            </Button>
+          </Box>
+
           <Typography variant="body1" sx={{ mb:2 }}>{course.description}</Typography>
 
           {course.modules.map((m, idx) => (
@@ -590,6 +638,7 @@ const AdminTrainingModuleSetup = () => {
               </AccordionSummary>
             </Accordion>
           ))}
+          
         </Box>
       ) : (
         <Box sx={{ mt:3}}>

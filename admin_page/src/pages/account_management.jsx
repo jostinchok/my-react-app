@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Box, Typography, Paper, Button, Snackbar, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem } from "@mui/material";
+import { Box, Typography, Paper, Button, Snackbar, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, ButtonGroup 
+} from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -20,6 +21,8 @@ const AccountManagement = () => {
     const [filter, setFilter] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
     const [editingStudent, setEditingStudent] = useState(null);
+    const [addDialogOpen, setAddDialogOpen] = useState(false);
+    const [newStudent, setNewStudent] = useState({ name: "", phone: "", email: "", module: "None", cv: "" });
 
     const handleDelete = (id) => {
       setStudents(prev => prev.filter(s => s.id !== id));
@@ -32,8 +35,13 @@ const AccountManagement = () => {
     };
 
     const updateModule = (id, module) => {
-      setStudents(prev => prev.map(s => s.id === id ? { ...s, module } : s));
-      setSnackbar({ open: true, message: `Module updated to ${module}` });
+      setStudents(prev => prev.map(s => 
+        s.id === id 
+          ? { ...s, module, registered: true } 
+          : s
+      ));
+      const student = students.find(s => s.id === id);
+      setSnackbar({ open: true, message: `${student.name} registered for ${module} module` });
     };
 
     const handleFilter = (e) => setFilter(e.target.value);
@@ -51,6 +59,24 @@ const AccountManagement = () => {
       setEditingStudent(null);
     }
 
+    const handleAddChange = (e) => {
+      const { name, value } = e.target;
+      setNewStudent(prev => ({ ...prev, [name]: value }));
+    }
+
+    const handleSaveNewStudent = () => {
+      const newId = students.length ? Math.max(...students.map(s => s.id)) + 1 : 1;
+      setStudents(prev => [...prev, { 
+        id: newId, 
+        ...newStudent, 
+        eligibility: "Approved", 
+        accountCreated: true 
+      }]);
+      setSnackbar({ open: true, message: `New student ${newStudent.name} added` });
+      setNewStudent({ name: "", phone: "", email: "", module: "None", cv: "" });
+      setAddDialogOpen(false);
+    }
+
     const filteredStudents = students.filter(s =>
       (filter === "all" || s.module === filter) &&
       (searchTerm === "" || s.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -61,12 +87,6 @@ const AccountManagement = () => {
         <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
           Account Management
         </Typography>
-
-        <Paper sx={{ p: 2, mb: 2, backgroundColor: "#e3f2fd" }}>
-          <Typography variant="body2" color="text.secondary">
-            Manage accounts, verify eligibility, create accounts, and assign training modules.
-          </Typography>
-        </Paper>
 
         {/* 搜索和筛选 */}
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -82,13 +102,16 @@ const AccountManagement = () => {
             <MenuItem value="Specific">Specific</MenuItem>
             <MenuItem value="Physical">Physical</MenuItem>
           </Select>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddDialogOpen(true)}>
+            Add Student
+          </Button>
         </Box>
 
         {/* 学员卡片网格 */}
         {filteredStudents.length === 0 ? (
           <Box sx={{ textAlign: 'center', mt: 5 }}>
             <Typography variant="h6" color="text.secondary">No students found</Typography>
-            <Button variant="contained" startIcon={<AddIcon />} sx={{ mt: 2 }}>
+            <Button variant="contained" startIcon={<AddIcon />} sx={{ mt: 2 }} onClick={() => setAddDialogOpen(true)}>
               Add Student
             </Button>
           </Box>
@@ -124,37 +147,70 @@ const AccountManagement = () => {
                     color={student.eligibility === 'Approved' ? 'success' : student.eligibility === 'Rejected' ? 'error' : 'warning'} sx={{ height: 20 }} />
                   <Chip label={`Module: ${student.module}`} size="small" color="info" sx={{ height: 20 }} />
                   {student.accountCreated && <Chip label="Account Created" size="small" color="primary" sx={{ height: 20 }} />}
+                  {student.registered && (
+                    <Chip 
+                      label={`Registered for ${student.name}`} 
+                      size="small" 
+                      color="secondary" 
+                      sx={{ height: 20 }} 
+                    />
+                  )}
                 </Box>
 
                 {/* 操作按钮 */}
                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', flexWrap: 'wrap'}}>
                   {student.eligibility === "Pending" ? (
-                    <>
-                      <Button size="small" variant="contained" color="success"
-                        onClick={() => {
-                          setStudents(prev => prev.map(s => s.id === student.id ? { ...s, eligibility: "Approved", accountCreated: true } : s));
-                          setSnackbar({ open: true, message: `Account created for ${student.name}` });
-                        }}>
-                        Approve & Create Account
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+                      {/* 左侧：查看详情 */}
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => setSelectedStudent(student)}
+                        sx={{ minWidth: 120 }}
+                      >
+                        View Details
                       </Button>
-                      <Button size="small" variant="outlined" color="error"
-                        onClick={() => updateEligibility(student.id, "Rejected")}>
-                        Reject
-                      </Button>
-                    </>
+
+                      {/* 右侧：审批操作按钮组 */}
+                      <ButtonGroup size="small" sx={{ minWidth: 240 }}>
+                        <Button 
+                          variant="contained" 
+                          color="success"
+                          sx={{ flex: 1 }}
+                          onClick={() => {
+                            setStudents(prev => prev.map(s => 
+                              s.id === student.id 
+                                ? { ...s, eligibility: "Approved", accountCreated: true } 
+                                : s
+                            ));
+                            setSnackbar({ open: true, message: `Account created for ${student.name}` });
+                          }}
+                        >
+                          Approve
+                        </Button>
+                        <Button 
+                          color="error"
+                          sx={{ flex: 1 }}
+                          onClick={() => updateEligibility(student.id, "Rejected")}
+                        >
+                          Reject
+                        </Button>
+                      </ButtonGroup>
+                    </Box>
+
                   ) : student.eligibility === "Approved" ? (
                     <>
-                    <Select
-                      size="small"
-                      value={student.module}
-                      onChange={(e) => updateModule(student.id, e.target.value)}
-                    >
-                      <MenuItem value="None">None</MenuItem>
-                      <MenuItem value="General">General</MenuItem>
-                      <MenuItem value="Specific">Specific</MenuItem>
-                      <MenuItem value="Physical">Physical</MenuItem>
-                    </Select>
-                    
+                      <Select
+                        size="small"
+                        value={student.module}
+                        onChange={(e) => updateModule(student.id, e.target.value)}
+                      >
+                        <MenuItem value="None">None</MenuItem>
+                        <MenuItem value="General">General</MenuItem>
+                        <MenuItem value="Specific">Specific</MenuItem>
+                        <MenuItem value="Physical">Physical</MenuItem>
+                      </Select>
+
                       <IconButton size="small" onClick={() => setSelectedStudent(student)}>
                         <VisibilityIcon fontSize="small" />
                       </IconButton>
@@ -165,12 +221,12 @@ const AccountManagement = () => {
                     </>
                   ) : (
                     <>
-                    <IconButton size="small" onClick={() => setSelectedStudent(student)}>
-                      <VisibilityIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" color="error" onClick={() =>handleDelete(student.id)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                      <IconButton size="small" onClick={() => setSelectedStudent(student)}>
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" color="error" onClick={() => handleDelete(student.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                     </>
                   )}
                 </Box>
@@ -179,35 +235,57 @@ const AccountManagement = () => {
           </Box>
         )}
 
-        <Dialog open={!!editingStudent} onClose={() => setEditingStudent(null)} maxWidth="sm" fullWidth>\
+        {/* 编辑学员对话框 */}
+        <Dialog open={!!editingStudent} onClose={() => setEditingStudent(null)} maxWidth="sm" fullWidth>
           <DialogTitle>Edit Account: {editingStudent?.name}</DialogTitle>
           <DialogContent sx={{ pt:2 }}>
             {editingStudent && (
               <Box sx={{display: 'flex', flexDirection: 'column', gap:2}}>
                 <TextField
-                label="Name"
-                name="name"
-                value={editingStudent.name}
-                onChange={handleEditChange}
-                fullWidth
-                size="small"
+                  label="Name"
+                  name="name"
+                  value={editingStudent.name}
+                  onChange={handleEditChange}
+                  fullWidth
+                  size="small"
                 />
                 <TextField
-                label="Phone"
-                name="phone"
-                value={editingStudent.phone || ""}
-                onChange={handleEditChange}
-                fullWidth
-                size="small"
+                  label="Phone"
+                  name="phone"
+                  value={editingStudent.phone || ""}
+                  onChange={handleEditChange}
+                  fullWidth
+                  size="small"
                 />
                 <TextField
-                label="Email"
-                name="email"
-                value={editingStudent.email}
-                onChange={handleEditChange}
-                fullWidth
-                size="small"
+                  label="Email"
+                  name="email"
+                  value={editingStudent.email}
+                  onChange={handleEditChange}
+                  fullWidth
+                  size="small"
                 />
+
+                {editingStudent.cv && (
+                  <Typography variant="caption" color="text.secondary">
+                    Current CV: {editingStudent.cv}
+                  </Typography>
+                )}
+                <Button variant="outlined" component="label">
+                  Upload CV
+                  <input
+                    type="file"
+                    hidden
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => {
+                      if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        setEditingStudent(prev => ({ ...prev, cv: file.name }));
+                      }
+                    }}
+                  />
+                </Button>
+                
               </Box>
             )}
           </DialogContent>
@@ -217,12 +295,95 @@ const AccountManagement = () => {
           </DialogActions>
         </Dialog>
 
+        {/* 新增学员对话框 */}
+        <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Add New Student</DialogTitle>
+          <DialogContent sx={{ pt:2 }}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap:2}}>
+              <TextField
+                label="Name"
+                name="name"
+                value={newStudent.name}
+                onChange={handleAddChange}
+                fullWidth
+                size="small"
+              />
+              <TextField
+                label="Phone"
+                name="phone"
+                value={newStudent.phone}
+                onChange={handleAddChange}
+                fullWidth
+                size="small"
+              />
+              <TextField
+                label="Email"
+                name="email"
+                value={newStudent.email}
+                onChange={handleAddChange}
+                fullWidth
+                size="small"
+              />
+              <Select
+                name="module"
+                size="small"
+                value={newStudent.module}
+                onChange={handleAddChange}
+              >
+                <MenuItem value="None">None</MenuItem>
+                <MenuItem value="General">General</MenuItem>
+                <MenuItem value="Specific">Specific</MenuItem>
+                <MenuItem value="Physical">Physical</MenuItem>
+              </Select>
+
+              {/* 上传 CV */}
+              {newStudent.cv && (
+                <Typography variant="caption" color="text.secondary">
+                  Selected file: {newStudent.cv}
+                </Typography>
+              )}
+
+              <Button
+                variant="outlined"
+                component="label"
+              >
+                Upload CV
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => {
+                    if (e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      setNewStudent(prev => ({ ...prev, cv: file.name }));
+                    }
+                  }}
+                />
+              </Button>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleSaveNewStudent}>Add Student</Button>
+          </DialogActions>
+        </Dialog>
+
         {/* CV 查看对话框 */}
-        <Dialog open={!!selectedStudent} onClose={() => setSelectedStudent(null)}>
-          <DialogTitle>Student CV</DialogTitle>
+        <Dialog open={!!selectedStudent} onClose={() => setSelectedStudent(null)} maxWidth="md" fullWidth>
+          <DialogTitle>Student Application</DialogTitle>
           <DialogContent>
             {selectedStudent && (
-              <Typography>{selectedStudent.name}'s CV: {selectedStudent.cv}</Typography>
+              <Box>
+                <Typography>Name: {selectedStudent.name}</Typography>
+                <Typography>Email: {selectedStudent.email}</Typography>
+                <Typography>Phone: {selectedStudent.phone || "Not provided"}</Typography>
+                <Typography>
+                  Resume: {selectedStudent.cv || "No CV uploaded"}
+                </Typography>
+                <Typography>
+                  Consultation: {selectedStudent.consultation || "No consultation info"}
+                </Typography>
+              </Box>
             )}
           </DialogContent>
           <DialogActions>
@@ -230,9 +391,14 @@ const AccountManagement = () => {
           </DialogActions>
         </Dialog>
 
-        <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ open: false, message: "" })} message={snackbar.message} />
+        <Snackbar 
+          open={snackbar.open} 
+          autoHideDuration={3000} 
+          onClose={() => setSnackbar({ open: false, message: "" })} 
+          message={snackbar.message} 
+        />
       </Box>
     );
-  };
+};
 
 export default AccountManagement;
