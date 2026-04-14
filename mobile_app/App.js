@@ -74,6 +74,8 @@ const copy = {
     passwordMismatch: 'New password and confirm password do not match.',
     passwordUpdated: 'Password updated successfully.',
     profileSaved: 'Profile updated successfully.',
+    birthday: 'Birthday',
+    livingAddress: 'Address',
     chooseLanguage: 'Choose Language',
     chooseLanguage: 'Choose Language',
     english: 'English',
@@ -139,6 +141,8 @@ const copy = {
     passwordMismatch: 'Kata laluan baharu dan pengesahan tidak sepadan.',
     passwordUpdated: 'Kata laluan berjaya dikemas kini.',
     profileSaved: 'Profil berjaya dikemas kini.',
+    birthday: 'Tarikh Lahir',
+    livingAddress: 'Alamat',
     chooseLanguage: 'Pilih Bahasa',
     chooseLanguage: 'Pilih Bahasa',
     english: 'Inggeris',
@@ -204,6 +208,8 @@ const copy = {
     passwordMismatch: '新密码与确认密码不一致。',
     passwordUpdated: '密码更新成功。',
     profileSaved: '个人资料已更新。',
+    birthday: '生日',
+    livingAddress: '地址',
     chooseLanguage: '选择语言',
     chooseLanguage: '选择语言',
     english: '英语',
@@ -271,7 +277,7 @@ export default function App() {
     newPassword: '',
     confirmPassword: '',
   })
-  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '' })
+  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '' })
   const navTranslateX = useRef(new Animated.Value(-NAV_WIDTH)).current
 
   const monthCells = useMemo(() => buildMonthMatrix(calendarYear, calendarMonth), [calendarYear, calendarMonth])
@@ -359,6 +365,45 @@ export default function App() {
     }
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
     Alert.alert(t.passwordUpdated)
+  }
+
+  const ProfileView = ({ profile, t }) => {
+    const initials = profile.fullName ? profile.fullName.slice(0, 1).toUpperCase() : 'U'
+    return (
+      <View style={styles.profileCard}>
+        <View style={styles.profileAvatarCard}>
+          <View style={styles.profileAvatarPreview}>
+            <Text style={styles.profileAvatarInitials}>{initials}</Text>
+          </View>
+          <View style={styles.profileAvatarLabel}>
+            <Text style={styles.profileLabelName}>{profile.fullName || 'User'}</Text>
+            <Text style={styles.profileLabelEmail}>{profile.email || 'No email available'}</Text>
+          </View>
+        </View>
+        <View style={styles.profileDetails}>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.fullName}</Text>
+            <Text style={styles.profileValue}>{profile.fullName || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.guideId}</Text>
+            <Text style={styles.profileValue}>{profile.guideId || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.email}</Text>
+            <Text style={styles.profileValue}>{profile.email || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.birthday}</Text>
+            <Text style={styles.profileValue}>{profile.birthday || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.livingAddress}</Text>
+            <Text style={styles.profileValue}>{profile.address || '-'}</Text>
+          </View>
+        </View>
+      </View>
+    )
   }
 
   const AppHeader = (
@@ -631,6 +676,8 @@ export default function App() {
             </View>
           </View>
         )}
+        {activeTab === 'profile' && <ProfileView profile={profile} t={t} />}
+
       </ScrollView>
 
       <Modal visible={isNavMounted} transparent animationType="none">
@@ -793,4 +840,24 @@ const styles = StyleSheet.create({
   settingsTitle: { fontSize: 16, fontWeight: '800' },
   rowGap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chipBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  profileCard: { borderWidth: 1, borderRadius: 14, padding: 16, backgroundColor: palette.panel, borderColor: palette.border },
+  profileAvatarCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  profileAvatarPreview: { 
+    width: 72, 
+    height: 72, 
+    borderRadius: 36, 
+    backgroundColor: palette.accent, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: palette.accentSoft
+  },
+  profileAvatarInitials: { color: '#fff', fontSize: 28, fontWeight: '900' },
+  profileAvatarLabel: { flex: 1 },
+  profileLabelName: { fontSize: 20, fontWeight: '900', color: palette.text },
+  profileLabelEmail: { fontSize: 16, color: palette.muted },
+  profileDetails: { gap: 12 },
+  profileField: { gap: 2 },
+  profileLabel: { fontSize: 14, fontWeight: '700', color: palette.muted },
+  profileValue: { fontSize: 16, color: palette.text, fontWeight: '600' },
 })
