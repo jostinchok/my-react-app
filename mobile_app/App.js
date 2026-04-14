@@ -1,4 +1,7 @@
 import { StatusBar } from 'expo-status-bar'
+import { Image } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
+import FileManagerView from './FileManagerView';
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -76,7 +79,7 @@ const copy = {
     profileSaved: 'Profile updated successfully.',
     birthday: 'Birthday',
     livingAddress: 'Address',
-    chooseLanguage: 'Choose Language',
+    changeProfilePicture: 'Change Profile Picture',
     chooseLanguage: 'Choose Language',
     english: 'English',
     malay: 'Malay',
@@ -143,7 +146,7 @@ const copy = {
     profileSaved: 'Profil berjaya dikemas kini.',
     birthday: 'Tarikh Lahir',
     livingAddress: 'Alamat',
-    chooseLanguage: 'Pilih Bahasa',
+    changeProfilePicture: 'Tukar Gambar Profil',
     chooseLanguage: 'Pilih Bahasa',
     english: 'Inggeris',
     malay: 'Melayu',
@@ -210,7 +213,7 @@ const copy = {
     profileSaved: '个人资料已更新。',
     birthday: '生日',
     livingAddress: '地址',
-    chooseLanguage: '选择语言',
+    changeProfilePicture: '更换头像',
     chooseLanguage: '选择语言',
     english: '英语',
     malay: '马来语',
@@ -277,7 +280,7 @@ export default function App() {
     newPassword: '',
     confirmPassword: '',
   })
-  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '' })
+  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '', avatar: '' })
   const navTranslateX = useRef(new Animated.Value(-NAV_WIDTH)).current
 
   const monthCells = useMemo(() => buildMonthMatrix(calendarYear, calendarMonth), [calendarYear, calendarMonth])
@@ -358,6 +361,26 @@ export default function App() {
     Alert.alert(t.profileSaved)
   }
 
+  const handleAvatarUpload = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Please grant permission to access photos.')
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+
+    if (!result.canceled) {
+      setProfile((prev) => ({ ...prev, avatar: result.assets[0].uri }))
+      Alert.alert('Success', 'Profile picture updated!')
+    }
+  }
+
   const handlePasswordUpdate = () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       Alert.alert(t.passwordMismatch)
@@ -373,7 +396,11 @@ export default function App() {
       <View style={styles.profileCard}>
         <View style={styles.profileAvatarCard}>
           <View style={styles.profileAvatarPreview}>
-            <Text style={styles.profileAvatarInitials}>{initials}</Text>
+            {profile.avatar ? (
+              <Image source={{ uri: profile.avatar }} style={styles.profileAvatarImage} />
+            ) : (
+              <Text style={styles.profileAvatarInitials}>{initials}</Text>
+            )}
           </View>
           <View style={styles.profileAvatarLabel}>
             <Text style={styles.profileLabelName}>{profile.fullName || 'User'}</Text>
@@ -590,6 +617,20 @@ export default function App() {
             <Text style={[styles.h2, { color: palette.text }]}>{t.settings}</Text>
             <View style={[styles.settingsSection, { borderColor: palette.border }]}>
               <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.profileSettings}</Text>
+              <View style={styles.profileAvatarCard}>
+                <View style={styles.profileAvatarPreview}>
+                  {profile.avatar ? (
+                    <Image source={{ uri: profile.avatar }} style={styles.profileAvatarImage} />
+                  ) : (
+                    <Text style={styles.profileAvatarInitials}>
+                      {profile.fullName ? profile.fullName.slice(0, 1).toUpperCase() : 'U'}
+                    </Text>
+                  )}
+                </View>
+                <Pressable onPress={handleAvatarUpload} style={[styles.primaryBtn, { backgroundColor: palette.accent }]}>
+                  <Text style={styles.primaryBtnText}>{t.changeProfilePicture}</Text>
+                </Pressable>
+              </View>
               <TextInput
                 placeholder={t.fullName}
                 placeholderTextColor={palette.muted}
@@ -647,8 +688,6 @@ export default function App() {
               </Pressable>
             </View>
 
-
-
             <View style={[styles.settingsSection, { borderColor: palette.border }]}>
               <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.languageSettings}</Text>
               <Text style={{ color: palette.muted }}>{t.chooseLanguage}</Text>
@@ -676,7 +715,11 @@ export default function App() {
             </View>
           </View>
         )}
+
         {activeTab === 'profile' && <ProfileView profile={profile} t={t} />}
+
+        {activeTab === 'files' && <FileManagerView t={t} />}
+
 
       </ScrollView>
 
@@ -851,6 +894,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: palette.accentSoft
+  },
+  profileAvatarImage: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
   },
   profileAvatarInitials: { color: '#fff', fontSize: 28, fontWeight: '900' },
   profileAvatarLabel: { flex: 1 },
