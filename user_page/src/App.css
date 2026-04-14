@@ -1660,6 +1660,17 @@ button.download-btn:hover {
   padding: 11px 13px;
   background: #fff;
   outline: none;
+  color: var(--text-main);
+}
+
+.settings-form input::placeholder {
+  color: #6b7d75;
+}
+
+.settings-form input:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(55, 146, 55, 0.15);
+  color: var(--text-main);
 }
 
 .settings-submit {
