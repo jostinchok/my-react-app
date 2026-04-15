@@ -29,10 +29,7 @@ const copy = {
     verifiedCertificates: 'Verified Certificates',
     status: 'Status',
     active: 'Active',
-    adminLogin: 'Admin Login',
-    adminId: 'Admin ID',
     password: 'Password',
-    enterAdminPanel: 'Enter Admin Panel',
     filter: 'Filter',
     clearAll: 'Clear All',
     level: 'Level',
@@ -59,6 +56,9 @@ const copy = {
     noteText: 'Note',
     notePlaceholder: 'Write an important reminder...',
     noMessages: 'No messages yet.',
+    profile: 'Profile',
+    files: 'Files',
+    logout: 'Logout',
     profileSettings: 'Profile Settings',
     passwordSettings: 'Password Settings',
     appearanceSettings: 'Appearance',
@@ -74,9 +74,9 @@ const copy = {
     passwordMismatch: 'New password and confirm password do not match.',
     passwordUpdated: 'Password updated successfully.',
     profileSaved: 'Profile updated successfully.',
-    themeMode: 'Theme Mode',
-    lightMode: 'Light',
-    darkMode: 'Dark',
+    birthday: 'Birthday',
+    livingAddress: 'Address',
+    chooseLanguage: 'Choose Language',
     chooseLanguage: 'Choose Language',
     english: 'English',
     malay: 'Malay',
@@ -96,10 +96,7 @@ const copy = {
     verifiedCertificates: 'Sijil Disahkan',
     status: 'Status',
     active: 'Aktif',
-    adminLogin: 'Log Masuk Admin',
-    adminId: 'ID Admin',
     password: 'Kata Laluan',
-    enterAdminPanel: 'Masuk Panel Admin',
     filter: 'Penapis',
     clearAll: 'Kosongkan',
     level: 'Tahap',
@@ -126,6 +123,9 @@ const copy = {
     noteText: 'Nota',
     notePlaceholder: 'Tulis peringatan penting...',
     noMessages: 'Belum ada mesej.',
+    profile: 'Profil',
+    files: 'Fail',
+    logout: 'Log Keluar',
     profileSettings: 'Tetapan Profil',
     passwordSettings: 'Tetapan Kata Laluan',
     appearanceSettings: 'Paparan',
@@ -141,9 +141,9 @@ const copy = {
     passwordMismatch: 'Kata laluan baharu dan pengesahan tidak sepadan.',
     passwordUpdated: 'Kata laluan berjaya dikemas kini.',
     profileSaved: 'Profil berjaya dikemas kini.',
-    themeMode: 'Mod Tema',
-    lightMode: 'Cerah',
-    darkMode: 'Gelap',
+    birthday: 'Tarikh Lahir',
+    livingAddress: 'Alamat',
+    chooseLanguage: 'Pilih Bahasa',
     chooseLanguage: 'Pilih Bahasa',
     english: 'Inggeris',
     malay: 'Melayu',
@@ -163,10 +163,7 @@ const copy = {
     verifiedCertificates: '已验证证书',
     status: '状态',
     active: '活跃',
-    adminLogin: '管理员登录',
-    adminId: '管理员ID',
     password: '密码',
-    enterAdminPanel: '进入管理面板',
     filter: '筛选',
     clearAll: '清除',
     level: '等级',
@@ -193,6 +190,9 @@ const copy = {
     noteText: '备注',
     notePlaceholder: '记录重要事项...',
     noMessages: '暂无消息。',
+    profile: '个人资料',
+    files: '文件',
+    logout: '登出',
     profileSettings: '个人资料设置',
     passwordSettings: '密码设置',
     appearanceSettings: '外观',
@@ -208,9 +208,9 @@ const copy = {
     passwordMismatch: '新密码与确认密码不一致。',
     passwordUpdated: '密码更新成功。',
     profileSaved: '个人资料已更新。',
-    themeMode: '主题模式',
-    lightMode: '浅色',
-    darkMode: '深色',
+    birthday: '生日',
+    livingAddress: '地址',
+    chooseLanguage: '选择语言',
     chooseLanguage: '选择语言',
     english: '英语',
     malay: '马来语',
@@ -218,28 +218,17 @@ const copy = {
   },
 }
 
-const baseTheme = {
-  light: {
-    bg: '#f0f2f0',
-    panel: '#ffffff',
-    text: '#1f2f28',
-    muted: '#5f726a',
-    border: '#d8e4de',
-    accent: '#165132',
-    accentSoft: '#eaf5ef',
-  },
-  dark: {
-    bg: '#0f1b16',
-    panel: '#16241e',
-    text: '#e8f7ef',
-    muted: '#9bb0a7',
-    border: 'rgba(255,255,255,0.12)',
-    accent: '#379237',
-    accentSoft: '#1d2f27',
-  },
+const palette = {
+  bg: '#f0f2f0',
+  panel: '#ffffff',
+  text: '#1f2f28',
+  muted: '#5f726a',
+  border: '#d8e4de',
+  accent: '#165132',
+  accentSoft: '#eaf5ef',
 }
 
-const navTabs = ['dashboard', 'training', 'certs', 'notifications', 'settings']
+const navTabs = ['profile', 'files', 'dashboard', 'training', 'certs', 'notifications', 'settings', 'logout']
 const NAV_WIDTH = 250
 
 function formatDateKey(dateObj) {
@@ -262,10 +251,10 @@ function buildMonthMatrix(year, month) {
 export default function App() {
   const [language, setLanguage] = useState('en')
   const t = copy[language] || copy.en
-  const [activeTab, setActiveTab] = useState('auth')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isNavMounted, setIsNavMounted] = useState(false)
-  const [theme, setTheme] = useState('light')
+
   const [trainingView, setTrainingView] = useState('courses')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
@@ -288,10 +277,9 @@ export default function App() {
     newPassword: '',
     confirmPassword: '',
   })
-  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '' })
+  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '' })
   const navTranslateX = useRef(new Animated.Value(-NAV_WIDTH)).current
 
-  const palette = baseTheme[theme]
   const monthCells = useMemo(() => buildMonthMatrix(calendarYear, calendarMonth), [calendarYear, calendarMonth])
 
   const toggleFilter = (group, value) => {
@@ -379,6 +367,45 @@ export default function App() {
     Alert.alert(t.passwordUpdated)
   }
 
+  const ProfileView = ({ profile, t }) => {
+    const initials = profile.fullName ? profile.fullName.slice(0, 1).toUpperCase() : 'U'
+    return (
+      <View style={styles.profileCard}>
+        <View style={styles.profileAvatarCard}>
+          <View style={styles.profileAvatarPreview}>
+            <Text style={styles.profileAvatarInitials}>{initials}</Text>
+          </View>
+          <View style={styles.profileAvatarLabel}>
+            <Text style={styles.profileLabelName}>{profile.fullName || 'User'}</Text>
+            <Text style={styles.profileLabelEmail}>{profile.email || 'No email available'}</Text>
+          </View>
+        </View>
+        <View style={styles.profileDetails}>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.fullName}</Text>
+            <Text style={styles.profileValue}>{profile.fullName || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.guideId}</Text>
+            <Text style={styles.profileValue}>{profile.guideId || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.email}</Text>
+            <Text style={styles.profileValue}>{profile.email || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.birthday}</Text>
+            <Text style={styles.profileValue}>{profile.birthday || '-'}</Text>
+          </View>
+          <View style={styles.profileField}>
+            <Text style={styles.profileLabel}>{t.livingAddress}</Text>
+            <Text style={styles.profileValue}>{profile.address || '-'}</Text>
+          </View>
+        </View>
+      </View>
+    )
+  }
+
   const AppHeader = (
     <View style={[styles.header, { backgroundColor: palette.panel, borderColor: palette.border }]}>
       <View style={styles.headerLeft}>
@@ -398,7 +425,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]}>
-      <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
+      <StatusBar style="dark" />
       {AppHeader}
       <ScrollView contentContainerStyle={styles.contentWrap}>
         <Text style={[styles.sectionLabel, { color: palette.muted }]}>SFC / {t[activeTab]}</Text>
@@ -464,7 +491,7 @@ export default function App() {
                 <View style={styles.courseGrid}>
                   {Array.from({ length: 8 }).map((_, idx) => (
                     <View key={idx} style={[styles.courseCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                      <View style={[styles.courseThumb, { backgroundColor: theme === 'light' ? '#d7efe1' : '#1d2f27' }]} />
+                      <View style={[styles.courseThumb, { backgroundColor: '#d7efe1' }]} />
                       <View style={styles.courseBody}>
                         <Text style={{ color: palette.text, fontWeight: '800' }}>—</Text>
                         <Text style={{ color: palette.muted }}>Coming soon</Text>
@@ -620,30 +647,7 @@ export default function App() {
               </Pressable>
             </View>
 
-            <View style={[styles.settingsSection, { borderColor: palette.border }]}>
-              <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.appearanceSettings}</Text>
-              <Text style={{ color: palette.muted }}>{t.themeMode}</Text>
-              <View style={styles.rowGap}>
-                <Pressable
-                  onPress={() => setTheme('light')}
-                  style={[
-                    styles.chipBtn,
-                    { borderColor: palette.border, backgroundColor: theme === 'light' ? palette.accent : palette.panel },
-                  ]}
-                >
-                  <Text style={{ color: theme === 'light' ? '#fff' : palette.text }}>{t.lightMode}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setTheme('dark')}
-                  style={[
-                    styles.chipBtn,
-                    { borderColor: palette.border, backgroundColor: theme === 'dark' ? palette.accent : palette.panel },
-                  ]}
-                >
-                  <Text style={{ color: theme === 'dark' ? '#fff' : palette.text }}>{t.darkMode}</Text>
-                </Pressable>
-              </View>
-            </View>
+
 
             <View style={[styles.settingsSection, { borderColor: palette.border }]}>
               <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.languageSettings}</Text>
@@ -672,6 +676,8 @@ export default function App() {
             </View>
           </View>
         )}
+        {activeTab === 'profile' && <ProfileView profile={profile} t={t} />}
+
       </ScrollView>
 
       <Modal visible={isNavMounted} transparent animationType="none">
@@ -834,4 +840,24 @@ const styles = StyleSheet.create({
   settingsTitle: { fontSize: 16, fontWeight: '800' },
   rowGap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chipBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  profileCard: { borderWidth: 1, borderRadius: 14, padding: 16, backgroundColor: palette.panel, borderColor: palette.border },
+  profileAvatarCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  profileAvatarPreview: { 
+    width: 72, 
+    height: 72, 
+    borderRadius: 36, 
+    backgroundColor: palette.accent, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: palette.accentSoft
+  },
+  profileAvatarInitials: { color: '#fff', fontSize: 28, fontWeight: '900' },
+  profileAvatarLabel: { flex: 1 },
+  profileLabelName: { fontSize: 20, fontWeight: '900', color: palette.text },
+  profileLabelEmail: { fontSize: 16, color: palette.muted },
+  profileDetails: { gap: 12 },
+  profileField: { gap: 2 },
+  profileLabel: { fontSize: 14, fontWeight: '700', color: palette.muted },
+  profileValue: { fontSize: 16, color: palette.text, fontWeight: '600' },
 })
