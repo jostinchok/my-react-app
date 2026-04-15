@@ -4,7 +4,7 @@ import { Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, Me
 } from "@mui/material";
 import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import  simpleRestProvider  from "ra-data-simple-rest"; 
-
+import "./Admin.css";
 import MyLayout from "./components/MyLayout";
 import TrainingModuleSetup from "./pages/training_module.jsx"
 import StudentManagement from "./pages/student_management.jsx";
@@ -19,49 +19,174 @@ import BookIcon from "@mui/icons-material/Book";
 const dataProvider = simpleRestProvider("https://jsonplaceholder.typicode.com");
 
 function Dashboard() {
+  const topCards = [
+    {
+      title: "Total Students",
+      value: "8855",
+      extra: "Guide accounts in system",
+      progress: 82,
+    },
+    {
+      title: "Completed Courses",
+      value: "1240",
+      extra: "Training completions verified",
+      progress: 54,
+    },
+    {
+      title: "Qualification",
+      value: "124",
+      extra: "Issued qualifications",
+      progress: 50,
+    },
+  ];
+
   const stats = [
-    { label: "Total Students", value: 8855, change: "+8.2%", icon: <PeopleIcon sx={{color:"blue"}} />, progress: 82 },
-    { label: "Completed Courses", value: 1240, change: "+5.4%", icon: <BookIcon sx={{color:"purple"}} />, progress: 54 },
-    { label: "Qualification", value: 124, change: "+12.5%", icon: <BookIcon sx={{color:"green"}} />, progress: 50 },
-    { label: "Pending Notifications", value: 45, change: "-2.1%", icon: <NotificationsIcon sx={{color:"orange"}} />, progress: 30 },
+    { label: "Total Students", value: 8855, change: "+8.2%", icon: <PeopleIcon sx={{ color: "blue" }} />, progress: 82 },
+    { label: "Completed Courses", value: 1240, change: "+5.4%", icon: <BookIcon sx={{ color: "purple" }} />, progress: 54 },
+    { label: "Qualification", value: 124, change: "+12.5%", icon: <BookIcon sx={{ color: "green" }} />, progress: 50 },
+    { label: "Pending Notifications", value: 45, change: "-2.1%", icon: <NotificationsIcon sx={{ color: "orange" }} />, progress: 30 },
   ];
 
   return (
-    <Box sx={{ mt: 1, p: 3, backgroundColor: '#fafafa', minHeight: '100vh', maxWidth: "1200px"}}>
+    <Box sx={{ width: "100%", backgroundColor: "var(--bg-light)", minHeight: "100vh" }}>
+      <Box
+        className="admin-hero-banner"
+        sx={{
+          borderRadius: "24px",
+          padding: "40px",
+          marginBottom: "40px",
+        }}
+      >
+        <Typography
+          className="admin-hero-title"
+          sx={{ margin: 0, fontSize: { xs: "2.2rem", md: "3.6rem" }, fontWeight: 800 }}
+        >
+          SFC Guide Center
+        </Typography>
+
+        <Typography
+          className="admin-hero-subtitle"
+          sx={{ marginTop: "10px", fontSize: "1.1rem" }}
+        >
+          Professional digital training and certification for Sarawak's parks.
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "25px",
+          marginBottom: "40px",
+        }}
+      >
+        {topCards.map((card, index) => (
+          <Box
+            key={index}
+            sx={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "25px",
+              boxShadow: "0 5px 20px rgba(0,0,0,0.03)",
+              border: "1px solid #f0f0f0",
+              transition: "0.3s",
+              "&:hover": {
+                transform: "translateY(-5px)",
+                boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                color: "#636e72",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                marginBottom: "15px",
+                display: "block",
+              }}
+            >
+              {card.title}
+            </Box>
+
+            <Box
+              sx={{
+                fontSize: "2.2rem",
+                fontWeight: 800,
+                color: "var(--primary-dark)",
+                marginBottom: "10px",
+              }}
+            >
+              {card.value}
+            </Box>
+
+            <Box className="admin-progress-track">
+              <Box
+                className="admin-progress-fill"
+                sx={{
+                  width: `${card.progress}%`,
+                  height: "100%",
+                }}
+              />
+            </Box>
+
+            <Typography sx={{ fontSize: "0.85rem", color: "#888" }}>
+              {card.extra}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <Typography
+        sx={{
+          fontSize: "2rem",
+          fontWeight: 800,
+          color: "var(--primary-dark)",
+          marginBottom: "25px",
+        }}
+      >
+        Admin Summary
+      </Typography>
+
       <Grid container spacing={3} alignItems="stretch">
         {stats.map((s, i) => (
           <Grid item xs={12} md={3} key={i}>
-            <Card sx={{ 
-              borderRadius: 3, 
-              boxShadow: '0 2px 12px rgba(0,0,0,0.04)', 
-              height:"100%", 
-              width:"100%" 
-              }}>
-              <CardContent 
+            <Card
               sx={{
-                display: "flex", 
-                flexDirection: "column", 
-                justifyContent: "space-between", 
-                height: "100%"
+                borderRadius: "20px",
+                boxShadow: "0 5px 20px rgba(0,0,0,0.03)",
+                border: "1px solid #f0f0f0",
+                height: "100%",
+                width: "100%",
+              }}
+            >
+              <CardContent
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  height: "100%",
                 }}
-                >
+              >
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                   {s.icon}
-                  <Typography variant="h6" sx={{ ml: 1, fontWeight:"600"}} noWrap>
+                  <Typography variant="h6" sx={{ ml: 1, fontWeight: 600 }} noWrap>
                     {s.label}
                   </Typography>
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', mb:1 }}>
+
+                <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
                   {s.value}
                 </Typography>
+
                 <Typography color={s.change.startsWith("+") ? "green" : "error"}>
                   {s.change} vs last month
                 </Typography>
+
                 <Box sx={{ mt: 2 }}>
-                  <LinearProgress 
-                  variant="determinate" 
-                  value={s.progress} 
-                  sx={{height: 8, borderRadius: 5}}
+                  <LinearProgress
+                    className="admin-linear-progress"
+                    variant="determinate"
+                    value={s.progress}
                   />
                 </Box>
               </CardContent>
@@ -70,12 +195,12 @@ function Dashboard() {
         ))}
       </Grid>
 
-      <Box sx={{ mt: 4}}>
-        < GuideProgress />
+      <Box sx={{ mt: 4 }}>
+        <GuideProgress />
       </Box>
-      
-      <Box sx={{ mt: 4}}>
-        < Monitoring />
+
+      <Box sx={{ mt: 4 }}>
+        <Monitoring />
       </Box>
     </Box>
   );
@@ -110,13 +235,13 @@ function Monitoring() {
 
   return (
     <Box sx={{ mt: 4 }}>
-      <Typography variant="h5" sx={{ fontWeight: "bold", mb:3}}>
+      <Typography variant="h5" sx={{ fontWeight: "bold", mb:3, color: "var(--primary-dark)"}}>
         Monitoring Overview
       </Typography>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={5}>
-          <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0,0,0,0.4)"}}>
+          <Card sx={{ borderRadius: 3, boxShadow: "0 10px 30px rgba(6, 44, 30, 0.08)", border: "1px solid #edf2ed"}}>
             <CardContent>
               <Typography variant="h6" sx={{ mb:1 }}>
                 Abnormal Activity Distribution
@@ -209,9 +334,9 @@ function GuideProgress() {
                   </Typography>
                   <Box sx={{ mt: 2 }}>
                     <LinearProgress
+                      className="admin-linear-progress"
                       variant="determinate"
                       value={(s.value / s.total) * 100}
-                      sx={{ height: 10, borderRadius: 5 }}
                     />
                   </Box>
                 </CardContent>

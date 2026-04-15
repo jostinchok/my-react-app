@@ -1,48 +1,71 @@
 import React, { useState } from "react";
 import { Layout } from "react-admin";
 import { Drawer } from "@mui/material";
-import Sidebar from "./Sidebar";  
-import MyAppBar from "./MyAppBar";  
+import Sidebar from "./Sidebar";
+import MyAppBar from "./MyAppBar";
+
+const SIDEBAR_WIDTH = 312;
 
 const MyLayout = (props) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   return (
-    <>
-      <Layout
-        {...props}
-        appBar={(appBarProps) => <MyAppBar {...appBarProps} onToggleSidebar={() => setOpen(!open)} />}
-        
-        sx={{
-          "& .RaLayout-content": {
-            marginLeft: open ? "20px" : "-170px",
-            transition: "margin-left 0.3s ease",
-          }
-        }}
-        
-        menu={() => (
-          <Drawer
-            variant="permanent"
-            anchor="left"
-            open={open}
-            sx={{
-              "& .MuiDrawer-paper": {
-                width: open ? "260px" : "73px",
-                height: "100vh",
-                backgroundColor: "#ffffff", 
-                borderRight: "1px solid #f0f0f0",
-                paddingTop: "20px",
-                boxShadow: "none",
-                transition: "width 0.3s ease",
-                overflowX: "hidden"
-              },
-            }}
-          >
-            <Sidebar />
-          </Drawer>
-        )}
-      />
-    </>
+    <Layout
+      {...props}
+      appBar={(appBarProps) => (
+        <MyAppBar
+          {...appBarProps}
+          open={open}
+          sidebarWidth={SIDEBAR_WIDTH}
+          onToggleSidebar={() => setOpen((prev) => !prev)}
+        />
+      )}
+      sx={{
+        backgroundColor: "var(--bg-light)",
+
+        "& .RaLayout-appFrame": {
+          marginTop: "86px",
+          minHeight: "calc(100vh - 86px)",
+        },
+
+        "& .RaLayout-contentWithSidebar": {
+          backgroundColor: "var(--bg-light)",
+          marginLeft: open ? `${SIDEBAR_WIDTH}px` : "0px",
+          width: open ? `calc(100% - ${SIDEBAR_WIDTH}px)` : "100%",
+          transition: "margin-left 0.35s ease, width 0.35s ease",
+        },
+
+        "& .RaLayout-content": {
+          backgroundColor: "var(--bg-light)",
+          minHeight: "calc(100vh - 86px)",
+          marginLeft: "0 !important",
+          padding: "44px 42px",
+        },
+      }}
+      menu={() => (
+        <Drawer
+          variant="persistent"
+          anchor="left"
+          open={open}
+          sx={{
+            "& .MuiDrawer-paper": {
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: `${SIDEBAR_WIDTH}px`,
+              height: "100vh",
+              background: "transparent",
+              borderRight: "none",
+              paddingTop: 0,
+              boxShadow: "none",
+              overflowX: "hidden",
+            },
+          }}
+        >
+          <Sidebar />
+        </Drawer>
+      )}
+    />
   );
 };
 

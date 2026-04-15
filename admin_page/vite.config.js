@@ -6,5 +6,6 @@ export default defineConfig({
   base: '/admin',
   server: {
     port: 5174,
+    strictPort: true,
   },
 })
