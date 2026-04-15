@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import '../Login.css';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('guide');
+  const [role, setRole] = useState('user');
 
   const handleLogin = () => {
     if (!email || !password) {
       alert("Please enter both email and password!");
       return;
     }
-    if (email === "guide@example.com" && password === "1234" && role === "guide") {
-      alert("Guide login successful!");
-      window.location.href = "/";
+    if (email === "user@example.com" && password === "1234" && role === "user") {
+      alert("User login successful!");
+      window.location.href = "/user";
     } else if (email === "admin@example.com" && password === "admin" && role === "admin") {
       alert("Admin login successful!");
       window.location.href = "/admin";
@@ -25,11 +25,11 @@ const Login = ({ onLogin }) => {
   return (
     <div className="login-container">
       <img
-        src="/OIP.jpg"
-        alt="Digital Park Guide Logo"
+        src="/fd87f0d6-56d3-49eb-b3e8-5a80cf4fc818.png"
+        alt="Digital Park Portal Logo"
         className="logo"
       />
-      <h1 style={{color: 'var(--primary-dark)', marginBottom: '25px', fontWeight: '800'}}>Digital Park Login</h1>
+      <h1>SFC Digital Park Portal Login</h1>
       <input
         type="text"
         placeholder="Email / Username"
@@ -43,10 +43,10 @@ const Login = ({ onLogin }) => {
         onChange={e => setPassword(e.target.value)}
       />
       <select value={role} onChange={e => setRole(e.target.value)}>
-        <option value="guide">Guide</option>
+        <option value="user">User</option>
         <option value="admin">Admin</option>
       </select>
-      <button onClick={handleLogin} style={{background: 'linear-gradient(135deg, var(--primary-mid), var(--accent-green))'}}>Login</button>
+      <button onClick={handleLogin}>Login</button>
       <div className="login-links">
       <a href="/register" className="register">Register User</a>
       <a href="#" className="forgot">Forgot Password?</a>
