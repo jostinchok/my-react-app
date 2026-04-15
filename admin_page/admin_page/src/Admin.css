@@ -1,0 +1,31 @@
+.menu-item{
+    padding: 10px 14px;
+    margin: 6px 12px;
+    border-radius: 8px;
+    color: #ccc;
+    text-decoration: none;
+    display: flex;
+    align-items:center;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-item .menu-icon{
+    margin-right: 12px;
+    color: inherit;
+}
+
+.menu-item:hover{
+    background-color: #2a2a3d;
+    color: #fff;
+}
+
+.menu-item.active{
+    background-color: #3f51b5;
+    color: #fff;
+    font-weight: 600;
+    position: relative;
+}
+
+.menu-item.active .menu-icon{
+    color: inherit;
+}
