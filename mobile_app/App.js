@@ -231,8 +231,10 @@ const palette = {
   accentSoft: '#eaf5ef',
 }
 
-const navTabs = ['profile', 'files', 'dashboard', 'training', 'certs', 'notifications', 'settings', 'logout']
+const navTabs = ['profile', 'files', 'settings', 'logout']
 const NAV_WIDTH = 250
+
+const bottomBarHeight = 60
 
 function formatDateKey(dateObj) {
   return dateObj.toISOString().slice(0, 10)
@@ -434,7 +436,7 @@ const ProfileView = ({ profile, t }) => {
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]}>
       <StatusBar style="dark" />
       {AppHeader}
-      <ScrollView contentContainerStyle={styles.contentWrap}>
+      <ScrollView contentContainerStyle={[styles.contentWrap, {paddingBottom: bottomBarHeight}]}>
         <Text style={[styles.sectionLabel, { color: palette.muted }]}>SFC / {t[activeTab]}</Text>
 
         {activeTab === 'auth' && (
@@ -719,6 +721,33 @@ const ProfileView = ({ profile, t }) => {
 
       </ScrollView>
 
+      {/* Fixed Bottom Bar */}
+      <View style={[styles.bottomBar, { backgroundColor: palette.panel, borderTopColor: palette.border }]}>
+{[
+          { tab: 'dashboard', icon: '🏠', label: t.dashboard },
+          { tab: 'training', icon: '📚', label: t.training },
+          { tab: 'notifications', icon: '🔔', label: t.notifications },
+          { tab: 'certs', icon: '🏅', label: t.certs },
+        ].map(({ tab, icon, label }) => (
+          <Pressable
+            key={tab}
+            onPress={() => {
+              setActiveTab(tab)
+              setIsNavOpen(false)
+            }}
+            style={[
+              styles.bottomTab,
+              activeTab === tab && styles.bottomTabActive,
+            ]}
+          >
+            <Text style={styles.bottomTabIcon}>{icon}</Text>
+            <Text style={[styles.bottomTabText, activeTab === tab && styles.bottomTabTextActive]}>
+              {label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       <Modal visible={isNavMounted} transparent animationType="none">
         <Pressable style={styles.overlayLeft} onPress={() => setIsNavOpen(false)}>
           <Animated.View
@@ -925,4 +954,34 @@ const styles = StyleSheet.create({
   profileField: { gap: 2 },
   profileLabel: { fontSize: 14, fontWeight: '700', color: palette.muted },
   profileValue: { fontSize: 16, color: palette.text, fontWeight: '600' },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: bottomBarHeight,
+    flexDirection: 'row',
+    borderTopWidth: 1,
+  },
+  bottomTab: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  bottomTabActive: {
+    backgroundColor: palette.accentSoft,
+  },
+  bottomTabIcon: {
+    fontSize: 24,
+    marginBottom: 2,
+  },
+  bottomTabText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: palette.muted,
+  },
+  bottomTabTextActive: {
+    color: palette.accent,
+  },
 })
