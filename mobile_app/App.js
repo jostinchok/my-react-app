@@ -799,7 +799,7 @@ const ProfileView = ({ profile, t }) => {
                     },
                   ]}
                 >
-                <Text style={{ color: (activeTab === tab || hoveredTab === tab) ? '#fff' : '#bdc3c7', fontWeight: '700', fontSize: 16, flex: 1, textAlign: 'left', includeFontPadding: false }}>{t[tab]}</Text>
+                <Text style={{ color: (activeTab === tab || hoveredTab === tab) ? '#fff' : '#bdc3c7', fontWeight: '700', fontSize: 16, includeFontPadding: false }}>{t[tab]}</Text>
                 </Pressable>
             ))}
           </Animated.View>
@@ -937,11 +937,12 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: 12, 
     paddingHorizontal: 20, 
-    paddingVertical: 24,
+    paddingVertical: 16,
     minHeight: 52,
     marginBottom: 8,
     width: '100%',
-    justifyContent: 'center'
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, borderWidth: 1, gap: 8 },
   sheetTitle: { marginTop: 8, fontWeight: '800' },
