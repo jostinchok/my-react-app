@@ -1,9 +1,11 @@
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import * as ImagePicker from 'expo-image-picker';
 import {
   Alert,
   Animated,
   Easing,
+  Image,
   Modal,
   Pressable,
   SafeAreaView,
@@ -277,7 +279,7 @@ export default function App() {
     newPassword: '',
     confirmPassword: '',
   })
-  const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '' })
+const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '', avatar: '' })
   const navTranslateX = useRef(new Animated.Value(-NAV_WIDTH)).current
 
   const monthCells = useMemo(() => buildMonthMatrix(calendarYear, calendarMonth), [calendarYear, calendarMonth])
@@ -367,13 +369,17 @@ export default function App() {
     Alert.alert(t.passwordUpdated)
   }
 
-  const ProfileView = ({ profile, t }) => {
+const ProfileView = ({ profile, t }) => {
     const initials = profile.fullName ? profile.fullName.slice(0, 1).toUpperCase() : 'U'
     return (
       <View style={styles.profileCard}>
         <View style={styles.profileAvatarCard}>
           <View style={styles.profileAvatarPreview}>
-            <Text style={styles.profileAvatarInitials}>{initials}</Text>
+            {profile.avatar ? (
+              <Image source={{ uri: profile.avatar }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.profileAvatarInitials}>{initials}</Text>
+            )}
           </View>
           <View style={styles.profileAvatarLabel}>
             <Text style={styles.profileLabelName}>{profile.fullName || 'User'}</Text>
@@ -589,7 +595,38 @@ export default function App() {
           <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
             <Text style={[styles.h2, { color: palette.text }]}>{t.settings}</Text>
             <View style={[styles.settingsSection, { borderColor: palette.border }]}>
-              <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.profileSettings}</Text>
+<Text style={[styles.settingsTitle, { color: palette.text }]}>{t.profileSettings}</Text>
+              <View style={[styles.settingsAvatarRow, { borderColor: palette.border }]}>
+                <View style={styles.settingsAvatarPreview}>
+                  {profile.avatar ? (
+                    <Image source={{ uri: profile.avatar }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.profileAvatarInitials}>U</Text>
+                  )}
+                </View>
+                <Pressable 
+                  onPress={async () => {
+                    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    if (!permission.granted) {
+                      Alert.alert('Permission needed', 'Please allow photo library access.');
+                      return;
+                    }
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                      allowsEditing: true,
+                      aspect: [1, 1],
+                      quality: 0.8,
+                    });
+                    if (!result.canceled) {
+                      setProfile((p) => ({ ...p, avatar: result.assets[0].uri }));
+                      Alert.alert('Profile picture updated directly!');
+                    }
+                  }}
+                  style={[styles.primaryBtn, { backgroundColor: palette.accent, paddingHorizontal: 16, flex: 1 }]}
+                >
+                  <Text style={styles.primaryBtnText}>Change Profile Picture</Text>
+                </Pressable>
+              </View>
               <TextInput
                 placeholder={t.fullName}
                 placeholderTextColor={palette.muted}
@@ -850,7 +887,33 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: palette.accentSoft
+    borderColor: palette.accentSoft,
+    overflow: 'hidden'
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 34,
+  },
+  settingsAvatarRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  settingsAvatarPreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: palette.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: palette.accentSoft,
   },
   profileAvatarInitials: { color: '#fff', fontSize: 28, fontWeight: '900' },
   profileAvatarLabel: { flex: 1 },

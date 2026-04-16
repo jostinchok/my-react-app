@@ -1095,7 +1095,14 @@ function App() {
                           )}
                         </div>
                         <div>
-                          <button className="settings-submit" type="submit">{t.changeProfilePicture}</button>
+                          <button 
+                            className="settings-avatar-button" 
+                            type="button"
+                            onClick={() => {
+                              const input = document.getElementById('avatar-upload');
+                              input.click();
+                            }}
+                          >{t.changeProfilePicture}</button>
                           <input
                             id="avatar-upload"
                             type="file"
@@ -1111,6 +1118,24 @@ function App() {
                           type="text"
                           value={profile.fullName}
                           onChange={(e) => setProfile((prev) => ({ ...prev, fullName: e.target.value }))}
+                          required
+                        />
+                      </label>
+                      <label>
+                        {t.email}
+                        <input
+                          type="email"
+                          value={profile.email}
+                          onChange={(e) => setProfile((prev) => ({ ...prev, email: e.target.value }))}
+                          required
+                        />
+                      </label>
+                      <label>
+                        {t.guideId}
+                        <input
+                          type="text"
+                          value={profile.guideId}
+                          onChange={(e) => setProfile((prev) => ({ ...prev, guideId: e.target.value }))}
                           required
                         />
                       </label>
