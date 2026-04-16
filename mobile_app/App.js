@@ -14,7 +14,8 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native'
+} from 'react-native';
+import FilesPage from './components/FilesPage';
 
 const copy = {
   en: {
@@ -713,7 +714,8 @@ const ProfileView = ({ profile, t }) => {
             </View>
           </View>
         )}
-        {activeTab === 'profile' && <ProfileView profile={profile} t={t} />}
+{activeTab === 'profile' && <ProfileView profile={profile} t={t} />}
+        {activeTab === 'files' && <FilesPage t={t} />}
 
       </ScrollView>
 
