@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Dimensions } from 'react-native';
 import FilesPage from './components/FilesPage';
 
 const copy = {
@@ -224,15 +225,16 @@ const copy = {
 const palette = {
   bg: '#f0f2f0',
   panel: '#ffffff',
-  text: '#1f2f28',
-  muted: '#5f726a',
-  border: '#d8e4de',
-  accent: '#165132',
+  text: '#2d3436',
+  muted: '#636e72',
+  border: '#e6efea',
+  accent: '#379237',
   accentSoft: '#eaf5ef',
+  primaryDark: '#062C1E',
 }
 
 const navTabs = ['profile', 'files', 'settings', 'logout']
-const NAV_WIDTH = 250
+const NAV_WIDTH = 280
 
 const bottomBarHeight = 60
 
@@ -259,6 +261,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isNavMounted, setIsNavMounted] = useState(false)
+  const [hoveredTab, setHoveredTab] = useState(null)
+  const navOpacity = useRef(new Animated.Value(0)).current
 
   const [trainingView, setTrainingView] = useState('courses')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -341,23 +345,40 @@ const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', b
 
   useEffect(() => {
     if (isNavOpen) {
-      Animated.timing(navTranslateX, {
-        toValue: 0,
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start()
+      setIsNavMounted(true)
+      Animated.parallel([
+        Animated.timing(navTranslateX, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.out(Easing.bezier(0.4, 0, 0.2, 1)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(navOpacity, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.bezier(0.4, 0, 0.2, 1)),
+          useNativeDriver: true,
+        })
+      ]).start()
       return
     }
-    Animated.timing(navTranslateX, {
-      toValue: -NAV_WIDTH,
-      duration: 180,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
+    Animated.parallel([
+      Animated.timing(navTranslateX, {
+        toValue: -NAV_WIDTH,
+        duration: 400,
+        easing: Easing.in(Easing.bezier(0.4, 0, 0.2, 1)),
+        useNativeDriver: true,
+      }),
+      Animated.timing(navOpacity, {
+        toValue: 0,
+        duration: 400,
+        easing: Easing.in(Easing.bezier(0.4, 0, 0.2, 1)),
+        useNativeDriver: true,
+      })
+    ]).start(({ finished }) => {
       if (finished) setIsNavMounted(false)
     })
-  }, [isNavOpen, navTranslateX])
+  }, [isNavOpen])
 
   const handleProfileSave = () => {
     Alert.alert(t.profileSaved)
@@ -423,7 +444,7 @@ const ProfileView = ({ profile, t }) => {
             setIsNavMounted(true)
             setIsNavOpen(true)
           }}
-          style={[styles.menuBtn, { borderColor: palette.border, backgroundColor: palette.accentSoft }]}
+          style={[styles.menuBtn, { borderColor: palette.border, backgroundColor: palette.bg }]}
         >
           <Text style={{ color: palette.text, fontWeight: '900' }}>☰</Text>
         </Pressable>
@@ -452,9 +473,9 @@ const ProfileView = ({ profile, t }) => {
 
         {activeTab === 'dashboard' && (
           <View style={styles.stackGap}>
-            <View style={[styles.hero, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-              <Text style={[styles.h1, { color: palette.text }]}>{t.portalTitle}</Text>
-              <Text style={{ color: palette.muted }}>{t.welcomeSubtitle}</Text>
+            <View style={[styles.hero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
+              <Text style={[styles.h1, { color: '#fff' }]}>{t.portalTitle}</Text>
+              <Text style={{ color: '#ffffff' }}>{t.welcomeSubtitle}</Text>
             </View>
             <View style={styles.statRow}>
               {[t.currentProgress, t.credentials, t.status].map((title, i) => (
@@ -500,7 +521,7 @@ const ProfileView = ({ profile, t }) => {
                 <View style={styles.courseGrid}>
                   {Array.from({ length: 8 }).map((_, idx) => (
                     <View key={idx} style={[styles.courseCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                      <View style={[styles.courseThumb, { backgroundColor: '#d7efe1' }]} />
+                      <View style={[styles.courseThumb, { backgroundColor: palette.primaryDark }]} />
                       <View style={styles.courseBody}>
                         <Text style={{ color: palette.text, fontWeight: '800' }}>—</Text>
                         <Text style={{ color: palette.muted }}>Coming soon</Text>
@@ -754,30 +775,32 @@ const ProfileView = ({ profile, t }) => {
             style={[
               styles.sideNav,
               {
-                backgroundColor: palette.panel,
+                backgroundColor: palette.primaryDark,
                 borderColor: palette.border,
+                opacity: navOpacity,
                 transform: [{ translateX: navTranslateX }],
               },
             ]}
           >
-            <Text style={[styles.sideNavTitle, { color: palette.text }]}>{t.portalTitle}</Text>
+            <Text style={[styles.sideNavTitle, { color: '#ffffff' }]}>{t.portalTitle}</Text>
             {navTabs.map((tab) => (
               <Pressable
-                key={tab}
-                onPress={() => {
-                  setActiveTab(tab)
-                  setIsNavOpen(false)
-                }}
-                style={[
-                  styles.sideNavItem,
-                  {
-                    backgroundColor: activeTab === tab ? palette.accent : palette.panel,
-                    borderColor: palette.border,
-                  },
-                ]}
-              >
-                <Text style={{ color: activeTab === tab ? '#fff' : palette.text, fontWeight: '700' }}>{t[tab]}</Text>
-              </Pressable>
+                  key={tab}
+                  onPress={() => {
+                    setActiveTab(tab)
+                    setIsNavOpen(false)
+                  }}
+                  onMouseEnter={() => setHoveredTab(tab)}
+                  onMouseLeave={() => setHoveredTab(null)}
+                  style={[
+                    styles.sideNavItem,
+                    (activeTab === tab || hoveredTab === tab) && {
+                      backgroundColor: palette.accent,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: (activeTab === tab || hoveredTab === tab) ? '#fff' : '#bdc3c7', fontWeight: '600', flex: 1, textAlign: 'left' }}>{t[tab]}</Text>
+                </Pressable>
             ))}
           </Animated.View>
         </Pressable>
@@ -835,7 +858,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  menuBtn: { borderWidth: 1, borderRadius: 10, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  menuBtn: { 
+    borderWidth: 1, 
+    borderRadius: 10, 
+    width: 44, 
+    height: 44, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    fontSize: 20
+  },
   headerTitle: { fontSize: 20, fontWeight: '900' },
   contentWrap: { padding: 12, gap: 10 },
   sectionLabel: { fontSize: 12, fontWeight: '700' },
@@ -893,8 +924,23 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
-  sideNavTitle: { fontSize: 20, fontWeight: '900', marginBottom: 6 },
-  sideNavItem: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  sideNavTitle: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    marginBottom: 20, 
+    paddingLeft: 20, 
+    paddingVertical: 25,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)'
+  },
+  sideNavItem: { 
+    borderWidth: 0,
+    borderRadius: 12, 
+    paddingHorizontal: 20, 
+    paddingVertical: 15,
+    marginBottom: 8,
+    width: '100%'
+  },
   sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, borderWidth: 1, gap: 8 },
   sheetTitle: { marginTop: 8, fontWeight: '800' },
   modalCard: { margin: 16, borderRadius: 12, borderWidth: 1, padding: 12, gap: 8 },
