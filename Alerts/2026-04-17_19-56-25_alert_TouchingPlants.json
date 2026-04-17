@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-04-17_19-56-25",
+  "event_class": "TouchingPlants",
+  "history": [
+    "NotTouching",
+    "Touching",
+    "NotTouching",
+    "Touching",
+    "Touching"
+  ],
+  "touch_votes": 3,
+  "class_conf_threshold": 0.75,
+  "min_margin": 0.15,
+  "detections": [
+    {
+      "bbox": [
+        272,
+        224,
+        422,
+        352
+      ],
+      "pred_class": "TouchingPlants",
+      "top1": 0.8133431077003479,
+      "margin": 0.6266862601041794,
+      "probs": {
+        "TouchingPlants": 0.8133431077003479,
+        "TouchingWildlife": 0.18665684759616852
+      }
+    }
+  ],
+  "image_path": "C:\\COS30049 Assignment\\Alerts\\2026-04-17_19-56-25_alert_TouchingPlants.jpg"
+}
