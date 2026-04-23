@@ -1,0 +1,21 @@
+# Core notebook support
+jupyter
+ipykernel
+ipywidgets
+
+# Deep learning / model loading
+torch
+torchvision
+transformers
+safetensors
+
+# Image and CV
+pillow
+opencv-python
+mediapipe
+
+# Data / metrics / utilities
+numpy
+scikit-learn
+tqdm
+matplotlib
