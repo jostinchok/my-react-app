@@ -1,1208 +1,1080 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import ProfilePage from './components/ProfilePage'
-import FileManager from './components/FileManager'
+import {
+  demoStorageVersion,
+  demoUsers,
+  roleBoundaries,
+  supportTopics,
+  trainingModules,
+} from './data/trainingPlatform'
 
-const copy = {
-  en: {
-    portalTitle: 'Digital Portal',
-    dashboard: 'Dashboard',
-    training: 'Training',
-    files: 'Files',
-    certs: 'Certificates',
-    settings: 'Settings',
-    notifications: 'Notifications',
-    auth: 'Authentication',
-    profile: 'Profile',
-    logout: 'Logout',
-    birthday: 'Birthday',
-    livingAddress: 'Living Address',
-    uploadSectionTitle: 'Upload File',
-    yourFilesTitle: 'Your Files',
-    downloadBtn: 'Download',
-    trainingFilesTitle: 'Training Files',
-    filesSubtitle: 'Upload and download files for your courses.',
-    uploadFileStatus: 'Uploading',
-    biodiversity: 'Biodiversity',
-    fieldTraining: 'Field Training',
-    labSkills: 'Lab Skills',
-    courseLabel: 'Course',
-    sizeLabel: 'Size',
-    uploadedLabel: 'Uploaded',
-    filesEmpty: 'No files yet. Upload your first course file!',
-    fileUploadedSuccess: 'File uploaded successfully!',
-    systemVersion: 'System: SFC-V1.0',
-    openNotifications: 'Open notifications',
-    openAuthPage: 'Open login and registration page',
-    welcomeTitle: 'SFC Guide Center',
-    welcomeSubtitle: "Professional digital training and certification for Sarawak's parks.",
-    currentProgress: 'Current Progress',
-    moduleBiodiversity: 'Module: Biodiversity',
-    credentials: 'Credentials',
-    verifiedCertificates: 'Verified Certificates',
-    status: 'Status',
-    active: 'Active',
-    guideId: 'Guide ID',
-    notifEmpty: 'No messages yet.',
-    markAllRead: 'Mark all read',
-    markSelectedRead: 'Mark selected read',
-    deleteSelected: 'Delete selected',
-    secureAccess: 'Secure Access',
-    authWelcome: 'Welcome to SFC Portal',
-    authDesc: 'Access your digital training and certificate services in one place. Login, register, or use admin access to manage the system.',
-    login: 'Login',
-    register: 'Register',
-    admin: 'Admin',
-    userLogin: 'User Login',
-    createAccount: 'Create Account',
-    adminLogin: 'Admin Login',
-    fullName: 'Full Name',
-    email: 'Email',
-    password: 'Password',
-    confirmPassword: 'Confirm Password',
-    adminId: 'Admin ID',
-    enterAdminPanel: 'Enter Admin Panel',
-    settingsTitle: 'Settings Center',
-    settingsDesc: 'Manage account, security and personalized portal preferences.',
-    profileSettings: 'Profile Settings',
-    passwordSettings: 'Password Settings',
-    appearanceSettings: 'Appearance',
-    languageSettings: 'Language',
-    profileLocked: 'Profile editing is locked. Please login first.',
-    passwordLocked: 'Password update is locked. Please login first.',
-    loginToUnlock: 'Login to unlock',
-    changeProfilePicture: 'Change Profile Picture',
-    saveProfile: 'Save Profile',
-    updatePassword: 'Update Password',
-    currentPassword: 'Current Password',
-    newPassword: 'New Password',
-    chooseLanguage: 'Choose Language',
-    english: 'English',
-    malay: 'Malay',
-    chinese: 'Chinese',
-    profileSaved: 'Profile updated successfully.',
-    passwordMismatch: 'New password and confirm password do not match.',
-    passwordUpdated: 'Password updated successfully.',
-    loginSuccess: 'Login success (demo UI).',
-    registerSuccess: 'Registration success (demo UI).',
-    adminSuccess: 'Admin login success (demo UI).',
-    filter: 'Filter',
-    clearAll: 'Clear All',
-    level: 'Level',
-    statusLabel: 'Status',
-    location: 'Location',
-    beginner: 'Beginner',
-    advance: 'Advance',
-    activeCourse: 'Active',
-    completed: 'Completed',
-    planned: 'Planned',
-    lab: 'Lab',
-    online: 'Online',
-    field: 'Field',
-    apply: 'Apply',
-    importantDates: 'Important Dates',
-    noteDate: 'Date',
-    noteText: 'Note',
-    addNote: 'Add',
-    notePlaceholder: 'Write an important reminder...',
-    coursesTab: 'Courses',
-    calendarTab: 'Calendar',
-    saveEvent: 'Submit',
-    close: 'Close',
-    eventTitle: 'Title',
-    eventLocation: 'Location',
-    calendarList: 'Calendars',
-    noEventTitle: 'Untitled Event',
-    noCoursesPlanned: 'No courses planned',
-    noCoursesHint: 'Courses module is not ready yet. You can update it later.',
-  },
-  ms: {
-    portalTitle: 'Portal Digital',
-    dashboard: 'Papan Pemuka',
-    training: 'Latihan',
-    files: 'Fail',
-    certs: 'Sijil',
-    settings: 'Tetapan',
-    notifications: 'Pemberitahuan',
-    auth: 'Pengesahan',
-    profile: 'Profil',
-    logout: 'Log Keluar',
-    birthday: 'Tarikh Lahir',
-    livingAddress: 'Alamat Tinggal',
-    uploadSectionTitle: 'Muat Naik Fail',
-    yourFilesTitle: 'Fail Anda',
-    downloadBtn: 'Muat Turun',
-    trainingFilesTitle: 'Fail Latihan',
-    filesSubtitle: 'Muat naik dan muat turun fail untuk kursus anda.',
-    uploadFileStatus: 'Memuat naik',
-    biodiversity: 'Biodiversiti',
-    fieldTraining: 'Latihan Lapangan',
-    labSkills: 'Kemahiran Makmal',
-    courseLabel: 'Kursus',
-    sizeLabel: 'Saiz',
-    uploadedLabel: 'Dimuat Naik',
-    filesEmpty: 'Belum ada fail. Muat naik fail kursus pertama anda!',
-    fileUploadedSuccess: 'Fail berjaya dimuat naik!',
-    systemVersion: 'Sistem: SFC-V1.0',
-    openNotifications: 'Buka pemberitahuan',
-    openAuthPage: 'Buka halaman log masuk dan daftar',
-    welcomeTitle: 'Pusat Panduan SFC',
-    welcomeSubtitle: 'Latihan digital profesional dan pensijilan untuk taman Sarawak.',
-    currentProgress: 'Kemajuan Semasa',
-    moduleBiodiversity: 'Modul: Biodiversiti',
-    credentials: 'Kelayakan',
-    verifiedCertificates: 'Sijil Disahkan',
-    status: 'Status',
-    active: 'Aktif',
-    guideId: 'ID Pemandu',
-    notifEmpty: 'Belum ada mesej.',
-    markAllRead: 'Tanda semua dibaca',
-    markSelectedRead: 'Tanda pilihan dibaca',
-    deleteSelected: 'Padam pilihan',
-    secureAccess: 'Akses Selamat',
-    authWelcome: 'Selamat datang ke Portal SFC',
-    authDesc: 'Akses latihan digital dan perkhidmatan sijil anda di satu tempat. Log masuk, daftar, atau gunakan akses admin untuk mengurus sistem.',
-    login: 'Log Masuk',
-    register: 'Daftar',
-    admin: 'Admin',
-    userLogin: 'Log Masuk Pengguna',
-    createAccount: 'Cipta Akaun',
-    adminLogin: 'Log Masuk Admin',
-    fullName: 'Nama Penuh',
-    email: 'E-mel',
-    password: 'Kata Laluan',
-    confirmPassword: 'Sahkan Kata Laluan',
-    adminId: 'ID Admin',
-    enterAdminPanel: 'Masuk Panel Admin',
-    settingsTitle: 'Pusat Tetapan',
-    settingsDesc: 'Urus akaun, keselamatan dan pilihan portal peribadi.',
-    profileSettings: 'Tetapan Profil',
-    passwordSettings: 'Tetapan Kata Laluan',
-    appearanceSettings: 'Paparan',
-    languageSettings: 'Bahasa',
-    profileLocked: 'Suntingan profil dikunci. Sila log masuk dahulu.',
-    passwordLocked: 'Kemas kini kata laluan dikunci. Sila log masuk dahulu.',
-    loginToUnlock: 'Log masuk untuk buka kunci',
-    saveProfile: 'Simpan Profil',
-    changeProfilePicture: 'Tukar Gambar Profil',
-    updatePassword: 'Kemas kini Kata Laluan',
-    currentPassword: 'Kata Laluan Semasa',
-    newPassword: 'Kata Laluan Baharu',
-    chooseLanguage: 'Pilih Bahasa',
-    english: 'Inggeris',
-    malay: 'Melayu',
-    chinese: 'Cina',
-    profileSaved: 'Profil berjaya dikemas kini.',
-    passwordMismatch: 'Kata laluan baharu dan pengesahan tidak sepadan.',
-    passwordUpdated: 'Kata laluan berjaya dikemas kini.',
-    loginSuccess: 'Log masuk berjaya (UI demo).',
-    registerSuccess: 'Pendaftaran berjaya (UI demo).',
-    adminSuccess: 'Log masuk admin berjaya (UI demo).',
-    filter: 'Penapis',
-    clearAll: 'Kosongkan',
-    level: 'Tahap',
-    statusLabel: 'Status',
-    location: 'Lokasi',
-    beginner: 'Permulaan',
-    advance: 'Lanjutan',
-    activeCourse: 'Aktif',
-    completed: 'Selesai',
-    planned: 'Dirancang',
-    lab: 'Makmal',
-    online: 'Dalam Talian',
-    field: 'Lapangan',
-    apply: 'Guna',
-    importantDates: 'Tarikh Penting',
-    noteDate: 'Tarikh',
-    noteText: 'Nota',
-    addNote: 'Tambah',
-    notePlaceholder: 'Tulis peringatan penting...',
-    coursesTab: 'Kursus',
-    calendarTab: 'Kalendar',
-    saveEvent: 'Simpan',
-    close: 'Tutup',
-    eventTitle: 'Tajuk',
-    eventLocation: 'Lokasi',
-    calendarList: 'Kalendar',
-    noEventTitle: 'Acara Tanpa Tajuk',
-    noCoursesPlanned: 'Tiada kursus dirancang',
-    noCoursesHint: 'Modul kursus belum siap. Anda boleh kemas kini kemudian.',
-  },
-  zh: {
-    portalTitle: '数字门户',
-    dashboard: '仪表板',
-    training: '培训',
-    files: '文件',
-    certs: '证书',
-    settings: '设置',
-    notifications: '通知',
-    auth: '认证',
-    profile: '个人资料',
-    logout: '登出',
-    birthday: '生日',
-    livingAddress: '住址',
-    uploadSectionTitle: '上传文件',
-    yourFilesTitle: '您的文件',
-    downloadBtn: '下载',
-    trainingFilesTitle: '培训文件',
-    filesSubtitle: '上传和下载课程文件',
-    uploadFileStatus: '上传中',
-    biodiversity: '生物多样性',
-    fieldTraining: '实地培训',
-    labSkills: '实验室技能',
-    courseLabel: '课程',
-    sizeLabel: '大小',
-    uploadedLabel: '已上传',
-    filesEmpty: '暂无文件。上传您的第一个课程文件！',
-    fileUploadedSuccess: '文件上传成功！',
-    systemVersion: '系统: SFC-V1.0',
-    openNotifications: '打开通知',
-    openAuthPage: '打开登录与注册页面',
-    welcomeTitle: 'SFC 导览中心',
-    welcomeSubtitle: '为砂拉越公园提供专业数字化培训与认证服务。',
-    currentProgress: '当前进度',
-    moduleBiodiversity: '模块: 生物多样性',
-    credentials: '资质',
-    verifiedCertificates: '已验证证书',
-    status: '状态',
-    active: '活跃',
-    guideId: '导览员ID',
-    notifEmpty: '暂无消息。',
-    markAllRead: '全部标记已读',
-    markSelectedRead: '标记所选已读',
-    deleteSelected: '删除所选',
-    secureAccess: '安全访问',
-    authWelcome: '欢迎来到 SFC 门户',
-    authDesc: '在一个平台访问你的培训与证书服务。可进行登录、注册或管理员登录。',
-    login: '登录',
-    register: '注册',
-    admin: '管理员',
-    userLogin: '用户登录',
-    createAccount: '创建账号',
-    adminLogin: '管理员登录',
-    fullName: '姓名',
-    email: '邮箱',
-    password: '密码',
-    confirmPassword: '确认密码',
-    adminId: '管理员ID',
-    enterAdminPanel: '进入管理面板',
-    settingsTitle: '设置中心',
-    settingsDesc: '管理账号、安全与个性化门户偏好。',
-    profileSettings: '个人资料设置',
-    passwordSettings: '密码设置',
-    appearanceSettings: '外观',
-    languageSettings: '语言',
-    profileLocked: '个人资料编辑已锁定，请先登录。',
-    passwordLocked: '密码修改已锁定，请先登录。',
-    loginToUnlock: '登录后解锁',
-    saveProfile: '保存资料',
-    changeProfilePicture: '更换头像',
-    updatePassword: '更新密码',
-    currentPassword: '当前密码',
-    newPassword: '新密码',
-    chooseLanguage: '选择语言',
-    english: '英语',
-    malay: '马来语',
-    chinese: '华语',
-    profileSaved: '个人资料已更新。',
-    passwordMismatch: '新密码与确认密码不一致。',
-    passwordUpdated: '密码更新成功。',
-    loginSuccess: '登录成功（演示界面）。',
-    registerSuccess: '注册成功（演示界面）。',
-    adminSuccess: '管理员登录成功（演示界面）。',
-    filter: '筛选',
-    clearAll: '清除',
-    level: '等级',
-    statusLabel: '状态',
-    location: '地点',
-    beginner: '初级',
-    advance: '高级',
-    activeCourse: '进行中',
-    completed: '已完成',
-    planned: '计划中',
-    lab: '实验室',
-    online: '线上',
-    field: '实地',
-    apply: '应用',
-    importantDates: '重要日期',
-    noteDate: '日期',
-    noteText: '备注',
-    addNote: '添加',
-    notePlaceholder: '记录重要事项...',
-    coursesTab: '课程',
-    calendarTab: '日历',
-    saveEvent: '提交',
-    close: '关闭',
-    eventTitle: '标题',
-    eventLocation: '地点',
-    calendarList: '日历',
-    noEventTitle: '未命名事件',
-    noCoursesPlanned: '暂无课程计划',
-    noCoursesHint: '课程模块尚未完成，之后可再更新。',
-  },
+const STORAGE_KEY = 'sfc_citrus_training_demo'
+
+const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
+
+const readStoredUsers = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    if (parsed?.version === demoStorageVersion && Array.isArray(parsed.users)) {
+      return parsed.users
+    }
+  } catch {
+    // Fall through to seed data.
+  }
+  return cloneSeedUsers()
 }
 
+const formatDate = (dateValue) => {
+  if (!dateValue) return 'Not scheduled'
+  return new Date(dateValue).toLocaleDateString('en-MY', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+const initials = (name) =>
+  name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
 function App() {
+  const [users, setUsers] = useState(readStoredUsers)
+  const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [language, setLanguage] = useState('en')
-  const [profile, setProfile] = useState({
-    fullName: '',
-    email: '',
-    guideId: '',
-    birthday: '',
-    address: '',
-    avatar: '',
+  const [selectedModuleId, setSelectedModuleId] = useState(users[0]?.enrolledModuleIds?.[0] || trainingModules[0].id)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [moduleSearch, setModuleSearch] = useState('')
+  const [moduleStatus, setModuleStatus] = useState('all')
+  const [moduleCategory, setModuleCategory] = useState('all')
+  const [quizDraft, setQuizDraft] = useState({})
+  const [scheduleForm, setScheduleForm] = useState({
+    date: '2026-05-20',
+    title: '',
+    location: '',
+    type: 'Reminder',
   })
-  // TODO: replace this with a database fetch for the user profile.
-  // Example: fetch('/api/profile').then(r => r.json()).then(setProfile)
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  })
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const raw = localStorage.getItem('sfc_notifications_v1')
-      return raw ? JSON.parse(raw) : []
-    } catch {
-      return []
-    }
-  })
-  const [trainingFilters, setTrainingFilters] = useState({
-    level: ['beginner'],
-    status: ['active'],
-    location: ['online'],
-  })
-  const [trainingView, setTrainingView] = useState('courses')
-  const [isTrainingFilterOpen, setIsTrainingFilterOpen] = useState(false)
-  const [trainingNotes, setTrainingNotes] = useState(() => {
-    try {
-      const raw = localStorage.getItem('sfc_training_notes_v1')
-      const parsed = raw ? JSON.parse(raw) : []
-      if (Array.isArray(parsed)) return parsed
-      return []
-    } catch {
-      return []
-    }
-  })
-  const today = new Date()
-  const [calendarYear, setCalendarYear] = useState(today.getFullYear())
-  const [calendarMonth, setCalendarMonth] = useState(today.getMonth()) // 0-11
-  const [noteDate, setNoteDate] = useState(() => today.toISOString().slice(0, 10))
-  const [noteText, setNoteText] = useState('')
-  const [eventTitle, setEventTitle] = useState('')
-  const [eventLocation, setEventLocation] = useState('')
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
 
-  const t = copy[language]
-  const [selectedIds, setSelectedIds] = useState([])
-  const navLabels = {
-    dashboard: t.dashboard,
-    profile: 'Profile',
-    training: t.training,
-    files: t.files,
-    certs: t.certs,
-    settings: t.settings,
-    notifications: t.notifications,
-  }
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: demoStorageVersion, users }))
+    } catch {
+      // Local storage is optional for this demo.
+    }
+  }, [users])
 
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
+  const currentUser = users.find((user) => user.id === currentUserId) || users[0] || cloneSeedUsers()[0]
+  const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || trainingModules[0]
+
+  const moduleMap = useMemo(
+    () => new Map(trainingModules.map((module) => [module.id, module])),
+    []
   )
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('sfc_notifications_v1', JSON.stringify(notifications))
-    } catch {
-      // Ignore storage write issues.
-    }
-  }, [notifications])
+  const allResources = useMemo(
+    () =>
+      trainingModules.flatMap((module) =>
+        module.resources.map((resource) => ({
+          ...resource,
+          moduleId: module.id,
+          moduleTitle: module.title,
+          category: module.category,
+          park: module.park,
+        }))
+      ),
+    []
+  )
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('sfc_training_notes_v1', JSON.stringify(trainingNotes))
-    } catch {
-      // Ignore storage write issues.
-    }
-  }, [trainingNotes])
-
-  const formatDateKey = (dateObj) => dateObj.toISOString().slice(0, 10)
-
-  const getNoteForDate = (dateKey) => {
-    const found = trainingNotes.find((n) => n.date === dateKey)
-    return found ? found.text : ''
+  const updateCurrentUser = (updater) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((user) => (user.id === currentUserId ? updater({ ...user }) : user))
+    )
   }
 
-  const dayHasNote = (dateKey) => !!getNoteForDate(dateKey)
-
-  const moveCalendarMonth = (delta) => {
-    setCalendarMonth((prev) => {
-      const next = prev + delta
-      if (next < 0) {
-        setCalendarYear((y) => y - 1)
-        return 11
-      }
-      if (next > 11) {
-        setCalendarYear((y) => y + 1)
-        return 0
-      }
-      return next
-    })
-  }
-
-  const buildCalendarCells = (year, month) => {
-    const first = new Date(year, month, 1)
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    // Monday as first day (like your example)
-    const startWeekday = (first.getDay() + 6) % 7
-    const cells = []
-    for (let i = 0; i < startWeekday; i += 1) cells.push(null)
-    for (let d = 1; d <= daysInMonth; d += 1) {
-      cells.push(new Date(year, month, d))
-    }
-    return cells
-  }
-
-  const buildMonthMatrix = (year, month) => {
-    const first = new Date(year, month, 1)
-    const offset = (first.getDay() + 6) % 7
-    const start = new Date(year, month, 1 - offset)
-    const cells = []
-    for (let i = 0; i < 42; i += 1) {
-      const d = new Date(start)
-      d.setDate(start.getDate() + i)
-      cells.push({
-        date: d,
-        inCurrentMonth: d.getMonth() === month,
-      })
-    }
-    return cells
-  }
-
-  const toggleTrainingFilter = (group, value) => {
-    setTrainingFilters((prev) => {
-      const list = prev[group]
-      const has = list.includes(value)
-      return {
-        ...prev,
-        [group]: has ? list.filter((x) => x !== value) : [...list, value],
-      }
-    })
-  }
-
-  const clearTrainingFilters = () => {
-    setTrainingFilters({ level: [], status: [], location: [] })
-  }
-
-  const addTrainingNote = () => {
-    const text = noteText.trim()
-    if (!noteDate) return
-    setTrainingNotes((prev) => {
-      const withoutExisting = prev.filter((n) => n.date !== noteDate)
-      return [
+  const addNotification = (title, body, type = 'training') => {
+    updateCurrentUser((user) => ({
+      ...user,
+      notifications: [
         {
           id: Date.now(),
-          date: noteDate,
-          text,
-          title: eventTitle.trim() || t.noEventTitle,
-          location: eventLocation.trim(),
+          title,
+          body,
+          type,
+          read: false,
+          createdAt: new Date().toISOString(),
         },
-        ...withoutExisting,
-      ].slice(0, 60)
+        ...(user.notifications || []),
+      ],
+    }))
+  }
+
+  const isEnrolled = (module, user = currentUser) => user.enrolledModuleIds?.includes(module.id)
+
+  const getProgress = (module, user = currentUser) => {
+    if (!isEnrolled(module, user)) return 0
+    const lessonsDone = user.completedLessons?.[module.id]?.length || 0
+    const quizDone = user.quizResults?.[module.id]?.passed ? 1 : 0
+    return Math.round(((lessonsDone + quizDone) / (module.lessons.length + 1)) * 100)
+  }
+
+  const enrolledModules = useMemo(
+    () => trainingModules.filter((module) => isEnrolled(module)),
+    [currentUser]
+  )
+
+  const completedModules = useMemo(
+    () => trainingModules.filter((module) => getProgress(module) === 100),
+    [currentUser]
+  )
+
+  const overallProgress = useMemo(() => {
+    if (enrolledModules.length === 0) return 0
+    const total = enrolledModules.reduce((sum, module) => sum + getProgress(module), 0)
+    return Math.round(total / enrolledModules.length)
+  }, [currentUser, enrolledModules])
+
+  const unreadCount = currentUser.notifications?.filter((item) => !item.read).length || 0
+
+  const certificates = useMemo(() => {
+    const baseCertificates = currentUser.certificates || []
+    const certifiedModuleIds = new Set(baseCertificates.map((certificate) => certificate.moduleId))
+    const readyToReview = completedModules
+      .filter((module) => !certifiedModuleIds.has(module.id))
+      .map((module) => ({
+        id: `${currentUser.id}-${module.id}-ready`,
+        moduleId: module.id,
+        title: module.badge,
+        status: 'Ready for admin review',
+        issueDate: 'Pending',
+        expiryDate: '1 year after approval',
+      }))
+    return [...baseCertificates, ...readyToReview]
+  }, [currentUser, completedModules])
+
+  const earnedBadgeIds = useMemo(
+    () => new Set(completedModules.map((module) => module.id)),
+    [completedModules]
+  )
+
+  const nextModule = useMemo(() => {
+    const active = enrolledModules.find((module) => getProgress(module) < 100)
+    return active || trainingModules.find((module) => !isEnrolled(module)) || trainingModules[0]
+  }, [currentUser, enrolledModules])
+
+  const categories = useMemo(
+    () => ['all', ...new Set(trainingModules.map((module) => module.category))],
+    []
+  )
+
+  const filteredModules = useMemo(() => {
+    const query = moduleSearch.trim().toLowerCase()
+    return trainingModules.filter((module) => {
+      const progress = getProgress(module)
+      const status =
+        progress === 100 ? 'completed' : isEnrolled(module) ? 'in-progress' : 'available'
+      const matchesSearch =
+        !query ||
+        `${module.title} ${module.subtitle} ${module.park} ${module.category}`
+          .toLowerCase()
+          .includes(query)
+      const matchesStatus = moduleStatus === 'all' || moduleStatus === status
+      const matchesCategory = moduleCategory === 'all' || moduleCategory === module.category
+      return matchesSearch && matchesStatus && matchesCategory
     })
-    setNoteText('')
-    setEventTitle('')
-    setEventLocation('')
-    setIsEventModalOpen(false)
-  }
+  }, [currentUser, moduleSearch, moduleStatus, moduleCategory])
 
-  const removeTrainingNote = (id) => {
-    setTrainingNotes((prev) => prev.filter((n) => n.id !== id))
-  }
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-    setSelectedIds([])
-  }
-
-  const toggleSelected = (id) => {
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id)
-      return [...prev, id]
+  const categoryProgress = useMemo(() => {
+    return [...new Set(trainingModules.map((module) => module.category))].map((category) => {
+      const modules = trainingModules.filter((module) => module.category === category)
+      const average = Math.round(
+        modules.reduce((sum, module) => sum + getProgress(module), 0) / modules.length
+      )
+      return { category, average }
     })
+  }, [currentUser])
+
+  const savedResourceIds = new Set(currentUser.savedResources || [])
+  const savedResources = [
+    ...allResources.filter((resource) => savedResourceIds.has(resource.id)),
+    ...(currentUser.personalFiles || []),
+  ]
+
+  const switchUser = (userId) => {
+    const nextUser = users.find((user) => user.id === userId)
+    setCurrentUserId(userId)
+    setSelectedModuleId(nextUser?.enrolledModuleIds?.[0] || trainingModules[0].id)
+    setActiveTab('dashboard')
   }
 
-  const markSelectedAsRead = () => {
-    if (selectedIds.length === 0) return
-    const idSet = new Set(selectedIds)
-    setNotifications((prev) => prev.map((n) => (idSet.has(n.id) ? { ...n, read: true } : n)))
-    setSelectedIds([])
+  const resetDemo = () => {
+    const freshUsers = cloneSeedUsers()
+    setUsers(freshUsers)
+    setCurrentUserId(freshUsers[0].id)
+    setSelectedModuleId(freshUsers[0].enrolledModuleIds[0])
+    setActiveTab('dashboard')
   }
 
-  const deleteSelected = () => {
-    if (selectedIds.length === 0) return
-    const idSet = new Set(selectedIds)
-    setNotifications((prev) => prev.filter((n) => !idSet.has(n.id)))
-    setSelectedIds([])
+  const openModule = (moduleId) => {
+    setSelectedModuleId(moduleId)
+    setActiveTab('module')
+    setSidebarOpen(false)
   }
 
-  const handleAvatarUpload = (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setProfile((prev) => ({ ...prev, avatar: url }))
-  }
-
-  const handleProfileSave = (event) => {
-    event.preventDefault()
-    alert(t.profileSaved)
-  }
-
-  const handlePasswordUpdate = (event) => {
-    event.preventDefault()
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert(t.passwordMismatch)
+  const enrollModule = (module) => {
+    if (isEnrolled(module)) {
+      openModule(module.id)
       return
     }
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    alert(t.passwordUpdated)
+    updateCurrentUser((user) => ({
+      ...user,
+      enrolledModuleIds: [...(user.enrolledModuleIds || []), module.id],
+      completedLessons: { ...(user.completedLessons || {}), [module.id]: [] },
+    }))
+    setSelectedModuleId(module.id)
+    setActiveTab('module')
+    addNotification('Module enrolled', `${module.title} is now in your learning path.`, 'training')
   }
 
-  useEffect(() => {
-    if (activeTab !== 'notifications') setSelectedIds([])
-  }, [activeTab])
-
-  const handleLogout = () => {
-    alert('Logout is disabled until the login page is connected.')
+  const toggleLesson = (module, lessonIndex) => {
+    if (!isEnrolled(module)) return
+    updateCurrentUser((user) => {
+      const existing = user.completedLessons?.[module.id] || []
+      const next = existing.includes(lessonIndex)
+        ? existing.filter((item) => item !== lessonIndex)
+        : [...existing, lessonIndex]
+      return {
+        ...user,
+        completedLessons: {
+          ...(user.completedLessons || {}),
+          [module.id]: next.sort((a, b) => a - b),
+        },
+      }
+    })
   }
 
-  useEffect(() => {
-    if (selectedIds.length === 0) return
-    setSelectedIds((prev) => prev.filter((id) => notifications.some((n) => n.id === id)))
-  }, [notifications, selectedIds.length])
+  const submitQuiz = (module) => {
+    if (!isEnrolled(module)) return
+    const selected = Number(quizDraft[module.id])
+    if (Number.isNaN(selected)) return
+    const passed = selected === module.quiz.answer
+    updateCurrentUser((user) => ({
+      ...user,
+      quizResults: {
+        ...(user.quizResults || {}),
+        [module.id]: {
+          passed,
+          selected,
+          score: passed ? 100 : 0,
+          completedAt: new Date().toISOString().slice(0, 10),
+        },
+      },
+    }))
+    addNotification(
+      passed ? 'Quiz passed' : 'Quiz needs review',
+      passed
+        ? `${module.title} quiz passed. Complete all lessons to prepare the badge for admin review.`
+        : `Review the resources in ${module.title} and try again.`,
+      passed ? 'certificate' : 'training'
+    )
+  }
+
+  const markNotificationRead = (notificationId) => {
+    updateCurrentUser((user) => ({
+      ...user,
+      notifications: (user.notifications || []).map((item) =>
+        item.id === notificationId ? { ...item, read: true } : item
+      ),
+    }))
+  }
+
+  const markAllRead = () => {
+    updateCurrentUser((user) => ({
+      ...user,
+      notifications: (user.notifications || []).map((item) => ({ ...item, read: true })),
+    }))
+  }
+
+  const removeNotification = (notificationId) => {
+    updateCurrentUser((user) => ({
+      ...user,
+      notifications: (user.notifications || []).filter((item) => item.id !== notificationId),
+    }))
+  }
+
+  const addScheduleItem = (event) => {
+    event.preventDefault()
+    if (!scheduleForm.date || !scheduleForm.title.trim()) return
+    updateCurrentUser((user) => ({
+      ...user,
+      schedule: [
+        {
+          id: `${user.id}-schedule-${Date.now()}`,
+          ...scheduleForm,
+          title: scheduleForm.title.trim(),
+          location: scheduleForm.location.trim() || 'Self-paced',
+        },
+        ...(user.schedule || []),
+      ].sort((a, b) => a.date.localeCompare(b.date)),
+    }))
+    setScheduleForm({ date: scheduleForm.date, title: '', location: '', type: 'Reminder' })
+    addNotification('Schedule updated', 'A personal learning reminder was added to your schedule.', 'schedule')
+  }
+
+  const toggleResource = (resourceId) => {
+    updateCurrentUser((user) => {
+      const existing = user.savedResources || []
+      const saved = existing.includes(resourceId)
+        ? existing.filter((item) => item !== resourceId)
+        : [...existing, resourceId]
+      return { ...user, savedResources: saved }
+    })
+  }
+
+  const handlePersonalFile = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    updateCurrentUser((user) => ({
+      ...user,
+      personalFiles: [
+        {
+          id: `${user.id}-file-${Date.now()}`,
+          title: file.name,
+          type: 'Personal upload',
+          moduleTitle: 'Saved Resources',
+          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+        },
+        ...(user.personalFiles || []),
+      ],
+    }))
+    event.target.value = ''
+    addNotification('Resource saved', `${file.name} was added to your saved resources.`, 'resource')
+  }
+
+  const updateProfileField = (field, value) => {
+    updateCurrentUser((user) => ({ ...user, [field]: value }))
+  }
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'D' },
+    { id: 'modules', label: 'My Modules', icon: 'M' },
+    { id: 'module', label: 'Module Details', icon: 'I' },
+    { id: 'progress', label: 'Progress', icon: 'P' },
+    { id: 'certificates', label: 'Certificates', icon: 'C' },
+    { id: 'notifications', label: 'Notifications', icon: 'N' },
+    { id: 'schedule', label: 'Schedule', icon: 'S' },
+    { id: 'resources', label: 'Resources', icon: 'R' },
+    { id: 'profile', label: 'Profile', icon: 'U' },
+    { id: 'help', label: 'Help', icon: '?' },
+  ]
 
   return (
-    <div className={`layout theme- ${isCollapsed ? 'sidebar-hidden' : ''}`}>
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <div className="sfc-logo">SFC</div>
-          <span>{t.portalTitle}</span>
+    <div className="app-shell">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="brand-block">
+          <div className="brand-mark">SFC</div>
+          <div>
+            <strong>Guide Center</strong>
+            <span>Digital Training</span>
+          </div>
         </div>
-        <nav className="side-menu">
-          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-            <span className="nav-icon">📊</span> {t.dashboard}
-          </button>
-          <button className={activeTab === 'training' ? 'active' : ''} onClick={() => setActiveTab('training')}>
-            <span className="nav-icon">📖</span> {t.training}
-          </button>
-          <button className={activeTab === 'certs' ? 'active' : ''} onClick={() => setActiveTab('certs')}>
-            <span className="nav-icon">📜</span> {t.certs}
-          </button>
+
+        <nav className="nav-list" aria-label="User portal">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={activeTab === item.id ? 'active' : ''}
+              onClick={() => {
+                setActiveTab(item.id)
+                setSidebarOpen(false)
+              }}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+              {item.id === 'notifications' && unreadCount > 0 && <b>{unreadCount}</b>}
+            </button>
+          ))}
         </nav>
-        <div style={{marginTop: 'auto', padding: '30px', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
-          <p style={{color: '#95a5a6', fontSize: '0.8rem'}}>{t.systemVersion}</p>
+
+        <div className="role-card">
+          <span>Current Role</span>
+          <strong>{currentUser.role}</strong>
+          <p>Training access only. Admin controls stay locked.</p>
         </div>
       </aside>
 
-      <main className="main-container">
-        <header className="top-nav">
-          <div className="left-header">
-            <button className="menu-toggle" onClick={() => setIsCollapsed(!isCollapsed)}>
-              {isCollapsed ? '☰' : '✕'}
-            </button>
-            <div className="breadcrumb">SFC / {(navLabels[activeTab] || activeTab).toUpperCase()}</div>
+      <main className="workspace">
+        <header className="topbar">
+          <button className="menu-button" type="button" onClick={() => setSidebarOpen((value) => !value)}>
+            <span />
+            <span />
+            <span />
+          </button>
+          <div>
+            <span className="kicker">SFC / {activeTab.replace('-', ' ').toUpperCase()}</span>
+            <h1>{currentUser.assignedPark}</h1>
           </div>
-          <div className="user-info">
-            <button
-              className="top-bell-button notification-button"
-              onClick={() => setActiveTab('notifications')}
-              aria-label={t.openNotifications}
-              type="button"
-            >
-              <span className="nav-icon">🔔</span>
-              {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+          <div className="topbar-actions">
+            <select value={currentUserId} onChange={(event) => switchUser(event.target.value)} aria-label="Demo user switcher">
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.username} - {user.assignedPark}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="reset-button" onClick={resetDemo}>
+              Reset Demo
             </button>
-            <button
-              className="user-circle"
-              onClick={() => setIsUserMenuOpen((prev) => !prev)}
-              aria-label="User menu"
-              type="button"
-            >
-              {profile.avatar ? (
-                <img src={profile.avatar} alt="User avatar" className="user-circle-img" />
-              ) : (
-                profile.fullName.slice(0, 1).toUpperCase() || 'U'
-              )}
+            <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
+              <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
             </button>
-            {isUserMenuOpen && (
-              <div className="user-menu">
-                <button
-                  type="button"
-                  className="user-menu-item"
-                  onClick={() => {
-                    setActiveTab('profile')
-                    setIsUserMenuOpen(false)
-                  }}
-                >
-                  {t.profile}
-                </button>
-                <button
-                  type="button"
-                  className="user-menu-item"
-                  onClick={() => {
-                    setActiveTab('files')
-                    setIsUserMenuOpen(false)
-                  }}
-                >
-                  {t.files}
-                </button>
-                <button
-                  type="button"
-                  className="user-menu-item"
-                  onClick={() => {
-                    setActiveTab('settings')
-                    setIsUserMenuOpen(false)
-                  }}
-                >
-                  {t.settings}
-                </button>
-                <button
-                  type="button"
-                  className="user-menu-item user-menu-logout"
-                  onClick={() => alert('Logout is not enabled yet.')}
-                >
-                  {t.logout}
-                </button>
-              </div>
-            )}
           </div>
         </header>
 
-        <div className="page-content">
+        <div className="page-scroll">
           {activeTab === 'dashboard' && (
-            <div className="dashboard-view">
-              <div className="welcome-card">
-                <h1 style={{margin: 0}}>{t.welcomeTitle}</h1>
-                <p style={{opacity: 0.8}}>{t.welcomeSubtitle}</p>
-              </div>
-              <div className="status-grid">
-                <div className="stat-box">
-                  <span className="stat-title">{t.currentProgress}</span>
-                  <div className="big-text">75%</div>
-                  <div className="progress-bar"><div className="fill" style={{width: '75%'}}></div></div>
-                  <p style={{fontSize: '0.8rem', color: '#888'}}>{t.moduleBiodiversity}</p>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-title">{t.credentials}</span>
-                  <div className="big-text">02</div>
-                  <p style={{marginTop: '10px', fontSize: '0.8rem'}}>{t.verifiedCertificates}</p>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-title">{t.status}</span>
-                  <div className="big-text" style={{color: '#27ae60'}}>{t.active}</div>
-                  <p style={{marginTop: '10px', fontSize: '0.8rem'}}>{t.guideId}: {profile.guideId}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'profile' && (
-            <ProfilePage profile={profile} t={t} />
-          )}
-
-          {activeTab === 'files' && <FileManager t={t} />}
-          
-          {activeTab === 'training' && (
-            <div className="training-page">
-              <div className="training-view-switch">
-                <button
-                  type="button"
-                  className={trainingView === 'courses' ? 'active' : ''}
-                  onClick={() => setTrainingView('courses')}
+            <section className="page-stack">
+              <div className="hero-grid">
+                <div
+                  className="hero-copy"
+                  style={{ '--hero-image': `url(${trainingModules[0].image})` }}
                 >
-                  {t.coursesTab}
-                </button>
-                <button
-                  type="button"
-                  className={trainingView === 'calendar' ? 'active' : ''}
-                  onClick={() => setTrainingView('calendar')}
-                >
-                  {t.calendarTab}
-                </button>
+                  <span className="kicker">Citrus learning path</span>
+                  <h2>Fresh field training for Sarawak park guides.</h2>
+                  <p>
+                    Continue assigned modules, pass scenario quizzes, save field resources, and build certificate evidence from one polished user portal.
+                  </p>
+                  <div className="hero-actions">
+                    <button type="button" onClick={() => openModule(nextModule.id)}>
+                      Continue {nextModule.title}
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
+                      Browse all modules
+                    </button>
+                  </div>
+                </div>
+                <div className="next-card">
+                  <img src={nextModule.image} alt="" />
+                  <div>
+                    <span>Next action</span>
+                    <strong>{nextModule.title}</strong>
+                    <ProgressBar value={getProgress(nextModule)} />
+                    <small>{getProgress(nextModule)}% complete</small>
+                  </div>
+                </div>
               </div>
 
-              {trainingView === 'courses' && (
-                <section className="training-courses">
-                  <div className="training-tools">
-                    <div className="training-tools-left">
-                      <button
-                        type="button"
-                        className="training-filter-icon"
-                        aria-label={t.filter}
-                        onClick={() => setIsTrainingFilterOpen(true)}
-                      >
-                        ⚲
+              <div className="stat-grid">
+                <StatCard label="Overall progress" value={`${overallProgress}%`} detail={`${enrolledModules.length} enrolled modules`} />
+                <StatCard label="Completed modules" value={`${completedModules.length}/10`} detail="Lessons plus quiz required" />
+                <StatCard label="Certificates" value={String(certificates.length).padStart(2, '0')} detail="Verified or ready for review" />
+                <StatCard label="Unread updates" value={String(unreadCount).padStart(2, '0')} detail="Training, resources, schedule" />
+              </div>
+
+              <div className="content-grid">
+                <section className="panel wide">
+                  <PanelTitle kicker="Learning path" title={`${currentUser.username}'s active modules`} />
+                  <div className="compact-module-list">
+                    {enrolledModules.map((module) => (
+                      <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                        <img src={module.image} alt="" />
+                        <span>
+                          <strong>{module.title}</strong>
+                          <small>{module.park} - {module.duration}</small>
+                        </span>
+                        <b>{getProgress(module)}%</b>
                       </button>
-                    </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="panel">
+                  <PanelTitle kicker="Demo user" title="Quick review switcher" />
+                  <div className="user-switcher">
+                    {users.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        className={user.id === currentUserId ? 'active' : ''}
+                        onClick={() => switchUser(user.id)}
+                      >
+                        <span style={{ background: user.avatarColor }}>{initials(user.displayName)}</span>
+                        <strong>{user.username}</strong>
+                        <small>{user.position}</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <div className="content-grid">
+                <section className="panel">
+                  <PanelTitle kicker="Role boundary" title="What this user can do" />
+                  <ul className="permission-list can">
+                    {roleBoundaries.can.slice(0, 5).map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="panel">
+                  <PanelTitle kicker="Admin locked" title="What this user cannot do" />
+                  <ul className="permission-list cannot">
+                    {roleBoundaries.cannot.slice(0, 5).map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'modules' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="My Modules"
+                title="Ten module training catalog"
+                body="Search, filter, enroll, and continue every required Park Guide training module from the user side."
+              />
+
+              <div className="toolbar">
+                <input
+                  type="search"
+                  placeholder="Search modules, parks, topics..."
+                  value={moduleSearch}
+                  onChange={(event) => setModuleSearch(event.target.value)}
+                />
+                <select value={moduleStatus} onChange={(event) => setModuleStatus(event.target.value)}>
+                  <option value="all">All status</option>
+                  <option value="in-progress">In progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="available">Available</option>
+                </select>
+                <select value={moduleCategory} onChange={(event) => setModuleCategory(event.target.value)}>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category === 'all' ? 'All categories' : category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="module-grid">
+                {filteredModules.map((module) => {
+                  const progress = getProgress(module)
+                  const enrolled = isEnrolled(module)
+                  return (
+                    <article key={module.id} className="module-card">
+                      <button type="button" className="module-image" onClick={() => openModule(module.id)}>
+                        <img src={module.image} alt="" />
+                        <span style={{ background: module.accent }}>{module.category}</span>
+                      </button>
+                      <div className="module-card-body">
+                        <div className="module-meta">
+                          <span>{module.level}</span>
+                          <span>{module.duration}</span>
+                          <span>{module.format}</span>
+                        </div>
+                        <h3>{module.title}</h3>
+                        <p>{module.subtitle}</p>
+                        <ProgressBar value={progress} />
+                        <div className="module-actions">
+                          <button type="button" onClick={() => (enrolled ? openModule(module.id) : enrollModule(module))}>
+                            {enrolled ? 'Open module' : 'Enroll'}
+                          </button>
+                          <span>{progress}%</span>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'module' && (
+            <section className="page-stack">
+              <div className="module-detail-hero">
+                <img src={selectedModule.image} alt="" />
+                <div>
+                  <span className="kicker">{selectedModule.category} / {selectedModule.park}</span>
+                  <h2>{selectedModule.title}</h2>
+                  <p>{selectedModule.subtitle}</p>
+                  <div className="detail-chips">
+                    <span>{selectedModule.level}</span>
+                    <span>{selectedModule.duration}</span>
+                    <span>{selectedModule.format}</span>
+                    <span>{getProgress(selectedModule)}% complete</span>
+                  </div>
+                  <ProgressBar value={getProgress(selectedModule)} />
+                  <div className="hero-actions">
+                    <button type="button" onClick={() => enrollModule(selectedModule)}>
+                      {isEnrolled(selectedModule) ? 'Continue module' : 'Enroll module'}
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
+                      Back to modules
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="content-grid detail-layout">
+                <section className="panel wide">
+                  <PanelTitle kicker="Learning objectives" title="What this module teaches" />
+                  <div className="objective-grid">
+                    {selectedModule.objectives.map((objective) => (
+                      <div key={objective}>{objective}</div>
+                    ))}
                   </div>
 
-                  <div className="training-course-grid" role="list">
-                    {Array.from({ length: 8 }).map((_, idx) => (
-                      <article key={idx} className="training-course-card" role="listitem">
-                        <div className="training-course-thumb" aria-hidden="true" />
-                        <div className="training-course-body">
-                          <div className="training-course-title">—</div>
-                          <div className="training-course-meta">Coming soon</div>
+                  <PanelTitle kicker="Lesson checklist" title="Complete each step" />
+                  <div className="lesson-list">
+                    {selectedModule.lessons.map((lesson, index) => {
+                      const done = currentUser.completedLessons?.[selectedModule.id]?.includes(index)
+                      return (
+                        <label key={lesson} className={done ? 'done' : ''}>
+                          <input
+                            type="checkbox"
+                            checked={!!done}
+                            disabled={!isEnrolled(selectedModule)}
+                            onChange={() => toggleLesson(selectedModule, index)}
+                          />
+                          <span>{String(index + 1).padStart(2, '0')}</span>
+                          <strong>{lesson}</strong>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </section>
+
+                <aside className="panel">
+                  <PanelTitle kicker="Scenario quiz" title="Assessment" />
+                  <p className="quiz-question">{selectedModule.quiz.question}</p>
+                  <div className="quiz-options">
+                    {selectedModule.quiz.options.map((option, index) => (
+                      <label key={option}>
+                        <input
+                          type="radio"
+                          name={`quiz-${selectedModule.id}`}
+                          value={index}
+                          checked={Number(quizDraft[selectedModule.id]) === index}
+                          disabled={!isEnrolled(selectedModule)}
+                          onChange={(event) =>
+                            setQuizDraft((prev) => ({
+                              ...prev,
+                              [selectedModule.id]: event.target.value,
+                            }))
+                          }
+                        />
+                        <span>{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="full-button"
+                    disabled={!isEnrolled(selectedModule) || quizDraft[selectedModule.id] === undefined}
+                    onClick={() => submitQuiz(selectedModule)}
+                  >
+                    Submit quiz
+                  </button>
+                  {currentUser.quizResults?.[selectedModule.id] && (
+                    <div className={currentUser.quizResults[selectedModule.id].passed ? 'quiz-result pass' : 'quiz-result review'}>
+                      {currentUser.quizResults[selectedModule.id].passed ? 'Passed' : 'Review needed'} - Score {currentUser.quizResults[selectedModule.id].score}%
+                    </div>
+                  )}
+                </aside>
+              </div>
+
+              <section className="panel">
+                <PanelTitle kicker="Resources" title="Module files and media" />
+                <div className="resource-grid">
+                  {selectedModule.resources.map((resource) => (
+                    <ResourceCard
+                      key={resource.id}
+                      resource={{ ...resource, moduleTitle: selectedModule.title, category: selectedModule.category }}
+                      saved={savedResourceIds.has(resource.id)}
+                      onToggle={() => toggleResource(resource.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            </section>
+          )}
+
+          {activeTab === 'progress' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Learning Progress"
+                title="Progress, strengths, and certification readiness"
+                body="This page gives the Park Guide a clear view of module completion and where to focus next."
+              />
+
+              <div className="stat-grid">
+                <StatCard label="Overall" value={`${overallProgress}%`} detail="Average across enrolled modules" />
+                <StatCard label="Lessons done" value={String(enrolledModules.reduce((sum, module) => sum + (currentUser.completedLessons?.[module.id]?.length || 0), 0))} detail="Checklist items completed" />
+                <StatCard label="Passed quizzes" value={String(Object.values(currentUser.quizResults || {}).filter((result) => result.passed).length)} detail="Scenario assessments" />
+                <StatCard label="Badges ready" value={String(completedModules.length)} detail="Completed module badges" />
+              </div>
+
+              <div className="content-grid">
+                <section className="panel wide">
+                  <PanelTitle kicker="Module progress" title="Completion evidence" />
+                  <div className="progress-table">
+                    {trainingModules.map((module) => (
+                      <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                        <span>{module.title}</span>
+                        <ProgressBar value={getProgress(module)} />
+                        <b>{getProgress(module)}%</b>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="panel">
+                  <PanelTitle kicker="Category view" title="Strength map" />
+                  <div className="category-bars">
+                    {categoryProgress.map((item) => (
+                      <div key={item.category}>
+                        <span>{item.category}</span>
+                        <ProgressBar value={item.average} />
+                        <b>{item.average}%</b>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'certificates' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Certificates / Badges"
+                title="Guide credentials and milestones"
+                body="Park Guides can view certificate status and badge progress. Approval actions remain admin-only."
+              />
+
+              <div className="certificate-grid">
+                {certificates.length === 0 && (
+                  <div className="empty-panel">No certificates yet. Complete a module and pass its quiz to prepare one for admin review.</div>
+                )}
+                {certificates.map((certificate) => {
+                  const module = moduleMap.get(certificate.moduleId)
+                  return (
+                    <article key={certificate.id} className="certificate-card">
+                      <div className="certificate-stamp">{module?.badge?.slice(0, 2).toUpperCase() || 'SFC'}</div>
+                      <span>{certificate.status}</span>
+                      <h3>{certificate.title}</h3>
+                      <p>{module?.title || 'Training credential'}</p>
+                      <dl>
+                        <div>
+                          <dt>Issue</dt>
+                          <dd>{certificate.issueDate}</dd>
+                        </div>
+                        <div>
+                          <dt>Expiry</dt>
+                          <dd>{certificate.expiryDate}</dd>
+                        </div>
+                      </dl>
+                      <button type="button" onClick={() => alert('Certificate download is a front-end demo action.')}>
+                        Download demo certificate
+                      </button>
+                    </article>
+                  )
+                })}
+              </div>
+
+              <section className="panel">
+                <PanelTitle kicker="Badges" title="All module milestones" />
+                <div className="badge-grid">
+                  {trainingModules.map((module) => (
+                    <div key={module.id} className={earnedBadgeIds.has(module.id) ? 'badge earned' : 'badge locked'}>
+                      <span style={{ background: module.accent }}>{module.badge.slice(0, 2).toUpperCase()}</span>
+                      <strong>{module.badge}</strong>
+                      <small>{earnedBadgeIds.has(module.id) ? 'Earned' : `${getProgress(module)}% complete`}</small>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </section>
+          )}
+
+          {activeTab === 'notifications' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Notifications"
+                title="Training updates and reminders"
+                body="Read admin announcements, resource updates, certificate messages, and schedule reminders."
+              />
+              <div className="notification-actions">
+                <button type="button" onClick={markAllRead} disabled={unreadCount === 0}>
+                  Mark all read
+                </button>
+              </div>
+              <div className="notification-list">
+                {(currentUser.notifications || []).map((notification) => (
+                  <article key={notification.id} className={notification.read ? 'read' : 'unread'}>
+                    <div>
+                      <span>{notification.type}</span>
+                      <h3>{notification.title}</h3>
+                      <p>{notification.body}</p>
+                      <small>{new Date(notification.createdAt).toLocaleString('en-MY')}</small>
+                    </div>
+                    <div className="notification-buttons">
+                      <button type="button" onClick={() => markNotificationRead(notification.id)} disabled={notification.read}>
+                        Read
+                      </button>
+                      <button type="button" onClick={() => removeNotification(notification.id)}>
+                        Remove
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'schedule' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Schedule"
+                title="Training due dates and field sessions"
+                body="Park Guides can review assigned sessions and add personal reminders for their own learning plan."
+              />
+              <div className="content-grid">
+                <section className="panel wide">
+                  <PanelTitle kicker="Upcoming" title={`${currentUser.username}'s schedule`} />
+                  <div className="schedule-list">
+                    {(currentUser.schedule || []).map((item) => (
+                      <article key={item.id}>
+                        <time>{formatDate(item.date)}</time>
+                        <div>
+                          <span>{item.type}</span>
+                          <h3>{item.title}</h3>
+                          <p>{item.location}</p>
                         </div>
                       </article>
                     ))}
                   </div>
                 </section>
-              )}
 
-              {trainingView === 'calendar' && (
-                <section className="calendar-page">
-                  <div className="calendar-main">
-                    <div className="calendar-main-head">
-                      <div className="calendar-main-title">
-                        {new Date(calendarYear, calendarMonth, 1).toLocaleDateString(
-                          language === 'ms' ? 'ms-MY' : language === 'zh' ? 'zh-CN' : 'en-MY',
-                          { month: 'long', year: 'numeric' }
-                        )}
-                      </div>
-                      <div className="calendar-main-nav">
-                        <button type="button" onClick={() => moveCalendarMonth(-1)}>‹</button>
-                        <button type="button" onClick={() => moveCalendarMonth(1)}>›</button>
-                      </div>
-                    </div>
-                    <div className="calendar-main-grid">
-                      {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d) => (
-                        <div key={d} className="calendar-main-dow">{d}</div>
-                      ))}
-                      {buildMonthMatrix(calendarYear, calendarMonth).map(({ date, inCurrentMonth }) => {
-                        const key = formatDateKey(date)
-                        const hasNote = dayHasNote(key)
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            className={`calendar-main-cell ${inCurrentMonth ? '' : 'out-month'}`}
-                            onClick={() => {
-                              setNoteDate(key)
-                              setNoteText(getNoteForDate(key))
-                              const item = trainingNotes.find((n) => n.date === key)
-                              setEventTitle(item?.title || '')
-                              setEventLocation(item?.location || '')
-                              setIsEventModalOpen(true)
-                            }}
-                          >
-                            <span>{date.getDate()}</span>
-                            {hasNote && <span className="calendar-main-mark" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <aside className="calendar-side">
-                    <div className="calendar-side-mini">
-                      <div className="calendar-side-month">
-                        {new Date(calendarYear, calendarMonth, 1).toLocaleDateString(
-                          language === 'ms' ? 'ms-MY' : language === 'zh' ? 'zh-CN' : 'en-MY',
-                          { month: 'long', year: 'numeric' }
-                        )}
-                      </div>
-                      <div className="training-calendar-grid">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-                          <div key={d} className="cal-dow">{d}</div>
-                        ))}
-                        {buildCalendarCells(calendarYear, calendarMonth).map((dateObj, idx) => {
-                          if (!dateObj) return <div key={idx} className="cal-cell empty" />
-                          const key = formatDateKey(dateObj)
-                          return (
-                            <button
-                              type="button"
-                              key={key}
-                              className={`cal-cell ${dayHasNote(key) ? 'has-note' : ''}`}
-                              onClick={() => {
-                                setNoteDate(key)
-                                setNoteText(getNoteForDate(key))
-                                const item = trainingNotes.find((n) => n.date === key)
-                                setEventTitle(item?.title || '')
-                                setEventLocation(item?.location || '')
-                                setIsEventModalOpen(true)
-                              }}
-                            >
-                              <span>{dateObj.getDate()}</span>
-                              {dayHasNote(key) && <span className="cal-dot" />}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    <div className="calendar-side-list">
-                      <h3>{t.calendarList}</h3>
-                      <ul>
-                        {trainingNotes.slice(0, 8).map((n) => (
-                          <li key={n.id}>
-                            <span>{n.date}</span>
-                            <p>{n.title || t.noEventTitle}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </aside>
-                </section>
-              )}
-
-              {isTrainingFilterOpen && (
-                <div
-                  className="training-filter-overlay"
-                  role="presentation"
-                  onMouseDown={(e) => {
-                    if (e.target === e.currentTarget) setIsTrainingFilterOpen(false)
-                  }}
-                >
-                  <aside className="training-filter-drawer" role="dialog" aria-label={t.filter}>
-                    <div className="training-filter-head">
-                      <h2>{t.filter}</h2>
-                      <div className="training-filter-head-actions">
-                        <button type="button" onClick={clearTrainingFilters}>{t.clearAll}</button>
-                        <button type="button" className="training-filter-close" onClick={() => setIsTrainingFilterOpen(false)}>
-                          ×
-                        </button>
-                      </div>
-                    </div>
-
-                    <section className="training-filter-section">
-                      <h3>{t.level}</h3>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.level.includes('beginner')}
-                          onChange={() => toggleTrainingFilter('level', 'beginner')}
-                        />
-                        {t.beginner}
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.level.includes('advance')}
-                          onChange={() => toggleTrainingFilter('level', 'advance')}
-                        />
-                        {t.advance}
-                      </label>
-                    </section>
-
-                    <section className="training-filter-section">
-                      <h3>{t.statusLabel}</h3>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.status.includes('active')}
-                          onChange={() => toggleTrainingFilter('status', 'active')}
-                        />
-                        {t.activeCourse}
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.status.includes('completed')}
-                          onChange={() => toggleTrainingFilter('status', 'completed')}
-                        />
-                        {t.completed}
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.status.includes('planned')}
-                          onChange={() => toggleTrainingFilter('status', 'planned')}
-                        />
-                        {t.planned}
-                      </label>
-                    </section>
-
-                    <section className="training-filter-section">
-                      <h3>{t.location}</h3>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.location.includes('lab')}
-                          onChange={() => toggleTrainingFilter('location', 'lab')}
-                        />
-                        {t.lab}
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.location.includes('online')}
-                          onChange={() => toggleTrainingFilter('location', 'online')}
-                        />
-                        {t.online}
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={trainingFilters.location.includes('field')}
-                          onChange={() => toggleTrainingFilter('location', 'field')}
-                        />
-                        {t.field}
-                      </label>
-                    </section>
-
-                    <button
-                      type="button"
-                      className="training-filter-apply"
-                      onClick={() => setIsTrainingFilterOpen(false)}
-                    >
-                      {t.apply}
-                    </button>
-                  </aside>
-                </div>
-              )}
-
-              {isEventModalOpen && (
-                <div
-                  className="calendar-modal-overlay"
-                  role="presentation"
-                  onMouseDown={(e) => {
-                    if (e.target === e.currentTarget) setIsEventModalOpen(false)
-                  }}
-                >
-                  <div className="calendar-modal" role="dialog" aria-label="Edit event">
-                    <div className="calendar-modal-head">
-                      <h3>Edit event</h3>
-                      <button type="button" onClick={() => setIsEventModalOpen(false)}>×</button>
-                    </div>
-                    <div className="calendar-modal-body">
-                      <label>
-                        {t.eventTitle}
-                        <input
-                          type="text"
-                          value={eventTitle}
-                          onChange={(e) => setEventTitle(e.target.value)}
-                          placeholder={t.noEventTitle}
-                        />
-                      </label>
-                      <label>
-                        {t.noteDate}
-                        <input type="date" value={noteDate} onChange={(e) => setNoteDate(e.target.value)} />
-                      </label>
-                      <label>
-                        {t.noteText}
-                        <textarea
-                          value={noteText}
-                          onChange={(e) => setNoteText(e.target.value)}
-                          placeholder={t.notePlaceholder}
-                          rows={3}
-                        />
-                      </label>
-                      <label>
-                        {t.eventLocation}
-                        <input
-                          type="text"
-                          value={eventLocation}
-                          onChange={(e) => setEventLocation(e.target.value)}
-                          placeholder={t.eventLocation}
-                        />
-                      </label>
-                    </div>
-                    <div className="calendar-modal-actions">
-                      <button type="button" className="calendar-modal-close" onClick={() => setIsEventModalOpen(false)}>
-                        {t.close}
-                      </button>
-                      <button type="button" className="calendar-modal-submit" onClick={addTrainingNote}>
-                        {t.saveEvent}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="notifications-page">
-              <div className="notif-page-header">
-                <h1 className="notif-page-title">{t.notifications}</h1>
-                <div className="notif-page-actions">
-                  <button className="notif-page-btn" onClick={markAllAsRead} disabled={unreadCount === 0} type="button">
-                    {t.markAllRead}
-                  </button>
-                  <button className="notif-page-btn" onClick={markSelectedAsRead} disabled={selectedIds.length === 0} type="button">
-                    {t.markSelectedRead}
-                  </button>
-                  <button className="notif-page-btn" onClick={deleteSelected} disabled={selectedIds.length === 0} type="button">
-                    {t.deleteSelected}
-                  </button>
-                </div>
-              </div>
-
-              {notifications.length === 0 ? (
-                <p className="notif-empty">{t.notifEmpty}</p>
-              ) : (
-                <div className="notif-list" role="list">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`notif-row ${n.read ? 'read' : 'unread'} ${selectedIds.includes(n.id) ? 'selected' : ''}`}
-                      role="listitem"
-                    >
-                      <div className="notif-row-top">
-                        <label className="notif-check" aria-label={`Select notification: ${n.title}`}>
-                          <input
-                            type="checkbox"
-                            className="notif-check-input"
-                            checked={selectedIds.includes(n.id)}
-                            onChange={() => toggleSelected(n.id)}
-                          />
-                          <span className="notif-check-ui" aria-hidden="true" />
-                        </label>
-                        <div className="notif-row-title">{n.title}</div>
-                        <div className="notif-row-time">{new Date(n.createdAt).toLocaleString()}</div>
-                      </div>
-                      <div className="notif-row-body">{n.body}</div>
-                      {!n.read && <div className="notif-unread-dot" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="settings-page">
-              <div className="settings-header">
-                <h1>{t.settingsTitle}</h1>
-                <p>{t.settingsDesc}</p>
-              </div>
-
-              <div className="settings-scroll">
-                <section className="settings-card settings-panel">
-                  <div className="settings-card-head">
-                    <h2>{t.profileSettings}</h2>
-                  </div>
-                  <form className="settings-form" onSubmit={handleProfileSave}>
-                    <fieldset>
-                      <div className="settings-avatar-row">
-                        <div className="settings-avatar-preview">
-                          {profile.avatar ? (
-                            <img src={profile.avatar} alt="Profile avatar" />
-                          ) : (
-                            <span>{(profile.fullName || 'U').slice(0, 1).toUpperCase()}</span>
-                          )}
-                        </div>
-                        <div>
-                          <button 
-                            className="settings-avatar-button" 
-                            type="button"
-                            onClick={() => {
-                              const input = document.getElementById('avatar-upload');
-                              input.click();
-                            }}
-                          >{t.changeProfilePicture}</button>
-                          <input
-                            id="avatar-upload"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleAvatarUpload}
-                            style={{ display: 'none' }}
-                          />
-                        </div>
-                      </div>
-                      <label>
-                        {t.fullName}
-                        <input
-                          type="text"
-                          value={profile.fullName}
-                          onChange={(e) => setProfile((prev) => ({ ...prev, fullName: e.target.value }))}
-                          required
-                        />
-                      </label>
-                      <label>
-                        {t.email}
-                        <input
-                          type="email"
-                          value={profile.email}
-                          onChange={(e) => setProfile((prev) => ({ ...prev, email: e.target.value }))}
-                          required
-                        />
-                      </label>
-                      <label>
-                        {t.guideId}
-                        <input
-                          type="text"
-                          value={profile.guideId}
-                          onChange={(e) => setProfile((prev) => ({ ...prev, guideId: e.target.value }))}
-                          required
-                        />
-                      </label>
-                      <button className="settings-submit" type="submit">{t.saveProfile}</button>
-                    </fieldset>
+                <section className="panel">
+                  <PanelTitle kicker="Personal reminder" title="Add to my schedule" />
+                  <form className="schedule-form" onSubmit={addScheduleItem}>
+                    <label>
+                      Date
+                      <input type="date" value={scheduleForm.date} onChange={(event) => setScheduleForm((prev) => ({ ...prev, date: event.target.value }))} />
+                    </label>
+                    <label>
+                      Title
+                      <input type="text" value={scheduleForm.title} onChange={(event) => setScheduleForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Module review or field drill" />
+                    </label>
+                    <label>
+                      Location
+                      <input type="text" value={scheduleForm.location} onChange={(event) => setScheduleForm((prev) => ({ ...prev, location: event.target.value }))} placeholder="Online or field location" />
+                    </label>
+                    <label>
+                      Type
+                      <select value={scheduleForm.type} onChange={(event) => setScheduleForm((prev) => ({ ...prev, type: event.target.value }))}>
+                        <option>Reminder</option>
+                        <option>Field</option>
+                        <option>Quiz</option>
+                        <option>Certificate</option>
+                      </select>
+                    </label>
+                    <button type="submit">Add reminder</button>
                   </form>
                 </section>
+              </div>
+            </section>
+          )}
 
-                <section className="settings-card settings-panel">
-                  <div className="settings-card-head">
-                    <h2>{t.passwordSettings}</h2>
+          {activeTab === 'resources' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Saved Resources / Files"
+                title="Training files, quick guides, and personal uploads"
+                body="Save module resources for later and keep demo personal files inside the current user profile."
+              />
+              <div className="content-grid">
+                <section className="panel wide">
+                  <PanelTitle kicker="Library" title="Available module resources" />
+                  <div className="resource-grid">
+                    {allResources.map((resource) => (
+                      <ResourceCard
+                        key={resource.id}
+                        resource={resource}
+                        saved={savedResourceIds.has(resource.id)}
+                        onToggle={() => toggleResource(resource.id)}
+                      />
+                    ))}
                   </div>
-                  <form className="settings-form" onSubmit={handlePasswordUpdate}>
-                    <fieldset>
-                      <label>
-                        {t.currentPassword}
-                        <input
-                          type="password"
-                          value={passwordForm.currentPassword}
-                          onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                          required
-                        />
-                      </label>
-                      <label>
-                        {t.newPassword}
-                        <input
-                          type="password"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
-                          required
-                        />
-                      </label>
-                      <label>
-                        {t.confirmPassword}
-                        <input
-                          type="password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                          required
-                        />
-                      </label>
-                      <button className="settings-submit" type="submit">{t.updatePassword}</button>
-                    </fieldset>
-                  </form>
                 </section>
-
-                <section className="settings-card settings-panel">
-                  <h2>{t.languageSettings}</h2>
-                  <div className="inline-options">
-                    <span>{t.chooseLanguage}</span>
-                    <select
-                      className="settings-select"
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                    >
-                      <option value="en">{t.english}</option>
-                      <option value="ms">{t.malay}</option>
-                      <option value="zh">{t.chinese}</option>
-                    </select>
+                <section className="panel">
+                  <PanelTitle kicker="Saved" title="My saved files" />
+                  <label className="upload-drop">
+                    <input type="file" onChange={handlePersonalFile} />
+                    <span>Upload demo file</span>
+                    <small>PDF, image, video, or notes</small>
+                  </label>
+                  <div className="saved-list">
+                    {savedResources.map((resource) => (
+                      <div key={resource.id}>
+                        <strong>{resource.title}</strong>
+                        <span>{resource.type} - {resource.moduleTitle}</span>
+                      </div>
+                    ))}
+                    {savedResources.length === 0 && <p>No saved files yet.</p>}
                   </div>
                 </section>
               </div>
-            </div>
+            </section>
+          )}
+
+          {activeTab === 'profile' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Profile / Account"
+                title="Park Guide profile"
+                body="Users can manage their own profile details. Role and admin authority are not editable here."
+              />
+              <div className="content-grid">
+                <section className="panel profile-panel">
+                  <div className="profile-avatar" style={{ background: currentUser.avatarColor }}>
+                    {initials(currentUser.displayName)}
+                  </div>
+                  <h3>{currentUser.displayName}</h3>
+                  <p>{currentUser.position}</p>
+                  <span>{currentUser.status}</span>
+                </section>
+                <section className="panel wide">
+                  <PanelTitle kicker="Editable details" title="My account" />
+                  <form className="profile-form" onSubmit={(event) => event.preventDefault()}>
+                    {[
+                      ['displayName', 'Display name'],
+                      ['email', 'Email'],
+                      ['phone', 'Phone'],
+                      ['assignedPark', 'Assigned park'],
+                      ['position', 'Position'],
+                      ['yearsExperience', 'Years of experience'],
+                      ['address', 'Address'],
+                    ].map(([field, label]) => (
+                      <label key={field}>
+                        {label}
+                        <input
+                          type="text"
+                          value={currentUser[field] || ''}
+                          onChange={(event) => updateProfileField(field, event.target.value)}
+                        />
+                      </label>
+                    ))}
+                    <label>
+                      Guide ID
+                      <input type="text" value={currentUser.guideId} disabled />
+                    </label>
+                    <label>
+                      Role
+                      <input type="text" value={currentUser.role} disabled />
+                    </label>
+                  </form>
+                </section>
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'help' && (
+            <section className="page-stack">
+              <PageIntro
+                kicker="Help / Support"
+                title="User-side support and permission guide"
+                body="This area explains what Park Guides can access in the demo and what is intentionally reserved for admins."
+              />
+              <div className="content-grid">
+                <section className="panel">
+                  <PanelTitle kicker="Allowed" title="Park Guide can access" />
+                  <ul className="permission-list can">
+                    {roleBoundaries.can.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="panel">
+                  <PanelTitle kicker="Locked" title="Admin-only actions" />
+                  <ul className="permission-list cannot">
+                    {roleBoundaries.cannot.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+              <div className="faq-grid">
+                {supportTopics.map((topic) => (
+                  <article key={topic.title} className="panel">
+                    <span className="kicker">Support</span>
+                    <h3>{topic.title}</h3>
+                    <p>{topic.body}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       </main>
     </div>
+  )
+}
+
+function ProgressBar({ value }) {
+  return (
+    <div className="progress-bar" aria-label={`${value}% complete`}>
+      <div style={{ width: `${Math.max(0, Math.min(value, 100))}%` }} />
+    </div>
+  )
+}
+
+function StatCard({ label, value, detail }) {
+  return (
+    <article className="stat-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <p>{detail}</p>
+    </article>
+  )
+}
+
+function PanelTitle({ kicker, title }) {
+  return (
+    <div className="panel-title">
+      <span className="kicker">{kicker}</span>
+      <h2>{title}</h2>
+    </div>
+  )
+}
+
+function PageIntro({ kicker, title, body }) {
+  return (
+    <div className="page-intro">
+      <span className="kicker">{kicker}</span>
+      <h2>{title}</h2>
+      <p>{body}</p>
+    </div>
+  )
+}
+
+function ResourceCard({ resource, saved, onToggle }) {
+  return (
+    <article className="resource-card">
+      <span>{resource.type}</span>
+      <h3>{resource.title}</h3>
+      <p>{resource.moduleTitle}</p>
+      <button type="button" onClick={onToggle}>
+        {saved ? 'Saved' : 'Save'}
+      </button>
+    </article>
   )
 }
 
