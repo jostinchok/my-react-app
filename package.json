@@ -1,12 +1,19 @@
 {
-  "name": "login",
+  "name": "sfc-review-launcher",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "postinstall": "npm --prefix user_page install && npm --prefix admin_page install && npm --prefix mobile_app install && npm --prefix user_login/server install",
+    "dev": "node scripts/dev-all.mjs",
+    "dev:hub": "node scripts/hub-server.mjs",
+    "dev:user": "npm --prefix user_page run dev",
+    "dev:admin": "npm --prefix admin_page run dev",
+    "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",
+    "dev:server": "npm --prefix user_login/server start",
+    "build:user": "npm --prefix user_page run build",
+    "build:admin": "npm --prefix admin_page run build",
+    "check:mobile": "npm --prefix mobile_app exec expo config -- --type public"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -17,4 +24,3 @@
     "vite": "^6.0.3"
   }
 }
-

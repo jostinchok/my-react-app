@@ -11,6 +11,7 @@ import TrainingModuleSetup from "./pages/training_module.jsx"
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
+import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
 
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PeopleIcon from "@mui/icons-material/People";
@@ -227,18 +228,43 @@ const monitoringData = {
 const COLORS = ["#4caf50", "#2196f3", "#f44336", "#ff9800"];
 
 function Monitoring() {
+  const incidentSummary = summarizeIncidents(seededIncidents);
   const pieData = [
-    { name: "Plant Interaction", value: monitoringData.plant },
-    { name: "Wildlife Interaction", value: monitoringData.wildlife },
-    { name: "Trail Violation", value: monitoringData.trail },
-    { name: "Suspicious Object", value: monitoringData.object },
+    { name: "AI Camera", value: incidentSummary.ai },
+    { name: "IoT Sensor", value: incidentSummary.iot },
+    { name: "Reviewed", value: incidentSummary.reviewed },
+    { name: "False Alarm", value: incidentSummary.falseAlarm },
   ]
 
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h5" sx={{ fontWeight: "bold", mb:3, color: "var(--primary-dark)"}}>
-        Monitoring Overview
+        Incident Monitoring Overview
       </Typography>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {[
+          { label: "Total Incidents", value: incidentSummary.total },
+          { label: "AI Camera", value: incidentSummary.ai },
+          { label: "IoT Sensor", value: incidentSummary.iot },
+          { label: "New", value: incidentSummary.new },
+          { label: "Reviewed", value: incidentSummary.reviewed },
+          { label: "False Alarm", value: incidentSummary.falseAlarm },
+        ].map((item) => (
+          <Grid item xs={12} sm={6} md={2} key={item.label}>
+            <Card sx={{ borderRadius: 3, border: "1px solid #f0dfaa", boxShadow: "0 10px 24px rgba(255, 122, 26, 0.1)" }}>
+              <CardContent>
+                <Typography sx={{ color: "#9a5500", fontSize: "0.78rem", fontWeight: 800, textTransform: "uppercase" }}>
+                  {item.label}
+                </Typography>
+                <Typography sx={{ color: "#3a2a16", fontSize: "2rem", fontWeight: 900 }}>
+                  {item.value}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={5}>
