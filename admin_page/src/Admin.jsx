@@ -6,6 +6,7 @@ import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, X
 import  simpleRestProvider  from "ra-data-simple-rest"; 
 import "./Admin.css";
 import MyLayout from "./components/MyLayout";
+import CourseManagement from "./pages/course.jsx"
 import TrainingModuleSetup from "./pages/training_module.jsx"
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
@@ -372,6 +373,7 @@ function GuideProgress() {
 function AdminPage() {
   return (
     <Admin dataProvider={dataProvider} dashboard={Dashboard} layout={MyLayout}>
+      <Resource name="course" list={CourseManagement} />
       <Resource name="training" list={TrainingModuleSetup} />
       <Resource name="students" list={StudentManagement} />
       <Resource name="badge" list={BadgeManagement} />
