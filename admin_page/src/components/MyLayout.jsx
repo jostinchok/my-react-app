@@ -28,17 +28,10 @@ const MyLayout = (props) => {
           minHeight: "calc(100vh - 86px)",
         },
 
-        "& .RaLayout-contentWithSidebar": {
-          backgroundColor: "var(--bg-light)",
-          marginLeft: open ? `${SIDEBAR_WIDTH}px` : "0px",
-          width: open ? `calc(100% - ${SIDEBAR_WIDTH}px)` : "100%",
-          transition: "margin-left 0.35s ease, width 0.35s ease",
-        },
-
         "& .RaLayout-content": {
           backgroundColor: "var(--bg-light)",
           minHeight: "calc(100vh - 86px)",
-          marginLeft: "0 !important",
+          marginLeft: open ? `100px` : "-198px",
           padding: "44px 42px",
         },
       }}
@@ -48,6 +41,8 @@ const MyLayout = (props) => {
           anchor="left"
           open={open}
           sx={{
+            width: open ? `${SIDEBAR_WIDTH}px` : 0,
+            flexShrink: 0,
             "& .MuiDrawer-paper": {
               position: "fixed",
               top: 0,
@@ -59,6 +54,7 @@ const MyLayout = (props) => {
               paddingTop: 0,
               boxShadow: "none",
               overflowX: "hidden",
+              zIndex: 1200, 
             },
           }}
         >

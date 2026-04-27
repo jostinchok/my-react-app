@@ -1,8 +1,8 @@
 import React from "react";
 import { Admin, Resource, ListGuesser, Layout, useGetList } from "react-admin";
-import { Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress 
+import { Paper, Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress, Chip
 } from "@mui/material";
-import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import  simpleRestProvider  from "ra-data-simple-rest"; 
 import "./Admin.css";
 import MyLayout from "./components/MyLayout";
@@ -12,6 +12,7 @@ import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
 import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
 
+import { People, CheckCircle, School } from '@mui/icons-material';
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PeopleIcon from "@mui/icons-material/People";
 import BookIcon from "@mui/icons-material/Book";
@@ -20,33 +21,14 @@ import BookIcon from "@mui/icons-material/Book";
 const dataProvider = simpleRestProvider("https://jsonplaceholder.typicode.com");
 
 function Dashboard() {
-  const topCards = [
-    {
-      title: "Total Students",
-      value: "8855",
-      extra: "Guide accounts in system",
-      progress: 82,
-    },
-    {
-      title: "Completed Courses",
-      value: "1240",
-      extra: "Training completions verified",
-      progress: 54,
-    },
-    {
-      title: "Qualification",
-      value: "124",
-      extra: "Issued qualifications",
-      progress: 50,
-    },
-  ];
-
   const stats = [
     { label: "Total Students", value: 8855, change: "+8.2%", icon: <PeopleIcon sx={{ color: "blue" }} />, progress: 82 },
     { label: "Completed Courses", value: 1240, change: "+5.4%", icon: <BookIcon sx={{ color: "purple" }} />, progress: 54 },
     { label: "Qualification", value: 124, change: "+12.5%", icon: <BookIcon sx={{ color: "green" }} />, progress: 50 },
     { label: "Pending Notifications", value: 45, change: "-2.1%", icon: <NotificationsIcon sx={{ color: "orange" }} />, progress: 30 },
   ];
+  const incidentSummary = summarizeIncidents(seededIncidents);
+
 
   return (
     <Box sx={{ width: "100%", backgroundColor: "var(--bg-light)", minHeight: "100vh" }}>
@@ -81,132 +63,182 @@ function Dashboard() {
           marginBottom: "40px",
         }}
       >
-        {topCards.map((card, index) => (
-          <Box
-            key={index}
-            sx={{
-              background: "#fff",
-              borderRadius: "20px",
-              padding: "25px",
-              boxShadow: "0 5px 20px rgba(0,0,0,0.03)",
-              border: "1px solid #f0f0f0",
-              transition: "0.3s",
-              "&:hover": {
-                transform: "translateY(-5px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-              },
-            }}
-          >
-            <Box
-              sx={{
-                color: "#636e72",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                marginBottom: "15px",
-                display: "block",
-              }}
-            >
-              {card.title}
-            </Box>
+      </Box>
+      <Box sx={{ px: 2, mb: 4 }}>
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontWeight: "bold", 
+            mb: 3, 
+            color: "var(--primary-dark)",
+            pb: 2,
+            borderBottom: '2px solid',
+            borderColor: 'divider'
+          }}
+        >
+          Incident Monitoring Overview
+        </Typography>
 
-            <Box
-              sx={{
-                fontSize: "2.2rem",
-                fontWeight: 800,
-                color: "var(--primary-dark)",
-                marginBottom: "10px",
-              }}
-            >
-              {card.value}
-            </Box>
+        <Box className="incident-stat-grid">
+          {[
+            { label: "Total Incidents", value: incidentSummary.total, detail: "primary" },
+            { label: "AI Camera", value: incidentSummary.ai, detail: "info" },
+            { label: "IoT Sensor", value: incidentSummary.iot, detail: "secondary" },
+            { label: "New", value: incidentSummary.new, detail: "warning" },
+            { label: "Reviewed", value: incidentSummary.reviewed, detail: "success" },
+            { label: "False Alarm", value: incidentSummary.falseAlarm, detail: "error" },
+          ].map((item) => (
+            <Paper className="incident-stat-card" key={item.label}>
+              <span className="incident-label">{item.label}</span>
+              <strong className={`incident-value ${item.detail}`}>
+                {String(item.value).padStart(2, "0")}
+              </strong>
+              <p className="incident-detail">{item.detail}</p>
+            </Paper>
+          ))}
+        </Box>
 
-            <Box className="admin-progress-track">
-              <Box
-                className="admin-progress-fill"
-                sx={{
-                  width: `${card.progress}%`,
-                  height: "100%",
-                }}
-              />
-            </Box>
-
-            <Typography sx={{ fontSize: "0.85rem", color: "#888" }}>
-              {card.extra}
-            </Typography>
-          </Box>
-        ))}
       </Box>
 
-      <Typography
-        sx={{
-          fontSize: "2rem",
-          fontWeight: 800,
-          color: "var(--primary-dark)",
-          marginBottom: "25px",
-        }}
-      >
-        Admin Summary
-      </Typography>
-
-      <Grid container spacing={3} alignItems="stretch">
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "25px", marginBottom: "40px"}}>
         {stats.map((s, i) => (
-          <Grid item xs={12} md={3} key={i}>
-            <Card
-              sx={{
-                borderRadius: "20px",
-                boxShadow: "0 5px 20px rgba(0,0,0,0.03)",
-                border: "1px solid #f0f0f0",
-                height: "100%",
-                width: "100%",
-              }}
-            >
-              <CardContent
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  height: "100%",
-                }}
-              >
+          <Card sx={{
+              minHeight: 170,
+              borderRadius: 5,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'transform 0.2s',
+                "&:hover": { transform: 'translateY(-5px)'},
+                boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+              }}>
+
+              <CardContent sx={{ flexGrow: 1, p: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                   {s.icon}
-                  <Typography variant="h6" sx={{ ml: 1, fontWeight: 600 }} noWrap>
+                  <Typography variant="subtitle1" sx={{ ml: 1 }}>
                     {s.label}
                   </Typography>
                 </Box>
-
-                <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
+                <Typography variant="h3" sx={{ fontWeight: 'bold', color:"#1976d2" }}>
                   {s.value}
                 </Typography>
-
                 <Typography color={s.change.startsWith("+") ? "green" : "error"}>
                   {s.change} vs last month
                 </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <LinearProgress 
+                  variant="determinate" 
+                  value={s.progress} 
+                  sx={{height: 5, borderRadius: 5}}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+        ))}
+      </Box>
 
+      <Box sx={{ display: "flex", gap: 5 }}>
+        <Box sx={{ flex: 1 }}>
+          <StudentProgressOverview />
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <MonitoringPieOnly />
+        </Box>
+      </Box>
+
+      <Box sx={{ mb:5, mt:5 }}>
+        <MonitoringTrendOnly />
+      </Box>
+
+      <Box sx={{ mb:4 }}>
+        <GuideProgress />
+      </Box>
+    </Box>
+  );
+}
+
+function StudentProgressOverview() {
+  const students = [
+    { id: 1, name: "Alice", module: "General", progressPercent: 80, badges: ["General Training"] },
+    { id: 2, name: "Bob", module: "Specific", progressPercent: 100, badges: ["Bako Park Guide"] },
+    { id: 3, name: "Charlie", module: "Physical", progressPercent: 60, badges: [] },
+  ];
+
+  return (
+    <Card sx={{ 
+      mt: 4, 
+      ml: 2, 
+      p: 4,
+      width: "100%",
+      flexShrink: 0,
+      borderRadius: 5,
+      backgroundColor: "#fff",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+      }}>
+      <Typography variant="h5" sx={{ 
+        textAlign: "center", 
+        mb: 3, 
+        background: "linear-gradient(90deg, #1976d2, #42a5f5)", 
+        WebkitBackgroundClip: "text", 
+        webKitTextFillColor: "transparent",
+        letterSpacing: 1,
+      }}>
+        Student Progress Overview
+      </Typography>
+
+      {/* 内部列表：垂直排列三个学生卡片 */}
+      <Grid container spacing={2}>
+        {students.map((s) => (
+          <Grid item xs={12} key={s.id}>
+            <Card sx={{ 
+              borderRadius: 5, 
+              boxShadow: "0 2px 10px rgba(0,0,0,0.05)", // 稍微调淡了阴影，看起来更高级
+              p: 2,
+              height: "100%",
+              border: "1px solid #e0e0e0", 
+            }}>
+              <CardContent>
+                {/* 学生姓名 */}
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  {s.name}
+                </Typography>
+                
+                {/* 模块信息 */}
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                  Module: {s.module}
+                </Typography>
+
+                {/* 进度条 */}
                 <Box sx={{ mt: 2 }}>
                   <LinearProgress
-                    className="admin-linear-progress"
                     variant="determinate"
-                    value={s.progress}
+                    value={s.progressPercent}
+                    sx={{ height: 10, borderRadius: 5, backgroundColor: '#e0e0e0', '& .MuiLinearProgress-bar': { backgroundColor: '#1976d2' } }}
                   />
+                  <Typography variant="caption" sx={{ mt: 0.5, display: 'block', textAlign: 'right', fontWeight: 'bold' }}>
+                    {s.progressPercent}% Completed
+                  </Typography>
+                </Box>
+
+                {/* 徽章 */}
+                <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  {s.badges.length > 0 ? (
+                    s.badges.map((b, i) => (
+                      <Chip key={i} label={b} color="success" size="medium" variant="outlined" />
+                    ))
+                  ) : (
+                    <Chip label="No Badge Yet" color="warning" size="medium" variant="outlined" />
+                  )}
                 </Box>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
-
-      <Box sx={{ mt: 4 }}>
-        <GuideProgress />
-      </Box>
-
-      <Box sx={{ mt: 4 }}>
-        <Monitoring />
-      </Box>
-    </Box>
+    </Card>
   );
 }
-
 
 const monitoringData = {
   plant: 12,
@@ -224,99 +256,91 @@ const monitoringData = {
   ]
 }
 
-const COLORS = ["#4caf50", "#2196f3", "#f44336", "#ff9800"];
-
-function Monitoring() {
-  const incidentSummary = summarizeIncidents(seededIncidents);
+function MonitoringPieOnly() {
   const pieData = [
-    { name: "AI Camera", value: incidentSummary.ai },
-    { name: "IoT Sensor", value: incidentSummary.iot },
-    { name: "Reviewed", value: incidentSummary.reviewed },
-    { name: "False Alarm", value: incidentSummary.falseAlarm },
+    { name: "Plant Interaction", value: monitoringData.plant },
+    { name: "Wildlife Interaction", value: monitoringData.wildlife },
+    { name: "Trail Violation", value: monitoringData.trail },
+    { name: "Suspicious Object", value: monitoringData.object },
   ]
 
+  const COLORS = ["#4caf50", "#2196f3", "#f44336", "#ff9800"];
+
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h5" sx={{ fontWeight: "bold", mb:3, color: "var(--primary-dark)"}}>
-        Incident Monitoring Overview
-      </Typography>
+    <Card sx={{ 
+      borderRadius: 5, 
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column", 
+      boxShadow: "0 2px 10px rgba(0,0,0,0.05)", 
+      backgroundColor: "#fff" 
+    }}>
+      <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <Typography variant="h6" sx={{ mb:1, textAlign: "center", color:"text.primary" }}>
+          Abnormal Activity Distribution
+        </Typography>
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {[
-          { label: "Total Incidents", value: incidentSummary.total },
-          { label: "AI Camera", value: incidentSummary.ai },
-          { label: "IoT Sensor", value: incidentSummary.iot },
-          { label: "New", value: incidentSummary.new },
-          { label: "Reviewed", value: incidentSummary.reviewed },
-          { label: "False Alarm", value: incidentSummary.falseAlarm },
-        ].map((item) => (
-          <Grid item xs={12} sm={6} md={2} key={item.label}>
-            <Card sx={{ borderRadius: 3, border: "1px solid #f0dfaa", boxShadow: "0 10px 24px rgba(255, 122, 26, 0.1)" }}>
-              <CardContent>
-                <Typography sx={{ color: "#9a5500", fontSize: "0.78rem", fontWeight: 800, textTransform: "uppercase" }}>
-                  {item.label}
-                </Typography>
-                <Typography sx={{ color: "#3a2a16", fontSize: "2rem", fontWeight: 900 }}>
-                  {item.value}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={5}>
-          <Card sx={{ borderRadius: 3, boxShadow: "0 10px 30px rgba(6, 44, 30, 0.08)", border: "1px solid #edf2ed"}}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb:1 }}>
-                Abnormal Activity Distribution
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb:2 }}>
-                Data from this week
-              </Typography>
-              <PieChart width={450} height={320}>
-                <Pie
+        <Box sx={{ flexGrow: 1, width: "100%", minHeight: 240 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
                 data={pieData}
-                cx={190}
-                cy={130}
-                innerRadius={70}
-                outerRadius={110}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={7}>
-          <Card sx={{ borderRadius: 3, boxShadow: "0 2px 12px rgba(0,0,0,0.4)"}}>
-            <CardContent>
-              <Typography>
-                Abnormal Activity Trend (Last 7Days)
-              </Typography>
-              <BarChart width={350} height={250} data={monitoringData.trend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="plant" stackId="a" fill="#4caf50" />
-                <Bar dataKey="wildlife" stackId="a" fill="#2196f3" />
-                <Bar dataKey="trail" stackId="a" fill="#f44336" />
-                <Bar dataKey="object" stackId="a" fill="#ff9800" />
-              </BarChart>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+
+        <Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2, mt: 2 }}>
+          {pieData.map((entry, index) => (
+            <Box key={entry.name} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: COLORS[index] }} />
+              <Typography variant="body2">{entry.name}</Typography>
+            </Box>
+          ))}
+        </Box>
+
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center", mt: 1 }}>
+          Current Distribution
+        </Typography>
+      </CardContent>
+    </Card>
+  )
+}
+
+function MonitoringTrendOnly() {
+  return (
+    <Card sx={{ borderRadius: 5, boxShadow: "0 2px 10px rgba(0,0,0,0.05)", ml:2, }}>
+      <CardContent>
+        <Typography variant="h6" sx={{ mb:2}}>
+          Abnormal Activity Trend (Last 7 Days)
+        </Typography>
+        <ResponsiveContainer width="100%" height={365} mt={2}>
+          <BarChart data={monitoringData.trend}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="day" />
+            <YAxis />
+            <Tooltip />
+            <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{marginLeft: 30}}/>
+            <Bar dataKey="plant" stackId="a" fill="#4caf50" />
+            <Bar dataKey="wildlife" stackId="a" fill="#2196f3" />
+            <Bar dataKey="trail" stackId="a" fill="#f44336" />
+            <Bar dataKey="object" stackId="a" fill="#ff9800" />
+        </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -335,57 +359,115 @@ function GuideProgress() {
   };
 
   const stats = [
-    { label: "Completed Modules", value: guideData.completedModules, total: guideData.totalGuides, color: "green" },
-    { label: "Certified", value: guideData.certified, total: guideData.totalGuides, color: "purple" },
-    { label: "Pending Assessment", value: guideData.pendingAssessments, total: guideData.totalGuides, color: "orange" },
+    { label: "Total Guides", value: 12, total: 20, color: "#1976d2", icon: <People /> },
+    { label: "Certified", value: 8, total: 12, color: "#4caf50", icon: <CheckCircle /> },
+    { label: "In Training", value: 4, total: 12, color: "#ff9800", icon: <School /> },
   ];
 
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h5" sx={{ fontWeight: "bold", mb: 3 }}>
-        Park Guide Learning Progress
-      </Typography>
-
+    <Box sx={{ mt: 4, ml:2}}>
       <Grid container spacing={4}>
-        <Grid item xs={12} md={4}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {/* --- 左侧：统计卡片 (占 2 列，固定宽度感) --- */}
+        <Grid item xs={12} md={2}>
+
+         <Typography 
+            variant="h5" 
+            sx={{ 
+              mb: 3.5, 
+              fontWeight: 800, 
+              color: '#333',
+              pb: 1, // 底部内边距，留出下划线空间
+              borderBottom: '3px solid',
+              borderColor: 'primary.main', // 使用主题色
+              display: 'inline-block',
+              background: 'linear-gradient(120deg, #000000 0%, #252727a7 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}
+          >
+          Park Guide Learning Progress
+          </Typography>
+
+          <Grid container spacing={2} direction="column">
             {stats.map((s, i) => (
-              <Card key={i} sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", p: 2 }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ color: s.color, mb: 1 }}>
-                    {s.label}
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                    {s.value} / {s.total}
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <LinearProgress
-                      className="admin-linear-progress"
-                      variant="determinate"
-                      value={(s.value / s.total) * 100}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
+              <Grid item xs={12} key={i}>
+                <Card sx={{ 
+                  borderRadius: 3, 
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)", // 1. 阴影更柔和
+                  p: 2.5, // 稍微增加一点内边距，显得不那么挤
+                  height: '100%',
+                  border: '1px solid #f0f0f0', // 2. 增加极淡的边框，增加层次感
+                  transition: 'transform 0.2s', // 3. 加个鼠标悬停的小动画
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }
+                }}>
+                  <CardContent sx={{ p: 0 }}> {/* 移除 CardContent 默认 padding，用 Card 的 padding 控制 */}
+                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+                      {/* 图标样式：颜色跟随数据，大小适中 */}
+                      <Box sx={{ color: s.color, display: 'flex' }}>
+                        {s.icon}
+                      </Box>
+                      <Typography variant="subtitle2" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        {s.label}
+                      </Typography>
+                    </Box>
+                    
+                    <Typography variant="h5" sx={{ fontWeight: "800", color: '#2c3e50', mb: 2 }}>
+                      {s.value} <Typography component="span" variant="body2" sx={{ color: '#999', fontWeight: 'normal' }}>/ {s.total}</Typography>
+                    </Typography>
+                    
+                    <Box sx={{ mt: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(s.value / s.total) * 100}
+                        sx={{ 
+                          height: 6, // 4. 进度条稍微细一点，更精致
+                          borderRadius: 5, 
+                          backgroundColor: '#f0f2f5', // 5. 进度条背景改为浅灰蓝
+                          '& .MuiLinearProgress-bar': { 
+                            backgroundColor: s.color, // 颜色保留
+                            borderRadius: 5,
+                            
+                          } 
+                        }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             ))}
-          </Box>
+          </Grid>
         </Grid>
 
-        <Grid item xs={12} md={8}>
-          <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", p: 2 }}>
-            <CardContent>
+        {/* --- 右侧：折线图 (自动占满剩余列) --- */}
+        <Grid item xs={12} md={10} sx={{ display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0}}>
+          <Card sx={{ 
+            borderRadius: 5, 
+            boxShadow: "0 2px 10px rgba(0,0,0,0.05)", 
+            p: 2, 
+            flexGrow: 1,
+            height: "95%",
+            width: "100%"
+            }}>
+
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Training Progress Trend (Last 4 Weeks)
               </Typography>
-              <LineChart width={750} height={350} data={guideData.trend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="week" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="completed" stroke="#4caf50" strokeWidth={3} />
-                <Line type="monotone" dataKey="certified" stroke="#9c27b0" strokeWidth={3} />
-              </LineChart>
+              {/* 关键：ResponsiveContainer 撑满父容器 */}
+              <Box sx={{ flexGrow: 1, width: '100%', minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={guideData.trend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                    <Line type="monotone" dataKey="completed" stroke="#4caf50" strokeWidth={3} />
+                    <Line type="monotone" dataKey="certified" stroke="#9c27b0" strokeWidth={3} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -393,7 +475,6 @@ function GuideProgress() {
     </Box>
   );
 }
-
 
 function AdminPage() {
   return (
