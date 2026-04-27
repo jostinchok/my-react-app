@@ -5,13 +5,15 @@
   "private": true,
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "node --watch index.js",
+    "publish:test-iot": "node scripts/publish-test-iot.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
     "express": "^4.18.2",
+    "mqtt": "^5.15.1",
     "mysql2": "^3.4.2"
   }
 }

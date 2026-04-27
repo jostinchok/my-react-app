@@ -77,6 +77,14 @@ my-react-app/
 - `admin_page/src/Admin.jsx`: current admin dashboard shell, not redesigned in the latest pass.
 - `user_login/server/index.js`: Express API server, not connected to the new training UI yet.
 - `user_login/server/db.sql`: MySQL schema/seed baseline, not used by the new seeded frontend pass yet.
+- `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb`: AI/CV training, real-time camera detection, AI evidence saving, and shared AI/IoT incident schema documentation.
+- `CTIP_IoT_Plant_Proximity_Monitor.ino`: ESP32 ultrasonic proximity sensor sketch publishing JSON to `ctip/sensor/plant-zone-01/proximity`.
+- `admin_page/src/data/incidents.js`: seeded admin incident examples and summary helpers for AI Camera and IoT Sensor monitoring.
+- `admin_page/src/pages/AIDetection.jsx`: seeded Admin Incident Dashboard table, filters, detail panel, evidence preview, metadata, notes, and local-only status changes.
+- `admin_page/src/Admin.jsx`: admin monitoring overview now summarizes seeded incident counts.
+- `admin_page/src/Admin.css`: citrus incident dashboard styling, including table readability fixes.
+- `admin_page/src/components/Sidebar.jsx`: admin menu label updated from Detection to Incidents.
+- `admin_page/public/incidents/*.jpg`: AI evidence assets added for seeded admin incident examples.
 
 ## Files Changed
 
@@ -112,6 +120,8 @@ Checkpoint/docs files:
 - `PROJECT_NOTES.md`
 - `TODO.md`
 - `Project Scope.pdf` is currently untracked.
+- `CTIP_2class_training_and_realtime_notebook.ipynb` was renamed to `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` and replaced with the updated AI/CV notebook content.
+- `sketch_apr06a.ino` was renamed to `CTIP_IoT_Plant_Proximity_Monitor.ino` and replaced with the updated IoT proximity MQTT sketch.
 
 ## Key Decisions Made
 
@@ -146,14 +156,55 @@ Checkpoint/docs files:
   - `http://127.0.0.1:5175/user/training/protected-areas.png`
   - `http://127.0.0.1:5175/user/training/incident-ai-monitoring.png`
 
+## Admin Incident Dashboard Status
+
+- Admin Incident Dashboard has been implemented using seeded data.
+- It supports AI Camera incidents and IoT Sensor incidents.
+- AI Camera examples cover `TouchingPlants` and `TouchingWildlife` with alert image evidence and metadata such as confidence, margin, bbox, and probabilities.
+- IoT Sensor examples cover `ObjectCloseToPlant` with sensor ID, location, distance, threshold, severity, and MQTT topic metadata.
+- Incident review supports local UI status changes for `New`, `Reviewed`, and `False Alarm`.
+- Data is local seeded data only through `admin_page/src/data/incidents.js`.
+- Express/MySQL is still not connected.
+- Changed files include:
+  - `admin_page/src/data/incidents.js`
+  - `admin_page/src/pages/AIDetection.jsx`
+  - `admin_page/src/Admin.jsx`
+  - `admin_page/src/Admin.css`
+  - `admin_page/src/components/Sidebar.jsx`
+  - AI evidence assets added under `admin_page/public/incidents/`.
+
+## Live Incident Bridge Status
+
+- Lightweight real-time alert synchronization has been implemented without Express/MySQL integration.
+- `user_login/server/index.js` now has a runtime incident store backed by memory plus optional local JSON persistence at `user_login/server/data/incidents.runtime.json`.
+- Backend incident API endpoints now exist:
+  - `GET /api/incidents`
+  - `POST /api/incidents`
+  - `PATCH /api/incidents/:id/status`
+  - `GET /api/incidents/summary`
+- Backend serves AI evidence images from root `Alerts/ai` at `/evidence/ai`.
+- AI evidence image path preview has been fixed for live incidents:
+  - backend uses `AI_EVIDENCE_DIR` when provided, otherwise defaults to repo root `Alerts/ai`;
+  - backend converts absolute local image paths into browser-safe `/evidence/ai/<filename>` values;
+  - admin converts `/evidence/ai/...` into `http://localhost:4000/evidence/ai/...` before rendering images.
+- Backend subscribes to MQTT topic `ctip/sensor/plant-zone-01/proximity` and normalizes IoT payloads into dashboard incidents.
+- MQTT uses `mqtt://broker.hivemq.com:1883` by default for prototype testing only and should not crash the backend if the broker is unavailable.
+- `admin_page/src/pages/AIDetection.jsx` now polls the live backend every 2.5 seconds and falls back to seeded demo incidents if the backend is offline.
+- Admin status buttons call `PATCH /api/incidents/:id/status` when the backend is online and fall back to local-only updates when offline.
+- `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` now posts saved AI alert incidents to `http://localhost:4000/api/incidents` using Python standard library HTTP calls, while continuing local evidence saving if the backend is offline.
+- `scripts/run_ai_camera_monitor.py` supports `--evidence-dir` so model files can stay under `/Users/chiayuenkai/cos30049` while alert images are saved under repo `Alerts/ai`.
+- Express/MySQL is still intentionally not connected to training or incident persistence.
+
 ## Known Issues Or Risks
 
 - Module image paths were fixed in `user_page/src/data/trainingPlatform.js`, but a final visual browser review is still needed to confirm all pages look right at desktop and mobile widths.
 - `user_page/dist`, `node_modules`, and package-lock changes are noisy and should be reviewed carefully before commit.
 - There is an unreferenced duplicate-looking generated image file, `user_page/public/training/incident-ai-monitoring copy.png`; do not delete it unless clearly confirmed safe.
 - Admin and mobile have not yet been updated to match the citrus theme.
-- Backend `/api/health` can fail until local MySQL is running and seeded.
+- Backend `/api/health` now reports API status without requiring MySQL, but database-specific checks still show offline until local MySQL is running and seeded.
 - Training data is not yet persisted to MySQL.
+- Live incident persistence is still prototype-level memory/local JSON, not MySQL.
+- MQTT public broker delivery depends on internet access and public broker availability.
 - `Project Scope.pdf` is untracked; decide whether to commit it as assignment reference material.
 
 ## Next Priority
@@ -168,6 +219,8 @@ Specifically check:
 - Profile page layout density.
 - Responsive layout at desktop and mobile widths.
 - Keep frontend seeded data only; do not connect Express/MySQL yet.
+
+For incident monitoring specifically, the next backend task is persistent MySQL integration after seeded/live runtime behavior and report evidence are stable.
 
 ## Rules / Instructions Not To Forget
 

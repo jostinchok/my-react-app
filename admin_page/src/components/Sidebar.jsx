@@ -13,7 +13,7 @@ const Sidebar = () => {
     { id: "training", label: "Training", icon: "📖", to: "/admin/training" },
     { id: "students", label: "Students", icon: "👥", to: "/admin/students" },
     { id: "badge", label: "Badge", icon: "📜", to: "/admin/badge" },
-    { id: "detection", label: "Detection", icon: "⚠️", to: "/admin/detection" },
+    { id: "detection", label: "Incidents", icon: "⚠️", to: "/admin/detection" },
   ];
 
   return (
