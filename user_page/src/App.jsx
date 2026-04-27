@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+<<<<<<< Updated upstream
 import ProfilePage from './components/ProfilePage'
 import FileManager from './components/FileManager'
 
@@ -340,9 +341,49 @@ const copy = {
     noCoursesPlanned: '暂无课程计划',
     noCoursesHint: '课程模块尚未完成，之后可再更新。',
   },
+=======
+import AuthPortal from './components/AuthPortal'
+import {
+  demoStorageVersion,
+  demoUsers,
+  roleBoundaries,
+  supportTopics,
+  trainingModules,
+} from './data/trainingPlatform'
+
+const STORAGE_KEY = 'sfc_citrus_training_demo'
+const AUTH_STORAGE_KEY = 'sfc_guide_user'
+
+const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
+
+const readStoredUsers = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    if (parsed?.version === demoStorageVersion && Array.isArray(parsed.users)) {
+      return parsed.users
+    }
+  } catch {
+    // Fall through to seed data.
+  }
+  return cloneSeedUsers()
+>>>>>>> Stashed changes
 }
 
 function App() {
+<<<<<<< Updated upstream
+=======
+  const [authUser, setAuthUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  })
+  const [users, setUsers] = useState(readStoredUsers)
+  const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
+>>>>>>> Stashed changes
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -412,6 +453,16 @@ function App() {
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   )
+
+  const handleAuthSuccess = (user) => {
+    setAuthUser(user)
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+    setAuthUser(null)
+  }
 
   useEffect(() => {
     try {
@@ -584,6 +635,10 @@ function App() {
     setSelectedIds((prev) => prev.filter((id) => notifications.some((n) => n.id === id)))
   }, [notifications, selectedIds.length])
 
+  if (!authUser) {
+    return <AuthPortal onAuthSuccess={handleAuthSuccess} />
+  }
+
   return (
     <div className={`layout theme- ${isCollapsed ? 'sidebar-hidden' : ''}`}>
       <aside className="sidebar">
@@ -625,6 +680,7 @@ function App() {
               <span className="nav-icon">🔔</span>
               {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
             </button>
+<<<<<<< Updated upstream
             <button
               className="user-circle"
               onClick={() => setIsUserMenuOpen((prev) => !prev)}
@@ -636,6 +692,13 @@ function App() {
               ) : (
                 profile.fullName.slice(0, 1).toUpperCase() || 'U'
               )}
+=======
+            <button type="button" className="reset-button" onClick={handleLogout}>
+              Logout
+            </button>
+            <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
+              <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
+>>>>>>> Stashed changes
             </button>
             {isUserMenuOpen && (
               <div className="user-menu">
