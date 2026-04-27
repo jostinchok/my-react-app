@@ -1,8 +1,8 @@
 :root {
-  --forest: #123226;
-  --forest-2: #174a34;
-  --charcoal: #243129;
-  --leaf: #46b946;
+  --forest: #3a2a16;
+  --forest-2: #874500;
+  --charcoal: #28251d;
+  --leaf: #6bdc45;
   --lime: #b8f22f;
   --citrus: #ff7a1a;
   --sun: #ffd23f;
@@ -12,7 +12,7 @@
   --line: #dfe8d6;
   --muted: #617064;
   --danger: #c74f3f;
-  --shadow: 0 16px 40px rgba(18, 50, 38, 0.11);
+  --shadow: 0 16px 40px rgba(135, 69, 0, 0.13);
 }
 
 * {
@@ -44,8 +44,8 @@ button {
   top: 0;
   height: 100vh;
   padding: 22px;
-  background: linear-gradient(180deg, var(--forest), #0c241b);
-  color: var(--white);
+  background: linear-gradient(180deg, #fff0a8 0%, #ffb334 42%, #ff7a1a 100%);
+  color: var(--forest);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -66,7 +66,7 @@ button {
   display: grid;
   place-items: center;
   color: var(--forest);
-  background: linear-gradient(135deg, var(--sun), var(--lime));
+  background: linear-gradient(135deg, var(--white), var(--lime));
   font-weight: 900;
   box-shadow: 0 10px 24px rgba(255, 210, 63, 0.28);
 }
@@ -81,7 +81,7 @@ button {
 }
 
 .brand-block span {
-  color: #c9dfce;
+  color: #684316;
   font-size: 0.82rem;
 }
 
@@ -96,7 +96,7 @@ button {
   padding: 10px 12px;
   border-radius: 8px;
   background: transparent;
-  color: #d8e6d8;
+  color: #563716;
   display: grid;
   grid-template-columns: 30px 1fr auto;
   align-items: center;
@@ -107,12 +107,12 @@ button {
 
 .nav-list button:hover,
 .nav-list button.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--white);
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--forest);
 }
 
 .nav-list button.active {
-  box-shadow: inset 4px 0 0 var(--sun);
+  box-shadow: inset 4px 0 0 var(--lime);
 }
 
 .nav-list button span {
@@ -122,7 +122,7 @@ button {
   display: grid;
   place-items: center;
   color: var(--forest);
-  background: var(--lime);
+  background: rgba(255, 255, 255, 0.62);
   font-size: 0.76rem;
   font-weight: 900;
 }
@@ -134,21 +134,21 @@ button {
   display: grid;
   place-items: center;
   background: var(--citrus);
-  color: var(--white);
+  color: var(--forest);
   font-size: 0.72rem;
 }
 
 .role-card {
   margin-top: auto;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(58, 42, 22, 0.18);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .role-card span,
 .role-card p {
-  color: #c9dfce;
+  color: #684316;
 }
 
 .role-card strong {
@@ -219,7 +219,7 @@ button {
   display: block;
   height: 2px;
   margin: 5px 0;
-  background: var(--forest);
+  background: var(--citrus);
 }
 
 .topbar-actions {
@@ -292,7 +292,7 @@ button {
   color: var(--forest);
   font-weight: 900;
   border: 3px solid var(--white);
-  box-shadow: 0 8px 18px rgba(18, 50, 38, 0.16);
+  box-shadow: 0 8px 18px rgba(135, 69, 0, 0.18);
 }
 
 .page-scroll {
@@ -321,9 +321,9 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  color: var(--white);
+  color: var(--forest);
   background-image:
-    linear-gradient(135deg, rgba(18, 50, 38, 0.96), rgba(23, 74, 52, 0.88)),
+    linear-gradient(135deg, rgba(255, 122, 26, 0.92), rgba(255, 210, 63, 0.78)),
     var(--hero-image);
   background-position: center;
   background-size: cover;
@@ -346,7 +346,7 @@ button {
 .hero-copy p {
   max-width: 720px;
   margin: 0;
-  color: #e4f1e6;
+  color: #493112;
   font-size: clamp(1rem, 1.4vw, 1.15rem);
 }
 
@@ -369,9 +369,9 @@ button {
 
 .hero-actions .secondary-button,
 .secondary-button {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.42);
   color: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: none;
 }
 
@@ -443,7 +443,7 @@ button {
   padding: 20px;
   background: var(--white);
   border: 1px solid var(--line);
-  box-shadow: 0 12px 26px rgba(18, 50, 38, 0.07);
+  box-shadow: 0 12px 26px rgba(135, 69, 0, 0.08);
 }
 
 .stat-card strong {
@@ -489,7 +489,7 @@ button {
   padding: 22px;
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid var(--line);
-  box-shadow: 0 12px 30px rgba(18, 50, 38, 0.06);
+  box-shadow: 0 12px 30px rgba(135, 69, 0, 0.07);
 }
 
 .panel.wide {
@@ -663,7 +663,7 @@ button {
   border-radius: 8px;
   background: var(--white);
   border: 1px solid var(--line);
-  box-shadow: 0 12px 26px rgba(18, 50, 38, 0.07);
+  box-shadow: 0 12px 26px rgba(135, 69, 0, 0.08);
 }
 
 .module-image {
@@ -744,8 +744,8 @@ button {
 .module-detail-hero {
   overflow: hidden;
   border-radius: 8px;
-  background: var(--forest);
-  color: var(--white);
+  background: linear-gradient(135deg, #ff8a20 0%, #ffd23f 58%, #cafa48 100%);
+  color: var(--forest);
   display: grid;
   grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.1fr);
   box-shadow: var(--shadow);
@@ -771,7 +771,7 @@ button {
 
 .module-detail-hero p {
   margin: 0 0 18px;
-  color: #e8f5df;
+  color: #4b3213;
   font-size: 1.05rem;
 }
 
@@ -785,8 +785,8 @@ button {
 .detail-chips span {
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--white);
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--forest);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -876,7 +876,7 @@ button {
 
 .quiz-result.pass {
   background: #ddffd0;
-  color: #1f6f31;
+  color: #6b4a00;
 }
 
 .quiz-result.review {
@@ -909,8 +909,8 @@ button {
 .notification-buttons button {
   margin-top: 12px;
   padding: 0 12px;
-  background: var(--forest);
-  color: var(--white);
+  background: linear-gradient(135deg, var(--citrus), var(--sun));
+  color: var(--forest);
 }
 
 .progress-table button {
@@ -961,6 +961,7 @@ button {
 
 .certificate-card {
   position: relative;
+  overflow: hidden;
   min-height: 260px;
   border-radius: 8px;
   padding: 20px;
@@ -968,10 +969,22 @@ button {
     linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 243, 205, 0.92)),
     linear-gradient(135deg, var(--sun), var(--lime));
   border: 1px solid #ecd88d;
-  box-shadow: 0 12px 26px rgba(18, 50, 38, 0.07);
+  box-shadow: 0 12px 26px rgba(135, 69, 0, 0.08);
+}
+
+.certificate-art {
+  position: absolute;
+  inset: 0 0 auto auto;
+  width: 48%;
+  height: 128px;
+  object-fit: cover;
+  opacity: 0.32;
+  border-bottom-left-radius: 8px;
 }
 
 .certificate-stamp {
+  position: relative;
+  z-index: 1;
   width: 58px;
   height: 58px;
   border-radius: 8px;
@@ -983,11 +996,15 @@ button {
 }
 
 .certificate-card h3 {
+  position: relative;
+  z-index: 1;
   margin: 12px 0 8px;
   color: var(--forest);
 }
 
 .certificate-card dl {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -1159,7 +1176,7 @@ button {
   color: var(--forest);
   font-size: 2rem;
   font-weight: 900;
-  box-shadow: 0 12px 22px rgba(18, 50, 38, 0.16);
+  box-shadow: 0 12px 22px rgba(135, 69, 0, 0.18);
 }
 
 .profile-panel h3 {
@@ -1177,8 +1194,61 @@ button {
   padding: 7px 10px;
   border-radius: 8px;
   background: #e5f9d7;
-  color: #1f6f31;
+  color: #6b4a00;
   font-weight: 900;
+}
+
+.profile-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.profile-mini-grid div,
+.profile-park-card {
+  border-radius: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fff4d8, #edffd7);
+  border: 1px solid var(--line);
+}
+
+.profile-mini-grid strong,
+.profile-mini-grid small,
+.profile-park-card span,
+.profile-park-card strong,
+.profile-park-card small {
+  display: block;
+}
+
+.profile-mini-grid strong {
+  color: var(--forest);
+  font-size: 1.25rem;
+}
+
+.profile-mini-grid small,
+.profile-park-card span,
+.profile-park-card small {
+  color: var(--muted);
+}
+
+.profile-park-card {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.profile-park-card span {
+  color: var(--citrus);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.profile-park-card strong {
+  margin: 4px 0;
+  color: var(--forest);
+  font-size: 1.08rem;
 }
 
 .upload-drop {

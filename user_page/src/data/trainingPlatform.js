@@ -1,4 +1,8 @@
-const asset = (fileName) => `${import.meta.env.BASE_URL}training/${fileName}`
+const basePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`
+
+const asset = (fileName) => `${basePath}training/${fileName}`
 
 export const demoStorageVersion = 'sfc-citrus-training-v1'
 

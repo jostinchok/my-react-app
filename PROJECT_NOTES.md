@@ -140,10 +140,15 @@ Checkpoint/docs files:
 - `npm --prefix user_page run build` passed during the latest implementation pass.
 - The frontend remains seeded locally through `user_page/src/data/trainingPlatform.js`.
 - The root review launcher and hub are still separate from this latest UI pass.
+- The broken module image path issue was fixed by normalizing Vite's `/user` base path before building `user_page/public/training/*` URLs.
+- Verified working URLs:
+  - `http://127.0.0.1:5175/user/`
+  - `http://127.0.0.1:5175/user/training/protected-areas.png`
+  - `http://127.0.0.1:5175/user/training/incident-ai-monitoring.png`
 
 ## Known Issues Or Risks
 
-- Known issue for tomorrow: generated images exist in `user_page/public/training/`, but they are not showing on the website. Next priority is to fix image paths.
+- Module image paths were fixed in `user_page/src/data/trainingPlatform.js`, but a final visual browser review is still needed to confirm all pages look right at desktop and mobile widths.
 - `user_page/dist`, `node_modules`, and package-lock changes are noisy and should be reviewed carefully before commit.
 - There is an unreferenced duplicate-looking generated image file, `user_page/public/training/incident-ai-monitoring copy.png`; do not delete it unless clearly confirmed safe.
 - Admin and mobile have not yet been updated to match the citrus theme.
@@ -153,15 +158,16 @@ Checkpoint/docs files:
 
 ## Next Priority
 
-Fix module image paths tomorrow before adding or redesigning more features.
+Polish the already-built user-side experience before adding or redesigning more features.
 
 Specifically check:
 
-- `trainingModules` image paths in `user_page/src/data/trainingPlatform.js`.
-- Vite base path behavior for `/user`.
-- Runtime paths for assets inside `user_page/public/training/`.
 - Dashboard hero background image path.
 - Module card and Module Details hero image rendering.
+- Certificate page visual richness.
+- Profile page layout density.
+- Responsive layout at desktop and mobile widths.
+- Keep frontend seeded data only; do not connect Express/MySQL yet.
 
 ## Rules / Instructions Not To Forget
 

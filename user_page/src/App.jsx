@@ -766,6 +766,7 @@ function App() {
                   const module = moduleMap.get(certificate.moduleId)
                   return (
                     <article key={certificate.id} className="certificate-card">
+                      {module?.image && <img className="certificate-art" src={module.image} alt="" />}
                       <div className="certificate-stamp">{module?.badge?.slice(0, 2).toUpperCase() || 'SFC'}</div>
                       <span>{certificate.status}</span>
                       <h3>{certificate.title}</h3>
@@ -950,6 +951,25 @@ function App() {
                   <h3>{currentUser.displayName}</h3>
                   <p>{currentUser.position}</p>
                   <span>{currentUser.status}</span>
+                  <div className="profile-mini-grid">
+                    <div>
+                      <strong>{overallProgress}%</strong>
+                      <small>Overall progress</small>
+                    </div>
+                    <div>
+                      <strong>{completedModules.length}/10</strong>
+                      <small>Modules complete</small>
+                    </div>
+                    <div>
+                      <strong>{certificates.length}</strong>
+                      <small>Credentials</small>
+                    </div>
+                  </div>
+                  <div className="profile-park-card">
+                    <span>Assigned park</span>
+                    <strong>{currentUser.assignedPark}</strong>
+                    <small>{currentUser.guideId}</small>
+                  </div>
                 </section>
                 <section className="panel wide">
                   <PanelTitle kicker="Editable details" title="My account" />
