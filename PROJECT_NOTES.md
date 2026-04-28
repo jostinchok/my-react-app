@@ -6,6 +6,12 @@ Checkpoint date: 2026-04-27.
 
 This project is a Sarawak Forestry Corporation digital park guide training platform based on `Project Scope.pdf`.
 
+Current working directory:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+```
+
 The repo is still organized as separate surfaces:
 
 - `user_page`: guide-facing website and current main implementation target.
@@ -29,7 +35,8 @@ The user-side website is moving toward a citrus energetic theme:
 ## Current Folder/File Structure
 
 ```text
-my-react-app/
+cos30049-assignment/
+├── .venv/
 ├── Project Scope.pdf
 ├── README.md
 ├── PROJECT_NOTES.md
@@ -55,10 +62,21 @@ my-react-app/
 ├── mobile_app/
 ├── admin_page/
 ├── user_login/server/
-├── Alerts/
+├── alerts/
+│   └── ai/
+├── artifacts/
+│   └── clip_2class_touching_species.pt
+├── datasets/
+│   ├── touching-plants/
+│   └── touching-wildlife/
 ├── models/
+│   └── hand_landmarker.task
 └── images/
 ```
+
+The Google Drive `cos30049-assignment-assets` package is only the download source.
+After download, `.venv/`, `artifacts/`, `datasets/`, `models/`, and `alerts/`
+stay inside the project working directory as local-only ignored folders.
 
 ## Important Files
 
@@ -182,9 +200,11 @@ Checkpoint/docs files:
   - `POST /api/incidents`
   - `PATCH /api/incidents/:id/status`
   - `GET /api/incidents/summary`
-- Backend serves AI evidence images from root `Alerts/ai` at `/evidence/ai`.
+- Root `npm run dev` now checks `http://localhost:4000/api/health` before starting the backend. If a backend is already running, `scripts/dev-all.mjs` skips the duplicate backend start instead of letting port `4000` crash the whole launcher.
+- If port `4000` is occupied by a non-backend process, the launcher warns with the `lsof -nP -iTCP:4000 -sTCP:LISTEN` command and continues starting the other review services.
+- Backend serves AI evidence images from root `alerts/ai` at `/evidence/ai`.
 - AI evidence image path preview has been fixed for live incidents:
-  - backend uses `AI_EVIDENCE_DIR` when provided, otherwise defaults to repo root `Alerts/ai`;
+  - backend uses `AI_EVIDENCE_DIR` when provided, otherwise defaults to repo root `alerts/ai`;
   - backend converts absolute local image paths into browser-safe `/evidence/ai/<filename>` values;
   - admin converts `/evidence/ai/...` into `http://localhost:4000/evidence/ai/...` before rendering images.
 - Backend subscribes to MQTT topic `ctip/sensor/plant-zone-01/proximity` and normalizes IoT payloads into dashboard incidents.
@@ -192,7 +212,7 @@ Checkpoint/docs files:
 - `admin_page/src/pages/AIDetection.jsx` now polls the live backend every 2.5 seconds and falls back to seeded demo incidents if the backend is offline.
 - Admin status buttons call `PATCH /api/incidents/:id/status` when the backend is online and fall back to local-only updates when offline.
 - `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` now posts saved AI alert incidents to `http://localhost:4000/api/incidents` using Python standard library HTTP calls, while continuing local evidence saving if the backend is offline.
-- `scripts/run_ai_camera_monitor.py` supports `--evidence-dir` so model files can stay under `/Users/chiayuenkai/cos30049` while alert images are saved under repo `Alerts/ai`.
+- `scripts/run_ai_camera_monitor.py` supports `--project-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment` for local-only model assets under the repo root and `--evidence-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai` for repo-local runtime evidence.
 - Express/MySQL is still intentionally not connected to training or incident persistence.
 
 ## Known Issues Or Risks
@@ -205,6 +225,7 @@ Checkpoint/docs files:
 - Training data is not yet persisted to MySQL.
 - Live incident persistence is still prototype-level memory/local JSON, not MySQL.
 - MQTT public broker delivery depends on internet access and public broker availability.
+- MacBook built-in camera works as the default camera. iPhone Continuity Camera is environment-dependent: it has worked through iPhone hotspot and on Yoriichi's Router, but OpenCV camera index switching is not guaranteed to manually select the iPhone camera.
 - `Project Scope.pdf` is untracked; decide whether to commit it as assignment reference material.
 
 ## Next Priority

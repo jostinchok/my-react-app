@@ -19,7 +19,7 @@ const runtimeDataDir = path.join(__dirname, 'data')
 const runtimeIncidentFile = path.join(runtimeDataDir, 'incidents.runtime.json')
 const aiEvidenceDir = process.env.AI_EVIDENCE_DIR
   ? path.resolve(process.env.AI_EVIDENCE_DIR)
-  : path.join(repoRoot, 'Alerts', 'ai')
+  : path.join(repoRoot, 'alerts', 'ai')
 
 fs.mkdirSync(aiEvidenceDir, { recursive: true })
 

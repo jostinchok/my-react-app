@@ -64,7 +64,7 @@ const seededIncidentRecords = [
     status: "New",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-plants.jpg"),
-      json_path: "C:/COS30049 Assignment/Alerts/ai/2026-04-27_10-30-00_alert_TouchingPlants.json",
+      json_path: "alerts/ai/2026-04-27_10-30-00_alert_TouchingPlants.json",
     },
     ai: {
       predicted_class: "TouchingPlants",
@@ -90,7 +90,7 @@ const seededIncidentRecords = [
     status: "Reviewed",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-wildlife.jpg"),
-      json_path: "C:/COS30049 Assignment/Alerts/ai/2026-04-27_11-12-44_alert_TouchingWildlife.json",
+      json_path: "alerts/ai/2026-04-27_11-12-44_alert_TouchingWildlife.json",
     },
     ai: {
       predicted_class: "TouchingWildlife",
@@ -138,7 +138,7 @@ const seededIncidentRecords = [
     status: "False Alarm",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-plants.jpg"),
-      json_path: "C:/COS30049 Assignment/Alerts/ai/2026-04-27_12-05-33_alert_TouchingPlants.json",
+      json_path: "alerts/ai/2026-04-27_12-05-33_alert_TouchingPlants.json",
     },
     ai: {
       predicted_class: "TouchingPlants",

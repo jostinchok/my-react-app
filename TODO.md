@@ -1,5 +1,11 @@
 # TODO
 
+Current working directory:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+```
+
 ## Immediate Next Tasks
 
 - Keep polishing the existing `user_page` Park Guide/User rebuild.
@@ -25,10 +31,13 @@
 - Visual browser review is still needed after the image path helper fix.
 - Working tree currently shows generated/install artifact noise under `user_page/dist`, `user_page/node_modules`, and `user_login/server/node_modules`.
 - `user_page` build can fail after dependency churn if Rollup optional native packages are missing.
+- Root `npm run dev` now checks `http://localhost:4000/api/health` and skips starting a duplicate backend when one is already running.
 - Backend `/api/health` no longer requires MySQL for incident-sync testing, but it still reports the database as offline until MySQL is running and seeded.
 - Root review hub service checks can show backend offline when MySQL is unavailable even though Express itself starts.
 - MQTT public broker testing can fail if internet access or the public broker is unavailable; backend should keep running.
 - AI evidence path fix is implemented: backend uses configurable `AI_EVIDENCE_DIR`, admin resolves backend evidence URLs, and Express/MySQL remains disconnected.
+- Local AI assets should stay inside the project working directory under ignored `.venv/`, `artifacts/`, `datasets/`, `models/`, and `alerts/` folders.
+- Camera docs should keep iPhone Continuity Camera as environment-dependent: tested through iPhone hotspot and Yoriichi's Router, but not guaranteed through OpenCV camera index switching.
 
 ## Improvements To Consider
 
@@ -48,7 +57,7 @@
 - Do not physically merge `user_page`, `mobile_app`, `admin_page`, and `user_login/server` into one source app.
 - Do not replace the current website GUI with a completely unrelated template.
 - Do not remove existing admin/mobile/backend folders.
-- Do not delete assignment artifacts such as `Project Scope.pdf`, `Alerts/`, `models/`, or the CTIP notebook unless explicitly requested.
+- Do not delete assignment artifacts such as `Project Scope.pdf`, `alerts/`, `artifacts/`, `datasets/`, `models/`, or the CTIP notebook unless explicitly requested.
 - Do not connect Express/MySQL yet.
 - Do not connect Express/MySQL for the Admin Incident Dashboard until the seeded UI and report evidence are stable.
 - Do not commit `.DS_Store`, local `node_modules`, or generated `dist` output unless the user explicitly decides the repo must track them.
