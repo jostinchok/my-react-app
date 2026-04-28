@@ -1,0 +1,266 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f4f7f3;
+  color: #17231c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(18, 86, 54, 0.08), transparent 34%),
+    #f4f7f3;
+}
+
+a {
+  color: inherit;
+}
+
+.hub-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.hub-hero {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 34px;
+  border: 1px solid #dce7df;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(8, 45, 29, 0.94), rgba(24, 94, 62, 0.9)),
+    url("/images/hornbill.jpg") center/cover;
+  color: #fff;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-row img {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #fff;
+  object-fit: cover;
+}
+
+.brand-row p {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #c8e6d5;
+}
+
+.brand-row h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 6vw, 4.6rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.hero-copy {
+  max-width: 680px;
+  margin: 0;
+  color: #e9f5ee;
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.command-panel {
+  width: fit-content;
+  max-width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.command-panel span {
+  color: #c8e6d5;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.command-panel code {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.service-card,
+.notes-panel {
+  border: 1px solid #dce7df;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16px 40px rgba(20, 48, 31, 0.08);
+}
+
+.service-card {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.service-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.service-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #173b29;
+  color: #fff;
+  font-weight: 900;
+}
+
+.status-pill {
+  min-width: 76px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #edf2ee;
+  color: #5e7067;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.status-pill.online {
+  background: #dff5e7;
+  color: #176235;
+}
+
+.status-pill.offline {
+  background: #fde5e2;
+  color: #a43124;
+}
+
+.service-card h2,
+.notes-panel h2 {
+  margin: 20px 0 8px;
+  font-size: 1.28rem;
+  color: #17231c;
+}
+
+.service-card p {
+  flex: 1;
+  margin: 0;
+  color: #5e7067;
+  line-height: 1.55;
+}
+
+.link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.link-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid #c8d8ce;
+  border-radius: 8px;
+  background: #fff;
+  color: #173b29;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.link-row a:first-child {
+  background: #21633f;
+  border-color: #21633f;
+  color: #fff;
+}
+
+.notes-panel {
+  margin-top: 18px;
+  padding: 22px;
+}
+
+.notes-panel h2 {
+  margin-top: 0;
+}
+
+.notes-panel ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #4e6257;
+  line-height: 1.7;
+}
+
+.notes-panel code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #edf2ee;
+  color: #173b29;
+}
+
+@media (max-width: 980px) {
+  .service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .hub-shell {
+    width: min(100% - 20px, 1180px);
+    padding: 10px 0 20px;
+  }
+
+  .hub-hero {
+    min-height: 0;
+    padding: 22px;
+  }
+
+  .brand-row {
+    align-items: flex-start;
+  }
+
+  .brand-row img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
+}

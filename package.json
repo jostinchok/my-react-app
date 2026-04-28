@@ -1,22 +1,26 @@
 {
-  "name": "mobile_app",
+  "name": "sfc-review-launcher",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "postinstall": "npm --prefix user_page install && npm --prefix admin_page install && npm --prefix mobile_app install && npm --prefix user_login/server install",
+    "dev": "node scripts/dev-all.mjs",
+    "dev:hub": "node scripts/hub-server.mjs",
+    "dev:user": "npm --prefix user_page run dev",
+    "dev:admin": "npm --prefix admin_page run dev",
+    "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",
+    "dev:server": "npm --prefix user_login/server start",
+    "build:user": "npm --prefix user_page run build",
+    "build:admin": "npm --prefix admin_page run build",
+    "check:mobile": "npm --prefix mobile_app exec expo config -- --type public"
   },
   "dependencies": {
-    "expo": "~54.0.33",
-    "expo-document-picker": "~14.0.8",
-    "expo-image-picker": "~17.0.10",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-dom": "^19.1.0",
-    "react-native": "0.81.5",
-    "react-native-web": "^0.21.2"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
-  "private": true
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.3"
+  }
 }
