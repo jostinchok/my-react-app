@@ -204,6 +204,7 @@ const Login = ({ onLogin }) => {
 
       <select value={role} onChange={e => setRole(e.target.value)}>
         <option value="guide">Guide</option>
+        <option value="ranger">Ranger</option>
         <option value="admin">Admin</option>
       </select>
 

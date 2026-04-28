@@ -347,7 +347,7 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ message: 'Name, email and password are required.' })
     }
 
-    const normalizedRole = role === 'admin' ? 'admin' : 'guide'
+    const normalizedRole = role === 'admin' ? 'admin' : role === 'ranger' ? 'ranger' : 'guide'
 
     const [existing] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
     if (existing.length > 0) {
@@ -372,6 +372,14 @@ app.post('/api/auth/register', async (req, res) => {
       )
     }
 
+    if (normalizedRole === 'ranger') {
+      await pool.query(
+        'INSERT INTO ranger_profiles (ranger_id, badge_number, station) VALUES (?, ?, ?)',
+        [result.insertId, '', '']
+      )
+    }
+
+    const roleLabel = normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1)
     return res.status(201).json({
       user: {
         user_id: result.insertId,
@@ -379,7 +387,7 @@ app.post('/api/auth/register', async (req, res) => {
         email,
         role_name: normalizedRole,
       },
-      message: `${normalizedRole === 'admin' ? 'Admin' : 'Guide'} registered successfully.`,
+      message: `${roleLabel} registered successfully.`,
     })
   } catch (error) {
     return res.status(500).json({ message: 'Registration failed.', error: error.message })

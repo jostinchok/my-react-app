@@ -123,7 +123,15 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-INSERT IGNORE INTO roles (role_id, role_name) VALUES (1, 'admin'), (2, 'guide');
+CREATE TABLE IF NOT EXISTS ranger_profiles (
+    ranger_id INT PRIMARY KEY,
+    badge_number VARCHAR(50),
+    station VARCHAR(100),
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    FOREIGN KEY (ranger_id) REFERENCES users(user_id)
+);
+
+INSERT IGNORE INTO roles (role_id, role_name) VALUES (1, 'admin'), (2, 'guide'), (3, 'ranger');
 
 -- Test password for seeded users: 1234
 INSERT INTO users (role_id, name, email, password_hash)
@@ -140,5 +148,15 @@ ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     password_hash = VALUES(password_hash);
 
+INSERT INTO users (role_id, name, email, password_hash)
+VALUES (3, 'Ranger User', 'ranger@test.com', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6')
+ON DUPLICATE KEY UPDATE
+    role_id = VALUES(role_id),
+    name = VALUES(name),
+    password_hash = VALUES(password_hash);
+
 INSERT IGNORE INTO guide_profiles (guide_id, phone, organization)
 VALUES ((SELECT user_id FROM users WHERE email = 'guide@test.com'), '0123456789', 'Sarawak Forestry');
+
+INSERT IGNORE INTO ranger_profiles (ranger_id, badge_number, station)
+VALUES ((SELECT user_id FROM users WHERE email = 'ranger@test.com'), 'SFC-001', 'Bako National Park');
