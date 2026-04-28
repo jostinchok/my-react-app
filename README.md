@@ -511,7 +511,7 @@ The script will:
 |-------|-------------------|----------|
 | Admin | admin@test.com    | `1234`   |
 | Guide | guide@test.com    | `1234`   |
-
+| Ranger| ranger@test.com   | `1234`   |
 ---
 
 ### Step 3 — Configure the backend environment
@@ -539,13 +539,31 @@ DB_DATABASE=park_guide_database
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_SECURE=false
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_gmail_app_password
-EMAIL_FROM=Digital Park Guide <your_email@gmail.com>
+EMAIL_USER=your_email@gmail.com           
+EMAIL_PASS=your_gmail_app_password        
+EMAIL_FROM=Digital Park Guide <your_email@gmail.com>  
 ```
+### Only for forgot password function testing
 
-> **Gmail App Password**: go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) to generate a 16-character app password. Your Google account must have 2FA enabled. Use this as `EMAIL_PASS`, not your normal Gmail password.
+## Step 1 - Enable 2-Step Verification on your Google account
+1. Go to myaccount.google.com/security (https://myaccount.google.com/security)
+2. Under How you sign in to Google, click 2-Step Verification and turn it on (required before App Passwords work)
+## Step 2 - Create an App Password
+1. Go to myaccount.google.com/apppasswords (https://myaccount.google.com/apppasswords)
+2. Sign in if prompted
+3. Under App name, type anything, e.g. Park Guide OTP
+4. Click Create
+5. Google shows a 16-character password like **abcd efgh ijkl mnop** — copy it
+### Step 3 - Update your .env file
+1. Open .env and replace the placeholder values:
+EMAIL_USER=yourrealemail@gmail.com                         #change to your email
+EMAIL_PASS=your_gmail_app_password                      #paste the 16-character app password without spaces
+EMAIL_FROM=Digital Park Guide <yourrealemail@gmail.com>    #replace the placeholder value to your email
 
+### Step 4 - Restart the backend
+Set-Location "C:\Users\USER\Documents\GitHub\my-react-app\user_login\server"
+For example:
+`C:\Users\USER\Documents\GitHub\my-react-app\user_login\server> node index.js`
 ---
 
 ## Starting All Services
@@ -649,7 +667,7 @@ Use this step-by-step checklist to verify the full OTP reset flow is working end
 
 ### Prerequisites
 
-- Backend server is running on `http://localhost:4000`
+- Backend server is running on `http://localhost:4001`
 - `user_login/server/.env` has valid `EMAIL_USER` and `EMAIL_PASS` values
 - A registered account exists in the database (use `guide@test.com` or `admin@test.com` from the seed)
 - Either the user page (`http://localhost:5175/user`) or admin page (`http://localhost:5174/admin`) is running
