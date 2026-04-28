@@ -81,13 +81,21 @@ __pycache__/
 # AI datasets, models, and generated outputs
 # =========================================================
 datasets/
+datasets
 Datasets/
+Datasets
 models/
+models
 Models/
+Models
 artifacts/
+artifacts
 Artifacts/
+Artifacts
 outputs/
+outputs
 Outputs/
+Outputs
 
 
 # Trained model files
@@ -112,30 +120,6 @@ captures/
 Captures/
 screenshots/
 Screenshots/
-alerts/*.jpg
-alerts/*.jpeg
-alerts/*.png
-alerts/*.json
-alerts/*.mp4
-alerts/*.mov
-alerts/**/*.jpg
-alerts/**/*.jpeg
-alerts/**/*.png
-alerts/**/*.json
-alerts/**/*.mp4
-alerts/**/*.mov
-Alerts/*.jpg
-Alerts/*.jpeg
-Alerts/*.png
-Alerts/*.json
-Alerts/*.mp4
-Alerts/*.mov
-Alerts/**/*.jpg
-Alerts/**/*.jpeg
-Alerts/**/*.png
-Alerts/**/*.json
-Alerts/**/*.mp4
-Alerts/**/*.mov
 user_login/server/data/*.runtime.json
 
 
