@@ -9,7 +9,7 @@ This project is a Sarawak Forestry Corporation digital park guide training platf
 Current working directory:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+/Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
 
 The repo is still organized as separate surfaces:
@@ -17,6 +17,7 @@ The repo is still organized as separate surfaces:
 - `user_page`: guide-facing website and current main implementation target.
 - `mobile_app`: React Native / Expo guide-facing mobile app.
 - `admin_page`: admin website.
+- `admin_page/src/pages/ParkRangerConsole.jsx`: Park Ranger incident-response console.
 - `user_login/server`: Express/MySQL backend.
 - root project: review launcher and review hub.
 
@@ -35,7 +36,7 @@ The user-side website is moving toward a citrus energetic theme:
 ## Current Folder/File Structure
 
 ```text
-cos30049-assignment/
+my-react-app/
 ├── .venv/
 ├── Project Scope.pdf
 ├── README.md
@@ -75,8 +76,10 @@ cos30049-assignment/
 ```
 
 The Google Drive `cos30049-assignment-assets` package is only the download source.
-After download, `.venv/`, `artifacts/`, `datasets/`, `models/`, and `alerts/`
-stay inside the project working directory as local-only ignored folders.
+After download, `artifacts/`, `datasets/`, and `models/` stay inside the project
+working directory as local-only ignored folders. `.venv/` must be recreated
+inside `my-react-app`, not moved from another checkout. `alerts/` stays inside
+the repo and is not ignored so selected demo AI evidence can be committed.
 
 ## Important Files
 
@@ -99,6 +102,7 @@ stay inside the project working directory as local-only ignored folders.
 - `CTIP_IoT_Plant_Proximity_Monitor.ino`: ESP32 ultrasonic proximity sensor sketch publishing JSON to `ctip/sensor/plant-zone-01/proximity`.
 - `admin_page/src/data/incidents.js`: seeded admin incident examples and summary helpers for AI Camera and IoT Sensor monitoring.
 - `admin_page/src/pages/AIDetection.jsx`: seeded Admin Incident Dashboard table, filters, detail panel, evidence preview, metadata, notes, and local-only status changes.
+- `admin_page/src/pages/ParkRangerConsole.jsx`: live Park Ranger Alert Console that reads `/api/incidents` and updates response status through `/api/incidents/:id/status`.
 - `admin_page/src/Admin.jsx`: admin monitoring overview now summarizes seeded incident counts.
 - `admin_page/src/Admin.css`: citrus incident dashboard styling, including table readability fixes.
 - `admin_page/src/components/Sidebar.jsx`: admin menu label updated from Detection to Incidents.
@@ -200,6 +204,13 @@ Checkpoint/docs files:
   - `POST /api/incidents`
   - `PATCH /api/incidents/:id/status`
   - `GET /api/incidents/summary`
+- Runtime status updates now allow both admin review labels and Park Ranger response labels:
+  - `New`
+  - `Reviewed`
+  - `Acknowledged`
+  - `In Review`
+  - `Resolved`
+  - `False Alarm`
 - Root `npm run dev` now checks `http://localhost:4000/api/health` before starting the backend. If a backend is already running, `scripts/dev-all.mjs` skips the duplicate backend start instead of letting port `4000` crash the whole launcher.
 - If port `4000` is occupied by a non-backend process, the launcher warns with the `lsof -nP -iTCP:4000 -sTCP:LISTEN` command and continues starting the other review services.
 - Backend serves AI evidence images from root `alerts/ai` at `/evidence/ai`.
@@ -211,8 +222,10 @@ Checkpoint/docs files:
 - MQTT uses `mqtt://broker.hivemq.com:1883` by default for prototype testing only and should not crash the backend if the broker is unavailable.
 - `admin_page/src/pages/AIDetection.jsx` now polls the live backend every 2.5 seconds and falls back to seeded demo incidents if the backend is offline.
 - Admin status buttons call `PATCH /api/incidents/:id/status` when the backend is online and fall back to local-only updates when offline.
+- `admin_page/src/pages/ParkRangerConsole.jsx` polls the same backend every 2.5 seconds and is scoped to incident response only. It does not expose user management, training module management, certificate approval, or system setting links.
+- The review hub links directly to the Park Guide/User portal, Admin Dashboard, Admin Incident Detection, Park Ranger Alert Console, backend health, and incident API for smoother demo testing.
 - `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` now posts saved AI alert incidents to `http://localhost:4000/api/incidents` using Python standard library HTTP calls, while continuing local evidence saving if the backend is offline.
-- `scripts/run_ai_camera_monitor.py` supports `--project-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment` for local-only model assets under the repo root and `--evidence-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai` for repo-local runtime evidence.
+- `scripts/run_ai_camera_monitor.py` supports `--project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app` for local-only model assets under the repo root, `--evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai` for repo-local AI evidence, `--camera-index` for normal webcam selection, and `--backend-url` for the backend origin. The default backend URL is `http://localhost:4000`.
 - Express/MySQL is still intentionally not connected to training or incident persistence.
 
 ## Known Issues Or Risks

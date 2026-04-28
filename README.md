@@ -2,7 +2,7 @@
 
 This repository contains the source code and prototype materials for the COS30049 Computing Technology Innovation Project.
 
-The project is a digital park guide system for Sarawak park operations. It includes a park guide training platform, an admin incident dashboard, and an AI/IoT monitoring prototype for detecting abnormal interactions around protected plants and wildlife.
+The project is a digital park guide system for Sarawak park operations. It includes a park guide training platform, an admin incident dashboard, a Park Ranger alert console, and an AI/IoT monitoring prototype for detecting abnormal interactions around protected plants and wildlife.
 
 The current AI prototype focuses on two abnormal activity classes:
 
@@ -44,6 +44,7 @@ Current working direction:
 - AI camera alerts can be sent to the admin dashboard.
 - IoT MQTT alerts can be sent to the admin dashboard.
 - Admin incident dashboard can display both AI and IoT incidents.
+- Park Ranger alert console can view the same backend incident queue and update response status.
 - MySQL is not required for the live incident demo.
 
 ---
@@ -78,6 +79,21 @@ Current working direction:
   - `Reviewed`
   - `False Alarm`
 
+### Park Ranger Alert Console
+
+- Incident-response-only console
+- Live AI camera incident records from `/api/incidents`
+- Live IoT proximity incident records from `/api/incidents`
+- Evidence image preview through `/evidence/ai/<filename>`
+- AI confidence, margin, bbox, and probability metadata
+- IoT distance, threshold, and MQTT topic metadata
+- Response status workflow:
+  - `Acknowledged`
+  - `In Review`
+  - `Resolved`
+  - `False Alarm`
+- No user management, training module management, certificate approval, or system settings links
+
 ### AI / Computer Vision Prototype
 
 - 2-class CLIP model
@@ -107,7 +123,7 @@ Current working direction:
 This GitHub repository should contain source code and small demo files only.
 
 ```text
-cos30049-assignment/
+my-react-app/
 ├── admin_page/
 ├── user_page/
 ├── mobile_app/
@@ -133,11 +149,14 @@ The following folders should not be committed to GitHub:
 node_modules/
 .venv/
 dist/
-alerts/
 artifacts/
 datasets/
 models/
 ```
+
+`alerts/` is intentionally not ignored so small demo alert evidence can be
+kept in the repository for review. Do not use it for large uncurated runtime
+dumps.
 
 ---
 
@@ -167,10 +186,12 @@ cos30049-assignment-assets/
 ```
 
 `cos30049-assignment-assets` is the downloadable Google Drive package name only.
-After downloading, place the local-only folders into the project root:
+After downloading, place the local-only AI asset folders into the project root.
+Do not move `.venv` from another checkout; recreate `.venv` inside
+`my-react-app` using the commands in this README.
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/
 ├── .venv/
 ├── artifacts/
 │   └── clip_2class_touching_species.pt
@@ -184,8 +205,10 @@ After downloading, place the local-only folders into the project root:
 ```
 
 Do not upload `.venv` to Google Drive. Other users should recreate the Python environment using `requirements.txt`.
-GitHub does not store `.venv/`, `artifacts/`, `datasets/`, `models/`, or `alerts/`
-because they are local-only folders ignored by `.gitignore`.
+GitHub does not store `.venv/`, `artifacts/`, `datasets/`, or `models/`
+because they are local-only folders ignored by `.gitignore`. The `alerts/`
+folder is not ignored, so curated demo alert evidence under `alerts/ai` can be
+committed when it is useful for review.
 
 ---
 
@@ -214,13 +237,13 @@ If the model is renamed, update all notebook and script paths that load the mode
 Keep the GitHub repository here:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+/Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
 
-Keep downloaded AI assets inside the project working directory as local-only ignored folders:
+Keep downloaded AI assets inside the project working directory as local-only ignored folders, and recreate `.venv` inside this repo:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/
 ├── .venv/
 ├── artifacts/
 │   └── clip_2class_touching_species.pt
@@ -233,10 +256,11 @@ Keep downloaded AI assets inside the project working directory as local-only ign
     └── ai/
 ```
 
-Runtime AI evidence should also be saved locally inside the repository, but ignored by Git:
+Runtime AI evidence should also be saved locally inside the repository. The
+`alerts/` folder is not ignored so selected demo evidence can be committed:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai/
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/
 ```
 
 ### Windows
@@ -301,8 +325,8 @@ Important Python packages include:
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/Yoriichi-0u0/cos30049-assignment.git
-cd cos30049-assignment
+git clone https://github.com/jostinchok/my-react-app.git
+cd my-react-app
 ```
 
 ---
@@ -334,6 +358,8 @@ Backend API: http://localhost:4000
 Review hub:  http://localhost:5173
 User page:   http://localhost:5175/user
 Admin page:  http://localhost:5174/admin
+Admin incidents: http://localhost:5174/admin/detection
+Park Ranger: http://localhost:5174/admin/ranger
 Mobile web:  http://localhost:8081
 ```
 
@@ -389,6 +415,32 @@ If the backend is offline, the admin dashboard should still show seeded fallback
 
 ---
 
+## Running the Park Ranger Alert Console
+
+From the root folder:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5174/admin/ranger
+```
+
+The Park Ranger page uses the backend incident API only:
+
+```text
+GET   /api/incidents
+PATCH /api/incidents/:id/status
+```
+
+The page is scoped to incident response. It does not expose admin management
+links for users, training modules, certificates, or settings.
+
+---
+
 ## Live Admin Incident Sync
 
 The backend provides a lightweight incident API.
@@ -401,6 +453,17 @@ GET   /api/incidents
 GET   /api/incidents/summary
 POST  /api/incidents
 PATCH /api/incidents/:id/status
+```
+
+Supported runtime statuses:
+
+```text
+New
+Reviewed
+Acknowledged
+In Review
+Resolved
+False Alarm
 ```
 
 Check backend health:
@@ -434,16 +497,16 @@ AI alert images are served by the backend from:
 Recommended macOS command when starting the full workspace:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai" npm run dev
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" npm run dev
 ```
 
 Expected behavior:
 
 - AI alert images are saved into `alerts/ai`
 - Backend serves images through `http://localhost:4000/evidence/ai/<image-name>.jpg`
-- Admin page loads evidence images from the backend URL
+- Admin and Park Ranger pages load evidence images from the backend URL
 
 Confirm an image is served:
 
@@ -536,13 +599,13 @@ Expected result:
 Create the Python environment inside the project working directory:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 
 python3.12 -m venv .venv
 source .venv/bin/activate
 
 python -m pip install --upgrade pip setuptools wheel
-python -m pip install -r /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/requirements.txt
+python -m pip install -r /Users/chiayuenkai/Desktop/GitHub/my-react-app/requirements.txt
 ```
 
 Verify important packages:
@@ -576,13 +639,32 @@ Mac uses Apple Metal Performance Shaders (MPS), not NVIDIA CUDA.
 Run the standalone AI camera monitor:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 
 source .venv/bin/activate
 
 python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
+```
+
+The standalone monitor supports these runtime options:
+
+```text
+--project-dir     project root containing artifacts/, datasets/, and models/
+--evidence-dir    folder where alert JPG and JSON files are saved
+--camera-index    OpenCV camera index for normal webcams
+--backend-url     backend origin for /api/incidents and /evidence/ai
+```
+
+`--backend-url` defaults to `http://localhost:4000`, so it does not need to be
+included for the standard local demo. Add it only if the backend runs elsewhere:
+
+```bash
+python scripts/run_ai_camera_monitor.py \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
+  --backend-url http://localhost:4000
 ```
 
 Expected behavior:
@@ -593,6 +675,7 @@ Expected behavior:
 - alert image is saved into `alerts/ai`
 - alert JSON is saved into `alerts/ai`
 - backend receives the incident if it is running
+- backend returns browser-safe evidence paths under `/evidence/ai/<filename>`
 - admin dashboard displays the new incident
 
 Realtime controls:
@@ -635,10 +718,10 @@ The notebook includes:
 The notebook expects these local-only files under the project root:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/artifacts/clip_2class_touching_species.pt
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/models/hand_landmarker.task
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/datasets/touching-plants/
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/datasets/touching-wildlife/
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/models/hand_landmarker.task
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/datasets/touching-plants/
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/datasets/touching-wildlife/
 ```
 
 ---
@@ -658,7 +741,7 @@ The AI training pipeline performs:
 Expected trained model:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/artifacts/clip_2class_touching_species.pt
 ```
 
 The model file is not included in GitHub. Download it from the Google Drive asset
@@ -742,13 +825,13 @@ Replace `<INCIDENT_ID>` with an actual incident ID:
 ```bash
 curl -X PATCH http://localhost:4000/api/incidents/<INCIDENT_ID>/status \
   -H "Content-Type: application/json" \
-  -d '{"status":"Reviewed"}'
+  -d '{"status":"In Review"}'
 ```
 
 Expected result:
 
 - response returns updated incident
-- admin dashboard changes the incident status to `Reviewed`
+- admin dashboard and Park Ranger console show the updated incident status
 
 ---
 
@@ -762,7 +845,6 @@ Do not commit:
 node_modules/
 .venv/
 dist/
-alerts/
 artifacts/
 datasets/
 models/
@@ -774,7 +856,7 @@ models/
 Before pushing, run:
 
 ```bash
-git ls-files | grep -E "node_modules|\.venv|datasets|artifacts|alerts|models|\.pt|\.pth|dist"
+git ls-files | grep -E "node_modules|\.venv|datasets|artifacts|models|\.pt|\.pth|dist"
 ```
 
 Expected result:
@@ -788,8 +870,6 @@ If the command prints files, those files are still tracked and must be removed f
 Remove tracked local assets without deleting them from your Mac:
 
 ```bash
-git rm -r --cached alerts 2>/dev/null
-
 git rm -r --cached models 2>/dev/null
 
 git rm -r --cached artifacts 2>/dev/null
@@ -861,8 +941,7 @@ models/
 *.pkl
 *.joblib
 
-# Runtime alerts and evidence
-alerts/
+# Runtime backend data
 user_login/server/data/incidents.runtime.json
 
 # Logs
@@ -942,7 +1021,7 @@ Continuity Camera.
 Make sure this file exists:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/artifacts/clip_2class_touching_species.pt
 ```
 
 ### Hand model not found
@@ -950,7 +1029,7 @@ Make sure this file exists:
 Make sure this file exists:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/models/hand_landmarker.task
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/models/hand_landmarker.task
 ```
 
 ### AI evidence image does not show in admin
@@ -958,7 +1037,7 @@ Make sure this file exists:
 Check that the image exists:
 
 ```bash
-ls /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai
+ls /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
 ```
 
 Check that backend serves it:
@@ -976,7 +1055,7 @@ HTTP/1.1 200 OK
 If not, restart the project with:
 
 ```bash
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai" npm run dev
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" npm run dev
 ```
 
 ### Backend reports MySQL offline
@@ -988,14 +1067,17 @@ For the current prototype, MySQL is not required for live incident sync. The bac
 Use the standalone script:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 
 source .venv/bin/activate
 
 python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
 ```
+
+The script also accepts `--backend-url http://localhost:4000`; the default is
+already `http://localhost:4000`.
 
 ---
 
@@ -1022,11 +1104,13 @@ Recommended screenshots for the final report:
 3. AI alert JSON metadata
 4. Admin dashboard showing AI incident
 5. Admin incident detail panel with image and metadata
-6. IoT MQTT publish or ESP32 serial monitor
-7. Admin dashboard showing IoT incident
-8. IoT incident detail panel with distance and threshold
-9. `GET /api/incidents` JSON response
-10. Root workspace running with `npm run dev`
+6. Park Ranger alert console showing the same backend incident queue
+7. Park Ranger status update to `Acknowledged`, `In Review`, `Resolved`, or `False Alarm`
+8. IoT MQTT publish or ESP32 serial monitor
+9. Admin dashboard showing IoT incident
+10. IoT incident detail panel with distance and threshold
+11. `GET /api/incidents` JSON response
+12. Root workspace running with `npm run dev`
 
 ---
 

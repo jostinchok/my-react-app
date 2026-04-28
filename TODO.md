@@ -3,7 +3,7 @@
 Current working directory:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+/Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
 
 ## Immediate Next Tasks
@@ -22,6 +22,9 @@ Current working directory:
 - Fix any remaining admin visual polish issues.
 - Capture admin incident dashboard screenshots for report evidence.
 - Verify live AI/IoT alert sync in the Admin Incident Dashboard.
+- Verify the Park Ranger Alert Console at `http://localhost:5174/admin/ranger`.
+- Verify Admin and Park Ranger read the same `/api/incidents` backend queue.
+- Verify Park Ranger can update status to `Acknowledged`, `In Review`, `Resolved`, and `False Alarm`.
 - Verify AI evidence previews load from `http://localhost:4000/evidence/ai/...` in the admin detail panel.
 - Keep frontend seeded data only for now.
 - Do not connect Express/MySQL yet.
@@ -36,7 +39,8 @@ Current working directory:
 - Root review hub service checks can show backend offline when MySQL is unavailable even though Express itself starts.
 - MQTT public broker testing can fail if internet access or the public broker is unavailable; backend should keep running.
 - AI evidence path fix is implemented: backend uses configurable `AI_EVIDENCE_DIR`, admin resolves backend evidence URLs, and Express/MySQL remains disconnected.
-- Local AI assets should stay inside the project working directory under ignored `.venv/`, `artifacts/`, `datasets/`, `models/`, and `alerts/` folders.
+- Local AI assets should stay inside the project working directory under ignored `.venv/`, `artifacts/`, `datasets/`, and `models/` folders. `alerts/` is not ignored so curated demo evidence can stay in the repo.
+- Standalone AI monitor runtime flags are now local-repo ready: `--project-dir`, `--evidence-dir`, `--camera-index`, and `--backend-url`.
 - Camera docs should keep iPhone Continuity Camera as environment-dependent: tested through iPhone hotspot and Yoriichi's Router, but not guaranteed through OpenCV camera index switching.
 
 ## Improvements To Consider
@@ -47,6 +51,7 @@ Current working directory:
 - Redesign admin and mobile to match the citrus energetic website theme after the user website is stable.
 - Add backend endpoints for training modules, quiz progress, notifications, certificates, and file metadata later.
 - Live backend/API bridge for AI JSON and IoT MQTT events is now implemented with memory/local JSON storage.
+- Park Ranger alert console now uses the same backend incident API for response-only review.
 - Add a seeded MySQL setup guide and one command/script for local database import later.
 - Add MySQL-backed incident persistence after the live runtime demo and report evidence are stable.
 - Add lightweight tests or smoke checks for website build and review launcher.

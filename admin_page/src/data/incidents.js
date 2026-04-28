@@ -6,6 +6,8 @@ const publicAsset = (path) => `${adminBasePath}${path}`;
 
 export const INCIDENT_STATUSES = ["New", "Reviewed", "False Alarm"];
 
+export const RANGER_INCIDENT_STATUSES = ["Acknowledged", "In Review", "Resolved", "False Alarm"];
+
 export const INCIDENT_FILTERS = [
   { id: "all", label: "All" },
   { id: "AI_CAMERA", label: "AI Camera" },
@@ -196,6 +198,9 @@ export const summarizeIncidents = (incidents) => {
     iot: normalizedIncidents.filter((item) => item.source === "IOT_SENSOR").length,
     new: countByStatus.New || 0,
     reviewed: countByStatus.Reviewed || 0,
+    acknowledged: normalizedIncidents.filter((item) => item.status === "Acknowledged").length,
+    inReview: normalizedIncidents.filter((item) => item.status === "In Review").length,
+    resolved: normalizedIncidents.filter((item) => item.status === "Resolved").length,
     falseAlarm: countByStatus["False Alarm"] || 0,
   };
 };

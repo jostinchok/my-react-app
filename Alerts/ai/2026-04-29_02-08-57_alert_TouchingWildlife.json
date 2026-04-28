@@ -1,0 +1,60 @@
+{
+  "id": "AI-2026-04-29_02-08-57-alert-TouchingWildlife",
+  "source": "AI_CAMERA",
+  "eventType": "TouchingWildlife",
+  "severity": "medium",
+  "timestamp": "2026-04-29T02:08:57+08:00",
+  "location": "Demo Camera Zone",
+  "status": "New",
+  "evidenceImage": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-29_02-08-57_alert_TouchingWildlife.jpg",
+  "evidenceJson": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-29_02-08-57_alert_TouchingWildlife.json",
+  "ai": {
+    "predictedClass": "TouchingWildlife",
+    "confidence": 0.8985936641693115,
+    "margin": 0.7971873432397842,
+    "bbox": [
+      381,
+      330,
+      924,
+      612
+    ],
+    "probabilities": {
+      "TouchingPlants": 0.10140632092952728,
+      "TouchingWildlife": 0.8985936641693115
+    }
+  },
+  "iot": null,
+  "runtime": {
+    "history": [
+      "NotTouching",
+      "Touching",
+      "NotTouching",
+      "Touching",
+      "Touching"
+    ],
+    "touch_votes": 3,
+    "rolling_window": 5,
+    "alert_min_touching": 3,
+    "class_conf_threshold": 0.75,
+    "min_margin": 0.15
+  },
+  "detections": [
+    {
+      "bbox": [
+        381,
+        330,
+        924,
+        612
+      ],
+      "pred_class": "TouchingWildlife",
+      "display_class": "TouchingWildlife",
+      "top1": 0.8985936641693115,
+      "margin": 0.7971873432397842,
+      "probs": {
+        "TouchingPlants": 0.10140632092952728,
+        "TouchingWildlife": 0.8985936641693115
+      }
+    }
+  ],
+  "notes": "AI camera detected human interaction with protected plant or wildlife. Review evidence before action."
+}

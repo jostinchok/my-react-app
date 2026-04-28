@@ -19,12 +19,21 @@
         </div>
         <p class="hero-copy">
           Start the whole workspace with one command, then review the guide website,
-          admin console, mobile preview, and backend health from this page.
+          admin console, ranger alert console, mobile preview, and backend incident API from this page.
         </p>
         <div class="command-panel">
           <span>Run from repo root</span>
           <code>npm run dev</code>
         </div>
+        <nav class="hub-actions" aria-label="Demo navigation">
+          <a href="/user" target="_blank" rel="noreferrer">Login / Register</a>
+          <a href="/user" target="_blank" rel="noreferrer">Park Guide / User Portal</a>
+          <a href="/admin" target="_blank" rel="noreferrer">Admin Dashboard</a>
+          <a href="/admin/detection" target="_blank" rel="noreferrer">Admin Incident Detection</a>
+          <a href="/admin/ranger" target="_blank" rel="noreferrer">Park Ranger Alert Console</a>
+          <a href="/api/health" target="_blank" rel="noreferrer">Backend API Health</a>
+          <a href="/api/incidents" target="_blank" rel="noreferrer">Incidents API</a>
+        </nav>
       </section>
 
       <section class="service-grid" aria-label="Review services">
@@ -36,8 +45,8 @@
           <h2>User Portal</h2>
           <p>Guide-facing training, certificates, notifications, files, profile, and monitoring views.</p>
           <div class="link-row">
-            <a href="/user">Open proxied</a>
-            <a href="http://localhost:5175/user">Direct</a>
+            <a href="/user" target="_blank" rel="noreferrer">Open proxied</a>
+            <a href="http://localhost:5175/user" target="_blank" rel="noreferrer">Direct</a>
           </div>
         </article>
 
@@ -49,8 +58,22 @@
           <h2>Admin Portal</h2>
           <p>Admin dashboard for training modules, guide progress, certificates, and detection review.</p>
           <div class="link-row">
-            <a href="/admin">Open proxied</a>
-            <a href="http://localhost:5174/admin">Direct</a>
+            <a href="/admin" target="_blank" rel="noreferrer">Open proxied</a>
+            <a href="http://localhost:5174/admin" target="_blank" rel="noreferrer">Direct</a>
+            <a href="/admin/detection" target="_blank" rel="noreferrer">Incidents</a>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-top">
+            <span class="service-icon">R</span>
+            <span class="status-pill" data-status-for="ranger">checking</span>
+          </div>
+          <h2>Park Ranger</h2>
+          <p>Incident-response console for AI camera and IoT proximity alerts from the backend queue.</p>
+          <div class="link-row">
+            <a href="/admin/ranger" target="_blank" rel="noreferrer">Open proxied</a>
+            <a href="http://localhost:5174/admin/ranger" target="_blank" rel="noreferrer">Direct</a>
           </div>
         </article>
 
@@ -62,7 +85,7 @@
           <h2>Mobile Preview</h2>
           <p>Expo web preview of the React Native mobile app for quick desktop review.</p>
           <div class="link-row">
-            <a href="http://localhost:8081">Open preview</a>
+            <a href="http://localhost:8081" target="_blank" rel="noreferrer">Open preview</a>
           </div>
         </article>
 
@@ -72,10 +95,11 @@
             <span class="status-pill" data-status-for="backend">checking</span>
           </div>
           <h2>Backend API</h2>
-          <p>Express/MySQL API. MySQL must be running and seeded for full backend-backed review.</p>
+          <p>Express runtime API for health checks, AI/IoT incidents, and evidence image serving. MySQL is deferred.</p>
           <div class="link-row">
-            <a href="/api/health">Health check</a>
-            <a href="http://localhost:4000/api/health">Direct</a>
+            <a href="/api/health" target="_blank" rel="noreferrer">Health check</a>
+            <a href="/api/incidents" target="_blank" rel="noreferrer">Incidents</a>
+            <a href="http://localhost:4000/api/health" target="_blank" rel="noreferrer">Direct</a>
           </div>
         </article>
       </section>
@@ -84,7 +108,7 @@
         <h2>Review Notes</h2>
         <ul>
           <li>Use this hub for one-session review; the source apps remain separated by responsibility.</li>
-          <li>If backend health is offline, start MySQL and import <code>user_login/server/db.sql</code>.</li>
+          <li>MySQL is intentionally not connected for the current AI/CV incident demo.</li>
           <li>Direct links are useful if a dev server websocket does not work through the hub proxy.</li>
         </ul>
       </section>

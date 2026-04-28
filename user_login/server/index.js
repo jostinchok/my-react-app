@@ -29,7 +29,14 @@ app.use(express.json({ limit: '2mb' }))
 app.use('/evidence/ai', express.static(aiEvidenceDir))
 
 const VALID_SOURCES = new Set(['AI_CAMERA', 'IOT_SENSOR'])
-const VALID_STATUSES = new Set(['New', 'Reviewed', 'False Alarm'])
+const VALID_STATUSES = new Set([
+  'New',
+  'Reviewed',
+  'Acknowledged',
+  'In Review',
+  'Resolved',
+  'False Alarm',
+])
 const VALID_SEVERITIES = new Set(['low', 'medium', 'high'])
 const MQTT_TOPIC = process.env.MQTT_TOPIC || 'ctip/sensor/plant-zone-01/proximity'
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
@@ -220,6 +227,9 @@ const summarizeRuntimeIncidents = () => ({
   iot: runtimeIncidents.filter((item) => item.source === 'IOT_SENSOR').length,
   new: runtimeIncidents.filter((item) => item.status === 'New').length,
   reviewed: runtimeIncidents.filter((item) => item.status === 'Reviewed').length,
+  acknowledged: runtimeIncidents.filter((item) => item.status === 'Acknowledged').length,
+  inReview: runtimeIncidents.filter((item) => item.status === 'In Review').length,
+  resolved: runtimeIncidents.filter((item) => item.status === 'Resolved').length,
   falseAlarm: runtimeIncidents.filter((item) => item.status === 'False Alarm').length,
 })
 
@@ -236,7 +246,7 @@ app.get('/api/health', async (req, res) => {
     mqtt: mqttState,
     evidence: {
       route: '/evidence/ai',
-      directory: aiEvidenceDir,
+      storage: 'repo-local-alerts-ai',
     },
     database: {
       status: 'not_required_for_live_incidents',
@@ -286,7 +296,7 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
   const { status } = req.body
   if (!VALID_STATUSES.has(status)) {
     return res.status(400).json({
-      message: 'Invalid status. Use New, Reviewed, or False Alarm.',
+      message: 'Invalid status. Use New, Reviewed, Acknowledged, In Review, Resolved, or False Alarm.',
     })
   }
 

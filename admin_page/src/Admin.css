@@ -453,6 +453,21 @@
   background: #e5ffd1;
 }
 
+.status-chip.acknowledged {
+  color: #284b63;
+  background: #dff0ff;
+}
+
+.status-chip.in-review {
+  color: #5c3b00;
+  background: #ffe8aa;
+}
+
+.status-chip.resolved {
+  color: #155236;
+  background: #d9f8e7;
+}
+
 .status-chip.false-alarm {
   color: #6d2d19;
   background: #ffe6dc;
@@ -604,5 +619,184 @@
   .incident-section-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+.ranger-console {
+  --ranger-ink: #163025;
+  --ranger-muted: #5f6f65;
+  --ranger-green: #1f6b45;
+  --ranger-mint: #d9f7e6;
+  --ranger-amber: #f4b23b;
+  --ranger-cream: #f8fbf4;
+  --ranger-line: #dce9df;
+  width: min(1420px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 0 38px;
+  color: var(--ranger-ink);
+}
+
+.ranger-header {
+  min-height: 210px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: end;
+  gap: 24px;
+  padding: clamp(24px, 4vw, 42px);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(11, 54, 37, 0.96), rgba(25, 102, 67, 0.9));
+  box-shadow: 0 18px 42px rgba(10, 42, 29, 0.16);
+}
+
+.ranger-header .incident-eyebrow,
+.ranger-header .ranger-title,
+.ranger-header .ranger-subtitle {
+  color: #f6fff9;
+}
+
+.ranger-title {
+  margin: 8px 0 10px !important;
+  font-size: clamp(2.1rem, 5vw, 4rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+}
+
+.ranger-subtitle {
+  max-width: 680px;
+  font-size: 1.04rem !important;
+  line-height: 1.55 !important;
+}
+
+.ranger-live-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.ranger-live-card span,
+.ranger-live-card strong,
+.ranger-live-card small {
+  display: block;
+}
+
+.ranger-live-card span {
+  color: var(--ranger-green);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ranger-live-card strong {
+  margin: 6px 0;
+  color: var(--ranger-ink);
+  overflow-wrap: anywhere;
+}
+
+.ranger-live-card small {
+  color: var(--ranger-muted);
+}
+
+.ranger-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.ranger-stat-card,
+.ranger-table-panel,
+.ranger-detail-panel {
+  border-radius: 18px !important;
+  border: 1px solid var(--ranger-line);
+  background: #ffffff !important;
+  box-shadow: 0 14px 34px rgba(14, 52, 36, 0.08) !important;
+}
+
+.ranger-stat-card {
+  min-height: 128px;
+  padding: 18px;
+}
+
+.ranger-stat-card span {
+  color: var(--ranger-green);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ranger-stat-card strong {
+  display: block;
+  margin: 10px 0 8px;
+  color: var(--ranger-ink);
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.ranger-stat-card p {
+  margin: 0;
+  color: var(--ranger-muted);
+  line-height: 1.4;
+}
+
+.ranger-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 18px;
+  align-items: start;
+}
+
+.ranger-table-panel {
+  overflow: hidden;
+}
+
+.ranger-table .MuiTableCell-root {
+  vertical-align: middle;
+}
+
+.ranger-detail-panel {
+  position: sticky;
+  top: 20px;
+  padding: 20px;
+}
+
+.ranger-detail-panel h2 {
+  margin: 6px 0 4px;
+  color: var(--ranger-ink);
+  font-size: 1.72rem;
+  font-weight: 900;
+}
+
+.ranger-evidence-frame img {
+  height: 240px;
+}
+
+.ranger-status-actions .MuiButton-root {
+  min-height: 38px;
+}
+
+@media (max-width: 1180px) {
+  .ranger-header,
+  .ranger-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .ranger-detail-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  .ranger-console {
+    width: min(100% - 20px, 1420px);
+    padding-top: 10px;
+  }
+
+  .ranger-stat-grid {
+    grid-template-columns: 1fr;
   }
 }
