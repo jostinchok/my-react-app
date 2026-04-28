@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import Login from './components/Login'
 import {
   demoStorageVersion,
   demoUsers,
@@ -43,6 +44,7 @@ const initials = (name) =>
     .toUpperCase()
 
 function App() {
+  const [authenticatedUser, setAuthenticatedUser] = useState(null)
   const [users, setUsers] = useState(readStoredUsers)
   const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -371,6 +373,10 @@ function App() {
     { id: 'help', label: 'Help', icon: '?' },
   ]
 
+  if (!authenticatedUser) {
+    return <Login onLogin={setAuthenticatedUser} />
+  }
+
   return (
     <div className="app-shell">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
@@ -428,6 +434,9 @@ function App() {
             </select>
             <button type="button" className="reset-button" onClick={resetDemo}>
               Reset Demo
+            </button>
+            <button type="button" className="reset-button" onClick={() => setAuthenticatedUser(null)}>
+              Logout
             </button>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
               <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>

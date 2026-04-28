@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Admin, Resource, ListGuesser, Layout, useGetList } from "react-admin";
 import { Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress 
 } from "@mui/material";
@@ -11,6 +11,7 @@ import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
 import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
+import AuthPanel from "./components/AuthPanel.jsx";
 
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PeopleIcon from "@mui/icons-material/People";
@@ -396,13 +397,28 @@ function GuideProgress() {
 
 
 function AdminPage() {
+  const [authenticatedUser, setAuthenticatedUser] = useState(null)
+
+  if (!authenticatedUser) {
+    return <AuthPanel onAuthSuccess={setAuthenticatedUser} />
+  }
+
   return (
-    <Admin dataProvider={dataProvider} dashboard={Dashboard} layout={MyLayout}>
-      <Resource name="training" list={TrainingModuleSetup} />
-      <Resource name="students" list={StudentManagement} />
-      <Resource name="badge" list={BadgeManagement} />
-      <Resource name="detection" list={AIDetection} />
-    </Admin>
+    <>
+      <button
+        type="button"
+        className="admin-logout-btn"
+        onClick={() => setAuthenticatedUser(null)}
+      >
+        Logout
+      </button>
+      <Admin dataProvider={dataProvider} dashboard={Dashboard} layout={MyLayout}>
+        <Resource name="training" list={TrainingModuleSetup} />
+        <Resource name="students" list={StudentManagement} />
+        <Resource name="badge" list={BadgeManagement} />
+        <Resource name="detection" list={AIDetection} />
+      </Admin>
+    </>
   );
 }
 

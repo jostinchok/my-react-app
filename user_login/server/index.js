@@ -9,8 +9,35 @@ import { promises as fsPromises } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import mqtt from 'mqtt'
+import nodemailer from 'nodemailer'
 
 dotenv.config()
+
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: process.env.EMAIL_SECURE === 'true',
+  auth: {
+    user: process.env.EMAIL_USER || '',
+    pass: process.env.EMAIL_PASS || '',
+  },
+})
+
+const sendOtpEmail = async (toEmail, otp) => {
+  await emailTransporter.sendMail({
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to: toEmail,
+    subject: 'Your Digital Park Guide Password Reset OTP',
+    text: `Your one-time password (OTP) is: ${otp}\n\nThis OTP expires in 15 minutes. Do not share it with anyone.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e0e0e0;border-radius:12px">
+        <h2 style="color:#2e7d32">Password Reset OTP</h2>
+        <p>Use the OTP below to reset your Digital Park Guide account password.</p>
+        <div style="font-size:2rem;font-weight:bold;letter-spacing:0.3em;color:#1b5e20;background:#f1f8e9;padding:16px 24px;border-radius:8px;text-align:center;margin:24px 0">${otp}</div>
+        <p style="color:#555">This OTP expires in <strong>15 minutes</strong>. If you did not request a password reset, ignore this email.</p>
+      </div>`,
+  })
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -69,9 +96,17 @@ const readRuntimeIncidents = () => {
 
 let runtimeIncidents = []
 
-const persistRuntimeIncidents = async () => {
-  await fsPromises.mkdir(runtimeDataDir, { recursive: true })
-  await fsPromises.writeFile(runtimeIncidentFile, JSON.stringify(runtimeIncidents, null, 2), 'utf8')
+let _persistTimer = null
+const persistRuntimeIncidents = () => {
+  if (_persistTimer) clearTimeout(_persistTimer)
+  _persistTimer = setTimeout(async () => {
+    try {
+      await fsPromises.mkdir(runtimeDataDir, { recursive: true })
+      await fsPromises.writeFile(runtimeIncidentFile, JSON.stringify(runtimeIncidents, null, 2), 'utf8')
+    } catch (err) {
+      console.warn(`[incidents] Persist failed: ${err.message}`)
+    }
+  }, 400)
 }
 
 const toNumber = (value, fallback = null) => {
@@ -210,7 +245,7 @@ const addRuntimeIncident = async (input, options = {}) => {
 
   incident.id = makeUniqueIncidentId(incident.id, incident.source, incident.timestamp)
   runtimeIncidents = [incident, ...runtimeIncidents].slice(0, MAX_RUNTIME_INCIDENTS)
-  await persistRuntimeIncidents()
+  persistRuntimeIncidents()
   return incident
 }
 
@@ -307,35 +342,44 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const { name, email, password, role } = req.body
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required.' })
     }
+
+    const normalizedRole = role === 'admin' ? 'admin' : 'guide'
 
     const [existing] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
     if (existing.length > 0) {
       return res.status(409).json({ message: 'This email is already registered.' })
     }
 
+    const [roleRows] = await pool.query('SELECT role_id FROM roles WHERE role_name = ? LIMIT 1', [normalizedRole])
+    if (roleRows.length === 0) {
+      return res.status(500).json({ message: 'Configured role is missing in database.' })
+    }
+
     const passwordHash = await bcrypt.hash(password, 10)
     const [result] = await pool.query(
       'INSERT INTO users (role_id, name, email, password_hash) VALUES (?, ?, ?, ?)',
-      [2, name, email, passwordHash]
+      [roleRows[0].role_id, name, email, passwordHash]
     )
 
-    await pool.query(
-      'INSERT INTO guide_profiles (guide_id, phone, organization) VALUES (?, ?, ?)',
-      [result.insertId, '', '']
-    )
+    if (normalizedRole === 'guide') {
+      await pool.query(
+        'INSERT INTO guide_profiles (guide_id, phone, organization) VALUES (?, ?, ?)',
+        [result.insertId, '', '']
+      )
+    }
 
     return res.status(201).json({
       user: {
         user_id: result.insertId,
         name,
         email,
-        role_name: 'guide',
+        role_name: normalizedRole,
       },
-      message: 'User registered successfully.',
+      message: `${normalizedRole === 'admin' ? 'Admin' : 'Guide'} registered successfully.`,
     })
   } catch (error) {
     return res.status(500).json({ message: 'Registration failed.', error: error.message })
@@ -389,12 +433,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 
     const [users] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
-    let resetToken
 
     if (users.length > 0) {
       const user = users[0]
-      resetToken = crypto.randomBytes(32).toString('hex')
-      const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex')
+      const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0')
+      const tokenHash = crypto.createHash('sha256').update(otp).digest('hex')
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
 
       await pool.query('DELETE FROM password_reset_tokens WHERE user_id = ?', [user.user_id])
@@ -402,11 +445,18 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
         [user.user_id, tokenHash, expiresAt]
       )
+
+      try {
+        await sendOtpEmail(email, otp)
+        console.log(`[auth] OTP email sent to ${email}`)
+      } catch (emailError) {
+        console.warn(`[auth] OTP email failed for ${email}: ${emailError.message}`)
+      }
     }
 
+    // Always return the same response to avoid exposing whether the email exists
     return res.json({
-      message: 'If the email exists, a reset token has been generated.',
-      resetToken: resetToken || null,
+      message: 'If that email is registered, a 6-digit OTP has been sent to it.',
     })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to process forgot password request.', error: error.message })
@@ -415,9 +465,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const { email, token, newPassword } = req.body
-    if (!email || !token || !newPassword) {
-      return res.status(400).json({ message: 'Email, token and new password are required.' })
+    const { email, token, otp, newPassword } = req.body
+    const resetOtp = otp || token
+    if (!email || !resetOtp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP and new password are required.' })
+    }
+
+    if (!/^\d{6}$/.test(String(resetOtp))) {
+      return res.status(400).json({ message: 'OTP must be a 6-digit number.' })
     }
 
     const [users] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
@@ -426,7 +481,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 
     const user = users[0]
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+    const tokenHash = crypto.createHash('sha256').update(String(resetOtp)).digest('hex')
 
     const [tokens] = await pool.query(
       `SELECT token_id
@@ -519,6 +574,14 @@ const startMqttBridge = () => {
     console.warn(`[mqtt] Bridge did not start: ${error.message}`)
   }
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.warn('[server] Unhandled rejection (ignored):', reason?.message ?? reason)
+})
+
+process.on('uncaughtException', (err) => {
+  console.warn('[server] Uncaught exception (ignored):', err.message)
+})
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)
