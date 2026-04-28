@@ -26,8 +26,11 @@ Current working directory:
 - Verify Admin and Park Ranger read the same `/api/incidents` backend queue.
 - Verify Park Ranger can update status to `Acknowledged`, `In Review`, `Resolved`, and `False Alarm`.
 - Verify AI evidence previews load from `http://localhost:4000/evidence/ai/...` in the admin detail panel.
+- Verify `INCIDENT_STORAGE=memory` still works for AI/IoT incident sync.
+- Create local database `cos30049_assignment`, apply `user_login/server/migrations/001_create_monitoring_incident_tables.sql`, and verify `INCIDENT_STORAGE=mysql` for AI/IoT incidents.
+- Verify MySQL fallback: with MySQL offline and `INCIDENT_MYSQL_FALLBACK=memory`, backend starts and `/api/health` reports degraded storage.
 - Keep frontend seeded data only for now.
-- Do not connect Express/MySQL yet.
+- Do not connect the full training platform to MySQL yet.
 
 ## Bugs To Fix
 
@@ -35,10 +38,10 @@ Current working directory:
 - Working tree currently shows generated/install artifact noise under `user_page/dist`, `user_page/node_modules`, and `user_login/server/node_modules`.
 - `user_page` build can fail after dependency churn if Rollup optional native packages are missing.
 - Root `npm run dev` now checks `http://localhost:4000/api/health` and skips starting a duplicate backend when one is already running.
-- Backend `/api/health` no longer requires MySQL for incident-sync testing, but it still reports the database as offline until MySQL is running and seeded.
+- Backend `/api/health` no longer requires MySQL for memory incident-sync testing and now reports incident storage mode plus degraded fallback state.
 - Root review hub service checks can show backend offline when MySQL is unavailable even though Express itself starts.
 - MQTT public broker testing can fail if internet access or the public broker is unavailable; backend should keep running.
-- AI evidence path fix is implemented: backend uses configurable `AI_EVIDENCE_DIR`, admin resolves backend evidence URLs, and Express/MySQL remains disconnected.
+- AI evidence path fix is implemented: backend uses configurable `AI_EVIDENCE_DIR`, admin resolves backend evidence URLs, and MySQL incident mode stores browser-safe evidence URLs only.
 - Local AI assets should stay inside the project working directory under ignored `.venv/`, `artifacts/`, `datasets/`, and `models/` folders. `alerts/` is not ignored so curated demo evidence can stay in the repo.
 - Standalone AI monitor runtime flags are now local-repo ready: `--project-dir`, `--evidence-dir`, `--camera-index`, and `--backend-url`.
 - Camera docs should keep iPhone Continuity Camera as environment-dependent: tested through iPhone hotspot and Yoriichi's Router, but not guaranteed through OpenCV camera index switching.
@@ -52,8 +55,8 @@ Current working directory:
 - Add backend endpoints for training modules, quiz progress, notifications, certificates, and file metadata later.
 - Live backend/API bridge for AI JSON and IoT MQTT events is now implemented with memory/local JSON storage.
 - Park Ranger alert console now uses the same backend incident API for response-only review.
-- Add a seeded MySQL setup guide and one command/script for local database import later.
-- Add MySQL-backed incident persistence after the live runtime demo and report evidence are stable.
+- Add seeded MySQL setup for the full training platform later.
+- Add an automated smoke test for memory and MySQL incident storage modes.
 - Add lightweight tests or smoke checks for website build and review launcher.
 
 ## Items That Should Not Be Changed Yet
@@ -63,6 +66,6 @@ Current working directory:
 - Do not replace the current website GUI with a completely unrelated template.
 - Do not remove existing admin/mobile/backend folders.
 - Do not delete assignment artifacts such as `Project Scope.pdf`, `alerts/`, `artifacts/`, `datasets/`, `models/`, or the CTIP notebook unless explicitly requested.
-- Do not connect Express/MySQL yet.
-- Do not connect Express/MySQL for the Admin Incident Dashboard until the seeded UI and report evidence are stable.
+- Do not connect the full training platform to MySQL yet.
+- Do not change the current Admin Incident Dashboard UI while testing incident storage.
 - Do not commit `.DS_Store`, local `node_modules`, or generated `dist` output unless the user explicitly decides the repo must track them.

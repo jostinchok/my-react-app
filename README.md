@@ -29,7 +29,7 @@ The system combines four main parts:
 4. **IoT Proximity Sensor Prototype**
    - Uses an ESP32 and ultrasonic sensor to detect when an object gets close to a protected plant zone.
 
-The live incident bridge currently uses lightweight Express runtime storage. MySQL persistence is intentionally not connected yet.
+The live incident bridge uses memory/local JSON storage by default and can be switched to MySQL persistence for AI/IoT monitoring incidents only. The full training platform is not connected to MySQL in this pass.
 
 ---
 
@@ -45,7 +45,7 @@ Current working direction:
 - IoT MQTT alerts can be sent to the admin dashboard.
 - Admin incident dashboard can display both AI and IoT incidents.
 - Park Ranger alert console can view the same backend incident queue and update response status.
-- MySQL is not required for the live incident demo.
+- MySQL is optional for the live incident demo through `INCIDENT_STORAGE=mysql`.
 
 ---
 
@@ -466,6 +466,17 @@ Resolved
 False Alarm
 ```
 
+Incident storage modes:
+
+```text
+INCIDENT_STORAGE=memory  default; memory plus local runtime JSON
+INCIDENT_STORAGE=mysql   optional; AI/IoT monitoring incidents stored in MySQL
+```
+
+If `INCIDENT_STORAGE=mysql` is selected but MySQL is unavailable, the backend still starts. With `INCIDENT_MYSQL_FALLBACK=memory`, `/api/health` reports degraded storage and the incident API uses memory fallback. Fallback memory incidents are not auto-synced back into MySQL.
+
+MySQL incident persistence is scoped only to AI/IoT monitoring incidents. It does not connect the full training platform, users, modules, quizzes, progress, or certificates to MySQL.
+
 Check backend health:
 
 ```bash
@@ -483,6 +494,92 @@ Get incident summary:
 ```bash
 curl http://localhost:4000/api/incidents/summary
 ```
+
+---
+
+## MySQL Incident Persistence
+
+Database name:
+
+```text
+cos30049_assignment
+```
+
+Migration file:
+
+```text
+user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+Created tables:
+
+```text
+monitoring_incidents
+monitoring_incident_ai_metadata
+monitoring_incident_iot_metadata
+monitoring_incident_actions
+monitoring_incident_evidence_files
+```
+
+Safe environment template:
+
+```text
+user_login/server/.env.example
+```
+
+Create database:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+```
+
+Apply migration:
+
+```bash
+mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+Run memory mode:
+
+```bash
+INCIDENT_STORAGE=memory \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+npm run dev
+```
+
+Run MySQL mode:
+
+```bash
+INCIDENT_STORAGE=mysql \
+DB_DATABASE=cos30049_assignment \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+npm run dev
+```
+
+Test:
+
+```bash
+curl http://localhost:4000/api/health
+curl http://localhost:4000/api/incidents
+curl http://localhost:4000/api/incidents/summary
+```
+
+Patch:
+
+```bash
+curl -X PATCH http://localhost:4000/api/incidents/<INCIDENT_ID>/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"In Review"}'
+```
+
+Check DB:
+
+```bash
+mysql -u root -p cos30049_assignment \
+  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
+```
+
+Evidence paths stored and returned by the incident API must stay browser-safe, such as `/evidence/ai/example.jpg`. Absolute local filesystem paths are converted before frontend responses.
 
 ---
 
@@ -1060,7 +1157,7 @@ AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" npm r
 
 ### Backend reports MySQL offline
 
-For the current prototype, MySQL is not required for live incident sync. The backend may report database offline in `/api/health`, but incident sync should still work.
+MySQL is optional for live incident sync. In default `INCIDENT_STORAGE=memory` mode, incident sync should still work when MySQL is offline. In `INCIDENT_STORAGE=mysql` mode, `/api/health` reports degraded storage and uses memory fallback when `INCIDENT_MYSQL_FALLBACK=memory`.
 
 ### Jupyter kernel crashes when quitting realtime camera
 
@@ -1090,8 +1187,9 @@ already `http://localhost:4000`.
 - Gloved hands may not be detected reliably.
 - The model works best in controlled lighting and controlled camera distance.
 - MQTT prototype uses a simple public or local broker setup.
-- Incident persistence is currently in memory and local runtime JSON only.
-- MySQL persistence is not connected yet.
+- Incident persistence defaults to memory and local runtime JSON.
+- MySQL persistence is available only for AI/IoT monitoring incidents.
+- Training platform data is not connected to MySQL yet.
 
 ---
 
@@ -1118,7 +1216,7 @@ Recommended screenshots for the final report:
 
 Planned next improvements:
 
-- move runtime incident storage into MySQL
+- verify MySQL incident persistence during final demo rehearsal
 - improve admin dashboard audit trail
 - add stronger negative-class model support
 - add more training data
