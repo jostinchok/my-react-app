@@ -223,20 +223,72 @@ const copy = {
 }
 
 const palette = {
-  bg: '#f0f2f0',
+  bg: '#f4f8ee',
   panel: '#ffffff',
-  text: '#2d3436',
-  muted: '#636e72',
-  border: '#e6efea',
-  accent: '#379237',
-  accentSoft: '#eaf5ef',
-  primaryDark: '#062C1E',
+  text: '#28251d',
+  muted: '#617064',
+  border: '#dfe8d6',
+  accent: '#ff7a1a',
+  accentSoft: '#fff1cc',
+  primaryDark: '#3a2a16',
+  lime: '#b8f22f',
 }
 
-const navTabs = ['profile', 'files', 'settings', 'logout']
+const sideMenuItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'D', targetTab: 'dashboard' },
+  { id: 'modules', label: 'My Modules', icon: 'M', targetTab: 'training' },
+  { id: 'module', label: 'Module Details', icon: 'I', targetTab: 'training' },
+  { id: 'progress', label: 'Progress', icon: 'P', targetTab: 'training' },
+  { id: 'certificates', label: 'Certificates', icon: 'C', targetTab: 'certs' },
+  { id: 'notifications', label: 'Notifications', icon: 'N', targetTab: 'notifications' },
+  { id: 'schedule', label: 'Schedule', icon: 'S', targetTab: 'training' },
+  { id: 'resources', label: 'Resources', icon: 'R', targetTab: 'files' },
+  { id: 'profile', label: 'Profile', icon: 'U', targetTab: 'profile' },
+  { id: 'help', label: 'Help', icon: '?', targetTab: 'settings' },
+]
 const NAV_WIDTH = 280
 
 const bottomBarHeight = 60
+
+const dashboardModules = [
+  {
+    id: 'mod-1',
+    title: 'Bako Trail Guiding',
+    park: 'Bako National Park',
+    duration: '2h 20m',
+    progress: 78,
+  },
+  {
+    id: 'mod-2',
+    title: 'Visitor Safety Response',
+    park: 'Kubah National Park',
+    duration: '1h 45m',
+    progress: 52,
+  },
+  {
+    id: 'mod-3',
+    title: 'Conservation Law Essentials',
+    park: 'Gunung Gading National Park',
+    duration: '2h 05m',
+    progress: 34,
+  },
+]
+
+const canDoItems = [
+  'View assigned modules and progress',
+  'Complete lessons and quizzes',
+  'Save training resources for later',
+  'Track schedules and reminders',
+  'Manage own profile details',
+]
+
+const cannotDoItems = [
+  'Approve certificates',
+  'Edit master training catalog',
+  'Manage all users and roles',
+  'Publish admin announcements',
+  'Modify system-wide settings',
+]
 
 function formatDateKey(dateObj) {
   return dateObj.toISOString().slice(0, 10)
@@ -259,6 +311,7 @@ export default function App() {
   const [language, setLanguage] = useState('en')
   const t = copy[language] || copy.en
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeMenuId, setActiveMenuId] = useState('dashboard')
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isNavMounted, setIsNavMounted] = useState(false)
   const [hoveredTab, setHoveredTab] = useState(null)
@@ -288,6 +341,7 @@ export default function App() {
   })
 const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '', avatar: '' })
   const navTranslateX = useRef(new Animated.Value(-NAV_WIDTH)).current
+  const nextModule = dashboardModules[0]
 
   const monthCells = useMemo(() => buildMonthMatrix(calendarYear, calendarMonth), [calendarYear, calendarMonth])
 
@@ -473,18 +527,79 @@ const ProfileView = ({ profile, t }) => {
 
         {activeTab === 'dashboard' && (
           <View style={styles.stackGap}>
-            <View style={[styles.hero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
-              <Text style={[styles.h1, { color: '#fff' }]}>{t.portalTitle}</Text>
-              <Text style={{ color: '#ffffff' }}>{t.welcomeSubtitle}</Text>
+            <View style={[styles.homeHero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
+              <Text style={styles.heroKicker}>Citrus learning path</Text>
+              <Text style={[styles.h1, { color: '#fff' }]}>Fresh field training for Sarawak park guides.</Text>
+              <Text style={{ color: '#ffffff' }}>
+                Continue assigned modules, pass scenario quizzes, and build certificate evidence from one user portal.
+              </Text>
+              <View style={styles.heroButtonRow}>
+                <Pressable style={[styles.primaryBtn, styles.heroPrimary, { backgroundColor: palette.accent }]}>
+                  <Text style={styles.primaryBtnText}>Continue {nextModule.title}</Text>
+                </Pressable>
+                <Pressable style={[styles.secondaryBtn, styles.heroSecondary, { borderColor: '#8fb7a6' }]}>
+                  <Text style={{ color: '#ffffff', fontWeight: '700' }}>Browse all modules</Text>
+                </Pressable>
+              </View>
             </View>
+
+            <View style={[styles.nextActionCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
+              <View style={styles.nextActionImage} />
+              <View style={styles.nextActionContent}>
+                <Text style={{ color: palette.muted, fontWeight: '700' }}>Next action</Text>
+                <Text style={{ color: palette.text, fontWeight: '800', fontSize: 16 }}>{nextModule.title}</Text>
+                <ProgressBar value={nextModule.progress} />
+                <Text style={{ color: palette.muted }}>{nextModule.progress}% complete</Text>
+              </View>
+            </View>
+
             <View style={styles.statRow}>
-              {[t.currentProgress, t.credentials, t.status].map((title, i) => (
-                <View key={title} style={[styles.statCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                  <Text style={{ color: palette.muted, fontWeight: '700' }}>{title}</Text>
-                  <Text style={[styles.statBig, { color: palette.text }]}>{i === 0 ? '75%' : i === 1 ? '02' : t.active}</Text>
-                  <Text style={{ color: palette.muted }}>{i === 1 ? t.verifiedCertificates : ' '}</Text>
+              {[
+                { label: 'Overall progress', value: '55%', detail: '3 enrolled modules' },
+                { label: 'Completed modules', value: '01/10', detail: 'Lessons plus quiz required' },
+                { label: 'Certificates', value: '02', detail: 'Verified or ready for review' },
+                { label: 'Unread updates', value: '03', detail: 'Training, resources, schedule' },
+              ].map((item) => (
+                <View key={item.label} style={[styles.statCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
+                  <Text style={{ color: palette.muted, fontWeight: '700' }}>{item.label}</Text>
+                  <Text style={[styles.statBig, { color: palette.text }]}>{item.value}</Text>
+                  <Text style={{ color: palette.muted }}>{item.detail}</Text>
                 </View>
               ))}
+            </View>
+
+            <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
+              <Text style={[styles.panelKicker, { color: palette.muted }]}>Learning path</Text>
+              <Text style={[styles.panelTitle, { color: palette.text }]}>Active modules</Text>
+              <View style={styles.moduleList}>
+                {dashboardModules.map((module) => (
+                  <Pressable key={module.id} style={[styles.moduleRow, { borderColor: palette.border }]}>
+                    <View style={styles.moduleThumb} />
+                    <View style={styles.moduleCopy}>
+                      <Text style={{ color: palette.text, fontWeight: '800' }}>{module.title}</Text>
+                      <Text style={{ color: palette.muted }}>{module.park} - {module.duration}</Text>
+                    </View>
+                    <Text style={{ color: palette.text, fontWeight: '800' }}>{module.progress}%</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.boundaryGrid}>
+              <View style={[styles.card, styles.boundaryCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
+                <Text style={[styles.panelKicker, { color: palette.muted }]}>Role boundary</Text>
+                <Text style={[styles.panelTitle, { color: palette.text }]}>What this user can do</Text>
+                {canDoItems.map((item) => (
+                  <Text key={item} style={{ color: palette.text, marginTop: 6 }}>+ {item}</Text>
+                ))}
+              </View>
+              <View style={[styles.card, styles.boundaryCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
+                <Text style={[styles.panelKicker, { color: palette.muted }]}>Admin locked</Text>
+                <Text style={[styles.panelTitle, { color: palette.text }]}>What this user cannot do</Text>
+                {cannotDoItems.map((item) => (
+                  <Text key={item} style={{ color: palette.text, marginTop: 6 }}>- {item}</Text>
+                ))}
+              </View>
             </View>
           </View>
         )}
@@ -754,6 +869,8 @@ const ProfileView = ({ profile, t }) => {
             key={tab}
             onPress={() => {
               setActiveTab(tab)
+              const matchedMenu = sideMenuItems.find((item) => item.targetTab === tab)
+              if (matchedMenu) setActiveMenuId(matchedMenu.id)
               setIsNavOpen(false)
             }}
             style={[
@@ -783,23 +900,29 @@ const ProfileView = ({ profile, t }) => {
             ]}
           >
             <Text style={[styles.sideNavTitle, { color: '#ffffff' }]}>{t.portalTitle}</Text>
-            {navTabs.map((tab) => (
+            {sideMenuItems.map((item) => (
               <Pressable
-                  key={tab}
+                  key={item.id}
                   onPress={() => {
-                    setActiveTab(tab)
+                    setActiveMenuId(item.id)
+                    setActiveTab(item.targetTab)
                     setIsNavOpen(false)
                   }}
-                  onMouseEnter={() => setHoveredTab(tab)}
+                  onMouseEnter={() => setHoveredTab(item.id)}
                   onMouseLeave={() => setHoveredTab(null)}
                   style={[
                     styles.sideNavItem,
-                    (activeTab === tab || hoveredTab === tab) && {
+                    (activeMenuId === item.id || hoveredTab === item.id) && {
                       backgroundColor: palette.accent,
                     },
                   ]}
                 >
-                <Text style={{ color: (activeTab === tab || hoveredTab === tab) ? '#fff' : '#bdc3c7', fontWeight: '700', fontSize: 16, includeFontPadding: false }}>{t[tab]}</Text>
+                <Text style={[styles.sideNavIcon, { color: (activeMenuId === item.id || hoveredTab === item.id) ? '#fff' : '#bdc3c7' }]}>
+                  {item.icon}
+                </Text>
+                <Text style={{ color: (activeMenuId === item.id || hoveredTab === item.id) ? '#fff' : '#bdc3c7', fontWeight: '700', fontSize: 16, includeFontPadding: false }}>
+                  {item.label}
+                </Text>
                 </Pressable>
             ))}
           </Animated.View>
@@ -847,6 +970,14 @@ const ProfileView = ({ profile, t }) => {
   )
 }
 
+function ProgressBar({ value }) {
+  return (
+    <View style={styles.progressTrack}>
+      <View style={[styles.progressFill, { width: `${Math.max(0, Math.min(value, 100))}%` }]} />
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: {
@@ -883,9 +1014,35 @@ const styles = StyleSheet.create({
   h2: { fontSize: 24, fontWeight: '800' },
   stackGap: { gap: 10 },
   hero: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
-  statRow: { flexDirection: 'row', gap: 8 },
-  statCard: { flex: 1, borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
-  statBig: { fontSize: 30, fontWeight: '900' },
+  homeHero: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 8 },
+  heroKicker: { color: '#9fc9b8', fontWeight: '700', textTransform: 'uppercase', fontSize: 12 },
+  heroButtonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  heroPrimary: { paddingHorizontal: 12 },
+  heroSecondary: { paddingHorizontal: 12, backgroundColor: 'transparent' },
+  nextActionCard: { borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center' },
+  nextActionImage: { width: 58, height: 58, borderRadius: 10, backgroundColor: '#d8e7df' },
+  nextActionContent: { flex: 1, gap: 5 },
+  statRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  statCard: { width: '48%', borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
+  statBig: { fontSize: 24, fontWeight: '900' },
+  panelKicker: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  panelTitle: { fontSize: 18, fontWeight: '800' },
+  moduleList: { marginTop: 10, gap: 8 },
+  moduleRow: { borderWidth: 1, borderRadius: 12, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  moduleThumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#d8e7df' },
+  moduleCopy: { flex: 1, gap: 2 },
+  boundaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  boundaryCard: { width: '48%' },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#e6efea',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: palette.accent,
+  },
   trainingSwitchRow: { flexDirection: 'row', gap: 8 },
   switchBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   courseToolbar: { flexDirection: 'row' },
@@ -910,7 +1067,7 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   overlayLeft: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(40,37,29,0.3)',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
   },
@@ -923,6 +1080,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     padding: 14,
     gap: 8,
+    backgroundColor: '#ff7a1a',
   },
   sideNavTitle: { 
     fontSize: 18, 
@@ -942,7 +1100,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: '100%',
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: 10,
+  },
+  sideNavIcon: {
+    fontSize: 14,
+    fontWeight: '800',
+    width: 16,
+    textAlign: 'center',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 8,
+    overflow: 'hidden',
+    paddingVertical: 6,
   },
   sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, borderWidth: 1, gap: 8 },
   sheetTitle: { marginTop: 8, fontWeight: '800' },
