@@ -261,7 +261,7 @@ Specifically check:
 - Responsive layout at desktop and mobile widths.
 - Keep frontend seeded data only; do not connect the full training platform to Express/MySQL yet.
 
-For incident monitoring specifically, the next backend task is to test the MySQL migration and fallback behavior on the local MySQL install.
+For incident monitoring specifically, the MySQL migration and API smoke path were verified locally on `cos30049_assignment`. The next task is to review which `alerts/ai` demo evidence files should be kept in Git.
 
 ## Rules / Instructions Not To Forget
 

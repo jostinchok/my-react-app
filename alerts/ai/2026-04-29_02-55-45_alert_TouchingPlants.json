@@ -1,26 +1,26 @@
 {
-  "id": "AI-2026-04-27_13-01-36-alert-TouchingPlants",
+  "id": "AI-2026-04-29_02-55-45-alert-TouchingPlants",
   "source": "AI_CAMERA",
   "eventType": "TouchingPlants",
   "severity": "medium",
-  "timestamp": "2026-04-27T13:01:36+08:00",
+  "timestamp": "2026-04-29T02:55:45+08:00",
   "location": "Demo Camera Zone",
   "status": "New",
-  "evidenceImage": "/Users/chiayuenkai/cos30049/Alerts/ai/2026-04-27_13-01-36_alert_TouchingPlants.jpg",
-  "evidenceJson": "/Users/chiayuenkai/cos30049/Alerts/ai/2026-04-27_13-01-36_alert_TouchingPlants.json",
+  "evidenceImage": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-29_02-55-45_alert_TouchingPlants.jpg",
+  "evidenceJson": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-29_02-55-45_alert_TouchingPlants.json",
   "ai": {
     "predictedClass": "TouchingPlants",
-    "confidence": 0.7814879417419434,
-    "margin": 0.5629758536815643,
+    "confidence": 0.8245494961738586,
+    "margin": 0.6490989923477173,
     "bbox": [
-      444,
-      570,
-      923,
-      1079
+      811,
+      326,
+      1274,
+      858
     ],
     "probabilities": {
-      "TouchingPlants": 0.7814879417419434,
-      "TouchingWildlife": 0.21851208806037903
+      "TouchingPlants": 0.8245494961738586,
+      "TouchingWildlife": 0.17545050382614136
     }
   },
   "iot": null,
@@ -41,18 +41,18 @@
   "detections": [
     {
       "bbox": [
-        444,
-        570,
-        923,
-        1079
+        811,
+        326,
+        1274,
+        858
       ],
       "pred_class": "TouchingPlants",
       "display_class": "TouchingPlants",
-      "top1": 0.7814879417419434,
-      "margin": 0.5629758536815643,
+      "top1": 0.8245494961738586,
+      "margin": 0.6490989923477173,
       "probs": {
-        "TouchingPlants": 0.7814879417419434,
-        "TouchingWildlife": 0.21851208806037903
+        "TouchingPlants": 0.8245494961738586,
+        "TouchingWildlife": 0.17545050382614136
       }
     }
   ],

@@ -26,9 +26,8 @@ Current working directory:
 - Verify Admin and Park Ranger read the same `/api/incidents` backend queue.
 - Verify Park Ranger can update status to `Acknowledged`, `In Review`, `Resolved`, and `False Alarm`.
 - Verify AI evidence previews load from `http://localhost:4000/evidence/ai/...` in the admin detail panel.
-- Verify `INCIDENT_STORAGE=memory` still works for AI/IoT incident sync.
-- Create local database `cos30049_assignment`, apply `user_login/server/migrations/001_create_monitoring_incident_tables.sql`, and verify `INCIDENT_STORAGE=mysql` for AI/IoT incidents.
-- Verify MySQL fallback: with MySQL offline and `INCIDENT_MYSQL_FALLBACK=memory`, backend starts and `/api/health` reports degraded storage.
+- Review current untracked `alerts/ai` demo evidence and keep only clean files that should be committed.
+- Re-run `INCIDENT_STORAGE=memory` and `INCIDENT_STORAGE=mysql` smoke checks before final commit if more backend changes are made.
 - Keep frontend seeded data only for now.
 - Do not connect the full training platform to MySQL yet.
 
