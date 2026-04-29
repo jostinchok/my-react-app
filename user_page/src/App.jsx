@@ -47,7 +47,7 @@ function App() {
   const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [selectedModuleId, setSelectedModuleId] = useState(users[0]?.enrolledModuleIds?.[0] || trainingModules[0].id)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [moduleSearch, setModuleSearch] = useState('')
   const [moduleStatus, setModuleStatus] = useState('all')
   const [moduleCategory, setModuleCategory] = useState('all')
@@ -358,6 +358,17 @@ function App() {
     updateCurrentUser((user) => ({ ...user, [field]: value }))
   }
 
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      updateCurrentUser((user) => ({ ...user, avatar: reader.result }))
+    }
+    reader.readAsDataURL(file)
+    event.target.value = ''
+  }
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'D' },
     { id: 'modules', label: 'My Modules', icon: 'M' },
@@ -366,14 +377,12 @@ function App() {
     { id: 'certificates', label: 'Certificates', icon: 'C' },
     { id: 'notifications', label: 'Notifications', icon: 'N' },
     { id: 'schedule', label: 'Schedule', icon: 'S' },
-    { id: 'resources', label: 'Resources', icon: 'R' },
     { id: 'profile', label: 'Profile', icon: 'U' },
-    { id: 'help', label: 'Help', icon: '?' },
   ]
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="brand-block">
           <div className="brand-mark">SFC</div>
           <div>
@@ -406,8 +415,9 @@ function App() {
           <p>Training access only. Admin controls stay locked.</p>
         </div>
       </aside>
+      <div className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-      <main className="workspace">
+      <main className={`workspace ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <header className="topbar">
           <button className="menu-button" type="button" onClick={() => setSidebarOpen((value) => !value)}>
             <span />
@@ -430,7 +440,11 @@ function App() {
               Reset Demo
             </button>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
-              <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
+              {currentUser.avatar ? (
+                <img src={currentUser.avatar} alt="User avatar" />
+              ) : (
+                <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
+              )}
             </button>
           </div>
         </header>
@@ -462,7 +476,6 @@ function App() {
                   <div>
                     <span>Next action</span>
                     <strong>{nextModule.title}</strong>
-                    <ProgressBar value={getProgress(nextModule)} />
                     <small>{getProgress(nextModule)}% complete</small>
                   </div>
                 </div>
@@ -894,48 +907,6 @@ function App() {
             </section>
           )}
 
-          {activeTab === 'resources' && (
-            <section className="page-stack">
-              <PageIntro
-                kicker="Saved Resources / Files"
-                title="Training files, quick guides, and personal uploads"
-                body="Save module resources for later and keep demo personal files inside the current user profile."
-              />
-              <div className="content-grid">
-                <section className="panel wide">
-                  <PanelTitle kicker="Library" title="Available module resources" />
-                  <div className="resource-grid">
-                    {allResources.map((resource) => (
-                      <ResourceCard
-                        key={resource.id}
-                        resource={resource}
-                        saved={savedResourceIds.has(resource.id)}
-                        onToggle={() => toggleResource(resource.id)}
-                      />
-                    ))}
-                  </div>
-                </section>
-                <section className="panel">
-                  <PanelTitle kicker="Saved" title="My saved files" />
-                  <label className="upload-drop">
-                    <input type="file" onChange={handlePersonalFile} />
-                    <span>Upload demo file</span>
-                    <small>PDF, image, video, or notes</small>
-                  </label>
-                  <div className="saved-list">
-                    {savedResources.map((resource) => (
-                      <div key={resource.id}>
-                        <strong>{resource.title}</strong>
-                        <span>{resource.type} - {resource.moduleTitle}</span>
-                      </div>
-                    ))}
-                    {savedResources.length === 0 && <p>No saved files yet.</p>}
-                  </div>
-                </section>
-              </div>
-            </section>
-          )}
-
           {activeTab === 'profile' && (
             <section className="page-stack">
               <PageIntro
@@ -946,8 +917,16 @@ function App() {
               <div className="content-grid">
                 <section className="panel profile-panel">
                   <div className="profile-avatar" style={{ background: currentUser.avatarColor }}>
-                    {initials(currentUser.displayName)}
+                    {currentUser.avatar ? (
+                      <img src={currentUser.avatar} alt="Profile avatar" />
+                    ) : (
+                      initials(currentUser.displayName)
+                    )}
                   </div>
+                  <label className="avatar-upload-button">
+                    Change photo
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} />
+                  </label>
                   <h3>{currentUser.displayName}</h3>
                   <p>{currentUser.position}</p>
                   <span>{currentUser.status}</span>
@@ -1006,42 +985,6 @@ function App() {
             </section>
           )}
 
-          {activeTab === 'help' && (
-            <section className="page-stack">
-              <PageIntro
-                kicker="Help / Support"
-                title="User-side support and permission guide"
-                body="This area explains what Park Guides can access in the demo and what is intentionally reserved for admins."
-              />
-              <div className="content-grid">
-                <section className="panel">
-                  <PanelTitle kicker="Allowed" title="Park Guide can access" />
-                  <ul className="permission-list can">
-                    {roleBoundaries.can.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </section>
-                <section className="panel">
-                  <PanelTitle kicker="Locked" title="Admin-only actions" />
-                  <ul className="permission-list cannot">
-                    {roleBoundaries.cannot.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </section>
-              </div>
-              <div className="faq-grid">
-                {supportTopics.map((topic) => (
-                  <article key={topic.title} className="panel">
-                    <span className="kicker">Support</span>
-                    <h3>{topic.title}</h3>
-                    <p>{topic.body}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </main>
     </div>

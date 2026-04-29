@@ -15,6 +15,12 @@
   --shadow: 0 16px 40px rgba(135, 69, 0, 0.13);
 }
 
+html,
+body {
+  min-width: 100%;
+  overflow-x: hidden;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -31,8 +37,8 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 292px minmax(0, 1fr);
+  min-width: 0;
+  position: relative;
   background:
     radial-gradient(circle at top left, rgba(255, 210, 63, 0.3), transparent 28rem),
     linear-gradient(135deg, #fffdf4 0%, #eff7e8 42%, #fff4dd 100%);
@@ -40,16 +46,114 @@ button {
 }
 
 .sidebar {
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
-  height: 100vh;
+  bottom: 0;
+  width: 332px;
   padding: 22px;
   background: linear-gradient(180deg, #fff0a8 0%, #ffb334 42%, #ff7a1a 100%);
   color: var(--forest);
   display: flex;
   flex-direction: column;
   gap: 22px;
-  z-index: 20;
+  z-index: 40;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.28s ease;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+  z-index: 35;
+}
+
+.sidebar-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 1180px) {
+  .sidebar-backdrop {
+    display: block;
+  }
+}
+
+@media (max-width: 1180px) {
+  .sidebar-backdrop {
+    display: block;
+  }
+}
+
+.workspace {
+  min-width: 0;
+  min-height: 100vh;
+  width: 100%;
+  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace.sidebar-open {
+  width: calc(100% - 332px);
+  margin-left: 332px;
+}
+
+.workspace.sidebar-closed {
+  width: 100%;
+  margin-left: 0;
+}
+
+@media (max-width: 1180px) {
+  .workspace.sidebar-open,
+  .workspace.sidebar-closed {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  width: 100%;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 28px;
+  border-bottom: 1px solid rgba(223, 232, 214, 0.9);
+  background: rgba(255, 253, 244, 0.88);
+  backdrop-filter: blur(14px);
+}
+
+.page-scroll {
+  flex: 1;
+  padding: 28px;
+  overflow: auto;
+}
+
+.page-stack {
+  display: grid;
+  gap: 22px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .brand-block {
@@ -165,22 +269,26 @@ button {
 .workspace {
   min-width: 0;
   min-height: 100vh;
+  margin-left: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 12;
-  min-height: 82px;
+  z-index: 31;
+  width: 100%;
+  min-height: 72px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 18px;
   align-items: center;
-  padding: 16px 28px;
+  padding: 12px 20px;
   border-bottom: 1px solid rgba(223, 232, 214, 0.9);
-  background: rgba(255, 253, 244, 0.88);
+  background: rgba(255, 253, 244, 0.95);
   backdrop-filter: blur(14px);
 }
 
@@ -205,7 +313,9 @@ button {
 }
 
 .menu-button {
-  display: none;
+  display: block;
+  position: relative;
+  z-index: 32;
   width: 44px;
   height: 44px;
   border-radius: 8px;
@@ -213,6 +323,11 @@ button {
   border: 1px solid var(--line);
   padding: 10px;
   cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.menu-button:hover {
+  background: #fff9e0;
 }
 
 .menu-button span {
@@ -281,9 +396,12 @@ button {
   height: 46px;
   padding: 0;
   background: transparent;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.avatar-button span {
+.avatar-button span,
+.avatar-button img {
   width: 46px;
   height: 46px;
   border-radius: 8px;
@@ -293,6 +411,10 @@ button {
   font-weight: 900;
   border: 3px solid var(--white);
   box-shadow: 0 8px 18px rgba(135, 69, 0, 0.18);
+}
+
+.avatar-button img {
+  object-fit: cover;
 }
 
 .page-scroll {
@@ -419,7 +541,8 @@ button {
 
 .progress-bar {
   width: 100%;
-  height: 10px;
+  min-width: 0;
+  height: 12px;
   border-radius: 999px;
   overflow: hidden;
   background: #e5eadc;
@@ -429,7 +552,22 @@ button {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--lime), var(--citrus));
+  transition: width 0.28s ease;
 }
+
+.progress-table button .progress-bar,
+.next-card .progress-bar {
+  margin: 0;
+}
+
+.progress-table button {
+  align-items: center;
+}
+
+.next-card .progress-bar {
+  margin: 16px 0 8px;
+}
+
 
 .stat-grid {
   display: grid;
@@ -927,6 +1065,10 @@ button {
   cursor: pointer;
 }
 
+.progress-table button span {
+  min-width: 0;
+}
+
 .progress-table span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1151,10 +1293,20 @@ button {
 
 .profile-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
 }
 
 .profile-form label:nth-child(7) {
   grid-column: 1 / -1;
+}
+
+.profile-form label,
+.profile-form input {
+  min-width: 0;
+}
+
+.profile-form input {
+  width: 100%;
 }
 
 .profile-form input:disabled {
@@ -1177,6 +1329,14 @@ button {
   font-size: 2rem;
   font-weight: 900;
   box-shadow: 0 12px 22px rgba(135, 69, 0, 0.18);
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .profile-panel h3 {
@@ -1263,6 +1423,24 @@ button {
   cursor: pointer;
 }
 
+.avatar-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  margin: 0 auto 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--citrus), var(--sun));
+  color: var(--forest);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.avatar-upload-button input {
+  display: none;
+}
+
 .upload-drop input {
   display: none;
 }
@@ -1310,7 +1488,11 @@ button {
 
 @media (max-width: 1180px) {
   .app-shell {
-    grid-template-columns: 1fr;
+    display: block;
+  }
+
+  .workspace {
+    margin-left: 0;
   }
 
   .sidebar {
