@@ -1,969 +1,959 @@
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import * as ImagePicker from 'expo-image-picker';
-import {
-  Alert,
-  Animated,
-  Easing,
-  Image,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { Dimensions } from 'react-native';
-import FilesPage from './components/FilesPage';
-
-const copy = {
-  en: {
-    dashboard: 'Dashboard',
-    training: 'Training',
-    certs: 'Certificates',
-    settings: 'Settings',
-    notifications: 'Notifications',
-    auth: 'Authentication',
-    portalTitle: 'SFC Guide Center',
-    welcomeSubtitle: "Professional digital training and certification for Sarawak's parks.",
-    currentProgress: 'Current Progress',
-    credentials: 'Credentials',
-    verifiedCertificates: 'Verified Certificates',
-    status: 'Status',
-    active: 'Active',
-    password: 'Password',
-    filter: 'Filter',
-    clearAll: 'Clear All',
-    level: 'Level',
-    statusLabel: 'Status',
-    location: 'Location',
-    beginner: 'Beginner',
-    advance: 'Advance',
-    activeCourse: 'Active',
-    completed: 'Completed',
-    planned: 'Planned',
-    lab: 'Lab',
-    online: 'Online',
-    field: 'Field',
-    apply: 'Apply',
-    coursesTab: 'Courses',
-    calendarTab: 'Calendar',
-    saveEvent: 'Submit',
-    close: 'Close',
-    eventTitle: 'Title',
-    eventLocation: 'Location',
-    calendarList: 'Calendars',
-    noEventTitle: 'Untitled Event',
-    noteDate: 'Date',
-    noteText: 'Note',
-    notePlaceholder: 'Write an important reminder...',
-    noMessages: 'No messages yet.',
-    profile: 'Profile',
-    files: 'Files',
-    logout: 'Logout',
-    profileSettings: 'Profile Settings',
-    passwordSettings: 'Password Settings',
-    appearanceSettings: 'Appearance',
-    languageSettings: 'Language',
-    fullName: 'Full Name',
-    email: 'Email',
-    guideId: 'Guide ID',
-    saveProfile: 'Save Profile',
-    currentPassword: 'Current Password',
-    newPassword: 'New Password',
-    confirmPassword: 'Confirm Password',
-    updatePassword: 'Update Password',
-    passwordMismatch: 'New password and confirm password do not match.',
-    passwordUpdated: 'Password updated successfully.',
-    profileSaved: 'Profile updated successfully.',
-    birthday: 'Birthday',
-    livingAddress: 'Address',
-    chooseLanguage: 'Choose Language',
-    chooseLanguage: 'Choose Language',
-    english: 'English',
-    malay: 'Malay',
-    chinese: 'Chinese',
-  },
-  ms: {
-    dashboard: 'Papan Pemuka',
-    training: 'Latihan',
-    certs: 'Sijil',
-    settings: 'Tetapan',
-    notifications: 'Pemberitahuan',
-    auth: 'Pengesahan',
-    portalTitle: 'Pusat Panduan SFC',
-    welcomeSubtitle: 'Latihan digital profesional dan pensijilan untuk taman Sarawak.',
-    currentProgress: 'Kemajuan Semasa',
-    credentials: 'Kelayakan',
-    verifiedCertificates: 'Sijil Disahkan',
-    status: 'Status',
-    active: 'Aktif',
-    password: 'Kata Laluan',
-    filter: 'Penapis',
-    clearAll: 'Kosongkan',
-    level: 'Tahap',
-    statusLabel: 'Status',
-    location: 'Lokasi',
-    beginner: 'Permulaan',
-    advance: 'Lanjutan',
-    activeCourse: 'Aktif',
-    completed: 'Selesai',
-    planned: 'Dirancang',
-    lab: 'Makmal',
-    online: 'Dalam Talian',
-    field: 'Lapangan',
-    apply: 'Guna',
-    coursesTab: 'Kursus',
-    calendarTab: 'Kalendar',
-    saveEvent: 'Simpan',
-    close: 'Tutup',
-    eventTitle: 'Tajuk',
-    eventLocation: 'Lokasi',
-    calendarList: 'Kalendar',
-    noEventTitle: 'Acara Tanpa Tajuk',
-    noteDate: 'Tarikh',
-    noteText: 'Nota',
-    notePlaceholder: 'Tulis peringatan penting...',
-    noMessages: 'Belum ada mesej.',
-    profile: 'Profil',
-    files: 'Fail',
-    logout: 'Log Keluar',
-    profileSettings: 'Tetapan Profil',
-    passwordSettings: 'Tetapan Kata Laluan',
-    appearanceSettings: 'Paparan',
-    languageSettings: 'Bahasa',
-    fullName: 'Nama Penuh',
-    email: 'E-mel',
-    guideId: 'ID Pemandu',
-    saveProfile: 'Simpan Profil',
-    currentPassword: 'Kata Laluan Semasa',
-    newPassword: 'Kata Laluan Baharu',
-    confirmPassword: 'Sahkan Kata Laluan',
-    updatePassword: 'Kemas kini Kata Laluan',
-    passwordMismatch: 'Kata laluan baharu dan pengesahan tidak sepadan.',
-    passwordUpdated: 'Kata laluan berjaya dikemas kini.',
-    profileSaved: 'Profil berjaya dikemas kini.',
-    birthday: 'Tarikh Lahir',
-    livingAddress: 'Alamat',
-    chooseLanguage: 'Pilih Bahasa',
-    chooseLanguage: 'Pilih Bahasa',
-    english: 'Inggeris',
-    malay: 'Melayu',
-    chinese: 'Cina',
-  },
-  zh: {
-    dashboard: '仪表板',
-    training: '培训',
-    certs: '证书',
-    settings: '设置',
-    notifications: '通知',
-    auth: '认证',
-    portalTitle: 'SFC 导览中心',
-    welcomeSubtitle: '为砂拉越公园提供专业数字化培训与认证服务。',
-    currentProgress: '当前进度',
-    credentials: '资质',
-    verifiedCertificates: '已验证证书',
-    status: '状态',
-    active: '活跃',
-    password: '密码',
-    filter: '筛选',
-    clearAll: '清除',
-    level: '等级',
-    statusLabel: '状态',
-    location: '地点',
-    beginner: '初级',
-    advance: '高级',
-    activeCourse: '进行中',
-    completed: '已完成',
-    planned: '计划中',
-    lab: '实验室',
-    online: '线上',
-    field: '实地',
-    apply: '应用',
-    coursesTab: '课程',
-    calendarTab: '日历',
-    saveEvent: '提交',
-    close: '关闭',
-    eventTitle: '标题',
-    eventLocation: '地点',
-    calendarList: '日历',
-    noEventTitle: '未命名事件',
-    noteDate: '日期',
-    noteText: '备注',
-    notePlaceholder: '记录重要事项...',
-    noMessages: '暂无消息。',
-    profile: '个人资料',
-    files: '文件',
-    logout: '登出',
-    profileSettings: '个人资料设置',
-    passwordSettings: '密码设置',
-    appearanceSettings: '外观',
-    languageSettings: '语言',
-    fullName: '姓名',
-    email: '邮箱',
-    guideId: '导览员ID',
-    saveProfile: '保存资料',
-    currentPassword: '当前密码',
-    newPassword: '新密码',
-    confirmPassword: '确认密码',
-    updatePassword: '更新密码',
-    passwordMismatch: '新密码与确认密码不一致。',
-    passwordUpdated: '密码更新成功。',
-    profileSaved: '个人资料已更新。',
-    birthday: '生日',
-    livingAddress: '地址',
-    chooseLanguage: '选择语言',
-    chooseLanguage: '选择语言',
-    english: '英语',
-    malay: '马来语',
-    chinese: '华语',
-  },
-}
+import * as ImagePicker from 'expo-image-picker'
+import { useMemo, useRef, useState } from 'react'
+import { Alert, Animated, Image, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 
 const palette = {
-  bg: '#f4f8ee',
-  panel: '#ffffff',
-  text: '#28251d',
-  muted: '#617064',
-  border: '#dfe8d6',
-  accent: '#ff7a1a',
-  accentSoft: '#fff1cc',
-  primaryDark: '#3a2a16',
+  // Website colors synced from `user_page/src/App.css`
+  forest: '#3a2a16',
+  forest2: '#874500',
+  charcoal: '#28251d',
+  leaf: '#6bdc45',
   lime: '#b8f22f',
+  citrus: '#ff7a1a',
+  sun: '#ffd23f',
+  cream: '#fff9e9',
+  mist: '#f4f8ee',
+  white: '#ffffff',
+  line: '#dfe8d6',
+  muted: '#617064',
+  danger: '#c74f3f',
 }
 
 const sideMenuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'D', targetTab: 'dashboard' },
-  { id: 'modules', label: 'My Modules', icon: 'M', targetTab: 'training' },
-  { id: 'module', label: 'Module Details', icon: 'I', targetTab: 'training' },
-  { id: 'progress', label: 'Progress', icon: 'P', targetTab: 'training' },
-  { id: 'certificates', label: 'Certificates', icon: 'C', targetTab: 'certs' },
-  { id: 'notifications', label: 'Notifications', icon: 'N', targetTab: 'notifications' },
-  { id: 'schedule', label: 'Schedule', icon: 'S', targetTab: 'training' },
-  { id: 'resources', label: 'Resources', icon: 'R', targetTab: 'files' },
-  { id: 'profile', label: 'Profile', icon: 'U', targetTab: 'profile' },
-  { id: 'help', label: 'Help', icon: '?', targetTab: 'settings' },
+  { id: 'dashboard', label: 'Dashboard', icon: 'D' },
+  { id: 'modules', label: 'My Modules', icon: 'M' },
+  { id: 'module', label: 'Module Details', icon: 'I' },
+  { id: 'progress', label: 'Progress', icon: 'P' },
+  { id: 'certificates', label: 'Certificates', icon: 'C' },
+  { id: 'notifications', label: 'Notifications', icon: 'N' },
+  { id: 'schedule', label: 'Schedule', icon: 'S' },
+  { id: 'profile', label: 'Profile', icon: 'U' },
 ]
-const NAV_WIDTH = 280
 
-const bottomBarHeight = 60
-
-const dashboardModules = [
+/**My Modules*/
+const modulesSeed = [
   {
-    id: 'mod-1',
+    id: 'bako-trail',
     title: 'Bako Trail Guiding',
+    subtitle: 'Trail briefing, interpretation, and visitor management basics.',
+    category: 'Guiding',
     park: 'Bako National Park',
     duration: '2h 20m',
-    progress: 78,
+    level: 'Beginner',
+    progress: 75, /**Can be updated by the user*/
+    objectives: ['Prepare visitor pre-brief checklist.', 'Lead interpretation stops clearly.', 'Handle route pacing and reroutes.'],
+    lessons: ['Trail pre-brief checklist', 'Visitor group pacing', 'Hazard communication cues', 'Wildlife-safe distance rules'],
+    quiz: [
+      {
+        question: 'What is the first action when the trail becomes slippery from heavy rain?',
+        options: ['Continue quickly to finish route', 'Stop, regroup visitors, and reassess safe route', 'Ignore and continue briefing later'],
+        answer: 1,
+      },
+      {
+        question: 'What is the safest way to handle a lagging visitor?',
+        options: ['Leave them behind', 'Pause group and re-align pacing', 'Increase speed for everyone'],
+        answer: 1,
+      },
+      {
+        question: 'Best wildlife safety guidance is to:',
+        options: ['Approach for better photos', 'Maintain safe observation distance', 'Use flash near animals'],
+        answer: 1,
+      },
+    ],
   },
   {
-    id: 'mod-2',
+    id: 'visitor-safety',
     title: 'Visitor Safety Response',
+    subtitle: 'Incident awareness, escalation, and immediate response protocol.',
+    category: 'Safety',
     park: 'Kubah National Park',
     duration: '1h 45m',
-    progress: 52,
+    level: 'Intermediate',
+    progress: 55, /**Can be updated by the user*/
+    objectives: ['Identify incident severity quickly.', 'Execute first response flow correctly.', 'Document incidents consistently.'],
+    lessons: ['Incident severity matrix', 'On-site communication flow', 'Emergency coordination basics', 'Incident reporting template'],
+    quiz: [
+      {
+        question: 'When a visitor reports chest pain, what should you do first?',
+        options: ['Finish current trail explanation', 'Assess and escalate emergency protocol immediately', 'Wait for visitor to rest'],
+        answer: 1,
+      },
+      {
+        question: 'For a minor slip injury, first step is:',
+        options: ['Ignore if visitor can walk', 'Stop activity and perform quick assessment', 'Ask another visitor to handle it'],
+        answer: 1,
+      },
+      {
+        question: 'Incident logs should be completed:',
+        options: ['Only for severe cases', 'For all incidents using standard template', 'At end of month'],
+        answer: 1,
+      },
+    ],
   },
   {
-    id: 'mod-3',
+    id: 'conservation-law',
     title: 'Conservation Law Essentials',
+    subtitle: 'Protected-area rules and compliance communication.',
+    category: 'Compliance',
     park: 'Gunung Gading National Park',
     duration: '2h 05m',
-    progress: 34,
+    level: 'Beginner',
+    progress: 0,
+    objectives: ['Explain protected-area restrictions.', 'Apply clear compliance messaging.', 'Record repeated rule breaches.'],
+    lessons: ['Core conservation laws', 'Visitor rule communication', 'Escalation boundaries', 'Compliance reporting'],
+    quiz: [
+      {
+        question: 'Which statement best reflects compliance communication?',
+        options: ['Ignore minor breaches', 'Use clear instruction and document repeat cases', 'Argue with visitors'],
+        answer: 1,
+      },
+      {
+        question: 'If a visitor repeats restricted behavior, guides should:',
+        options: ['Escalate according to protocol and record it', 'Allow it once more', 'Publicly confront aggressively'],
+        answer: 0,
+      },
+      {
+        question: 'Primary purpose of conservation law briefing is:',
+        options: ['Punish visitors', 'Protect habitats and ensure safe conduct', 'Reduce guide workload'],
+        answer: 1,
+      },
+    ],
   },
 ]
-
-const canDoItems = [
-  'View assigned modules and progress',
-  'Complete lessons and quizzes',
-  'Save training resources for later',
-  'Track schedules and reminders',
-  'Manage own profile details',
+/**Notifications*/
+const initialNotifications = [
+  { id: 1, type: 'training', title: 'Module updated', body: 'Visitor Safety Response has new checklist items.', read: false },
+  { id: 2, type: 'schedule', title: 'Reminder set', body: 'Bako Trail practice is due tomorrow.', read: false },
+  { id: 3, type: 'certificate', title: 'Certificate ready', body: 'Your certificate is ready for demo download.', read: true },
 ]
+/**Status Options*/
+const statusOptions = ['all', 'in-progress', 'completed', 'available']
+const categoryOptions = ['all', ...new Set(modulesSeed.map((m) => m.category))]
+const scheduleTypeOptions = ['Reminder', 'Field', 'Quiz', 'Certificate']
+const NAV_WIDTH = 284
 
-const cannotDoItems = [
-  'Approve certificates',
-  'Edit master training catalog',
-  'Manage all users and roles',
-  'Publish admin announcements',
-  'Modify system-wide settings',
-]
-
-function formatDateKey(dateObj) {
-  return dateObj.toISOString().slice(0, 10)
+const getTodayIsoDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = `${now.getMonth() + 1}`.padStart(2, '0')
+  const day = `${now.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
-
-function buildMonthMatrix(year, month) {
-  const first = new Date(year, month, 1)
-  const offset = (first.getDay() + 6) % 7
-  const start = new Date(year, month, 1 - offset)
-  const cells = []
-  for (let i = 0; i < 42; i += 1) {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    cells.push({ date: d, inCurrentMonth: d.getMonth() === month })
-  }
-  return cells
-}
-
+/**App*/
 export default function App() {
-  const [language, setLanguage] = useState('en')
-  const t = copy[language] || copy.en
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeMenuId, setActiveMenuId] = useState('dashboard')
-  const [isNavOpen, setIsNavOpen] = useState(false)
-  const [isNavMounted, setIsNavMounted] = useState(false)
-  const [hoveredTab, setHoveredTab] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [selectedModuleId, setSelectedModuleId] = useState(modulesSeed[0].id)
+  const [moduleSearch, setModuleSearch] = useState('')
+  const [moduleStatusFilter, setModuleStatusFilter] = useState('all')
+  const [moduleCategoryFilter, setModuleCategoryFilter] = useState('all')
+  const [moduleProgress, setModuleProgress] = useState(Object.fromEntries(modulesSeed.map((m) => [m.id, m.progress])))
+  const [completedSteps, setCompletedSteps] = useState(Object.fromEntries(modulesSeed.map((m) => [m.id, []])))
+  const [quizAnswers, setQuizAnswers] = useState({})
+  const [quizPosition, setQuizPosition] = useState(Object.fromEntries(modulesSeed.map((m) => [m.id, 0])))
+  const [quizScores, setQuizScores] = useState({})
+  const [notifications, setNotifications] = useState(initialNotifications)
+  const [scheduleItems, setScheduleItems] = useState([{ id: 's1', date: '2026-05-20', title: 'Bako Trail refresher', location: 'Field Session', type: 'Field' }])
+  const [scheduleForm, setScheduleForm] = useState({ date: getTodayIsoDate(), title: '', location: '', type: 'Reminder' })
+  const [editingScheduleId, setEditingScheduleId] = useState(null)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
+  const [profile, setProfile] = useState({
+    fullName: 'SFC Park Guide',
+    email: 'guide@sfc.demo',
+    assignedPark: 'Bako National Park',
+    parkGuideId: 'PG-1024',
+    phoneNumber: '',
+    birthday: '',
+    address: '',
+    imageUri: '',
+  })
+  const [profileForm, setProfileForm] = useState({
+    fullName: 'SFC Park Guide',
+    email: 'guide@sfc.demo',
+    assignedPark: 'Bako National Park',
+    parkGuideId: 'PG-1024',
+    phoneNumber: '',
+    birthday: '',
+    address: '',
+    imageUri: '',
+  })
+  const navTranslate = useRef(new Animated.Value(-NAV_WIDTH)).current
   const navOpacity = useRef(new Animated.Value(0)).current
 
-  const [trainingView, setTrainingView] = useState('courses')
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
-  const [filters, setFilters] = useState({
-    level: ['beginner'],
-    status: ['active'],
-    location: ['online'],
-  })
-  const [notifications, setNotifications] = useState([])
-  const [today] = useState(new Date())
-  const [calendarYear, setCalendarYear] = useState(today.getFullYear())
-  const [calendarMonth, setCalendarMonth] = useState(today.getMonth())
-  const [noteDate, setNoteDate] = useState(formatDateKey(today))
-  const [noteText, setNoteText] = useState('')
-  const [eventTitle, setEventTitle] = useState('')
-  const [eventLocation, setEventLocation] = useState('')
-  const [trainingNotes, setTrainingNotes] = useState([])
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  })
-const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', birthday: '', address: '', avatar: '' })
-  const navTranslateX = useRef(new Animated.Value(-NAV_WIDTH)).current
-  const nextModule = dashboardModules[0]
 
-  const monthCells = useMemo(() => buildMonthMatrix(calendarYear, calendarMonth), [calendarYear, calendarMonth])
+  // Derive avatar initial from current profile full name.
+  const profileInitial = (profile.fullName?.trim()?.[0] || 'U').toUpperCase()
 
-  const toggleFilter = (group, value) => {
-    setFilters((prev) => {
-      const has = prev[group].includes(value)
-      return { ...prev, [group]: has ? prev[group].filter((x) => x !== value) : [...prev[group], value] }
-    })
-  }
-
-  const moveMonth = (delta) => {
-    setCalendarMonth((prev) => {
-      const next = prev + delta
-      if (next < 0) {
-        setCalendarYear((y) => y - 1)
-        return 11
-      }
-      if (next > 11) {
-        setCalendarYear((y) => y + 1)
-        return 0
-      }
-      return next
-    })
-  }
-
-  const getNoteForDate = (dateKey) => trainingNotes.find((n) => n.date === dateKey)
-
-  const saveEvent = () => {
-    if (!noteDate) return
-    setTrainingNotes((prev) => {
-      const next = prev.filter((n) => n.date !== noteDate)
-      next.unshift({
-        id: Date.now(),
-        date: noteDate,
-        text: noteText.trim(),
-        title: eventTitle.trim() || t.noEventTitle,
-        location: eventLocation.trim(),
-      })
-      return next.slice(0, 60)
-    })
-    setIsEventModalOpen(false)
-    setNoteText('')
-    setEventTitle('')
-    setEventLocation('')
-  }
-
-  const openEventModal = (dateKey) => {
-    const existing = getNoteForDate(dateKey)
-    setNoteDate(dateKey)
-    setNoteText(existing?.text || '')
-    setEventTitle(existing?.title || '')
-    setEventLocation(existing?.location || '')
-    setIsEventModalOpen(true)
-  }
-
-  useEffect(() => {
-    if (isNavOpen) {
-      setIsNavMounted(true)
-      Animated.parallel([
-        Animated.timing(navTranslateX, {
-          toValue: 0,
-          duration: 400,
-          easing: Easing.out(Easing.bezier(0.4, 0, 0.2, 1)),
-          useNativeDriver: true,
-        }),
-        Animated.timing(navOpacity, {
-          toValue: 1,
-          duration: 400,
-          easing: Easing.out(Easing.bezier(0.4, 0, 0.2, 1)),
-          useNativeDriver: true,
-        })
-      ]).start()
-      return
-    }
-    Animated.parallel([
-      Animated.timing(navTranslateX, {
-        toValue: -NAV_WIDTH,
-        duration: 400,
-        easing: Easing.in(Easing.bezier(0.4, 0, 0.2, 1)),
-        useNativeDriver: true,
+  const selectedModule = useMemo(() => modulesSeed.find((m) => m.id === selectedModuleId) || modulesSeed[0], [selectedModuleId])
+  const modulesWithState = useMemo(
+    () =>
+      modulesSeed.map((m) => {
+        const progress = moduleProgress[m.id] ?? m.progress
+        const status = progress === 100 ? 'completed' : progress > 0 ? 'in-progress' : 'available'
+        return { ...m, progress, status }
       }),
-      Animated.timing(navOpacity, {
-        toValue: 0,
-        duration: 400,
-        easing: Easing.in(Easing.bezier(0.4, 0, 0.2, 1)),
-        useNativeDriver: true,
-      })
-    ]).start(({ finished }) => {
-      if (finished) setIsNavMounted(false)
+    [moduleProgress]
+  )
+  const overallProgress = useMemo(() => Math.round(modulesWithState.reduce((sum, m) => sum + m.progress, 0) / modulesWithState.length), [modulesWithState])
+  const certificates = useMemo(() => modulesWithState.filter((m) => m.progress === 100), [modulesWithState])
+  const unreadCount = notifications.filter((n) => !n.read).length
+  const strengthMap = useMemo(() => {
+    const groups = [...new Set(modulesWithState.map((m) => m.category))]
+    return groups.map((category) => {
+      const list = modulesWithState.filter((m) => m.category === category)
+      return { category, avg: Math.round(list.reduce((sum, m) => sum + m.progress, 0) / list.length) }
     })
-  }, [isNavOpen])
+  }, [modulesWithState])
 
-  const handleProfileSave = () => {
-    Alert.alert(t.profileSaved)
+
+/**Open Menu*/
+/**Filtered Modules*/
+  const openMenu = () => {
+    setMenuOpen(true)
+    Animated.parallel([
+      Animated.timing(navTranslate, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(navOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+    ]).start()
+  }
+  const filteredModules = useMemo(() => {
+    const query = moduleSearch.trim().toLowerCase()
+    return modulesWithState.filter((m) => {
+      const queryMatch = !query || `${m.title} ${m.subtitle} ${m.park}`.toLowerCase().includes(query)
+      const statusMatch = moduleStatusFilter === 'all' || m.status === moduleStatusFilter
+      const categoryMatch = moduleCategoryFilter === 'all' || m.category === moduleCategoryFilter
+      return queryMatch && statusMatch && categoryMatch
+    })
+  }, [modulesWithState, moduleSearch, moduleStatusFilter, moduleCategoryFilter])
+/**Close Menu*/
+  const closeMenu = () => {
+    Animated.parallel([
+      Animated.timing(navTranslate, { toValue: -NAV_WIDTH, duration: 240, useNativeDriver: true }),
+      Animated.timing(navOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start(() => setMenuOpen(false))
   }
 
-  const handlePasswordUpdate = () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      Alert.alert(t.passwordMismatch)
+  const goToTab = (tabId) => {
+    setActiveMenuId(tabId)
+    setActiveTab(tabId)
+    closeMenu()
+  }
+
+  // Header profile shortcut: top-right icon routes to Profile page directly.
+  const openProfileFromHeader = () => {
+    setActiveMenuId('profile')
+    setActiveTab('profile')
+  }
+
+  const openModuleDetails = (moduleId) => {
+    setSelectedModuleId(moduleId)
+    setActiveMenuId('module')
+    setActiveTab('module')
+  }
+
+  const toggleStep = (moduleId, stepIndex) => {
+    setCompletedSteps((prev) => {
+      const current = prev[moduleId] || []
+      const next = current.includes(stepIndex) ? current.filter((i) => i !== stepIndex) : [...current, stepIndex]
+      const module = modulesSeed.find((m) => m.id === moduleId)
+      const lessonRatio = (next.length / (module?.lessons.length || 1)) * 70
+      const quizRatio = (quizScores[moduleId]?.score || 0) * 0.3
+      const progress = Math.round(Math.max(0, Math.min(100, lessonRatio + quizRatio)))
+      setModuleProgress((state) => ({ ...state, [moduleId]: progress }))
+      return { ...prev, [moduleId]: next.sort((a, b) => a - b) }
+    })
+  }
+/**Select Quiz Answer*/
+  const selectQuizAnswer = (moduleId, questionIndex, optionIndex) => {
+    setQuizAnswers((prev) => ({
+      ...prev,
+      [moduleId]: {
+        ...(prev[moduleId] || {}),
+        [questionIndex]: optionIndex,
+      },
+    }))
+  }
+/**Move Quiz Question*/
+  const moveQuizQuestion = (moduleId, delta) => {
+    const module = modulesSeed.find((m) => m.id === moduleId)
+    const questionCount = module?.quiz.length || 1
+    setQuizPosition((prev) => ({
+      ...prev,
+      [moduleId]: Math.max(0, Math.min(questionCount - 1, (prev[moduleId] || 0) + delta)),
+    }))
+  }
+/**Submit Quiz*/
+  const submitQuiz = () => {
+    const module = selectedModule
+    const answers = quizAnswers[module.id] || {}
+    if (Object.keys(answers).length < module.quiz.length) {
+      Alert.alert('Incomplete quiz', 'Please answer all quiz questions before submitting.')
       return
     }
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    Alert.alert(t.passwordUpdated)
+    const correct = module.quiz.reduce((count, question, index) => {
+      return count + (Number(answers[index]) === question.answer ? 1 : 0)
+    }, 0)
+    const score = Math.round((correct / module.quiz.length) * 100)
+    setQuizScores((prev) => ({ ...prev, [module.id]: { score, passed: score === 100 } }))
+    const lessonsDone = (completedSteps[module.id] || []).length
+    const lessonRatio = (lessonsDone / module.lessons.length) * 70
+    const quizRatio = score * 0.3
+    const progress = Math.round(Math.max(0, Math.min(100, lessonRatio + quizRatio)))
+    setModuleProgress((prev) => ({ ...prev, [module.id]: progress }))
+    setNotifications((prev) => [{ id: Date.now(), type: 'training', title: score === 100 ? 'Quiz passed' : 'Quiz needs review', body: `${module.title} quiz score: ${score}%`, read: false }, ...prev])
+  }
+/**Add Reminder*/
+  const formatDateInput = (value) => {
+    const digits = (value || '').replace(/\D/g, '').slice(0, 8)
+    if (digits.length <= 4) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`
+  }
+/**Convert Date to ISO Format*/
+  const toIsoDate = (dateObj) => {
+    const year = dateObj.getFullYear()
+    const month = `${dateObj.getMonth() + 1}`.padStart(2, '0')
+    const day = `${dateObj.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
-const ProfileView = ({ profile, t }) => {
-    const initials = profile.fullName ? profile.fullName.slice(0, 1).toUpperCase() : 'U'
-    return (
-      <View style={styles.profileCard}>
-        <View style={styles.profileAvatarCard}>
-          <View style={styles.profileAvatarPreview}>
-            {profile.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.profileAvatarInitials}>{initials}</Text>
-            )}
-          </View>
-          <View style={styles.profileAvatarLabel}>
-            <Text style={styles.profileLabelName}>{profile.fullName || 'User'}</Text>
-            <Text style={styles.profileLabelEmail}>{profile.email || 'No email available'}</Text>
-          </View>
-        </View>
-        <View style={styles.profileDetails}>
-          <View style={styles.profileField}>
-            <Text style={styles.profileLabel}>{t.fullName}</Text>
-            <Text style={styles.profileValue}>{profile.fullName || '-'}</Text>
-          </View>
-          <View style={styles.profileField}>
-            <Text style={styles.profileLabel}>{t.guideId}</Text>
-            <Text style={styles.profileValue}>{profile.guideId || '-'}</Text>
-          </View>
-          <View style={styles.profileField}>
-            <Text style={styles.profileLabel}>{t.email}</Text>
-            <Text style={styles.profileValue}>{profile.email || '-'}</Text>
-          </View>
-          <View style={styles.profileField}>
-            <Text style={styles.profileLabel}>{t.birthday}</Text>
-            <Text style={styles.profileValue}>{profile.birthday || '-'}</Text>
-          </View>
-          <View style={styles.profileField}>
-            <Text style={styles.profileLabel}>{t.livingAddress}</Text>
-            <Text style={styles.profileValue}>{profile.address || '-'}</Text>
-          </View>
-        </View>
-      </View>
+  const isValidIsoDate = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '')
+    if (!match) return false
+    const year = Number(match[1])
+    const month = Number(match[2])
+    const day = Number(match[3])
+    if (month < 1 || month > 12 || day < 1) return false
+    const maxDay = new Date(year, month, 0).getDate()
+    return day <= maxDay
+  }
+/**Open Calendar*/
+  const openCalendar = () => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(scheduleForm.date || '')
+    if (match) {
+      const [, y, m] = match
+      setCalendarMonth(new Date(Number(y), Number(m) - 1, 1))
+    }
+    setCalendarOpen(true)
+  }
+
+  const handleDateInput = (value) => {
+    setScheduleForm((prev) => ({ ...prev, date: formatDateInput(value) }))
+  }
+
+  const shiftCalendarMonth = (delta) => {
+    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1))
+  }
+
+  const pickCalendarDate = (dayNumber) => {
+    const picked = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), dayNumber)
+    setScheduleForm((prev) => ({ ...prev, date: toIsoDate(picked) }))
+    setCalendarOpen(false)
+  }
+
+  const calendarLabel = calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const monthStartDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay()
+  const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate()
+  const selectedDayMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(scheduleForm.date || '')
+  const selectedDay =
+    selectedDayMatch &&
+    Number(selectedDayMatch[1]) === calendarMonth.getFullYear() &&
+    Number(selectedDayMatch[2]) - 1 === calendarMonth.getMonth()
+      ? Number(selectedDayMatch[3])
+      : null
+
+  const addReminder = () => {
+    if (!scheduleForm.date || !scheduleForm.title.trim()) return
+    if (!isValidIsoDate(scheduleForm.date)) {
+      Alert.alert('Invalid date', 'Please enter a valid date in YYYY-MM-DD format.')
+      return
+    }
+    if (editingScheduleId) {
+      setScheduleItems((prev) =>
+        prev.map((item) =>
+          item.id === editingScheduleId
+            ? {
+                ...item,
+                date: scheduleForm.date,
+                title: scheduleForm.title.trim(),
+                location: scheduleForm.location.trim() || 'Self-paced',
+                type: scheduleForm.type,
+              }
+            : item
+        )
+      )
+      setEditingScheduleId(null)
+    } else {
+      setScheduleItems((prev) => [{ id: `s-${Date.now()}`, date: scheduleForm.date, title: scheduleForm.title.trim(), location: scheduleForm.location.trim() || 'Self-paced', type: scheduleForm.type }, ...prev])
+    }
+    setScheduleForm((prev) => ({ ...prev, date: getTodayIsoDate(), title: '', location: '', type: 'Reminder' }))
+  }
+  /**Update Reminder*/
+  const startUpdateReminder = (item) => {
+    setEditingScheduleId(item.id)
+    setScheduleForm({
+      date: item.date,
+      title: item.title,
+      location: item.location,
+      type: item.type,
+    })
+  }
+  /**Delete Reminder*/
+  const deleteReminder = (id) => {
+    const performDelete = () => {
+      setScheduleItems((prev) => prev.filter((item) => item.id !== id))
+      if (editingScheduleId === id) {
+        setEditingScheduleId(null)
+        setScheduleForm((prev) => ({ ...prev, date: getTodayIsoDate(), title: '', location: '', type: 'Reminder' }))
+      }
+    }
+
+    // On web, use browser confirm to guarantee delete confirmation works.
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined'
+        ? window.confirm('Are you sure you want to delete this reminder? This action cannot be undone.')
+        : false
+      if (confirmed) performDelete()
+      return
+    }
+
+    Alert.alert(
+      'Delete reminder',
+      'Are you sure you want to delete this reminder? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: performDelete,
+        },
+      ]
     )
   }
+  
+  const pickProfileImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Please allow photo library access to upload a profile image.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setProfileForm((prev) => ({ ...prev, imageUri: result.assets[0].uri }))
+    }
+  }
 
-  const AppHeader = (
-    <View style={[styles.header, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-      <View style={styles.headerLeft}>
-        <Pressable
-          onPress={() => {
-            setIsNavMounted(true)
-            setIsNavOpen(true)
-          }}
-          style={[styles.menuBtn, { borderColor: palette.border, backgroundColor: palette.bg }]}
-        >
-          <Text style={{ color: palette.text, fontWeight: '900' }}>☰</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: palette.text }]}>{t.portalTitle}</Text>
-      </View>
-    </View>
-  )
+  const saveProfile = () => {
+    const fullName = profileForm.fullName.trim()
+    const email = profileForm.email.trim()
+    const phoneNumber = profileForm.phoneNumber.trim()
+    const birthday = profileForm.birthday.trim()
+    const address = profileForm.address.trim()
+    const assignedPark = profileForm.assignedPark.trim()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const phoneRegex = /^\+?\d{8,15}$/
+    const birthdayDate = birthday ? new Date(`${birthday}T00:00:00`) : null
+    const today = new Date()
+    const errors = []
+
+    if (!fullName) errors.push('- Full Name is required.')
+    if (!emailRegex.test(email)) errors.push('- Email must be in a valid format, e.g. name@example.com.')
+    if (!phoneRegex.test(phoneNumber)) errors.push('- Phone Number must contain only digits and be 8 to 15 digits long.')
+    if (!isValidIsoDate(birthday)) {
+      errors.push('- Birthday must be a valid date in YYYY-MM-DD format.')
+    } else if (birthdayDate && birthdayDate > today) {
+      errors.push('- Birthday cannot be in the future.')
+    }
+    if (address.length < 8) errors.push('- Address must be at least 8 characters long.')
+    if (!assignedPark) errors.push('- Assigned Park is required.')
+
+    if (errors.length > 0) {
+      Alert.alert('Invalid profile details', errors.join('\n'))
+      return
+    }
+
+    setProfile({
+      fullName,
+      email,
+      assignedPark,
+      parkGuideId: profile.parkGuideId,
+      phoneNumber,
+      birthday,
+      address,
+      imageUri: profileForm.imageUri,
+    })
+    Alert.alert('Saved', 'Profile updated successfully.')
+  }
+/**Download Certificate*/
+  const downloadCertificate = (moduleItem) => {
+    if (moduleItem.progress < 100) return
+    Alert.alert('Download started', `${moduleItem.title} certificate demo download.`)
+  }
+/**Mark Read*/
+  const markRead = (id) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const removeNotification = (id) => setNotifications((prev) => prev.filter((n) => n.id !== id))
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      {AppHeader}
-      <ScrollView contentContainerStyle={[styles.contentWrap, {paddingBottom: bottomBarHeight}]}>
-        <Text style={[styles.sectionLabel, { color: palette.muted }]}>SFC / {t[activeTab]}</Text>
-
-        {activeTab === 'auth' && (
-          <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-            <Text style={[styles.h2, { color: palette.text }]}>{t.adminLogin}</Text>
-            <TextInput placeholder={t.adminId} placeholderTextColor={palette.muted} style={[styles.input, { color: palette.text, borderColor: palette.border }]} />
-            <TextInput placeholder={t.password} placeholderTextColor={palette.muted} secureTextEntry style={[styles.input, { color: palette.text, borderColor: palette.border }]} />
-            <Pressable onPress={() => setActiveTab('dashboard')} style={[styles.primaryBtn, { backgroundColor: palette.accent }]}>
-              <Text style={styles.primaryBtnText}>{t.enterAdminPanel}</Text>
-            </Pressable>
+      <View style={styles.topbar}>
+        <View style={styles.topbarLeft}>
+          <Pressable onPress={openMenu} style={styles.menuBtn}><Text style={styles.menuText}>☰</Text></Pressable>
+          <View>
+            <Text style={styles.kicker}>SFC / {activeTab.toUpperCase()}</Text>
+            <Text style={styles.topTitle}>SFC Guide Center</Text>
           </View>
-        )}
+        </View>
+        {/* Clickable top-right profile icon as requested */}
+        <Pressable onPress={openProfileFromHeader} style={styles.headerProfileBtn}>
+          <Text style={styles.headerProfileIcon}>{profileInitial}</Text>
+        </Pressable>
+      </View>
+      
 
+      <ScrollView contentContainerStyle={styles.page}>
         {activeTab === 'dashboard' && (
-          <View style={styles.stackGap}>
-            <View style={[styles.homeHero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
+          <View style={styles.stack}>
+            <View style={styles.hero}>
               <Text style={styles.heroKicker}>Citrus learning path</Text>
-              <Text style={[styles.h1, { color: '#fff' }]}>Fresh field training for Sarawak park guides.</Text>
-              <Text style={{ color: '#ffffff' }}>
-                Continue assigned modules, pass scenario quizzes, and build certificate evidence from one user portal.
-              </Text>
-              <View style={styles.heroButtonRow}>
-                <Pressable style={[styles.primaryBtn, styles.heroPrimary, { backgroundColor: palette.accent }]}>
-                  <Text style={styles.primaryBtnText}>Continue {nextModule.title}</Text>
-                </Pressable>
-                <Pressable style={[styles.secondaryBtn, styles.heroSecondary, { borderColor: '#8fb7a6' }]}>
-                  <Text style={{ color: '#ffffff', fontWeight: '700' }}>Browse all modules</Text>
-                </Pressable>
+              <Text style={styles.heroTitle}>Fresh field training for Sarawak park guides.</Text>
+              <Text style={styles.heroBody}>Continue assigned modules, pass scenario quizzes, and prepare certification milestones.</Text>
+              <View style={styles.heroActions}>
+                <Pressable style={styles.primaryButton} onPress={() => openModuleDetails(selectedModule.id)}><Text style={styles.primaryText}>Continue {selectedModule.title}</Text></Pressable>
+                <Pressable style={styles.secondaryButton} onPress={() => goToTab('modules')}><Text style={styles.secondaryText}>Browse all modules</Text></Pressable>
               </View>
             </View>
-
-            <View style={[styles.nextActionCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-              <View style={styles.nextActionImage} />
-              <View style={styles.nextActionContent}>
-                <Text style={{ color: palette.muted, fontWeight: '700' }}>Next action</Text>
-                <Text style={{ color: palette.text, fontWeight: '800', fontSize: 16 }}>{nextModule.title}</Text>
-                <ProgressBar value={nextModule.progress} />
-                <Text style={{ color: palette.muted }}>{nextModule.progress}% complete</Text>
-              </View>
-            </View>
-
-            <View style={styles.statRow}>
-              {[
-                { label: 'Overall progress', value: '55%', detail: '3 enrolled modules' },
-                { label: 'Completed modules', value: '01/10', detail: 'Lessons plus quiz required' },
-                { label: 'Certificates', value: '02', detail: 'Verified or ready for review' },
-                { label: 'Unread updates', value: '03', detail: 'Training, resources, schedule' },
-              ].map((item) => (
-                <View key={item.label} style={[styles.statCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                  <Text style={{ color: palette.muted, fontWeight: '700' }}>{item.label}</Text>
-                  <Text style={[styles.statBig, { color: palette.text }]}>{item.value}</Text>
-                  <Text style={{ color: palette.muted }}>{item.detail}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-              <Text style={[styles.panelKicker, { color: palette.muted }]}>Learning path</Text>
-              <Text style={[styles.panelTitle, { color: palette.text }]}>Active modules</Text>
-              <View style={styles.moduleList}>
-                {dashboardModules.map((module) => (
-                  <Pressable key={module.id} style={[styles.moduleRow, { borderColor: palette.border }]}>
-                    <View style={styles.moduleThumb} />
-                    <View style={styles.moduleCopy}>
-                      <Text style={{ color: palette.text, fontWeight: '800' }}>{module.title}</Text>
-                      <Text style={{ color: palette.muted }}>{module.park} - {module.duration}</Text>
-                    </View>
-                    <Text style={{ color: palette.text, fontWeight: '800' }}>{module.progress}%</Text>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Switch module</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.switcherRow}>
+                {modulesWithState.map((m) => (
+                  <Pressable
+                    key={m.id}
+                    style={[styles.moduleChip, selectedModuleId === m.id && styles.moduleChipActive]}
+                    onPress={() => setSelectedModuleId(m.id)}
+                  >
+                    <Text style={[styles.moduleChipTitle, selectedModuleId === m.id && styles.moduleChipTitleActive]}>{m.title}</Text>
+                    <Text style={[styles.moduleChipMeta, selectedModuleId === m.id && styles.moduleChipMetaActive]}>
+                      {m.progress}% complete
+                    </Text>
                   </Pressable>
                 ))}
+              </ScrollView>
+              <Text style={styles.selectedName}>{selectedModule.title}</Text>
+              <View style={styles.selectedProgressRow}>
+                <Text style={styles.selectedProgressLabel}>Selected module progress</Text>
+                <Text style={styles.selectedProgressValue}>{moduleProgress[selectedModule.id] ?? selectedModule.progress}%</Text>
               </View>
+              <ProgressBar value={moduleProgress[selectedModule.id] ?? selectedModule.progress} />
             </View>
-
-            <View style={styles.boundaryGrid}>
-              <View style={[styles.card, styles.boundaryCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                <Text style={[styles.panelKicker, { color: palette.muted }]}>Role boundary</Text>
-                <Text style={[styles.panelTitle, { color: palette.text }]}>What this user can do</Text>
-                {canDoItems.map((item) => (
-                  <Text key={item} style={{ color: palette.text, marginTop: 6 }}>+ {item}</Text>
-                ))}
-              </View>
-              <View style={[styles.card, styles.boundaryCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                <Text style={[styles.panelKicker, { color: palette.muted }]}>Admin locked</Text>
-                <Text style={[styles.panelTitle, { color: palette.text }]}>What this user cannot do</Text>
-                {cannotDoItems.map((item) => (
-                  <Text key={item} style={{ color: palette.text, marginTop: 6 }}>- {item}</Text>
-                ))}
-              </View>
+            <View style={styles.grid2}>
+              <StatCard label="Overall progress" value={`${overallProgress}%`} detail="Across all modules" />
+              <StatCard label="Completed modules" value={`${certificates.length}/${modulesWithState.length}`} detail="Lessons + quiz" />
+              <StatCard label="Certificates" value={`${certificates.length}`} detail="Ready for download" />
+              <StatCard label="Unread updates" value={`${unreadCount}`} detail="Notifications pending" />
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Active modules</Text>
+              {modulesWithState.map((m) => (
+                <Pressable key={m.id} style={styles.moduleRow} onPress={() => openModuleDetails(m.id)}>
+                  <View style={styles.rowThumb} />
+                  <View style={styles.rowBody}><Text style={styles.rowTitle}>{m.title}</Text><Text style={styles.rowMeta}>{m.park} - {m.duration}</Text></View>
+                  <Text style={styles.rowPct}>{m.progress}%</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.roleCardsRow}>
+              <RoleCard title="What user can do" items={['View assigned modules', 'Track progress and quizzes', 'Manage schedule reminders', 'Update profile']} />
+              <RoleCard title="Admin-only actions" danger items={['Approve certificates', 'Edit module catalog', 'Manage all users', 'Change system settings']} />
             </View>
           </View>
         )}
 
-        {activeTab === 'training' && (
-          <View style={styles.stackGap}>
-            <View style={styles.trainingSwitchRow}>
-              {['courses', 'calendar'].map((v) => (
+        {activeTab === 'modules' && (
+          <View style={styles.stack}>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>My Modules</Text>
+              <TextInput style={styles.input} placeholder="Search modules, parks, topics..." value={moduleSearch} onChangeText={setModuleSearch} />
+              <View style={styles.grid2}>
+                <SelectLike title="Status" options={statusOptions} value={moduleStatusFilter} onPick={setModuleStatusFilter} />
+                <SelectLike title="Category" options={categoryOptions} value={moduleCategoryFilter} onPick={setModuleCategoryFilter} />
+              </View>
+            </View>
+            {filteredModules.map((m) => (
+              <View key={m.id} style={styles.card}>
+                <Text style={styles.rowTitle}>{m.title}</Text>
+                <Text style={styles.rowMeta}>{m.subtitle}</Text>
+                <Text style={styles.rowMeta}>{m.category} - {m.level} - {m.duration}</Text>
+                <ProgressBar value={m.progress} />
+                <View style={styles.rowEnd}>
+                  <Text style={styles.rowPct}>{m.progress}%</Text>
+                  <Pressable style={styles.primaryButton} onPress={() => openModuleDetails(m.id)}><Text style={styles.primaryText}>Open module</Text></Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {activeTab === 'module' && (
+          <View style={styles.stack}>
+            <View style={styles.heroMini}>
+              <Text style={styles.heroKicker}>{selectedModule.category} / {selectedModule.park}</Text>
+              <Text style={styles.heroTitleMini}>{selectedModule.title}</Text>
+              <Text style={styles.heroBodyMini}>{selectedModule.subtitle}</Text>
+              <ProgressBar value={moduleProgress[selectedModule.id] ?? selectedModule.progress} />
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Learning objectives</Text>
+              {selectedModule.objectives.map((item) => <Text key={item} style={styles.listText}>• {item}</Text>)}
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Lesson checklist</Text>
+              {selectedModule.lessons.map((step, index) => {
+                const checked = (completedSteps[selectedModule.id] || []).includes(index)
+                return (
+                  <Pressable key={step} onPress={() => toggleStep(selectedModule.id, index)} style={styles.checkItem}>
+                    <Text style={styles.checkMark}>{checked ? '☑' : '☐'}</Text>
+                    <Text style={styles.listText}>{step}</Text>
+                  </Pressable>
+                )
+              })}
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Scenario quiz</Text>
+              <Text style={styles.quizStepLabel}>Question {(quizPosition[selectedModule.id] || 0) + 1} / {selectedModule.quiz.length}</Text>
+              <Text style={styles.listText}>{selectedModule.quiz[quizPosition[selectedModule.id] || 0].question}</Text>
+              {selectedModule.quiz[quizPosition[selectedModule.id] || 0].options.map((opt, i) => (
                 <Pressable
-                  key={v}
-                  onPress={() => setTrainingView(v)}
-                  style={[
-                    styles.switchBtn,
-                    {
-                      backgroundColor: trainingView === v ? palette.accent : palette.panel,
-                      borderColor: palette.border,
-                    },
-                  ]}
+                  key={opt}
+                  onPress={() => selectQuizAnswer(selectedModule.id, quizPosition[selectedModule.id] || 0, i)}
+                  style={styles.checkItem}
                 >
-                  <Text style={{ color: trainingView === v ? '#fff' : palette.text, fontWeight: '700' }}>
-                    {v === 'courses' ? t.coursesTab : t.calendarTab}
-                  </Text>
+                  <Text style={styles.checkMark}>{Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i ? '◉' : '○'}</Text>
+                  <Text style={styles.listText}>{opt}</Text>
                 </Pressable>
               ))}
+              <View style={styles.quizNavRow}>
+                <Pressable
+                  style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === 0 && styles.disabledButton]}
+                  onPress={() => moveQuizQuestion(selectedModule.id, -1)}
+                  disabled={(quizPosition[selectedModule.id] || 0) === 0}
+                >
+                  <Text style={styles.secondaryText}>Previous</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1 && styles.disabledButton]}
+                  onPress={() => moveQuizQuestion(selectedModule.id, 1)}
+                  disabled={(quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1}
+                >
+                  <Text style={styles.secondaryText}>Next</Text>
+                </Pressable>
+                <Pressable style={styles.primaryButton} onPress={submitQuiz}><Text style={styles.primaryText}>Submit</Text></Pressable>
+              </View>
+              {quizScores[selectedModule.id] && <Text style={styles.scoreText}>Score: {quizScores[selectedModule.id].score}%</Text>}
+              {quizScores[selectedModule.id] && (
+                <View style={styles.quizChartWrap}>
+                  <QuizPieChart score={quizScores[selectedModule.id].score} />
+                </View>
+              )}
             </View>
+          </View>
+        )}
 
-            {trainingView === 'courses' && (
-              <View style={styles.stackGap}>
-                <View style={styles.courseToolbar}>
-                  <Pressable onPress={() => setIsFilterOpen(true)} style={[styles.iconBtn, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                    <Text style={{ color: palette.text }}>⚲</Text>
+        {activeTab === 'progress' && (
+          <View style={styles.stack}>
+            <View style={styles.grid2}>
+              <StatCard label="Overall progress" value={`${overallProgress}%`} detail="All modules average" />
+              <StatCard label="Completed modules" value={`${certificates.length}`} detail="Full completion" />
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Module completion list</Text>
+              {modulesWithState.map((m) => (
+                <View key={m.id} style={styles.progressLine}>
+                  <Text style={styles.rowTitle}>{m.title}</Text>
+                  <ProgressBar value={m.progress} />
+                  <Text style={styles.rowPct}>{m.progress}%</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Strength map</Text>
+              {strengthMap.map((s) => (
+                <View key={s.category} style={styles.progressLine}>
+                  <Text style={styles.rowTitle}>{s.category}</Text>
+                  <ProgressBar value={s.avg} />
+                  <Text style={styles.rowPct}>{s.avg}%</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {activeTab === 'certificates' && (
+          <View style={styles.stack}>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Certificates</Text>
+              <Text style={styles.rowMeta}>Only completed modules unlock their certificate. Incomplete modules remain locked.</Text>
+              {modulesWithState.map((m) => (
+                <View key={m.id} style={[styles.certificateCard, m.progress < 100 && styles.certificateCardLocked]}>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{m.title}</Text>
+                    <Text style={styles.rowMeta}>{m.progress === 100 ? 'Certificate unlocked' : 'Certificate locked until module completion'}</Text>
+                    <View style={styles.certificateMetaRow}>
+                      <Text style={[styles.certificateBadge, m.progress === 100 ? styles.certificateBadgeUnlocked : styles.certificateBadgeLocked]}>
+                        {m.progress === 100 ? 'Unlocked' : 'Locked'}
+                      </Text>
+                      <Text style={styles.rowMeta}>{m.progress}% complete</Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    style={[styles.primaryButton, m.progress < 100 && styles.disabledButton]}
+                    onPress={() => downloadCertificate(m)}
+                    disabled={m.progress < 100}
+                  >
+                    <Text style={styles.primaryText}>{m.progress === 100 ? 'Download' : 'Locked'}</Text>
                   </Pressable>
                 </View>
-                <View style={styles.courseGrid}>
-                  {Array.from({ length: 8 }).map((_, idx) => (
-                    <View key={idx} style={[styles.courseCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                      <View style={[styles.courseThumb, { backgroundColor: palette.primaryDark }]} />
-                      <View style={styles.courseBody}>
-                        <Text style={{ color: palette.text, fontWeight: '800' }}>—</Text>
-                        <Text style={{ color: palette.muted }}>Coming soon</Text>
-                      </View>
+              ))}
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>All module milestones</Text>
+              <View style={styles.milestoneGrid}>
+                {modulesWithState.map((m) => (
+                  <View key={m.id} style={[styles.milestone, m.progress === 100 ? styles.milestoneDone : styles.milestonePending]}>
+                    <View style={styles.milestoneHeader}>
+                      <Text style={styles.rowTitle}>{m.title}</Text>
+                      <Text style={styles.milestoneIcon}>{m.progress === 100 ? '✓' : <Text style={styles.milestoneIcon}>◔</Text>}</Text>
                     </View>
-                  ))}
-                </View>
+                    <Text style={styles.rowMeta}>{m.progress === 100 ? 'Milestone earned' : 'In progress'}</Text>
+                    <ProgressBar value={m.progress} />
+                    <Text style={styles.milestonePct}>{m.progress}% complete</Text>
+                  </View>
+                ))}
               </View>
-            )}
-
-            {trainingView === 'calendar' && (
-              <View style={styles.calendarWrap}>
-                <View style={[styles.calendarMain, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                  <View style={styles.calendarHead}>
-                    <Text style={{ color: palette.text, fontWeight: '800' }}>
-                      {new Date(calendarYear, calendarMonth, 1).toLocaleDateString('en-MY', { month: 'long', year: 'numeric' })}
-                    </Text>
-                    <View style={styles.calendarNavRow}>
-                      <Pressable onPress={() => moveMonth(-1)} style={[styles.navCircle, { borderColor: palette.border }]}>
-                        <Text style={{ color: palette.text }}>{'<'}</Text>
-                      </Pressable>
-                      <Pressable onPress={() => moveMonth(1)} style={[styles.navCircle, { borderColor: palette.border }]}>
-                        <Text style={{ color: palette.text }}>{'>'}</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  <View style={[styles.monthGrid, { borderColor: palette.border }]}>
-                    {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d) => (
-                      <View key={d} style={[styles.dowCell, { borderColor: palette.border }]}>
-                        <Text style={{ color: palette.muted, fontSize: 12, fontWeight: '700' }}>{d}</Text>
-                      </View>
-                    ))}
-                    {monthCells.map(({ date, inCurrentMonth }) => {
-                      const key = formatDateKey(date)
-                      const hasNote = !!getNoteForDate(key)
-                      return (
-                        <Pressable
-                          key={key}
-                          onPress={() => openEventModal(key)}
-                          style={[
-                            styles.monthCell,
-                            { borderColor: palette.border, backgroundColor: palette.panel, opacity: inCurrentMonth ? 1 : 0.55 },
-                          ]}
-                        >
-                          <Text style={{ color: palette.text }}>{date.getDate()}</Text>
-                          {hasNote && <View style={styles.dotMark} />}
-                        </Pressable>
-                      )
-                    })}
-                  </View>
-                </View>
-                <View style={styles.calendarSide}>
-                  <View style={[styles.sideCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                    <Text style={{ color: palette.text, textAlign: 'center', fontWeight: '800', marginBottom: 8 }}>
-                      {new Date(calendarYear, calendarMonth, 1).toLocaleDateString('en-MY', { month: 'long', year: 'numeric' })}
-                    </Text>
-                    <View style={styles.miniGrid}>
-                      {buildMonthMatrix(calendarYear, calendarMonth).slice(0, 35).map(({ date }, idx) => (
-                        <Text key={`${idx}-${date.getDate()}`} style={{ color: palette.text, textAlign: 'center', fontSize: 12 }}>
-                          {date.getDate()}
-                        </Text>
-                      ))}
-                    </View>
-                  </View>
-                  <View style={[styles.sideCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                    <Text style={{ color: palette.text, fontWeight: '800', marginBottom: 6 }}>{t.calendarList}</Text>
-                    {trainingNotes.slice(0, 6).map((n) => (
-                      <View key={n.id} style={styles.noteItem}>
-                        <Text style={{ color: palette.muted, fontSize: 12 }}>{n.date}</Text>
-                        <Text style={{ color: palette.text, fontWeight: '700' }}>{n.title || t.noEventTitle}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-            )}
+            </View>
           </View>
         )}
 
         {activeTab === 'notifications' && (
-          <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-            <Text style={[styles.h2, { color: palette.text }]}>{t.notifications}</Text>
-            {notifications.length === 0 && <Text style={{ color: palette.muted }}>{t.noMessages}</Text>}
-          </View>
-        )}
-
-        {activeTab === 'certs' && (
-          <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-            <Text style={[styles.h2, { color: palette.text }]}>{t.certs}</Text>
-            <Text style={{ color: palette.muted }}>{t.verifiedCertificates}</Text>
-          </View>
-        )}
-
-        {activeTab === 'settings' && (
-          <View style={[styles.card, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-            <Text style={[styles.h2, { color: palette.text }]}>{t.settings}</Text>
-            <View style={[styles.settingsSection, { borderColor: palette.border }]}>
-<Text style={[styles.settingsTitle, { color: palette.text }]}>{t.profileSettings}</Text>
-              <View style={[styles.settingsAvatarRow, { borderColor: palette.border }]}>
-                <View style={styles.settingsAvatarPreview}>
-                  {profile.avatar ? (
-                    <Image source={{ uri: profile.avatar }} style={styles.avatarImage} />
-                  ) : (
-                    <Text style={styles.profileAvatarInitials}>U</Text>
-                  )}
+          <View style={styles.stack}>
+            <View style={styles.rowEnd}>
+              <Text style={styles.sectionTitle}>Notifications</Text>
+              <Pressable style={styles.secondaryButton} onPress={markAllRead}><Text style={styles.secondaryText}>Mark all read</Text></Pressable>
+            </View>
+            {notifications.map((n) => (
+              <View key={n.id} style={[styles.card, !n.read && styles.unreadCard]}>
+                <Text style={styles.heroKicker}>{n.type}</Text>
+                <Text style={styles.rowTitle}>{n.title}</Text>
+                <Text style={styles.rowMeta}>{n.body}</Text>
+                <View style={styles.rowEnd}>
+                  <Pressable style={styles.secondaryButton} onPress={() => markRead(n.id)}><Text style={styles.secondaryText}>Read</Text></Pressable>
+                  <Pressable style={styles.secondaryButton} onPress={() => removeNotification(n.id)}><Text style={styles.secondaryText}>Remove</Text></Pressable>
                 </View>
-                <Pressable 
-                  onPress={async () => {
-                    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (!permission.granted) {
-                      Alert.alert('Permission needed', 'Please allow photo library access.');
-                      return;
-                    }
-                    const result = await ImagePicker.launchImageLibraryAsync({
-                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                      allowsEditing: true,
-                      aspect: [1, 1],
-                      quality: 0.8,
-                    });
-                    if (!result.canceled) {
-                      setProfile((p) => ({ ...p, avatar: result.assets[0].uri }));
-                      Alert.alert('Profile picture updated directly!');
-                    }
-                  }}
-                  style={[styles.primaryBtn, { backgroundColor: palette.accent, paddingHorizontal: 16, flex: 1 }]}
-                >
-                  <Text style={styles.primaryBtnText}>Change Profile Picture</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {activeTab === 'schedule' && (
+          <View style={styles.stack}>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Upcoming schedule</Text>
+              {scheduleItems.map((item) => (
+                <View key={item.id} style={styles.scheduleCard}>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{item.title}</Text>
+                    <Text style={styles.rowMeta}>{item.date} - {item.location}</Text>
+                    <Text style={[styles.scheduleTypeTag, item.type === 'Field' && styles.scheduleTypeField, item.type === 'Quiz' && styles.scheduleTypeQuiz, item.type === 'Certificate' && styles.scheduleTypeCertificate]}>{item.type}</Text>
+                  </View>
+                  <View style={styles.scheduleItemActions}>
+                    <Pressable style={styles.secondaryButton} onPress={() => startUpdateReminder(item)}>
+                      <Text style={styles.secondaryText}>Update</Text>
+                    </Pressable>
+                    <Pressable style={styles.deleteButton} onPress={() => deleteReminder(item.id)}>
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>{editingScheduleId ? 'Update reminder' : 'Add reminder'}</Text>
+              <Text style={styles.profileFieldLabel}>Date</Text>
+              <View style={styles.dateInputRow}>
+                <TextInput
+                  style={[styles.input, styles.dateInput]}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="number-pad"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={scheduleForm.date}
+                  onChangeText={handleDateInput}
+                />
+                <Pressable style={styles.calendarIconBtn} onPress={openCalendar}>
+                  <Text style={styles.calendarIcon}>📅</Text>
                 </Pressable>
               </View>
-              <TextInput
-                placeholder={t.fullName}
-                placeholderTextColor={palette.muted}
-                style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                value={profile.fullName}
-                onChangeText={(v) => setProfile((p) => ({ ...p, fullName: v }))}
-              />
-              <TextInput
-                placeholder={t.email}
-                placeholderTextColor={palette.muted}
-                style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                value={profile.email}
-                onChangeText={(v) => setProfile((p) => ({ ...p, email: v }))}
-              />
-              <TextInput
-                placeholder={t.guideId}
-                placeholderTextColor={palette.muted}
-                style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                value={profile.guideId}
-                onChangeText={(v) => setProfile((p) => ({ ...p, guideId: v }))}
-              />
-              <Pressable onPress={handleProfileSave} style={[styles.primaryBtn, { backgroundColor: palette.accent }]}>
-                <Text style={styles.primaryBtnText}>{t.saveProfile}</Text>
-              </Pressable>
-            </View>
-
-            <View style={[styles.settingsSection, { borderColor: palette.border }]}>
-              <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.passwordSettings}</Text>
-              <TextInput
-                placeholder={t.currentPassword}
-                placeholderTextColor={palette.muted}
-                secureTextEntry
-                style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                value={passwordForm.currentPassword}
-                onChangeText={(v) => setPasswordForm((p) => ({ ...p, currentPassword: v }))}
-              />
-              <TextInput
-                placeholder={t.newPassword}
-                placeholderTextColor={palette.muted}
-                secureTextEntry
-                style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                value={passwordForm.newPassword}
-                onChangeText={(v) => setPasswordForm((p) => ({ ...p, newPassword: v }))}
-              />
-              <TextInput
-                placeholder={t.confirmPassword}
-                placeholderTextColor={palette.muted}
-                secureTextEntry
-                style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                value={passwordForm.confirmPassword}
-                onChangeText={(v) => setPasswordForm((p) => ({ ...p, confirmPassword: v }))}
-              />
-              <Pressable onPress={handlePasswordUpdate} style={[styles.primaryBtn, { backgroundColor: palette.accent }]}>
-                <Text style={styles.primaryBtnText}>{t.updatePassword}</Text>
-              </Pressable>
-            </View>
-
-
-
-            <View style={[styles.settingsSection, { borderColor: palette.border }]}>
-              <Text style={[styles.settingsTitle, { color: palette.text }]}>{t.languageSettings}</Text>
-              <Text style={{ color: palette.muted }}>{t.chooseLanguage}</Text>
-              <View style={styles.rowGap}>
-                {[
-                  { key: 'en', label: t.english },
-                  { key: 'ms', label: t.malay },
-                  { key: 'zh', label: t.chinese },
-                ].map((item) => (
+              <TextInput style={styles.input} placeholder="Title" value={scheduleForm.title} onChangeText={(v) => setScheduleForm((p) => ({ ...p, title: v }))} />
+              <TextInput style={styles.input} placeholder="Location" value={scheduleForm.location} onChangeText={(v) => setScheduleForm((p) => ({ ...p, location: v }))} />
+              <SelectLike title="Type" options={scheduleTypeOptions} value={scheduleForm.type} onPick={(value) => setScheduleForm((p) => ({ ...p, type: value }))} />
+              <View style={styles.scheduleActionRow}>
+                <Pressable style={styles.primaryButton} onPress={addReminder}>
+                  <Text style={styles.primaryText}>{editingScheduleId ? 'Save update' : 'Add reminder'}</Text>
+                </Pressable>
+                {editingScheduleId && (
                   <Pressable
-                    key={item.key}
-                    onPress={() => setLanguage(item.key)}
-                    style={[
-                      styles.chipBtn,
-                      {
-                        borderColor: palette.border,
-                        backgroundColor: language === item.key ? palette.accent : palette.panel,
-                      },
-                    ]}
+                    style={styles.secondaryButton}
+                    onPress={() => {
+                      setEditingScheduleId(null)
+                      setScheduleForm((prev) => ({ ...prev, date: getTodayIsoDate(), title: '', location: '', type: 'Reminder' }))
+                    }}
                   >
-                    <Text style={{ color: language === item.key ? '#fff' : palette.text }}>{item.label}</Text>
+                    <Text style={styles.secondaryText}>Cancel</Text>
                   </Pressable>
-                ))}
+                )}
               </View>
             </View>
           </View>
         )}
-{activeTab === 'profile' && <ProfileView profile={profile} t={t} />}
-        {activeTab === 'files' && <FilesPage t={t} />}
 
+        {activeTab === 'profile' && (
+          <View style={styles.stack}>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Profile</Text>
+              <View style={styles.profileHeaderCard}>
+                {profileForm.imageUri ? (
+                  <Image source={{ uri: profileForm.imageUri }} style={styles.profileAvatarImage} />
+                ) : (
+                  <View style={styles.profileAvatarFallback}>
+                    <Text style={styles.profileAvatarInitial}>{profileInitial}</Text>
+                  </View>
+                )}
+                <View style={styles.profileHeaderInfo}>
+                  <Text style={styles.rowTitle}>{profile.fullName}</Text>
+                  <Text style={styles.rowMeta}>{profile.email}</Text>
+                </View>
+                <Pressable style={styles.secondaryButton} onPress={pickProfileImage}>
+                  <Text style={styles.secondaryText}>Upload Photo</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.profileCurrentDetailsCard}>
+                <Text style={styles.sectionTitle}>Current Personal Details</Text>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Assigned Park</Text><Text style={styles.profileDetailValue}>{profile.assignedPark || '-'}</Text></View>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Park Guide ID</Text><Text style={styles.profileDetailValue}>{profile.parkGuideId || '-'}</Text></View>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Full Name</Text><Text style={styles.profileDetailValue}>{profile.fullName || '-'}</Text></View>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Email</Text><Text style={styles.profileDetailValue}>{profile.email || '-'}</Text></View>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Phone Number</Text><Text style={styles.profileDetailValue}>{profile.phoneNumber || '-'}</Text></View>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Birthday</Text><Text style={styles.profileDetailValue}>{profile.birthday || '-'}</Text></View>
+                <View style={styles.profileDetailRow}><Text style={styles.profileDetailKey}>Address</Text><Text style={styles.profileDetailValue}>{profile.address || '-'}</Text></View>
+              </View>
+
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Assigned Park</Text>
+                <TextInput style={styles.input} placeholder="Enter assigned park" value={profileForm.assignedPark} onChangeText={(v) => setProfileForm((p) => ({ ...p, assignedPark: v }))} />
+              </View>
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Park Guide ID</Text>
+                <TextInput
+                  style={[styles.input, styles.inputReadonly]}
+                  value={profile.parkGuideId}
+                  editable={false}
+                  selectTextOnFocus={false}
+                />
+              </View>
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Full Name</Text>
+                <TextInput style={styles.input} placeholder="Enter full name" value={profileForm.fullName} onChangeText={(v) => setProfileForm((p) => ({ ...p, fullName: v }))} />
+              </View>
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Email</Text>
+                <TextInput style={styles.input} placeholder="Enter email" value={profileForm.email} onChangeText={(v) => setProfileForm((p) => ({ ...p, email: v }))} />
+              </View>
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Phone Number</Text>
+                <TextInput style={styles.input} placeholder="Enter phone number" value={profileForm.phoneNumber} onChangeText={(v) => setProfileForm((p) => ({ ...p, phoneNumber: v }))} />
+              </View>
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Birthday</Text>
+                <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={profileForm.birthday} onChangeText={(v) => setProfileForm((p) => ({ ...p, birthday: v }))} />
+              </View>
+              <View style={styles.profileFieldBlock}>
+                <Text style={styles.profileFieldLabel}>Address</Text>
+                <TextInput style={styles.input} placeholder="Enter address" value={profileForm.address} onChangeText={(v) => setProfileForm((p) => ({ ...p, address: v }))} />
+              </View>
+              <Pressable style={styles.primaryButton} onPress={saveProfile}><Text style={styles.primaryText}>Save Profile</Text></Pressable>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Fixed Bottom Bar */}
-      <View style={[styles.bottomBar, { backgroundColor: palette.panel, borderTopColor: palette.border }]}>
-{[
-          { tab: 'dashboard', icon: '🏠', label: t.dashboard },
-          { tab: 'training', icon: '📚', label: t.training },
-          { tab: 'notifications', icon: '🔔', label: t.notifications },
-          { tab: 'certs', icon: '🏅', label: t.certs },
-        ].map(({ tab, icon, label }) => (
-          <Pressable
-            key={tab}
-            onPress={() => {
-              setActiveTab(tab)
-              const matchedMenu = sideMenuItems.find((item) => item.targetTab === tab)
-              if (matchedMenu) setActiveMenuId(matchedMenu.id)
-              setIsNavOpen(false)
-            }}
-            style={[
-              styles.bottomTab,
-              activeTab === tab && styles.bottomTabActive,
-            ]}
-          >
-            <Text style={styles.bottomTabIcon}>{icon}</Text>
-            <Text style={[styles.bottomTabText, activeTab === tab && styles.bottomTabTextActive]}>
-              {label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Modal visible={isNavMounted} transparent animationType="none">
-        <Pressable style={styles.overlayLeft} onPress={() => setIsNavOpen(false)}>
-          <Animated.View
-            style={[
-              styles.sideNav,
-              {
-                backgroundColor: palette.primaryDark,
-                borderColor: palette.border,
-                opacity: navOpacity,
-                transform: [{ translateX: navTranslateX }],
-              },
-            ]}
-          >
-            <Text style={[styles.sideNavTitle, { color: '#ffffff' }]}>{t.portalTitle}</Text>
-            {sideMenuItems.map((item) => (
-              <Pressable
-                  key={item.id}
-                  onPress={() => {
-                    setActiveMenuId(item.id)
-                    setActiveTab(item.targetTab)
-                    setIsNavOpen(false)
-                  }}
-                  onMouseEnter={() => setHoveredTab(item.id)}
-                  onMouseLeave={() => setHoveredTab(null)}
-                  style={[
-                    styles.sideNavItem,
-                    (activeMenuId === item.id || hoveredTab === item.id) && {
-                      backgroundColor: palette.accent,
-                    },
-                  ]}
-                >
-                <Text style={[styles.sideNavIcon, { color: (activeMenuId === item.id || hoveredTab === item.id) ? '#fff' : '#bdc3c7' }]}>
-                  {item.icon}
-                </Text>
-                <Text style={{ color: (activeMenuId === item.id || hoveredTab === item.id) ? '#fff' : '#bdc3c7', fontWeight: '700', fontSize: 16, includeFontPadding: false }}>
-                  {item.label}
-                </Text>
-                </Pressable>
-            ))}
-          </Animated.View>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={isFilterOpen} transparent animationType="slide">
-        <Pressable style={styles.overlay} onPress={() => setIsFilterOpen(false)}>
-          <Pressable onPress={() => {}} style={[styles.sheet, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-            <Text style={[styles.h2, { color: palette.text }]}>{t.filter}</Text>
-            <Text style={[styles.sheetTitle, { color: palette.text }]}>{t.level}</Text>
-            <Pressable onPress={() => toggleFilter('level', 'beginner')}><Text style={{ color: palette.text }}>{filters.level.includes('beginner') ? '☑' : '☐'} {t.beginner}</Text></Pressable>
-            <Pressable onPress={() => toggleFilter('level', 'advance')}><Text style={{ color: palette.text }}>{filters.level.includes('advance') ? '☑' : '☐'} {t.advance}</Text></Pressable>
-            <Text style={[styles.sheetTitle, { color: palette.text }]}>{t.statusLabel}</Text>
-            <Pressable onPress={() => toggleFilter('status', 'active')}><Text style={{ color: palette.text }}>{filters.status.includes('active') ? '☑' : '☐'} {t.activeCourse}</Text></Pressable>
-            <Pressable onPress={() => toggleFilter('status', 'completed')}><Text style={{ color: palette.text }}>{filters.status.includes('completed') ? '☑' : '☐'} {t.completed}</Text></Pressable>
-            <Pressable onPress={() => toggleFilter('status', 'planned')}><Text style={{ color: palette.text }}>{filters.status.includes('planned') ? '☑' : '☐'} {t.planned}</Text></Pressable>
-            <Pressable onPress={() => setIsFilterOpen(false)} style={[styles.primaryBtn, { backgroundColor: palette.accent, marginTop: 12 }]}>
-              <Text style={styles.primaryBtnText}>{t.apply}</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={isEventModalOpen} transparent animationType="fade">
-        <Pressable style={styles.overlay} onPress={() => setIsEventModalOpen(false)}>
-          <Pressable onPress={() => {}} style={[styles.modalCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-            <Text style={[styles.h2, { color: palette.text, marginBottom: 10 }]}>Edit event</Text>
-            <TextInput placeholder={t.eventTitle} placeholderTextColor={palette.muted} value={eventTitle} onChangeText={setEventTitle} style={[styles.input, { color: palette.text, borderColor: palette.border }]} />
-            <TextInput placeholder={t.noteDate} placeholderTextColor={palette.muted} value={noteDate} onChangeText={setNoteDate} style={[styles.input, { color: palette.text, borderColor: palette.border }]} />
-            <TextInput placeholder={t.noteText} placeholderTextColor={palette.muted} value={noteText} onChangeText={setNoteText} multiline style={[styles.input, styles.inputTall, { color: palette.text, borderColor: palette.border }]} />
-            <TextInput placeholder={t.eventLocation} placeholderTextColor={palette.muted} value={eventLocation} onChangeText={setEventLocation} style={[styles.input, { color: palette.text, borderColor: palette.border }]} />
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setIsEventModalOpen(false)} style={[styles.secondaryBtn, { borderColor: palette.border }]}>
-                <Text style={{ color: palette.text }}>{t.close}</Text>
+      <Modal visible={calendarOpen} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => setCalendarOpen(false)}>
+          <Pressable style={styles.calendarModal} onPress={() => {}}>
+            <View style={styles.calendarHeader}>
+              <Pressable style={styles.calendarNavBtn} onPress={() => shiftCalendarMonth(-1)}>
+                <Text style={styles.secondaryText}>‹</Text>
               </Pressable>
-              <Pressable onPress={saveEvent} style={[styles.primaryBtn, { backgroundColor: palette.accent }]}>
-                <Text style={styles.primaryBtnText}>{t.saveEvent}</Text>
+              <Text style={styles.calendarTitle}>{calendarLabel}</Text>
+              <Pressable style={styles.calendarNavBtn} onPress={() => shiftCalendarMonth(1)}>
+                <Text style={styles.secondaryText}>›</Text>
               </Pressable>
             </View>
+
+            <View style={styles.calendarWeekRow}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+                <Text key={`${d}-${idx}`} style={styles.calendarWeekday}>{d}</Text>
+              ))}
+            </View>
+
+            <View style={styles.calendarGrid}>
+              {Array.from({ length: monthStartDay }).map((_, idx) => (
+                <View key={`empty-${idx}`} style={styles.calendarCell} />
+              ))}
+              {Array.from({ length: daysInMonth }).map((_, idx) => {
+                const day = idx + 1
+                const isSelected = selectedDay === day
+                return (
+                  <Pressable key={`day-${day}`} style={[styles.calendarCell, isSelected && styles.calendarCellSelected]} onPress={() => pickCalendarDate(day)}>
+                    <Text style={[styles.calendarCellText, isSelected && styles.calendarCellTextSelected]}>{day}</Text>
+                  </Pressable>
+                )
+              })}
+            </View>
           </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={menuOpen} transparent animationType="none">
+        <Pressable style={styles.overlay} onPress={closeMenu}>
+          <Animated.View style={[styles.sidebar, { transform: [{ translateX: navTranslate }], opacity: navOpacity }]}>
+            <View style={styles.brandBlock}>
+              <View style={styles.brandMark}><Text style={styles.brandMarkText}>SFC</Text></View>
+              <View><Text style={styles.brandTitle}>Guide Center</Text><Text style={styles.brandSub}>Digital Training</Text></View>
+            </View>
+            {sideMenuItems.map((item) => (
+              <Pressable key={item.id} style={[styles.menuItem, activeMenuId === item.id && styles.menuItemActive]} onPress={() => goToTab(item.id)}>
+                <View style={styles.menuIconWrap}><Text style={styles.menuIcon}>{item.icon}</Text></View>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+            <View style={styles.roleCard}>
+              <Text style={styles.roleLabel}>Current Role</Text>
+              <Text style={styles.roleValue}>Park Guide</Text>
+              <Text style={styles.roleNote}>Training access only. Admin controls stay locked.</Text>
+            </View>
+          </Animated.View>
         </Pressable>
       </Modal>
     </SafeAreaView>
@@ -978,228 +968,365 @@ function ProgressBar({ value }) {
   )
 }
 
+function StatCard({ label, value, detail }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statDetail}>{detail}</Text>
+    </View>
+  )
+}
+
+function SelectLike({ title, options, value, onPick }) {
+  return (
+    <View>
+      <Text style={styles.statLabel}>{title}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {options.map((option) => (
+          <Pressable key={option} style={[styles.chip, value === option && styles.chipActive]} onPress={() => onPick(option)}>
+            <Text style={[styles.chipText, value === option && styles.chipTextActive]}>{option}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  )
+}
+
+function RoleCard({ title, items, danger = false }) {
+  return (
+    <View style={[styles.roleCardBlock, danger && styles.roleCardBlockDanger]}>
+      <View style={styles.roleCardHeader}>
+        <Text style={[styles.roleCardDot, danger && styles.roleCardDotDanger]}>●</Text>
+        <Text style={styles.roleCardTitle}>{title}</Text>
+      </View>
+      {items.map((item) => (
+        <View key={item} style={styles.roleItemRow}>
+          <Text style={[styles.roleItemBullet, danger && styles.roleItemBulletDanger]}>•</Text>
+          <Text style={[styles.roleItemText, danger && styles.roleItemTextDanger]}>{item}</Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
+function QuizPieChart({ score }) {
+  const correct = Math.max(0, Math.min(100, score))
+  const incorrect = 100 - correct
+  return (
+    <View style={styles.quizPieContainer}>
+      <View style={styles.quizPieCircle}>
+        <View style={[styles.quizPieCorrect, { width: `${correct}%` }]} />
+      </View>
+      <Text style={styles.quizPieLabel}>Correct: {correct}% | Incorrect: {incorrect}%</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  header: {
-    borderBottomWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  menuBtn: { 
-    borderWidth: 1, 
-    borderRadius: 10, 
-    width: 44, 
-    height: 44, 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    fontSize: 20
-  },
-  headerTitle: { fontSize: 20, fontWeight: '900' },
-  contentWrap: { padding: 12, gap: 10 },
-  sectionLabel: { fontSize: 12, fontWeight: '700' },
-  navRow: { flexGrow: 0 },
-  navBtn: {
+  safe: { flex: 1, backgroundColor: palette.mist },
+  // Header uses website cream background and website line color.
+  topbar: { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: palette.line, backgroundColor: palette.cream, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topbarLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  menuBtn: { width: 42, height: 42, borderRadius: 10, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  menuText: { color: palette.citrus, fontWeight: '900' },
+  kicker: { color: palette.citrus, fontSize: 11, fontWeight: '900' },
+  topTitle: { color: palette.forest, fontSize: 18, fontWeight: '900' },
+  // New clickable profile icon style for header-right quick access.
+  headerProfileBtn: { width: 42, height: 42, borderRadius: 10, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  headerProfileIcon: { color: palette.forest, fontSize: 16, fontWeight: '900' },
+  page: { padding: 14, gap: 12 },
+  stack: { gap: 12 },
+  grid2: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  roleCardsRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
+  hero: { borderRadius: 12, padding: 16, backgroundColor: palette.forest, shadowColor: '#874500', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
+  heroKicker: { color: palette.sun, fontSize: 11, fontWeight: '900', textTransform: 'uppercase' },
+  heroTitle: { color: palette.white, fontSize: 26, fontWeight: '900', marginTop: 6, lineHeight: 30 },
+  heroBody: { color: '#fff4dd', marginTop: 8, lineHeight: 20 },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  heroMini: { borderRadius: 12, padding: 14, backgroundColor: '#fff2cd', borderWidth: 1, borderColor: '#ecd88d', gap: 8 },
+  heroTitleMini: { color: palette.forest, fontSize: 22, fontWeight: '900' },
+  heroBodyMini: { color: palette.muted, lineHeight: 20 },
+  primaryButton: { backgroundColor: palette.citrus, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  primaryText: { color: palette.forest, fontWeight: '900' },
+  secondaryButton: { borderRadius: 8, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, paddingHorizontal: 12, paddingVertical: 10 },
+  secondaryText: { color: palette.forest, fontWeight: '800' },
+  card: { backgroundColor: palette.white, borderWidth: 1, borderColor: palette.line, borderRadius: 10, padding: 12, gap: 8, shadowColor: '#874500', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  sectionTitle: { color: palette.forest, fontWeight: '900', fontSize: 18 },
+  cardLabel: { color: palette.citrus, fontSize: 11, fontWeight: '900' },
+  selectedName: { color: palette.forest, fontWeight: '800', marginTop: 4 },
+  switcherRow: { paddingVertical: 2, paddingRight: 4 },
+  moduleChip: {
+    width: 170,
+    borderRadius: 12,
     borderWidth: 1,
+    borderColor: palette.line,
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    marginRight: 8,
+    paddingVertical: 10,
+    marginRight: 10,
+    backgroundColor: '#fffdf4',
   },
-  card: { borderWidth: 1, borderRadius: 14, padding: 12, gap: 8 },
-  h1: { fontSize: 28, fontWeight: '900' },
-  h2: { fontSize: 24, fontWeight: '800' },
-  stackGap: { gap: 10 },
-  hero: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
-  homeHero: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 8 },
-  heroKicker: { color: '#9fc9b8', fontWeight: '700', textTransform: 'uppercase', fontSize: 12 },
-  heroButtonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  heroPrimary: { paddingHorizontal: 12 },
-  heroSecondary: { paddingHorizontal: 12, backgroundColor: 'transparent' },
-  nextActionCard: { borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center' },
-  nextActionImage: { width: 58, height: 58, borderRadius: 10, backgroundColor: '#d8e7df' },
-  nextActionContent: { flex: 1, gap: 5 },
-  statRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  statCard: { width: '48%', borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
-  statBig: { fontSize: 24, fontWeight: '900' },
-  panelKicker: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  panelTitle: { fontSize: 18, fontWeight: '800' },
-  moduleList: { marginTop: 10, gap: 8 },
-  moduleRow: { borderWidth: 1, borderRadius: 12, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  moduleThumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#d8e7df' },
-  moduleCopy: { flex: 1, gap: 2 },
-  boundaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  boundaryCard: { width: '48%' },
-  progressTrack: {
-    height: 8,
+  moduleChipActive: {
+    borderColor: palette.citrus,
+    backgroundColor: '#fff4d8',
+    shadowColor: '#874500',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  moduleChipTitle: { color: palette.forest, fontSize: 12, fontWeight: '800' },
+  moduleChipTitleActive: { color: palette.forest },
+  moduleChipMeta: { color: palette.muted, fontSize: 11, marginTop: 4 },
+  moduleChipMetaActive: { color: palette.citrus, fontWeight: '800' },
+  selectedProgressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  selectedProgressLabel: { color: palette.muted, fontSize: 12, fontWeight: '700' },
+  selectedProgressValue: { color: palette.citrus, fontSize: 14, fontWeight: '900' },
+  progressTrack: { height: 9, borderRadius: 999, overflow: 'hidden', backgroundColor: '#e5eadc' },
+  progressFill: { height: '100%', backgroundColor: palette.citrus },
+  statCard: { width: '48%', backgroundColor: palette.white, borderWidth: 1, borderColor: palette.line, borderRadius: 10, padding: 12, gap: 6 },
+  statLabel: { color: palette.muted, fontSize: 12, fontWeight: '700' },
+  statValue: { color: palette.forest, fontSize: 22, fontWeight: '900' },
+  statDetail: { color: palette.muted, fontSize: 12 },
+  moduleRow: { borderWidth: 1, borderColor: palette.line, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowThumb: { width: 42, height: 42, borderRadius: 8, backgroundColor: '#e7efdd' },
+  rowBody: { flex: 1, gap: 2 },
+  rowTitle: { color: palette.forest, fontWeight: '800' },
+  rowMeta: { color: palette.muted, fontSize: 12 },
+  rowPct: { color: palette.citrus, fontWeight: '900' },
+  rowEnd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  chip: {
     borderRadius: 999,
-    backgroundColor: '#e6efea',
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: palette.line,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginRight: 8,
+    backgroundColor: palette.white,
+    minWidth: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: palette.accent,
-  },
-  trainingSwitchRow: { flexDirection: 'row', gap: 8 },
-  switchBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  courseToolbar: { flexDirection: 'row' },
-  iconBtn: { borderWidth: 1, borderRadius: 10, width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  courseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  courseCard: { width: '48%', borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
-  courseThumb: { height: 90 },
-  courseBody: { padding: 10, gap: 4 },
-  calendarWrap: { flexDirection: 'row', gap: 8 },
-  calendarMain: { flex: 1, borderWidth: 1, borderRadius: 12, padding: 8, gap: 8 },
-  calendarHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  calendarNavRow: { flexDirection: 'row', gap: 6 },
-  navCircle: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  monthGrid: { borderTopWidth: 1, borderLeftWidth: 1, flexDirection: 'row', flexWrap: 'wrap' },
-  dowCell: { width: '14.2857%', borderBottomWidth: 1, borderRightWidth: 1, alignItems: 'center', paddingVertical: 6 },
-  monthCell: { width: '14.2857%', minHeight: 62, borderBottomWidth: 1, borderRightWidth: 1, alignItems: 'flex-end', padding: 6 },
-  dotMark: { width: 7, height: 7, borderRadius: 99, backgroundColor: '#e74c3c', position: 'absolute', left: 6, top: 8 },
-  calendarSide: { width: 130, gap: 8 },
-  sideCard: { borderWidth: 1, borderRadius: 10, padding: 8 },
-  miniGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'space-between' },
-  noteItem: { borderTopWidth: 1, borderColor: '#d8e4de', paddingTop: 6, marginTop: 6 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  overlayLeft: {
+  chipActive: { backgroundColor: '#fff4d8', borderColor: palette.citrus },
+  chipText: { color: palette.forest, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  chipTextActive: { color: palette.forest, fontWeight: '900' },
+  input: { borderWidth: 1, borderColor: palette.line, borderRadius: 8, backgroundColor: palette.white, paddingHorizontal: 10, paddingVertical: 10, color: palette.charcoal },
+  inputReadonly: { backgroundColor: '#f5f7f1', color: '#748274' },
+  checkItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
+  checkMark: { color: palette.citrus, fontWeight: '900' },
+  quizStepLabel: { color: palette.muted, fontSize: 12, fontWeight: '800' },
+  quizNavRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 4 },
+  disabledButton: { opacity: 0.45 },
+  listText: { color: palette.charcoal, lineHeight: 20 },
+  roleCardBlock: {
     flex: 1,
-    backgroundColor: 'rgba(40,37,29,0.3)',
+    minHeight: 190,
+    borderWidth: 1,
+    borderColor: '#008000',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#66FFoo',
     justifyContent: 'flex-start',
-    alignItems: 'flex-start',
   },
-  sideNav: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 250,
-    borderRightWidth: 1,
-    padding: 14,
-    gap: 8,
-    backgroundColor: '#ff7a1a',
+  roleCardBlockDanger: {
+    backgroundColor: '#fff7f3',
+    borderColor: '#f2d8d3',
   },
-  sideNavTitle: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    marginBottom: 20, 
-    paddingLeft: 20, 
-    paddingVertical: 25,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)'
+  roleCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  roleCardTitle: { flex: 1, flexShrink: 1, color: palette.forest, fontWeight: '900', fontSize: 16, lineHeight: 20 },
+  roleCardDot: { color: palette.lime, fontSize: 12, fontWeight: '900' },
+  roleCardDotDanger: { color: palette.danger },
+  roleItemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 6 },
+  roleItemBullet: { color: palette.forest, fontWeight: '900' },
+  roleItemBulletDanger: { color: palette.danger },
+  roleItemText: { flex: 1, color: palette.charcoal, lineHeight: 20 },
+  roleItemTextDanger: { color: '#8e382f' },
+  scoreText: { color: palette.forest, fontWeight: '900', marginTop: 4 },
+  quizChartWrap: { marginTop: 10, alignItems: 'center' },
+  quizPieContainer: { alignItems: 'center', gap: 8, width: '100%' },
+  quizPieCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    overflow: 'hidden',
+    backgroundColor: palette.line,
+    borderWidth: 2,
+    borderColor: palette.line,
   },
-  sideNavItem: { 
-    borderWidth: 0,
-    borderRadius: 12, 
-    paddingHorizontal: 20, 
-    paddingVertical: 16,
-    minHeight: 52,
-    marginBottom: 8,
-    width: '100%',
+  quizPieCorrect: { height: '100%', backgroundColor: palette.leaf },
+  quizPieLabel: { color: palette.forest, fontWeight: '800', fontSize: 12 },
+  progressLine: { gap: 6, marginBottom: 8 },
+  certificateCard: {
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#fffdf6',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  sideNavIcon: {
-    fontSize: 14,
-    fontWeight: '800',
-    width: 16,
-    textAlign: 'center',
-    backgroundColor: 'rgba(255,255,255,0.62)',
-    borderRadius: 8,
-    overflow: 'hidden',
-    paddingVertical: 6,
+  certificateCardLocked: {
+    backgroundColor: '#f7f7f4',
+    borderColor: '#d8ddd2',
   },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, borderWidth: 1, gap: 8 },
-  sheetTitle: { marginTop: 8, fontWeight: '800' },
-  modalCard: { margin: 16, borderRadius: 12, borderWidth: 1, padding: 12, gap: 8 },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  inputTall: { minHeight: 84, textAlignVertical: 'top' },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  secondaryBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9 },
-  primaryBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9, alignItems: 'center' },
-  primaryBtnText: { color: '#fff', fontWeight: '800' },
-  settingsSection: { borderWidth: 1, borderRadius: 12, padding: 10, gap: 8 },
-  settingsTitle: { fontSize: 16, fontWeight: '800' },
-  rowGap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chipBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  profileCard: { borderWidth: 1, borderRadius: 14, padding: 16, backgroundColor: palette.panel, borderColor: palette.border },
-  profileAvatarCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  profileAvatarPreview: { 
-    width: 72, 
-    height: 72, 
-    borderRadius: 36, 
-    backgroundColor: palette.accent, 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: palette.accentSoft,
-    overflow: 'hidden'
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 34,
-  },
-  settingsAvatarRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 12,
+  certificateMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  certificateBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, fontSize: 11, fontWeight: '800' },
+  certificateBadgeUnlocked: { backgroundColor: '#e9f8df', color: '#2d6f1c' },
+  certificateBadgeLocked: { backgroundColor: '#eceee8', color: '#667065' },
+  scheduleCard: {
     borderWidth: 1,
+    borderColor: palette.line,
     borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#fffdf6',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
   },
-  settingsAvatarPreview: {
+  scheduleTypeTag: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+    textAlign: 'center',
+    minWidth: 88,
+    flexShrink: 0,
+    backgroundColor: '#eef6e5',
+    color: '#2e6a1f',
+  },
+  scheduleTypeField: { backgroundColor: '#e7f1ff', color: '#1e4f8d' },
+  scheduleTypeQuiz: { backgroundColor: '#fff2d8', color: '#8a5200' },
+  scheduleTypeCertificate: { backgroundColor: '#f0e9ff', color: '#513090' },
+  dateInputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  dateInput: { flex: 1 },
+  calendarIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: palette.line,
+    backgroundColor: palette.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarIcon: { fontSize: 19 },
+  scheduleItemActions: { gap: 8 },
+  deleteButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f0c2bb',
+    backgroundColor: '#fff4f2',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  deleteButtonText: { color: palette.danger, fontWeight: '800' },
+  scheduleActionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  calendarModal: {
+    marginTop: 140,
+    marginHorizontal: 26,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: palette.line,
+    backgroundColor: palette.white,
+    padding: 12,
+    gap: 8,
+  },
+  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  calendarTitle: { color: palette.forest, fontWeight: '900', fontSize: 16 },
+  calendarNavBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: palette.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.white,
+  },
+  calendarWeekRow: { flexDirection: 'row' },
+  calendarWeekday: { width: '14.285%', textAlign: 'center', color: palette.muted, fontWeight: '700', paddingVertical: 6 },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarCell: {
+    width: '14.285%',
+    aspectRatio: 1,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  calendarCellSelected: { backgroundColor: '#fff2d8', borderWidth: 1, borderColor: palette.citrus },
+  calendarCellText: { color: palette.forest, fontWeight: '700' },
+  calendarCellTextSelected: { color: palette.citrus, fontWeight: '900' },
+  profileHeaderCard: {
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 12,
+    backgroundColor: '#fffdf6',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  profileAvatarImage: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, borderColor: palette.line },
+  profileAvatarFallback: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: palette.accent,
+    borderWidth: 1,
+    borderColor: palette.line,
+    backgroundColor: '#fff2d8',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: palette.accentSoft,
   },
-  profileAvatarInitials: { color: '#fff', fontSize: 28, fontWeight: '900' },
-  profileAvatarLabel: { flex: 1 },
-  profileLabelName: { fontSize: 20, fontWeight: '900', color: palette.text },
-  profileLabelEmail: { fontSize: 16, color: palette.muted },
-  profileDetails: { gap: 12 },
-  profileField: { gap: 2 },
-  profileLabel: { fontSize: 14, fontWeight: '700', color: palette.muted },
-  profileValue: { fontSize: 16, color: palette.text, fontWeight: '600' },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: bottomBarHeight,
+  profileAvatarInitial: { color: palette.forest, fontSize: 22, fontWeight: '900' },
+  profileHeaderInfo: { flex: 1 },
+  profileCurrentDetailsCard: {
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 12,
+    backgroundColor: '#fffdf6',
+    padding: 12,
+    gap: 8,
+  },
+  profileDetailRow: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-  },
-  bottomTab: {
-    flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf2e7',
+    paddingBottom: 6,
   },
-  bottomTabActive: {
-    backgroundColor: palette.accentSoft,
-  },
-  bottomTabIcon: {
-    fontSize: 24,
-    marginBottom: 2,
-  },
-  bottomTabText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: palette.muted,
-  },
-  bottomTabTextActive: {
-    color: palette.accent,
-  },
+  profileDetailKey: { color: palette.muted, fontSize: 12, fontWeight: '700' },
+  profileDetailValue: { color: palette.forest, fontSize: 12, fontWeight: '800', maxWidth: '58%', textAlign: 'right' },
+  profileFieldBlock: { gap: 6 },
+  profileFieldLabel: { color: palette.forest, fontSize: 12, fontWeight: '800' },
+  milestoneGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  milestone: { width: '48%', borderWidth: 1, borderColor: palette.line, borderRadius: 12, padding: 10, backgroundColor: palette.white, gap: 8 },
+  milestoneDone: { backgroundColor: '#f3fde9', borderColor: '#cfe9b6' },
+  milestonePending: { backgroundColor: '#fff9ef', borderColor: '#f1dfb9' },
+  milestoneHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  milestoneIcon: { fontSize: 16, fontWeight: '900', color: palette.forest },
+  milestonePct: { color: palette.citrus, fontWeight: '900', fontSize: 12 },
+  unreadCard: { borderColor: '#f0b24c', backgroundColor: '#fff7e4' },
+  overlay: { flex: 1, backgroundColor: 'rgba(40,37,29,0.35)' },
+  sidebar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: NAV_WIDTH, padding: 16, borderRightWidth: 1, borderRightColor: palette.line, backgroundColor: '#ffb334', gap: 8 },
+  brandBlock: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  brandMark: { width: 42, height: 42, borderRadius: 8, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: palette.forest, fontWeight: '900' },
+  brandTitle: { color: palette.forest, fontWeight: '900' },
+  brandSub: { color: '#684316', fontSize: 12 },
+  menuItem: { minHeight: 44, borderRadius: 8, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  menuItemActive: { backgroundColor: 'rgba(255,255,255,0.45)' },
+  menuIconWrap: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.62)', alignItems: 'center', justifyContent: 'center' },
+  menuIcon: { color: palette.forest, fontSize: 11, fontWeight: '900' },
+  menuLabel: { color: '#563716', fontWeight: '800' },
+  roleCard: { marginTop: 'auto', borderWidth: 1, borderColor: 'rgba(58,42,22,0.18)', borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.38)', padding: 12 },
+  roleLabel: { color: '#684316', fontSize: 12, fontWeight: '700' },
+  roleValue: { color: palette.forest, fontWeight: '900', marginTop: 4 },
+  roleNote: { color: '#684316', marginTop: 6, lineHeight: 18, fontSize: 12 },
 })

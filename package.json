@@ -9,7 +9,7 @@
     "dev:hub": "node scripts/hub-server.mjs",
     "dev:user": "npm --prefix user_page run dev",
     "dev:admin": "npm --prefix admin_page run dev",
-    "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",
+    "dev:mobile": "npm --prefix mobile_app run web",
     "dev:server": "npm --prefix user_login/server start",
     "build:user": "npm --prefix user_page run build",
     "build:admin": "npm --prefix admin_page run build",

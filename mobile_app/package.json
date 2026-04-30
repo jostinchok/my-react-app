@@ -9,10 +9,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-picker/picker": "2.11.1",
     "expo": "~54.0.33",
-    "expo-document-picker": "~14.0.8",
-    "expo-image-picker": "~17.0.10",
+    "expo-image-picker": "^55.0.19",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-dom": "^19.1.0",
