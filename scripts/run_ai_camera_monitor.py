@@ -298,20 +298,51 @@ def create_hand_landmarker(hand_model_path):
 
 
 def parse_args():
-    default_project_dir = Path(os.environ.get("CTIP_PROJECT_DIR", Path.home() / "cos30049"))
-    default_evidence_dir = Path(os.environ.get("AI_EVIDENCE_DIR", REPO_ROOT / "Alerts" / "ai"))
-    default_api_url = os.environ.get("INCIDENT_API_URL", "http://localhost:4000/api/incidents")
+    default_project_dir = Path(os.environ.get("CTIP_PROJECT_DIR", REPO_ROOT))
+    default_evidence_dir = Path(os.environ.get("AI_EVIDENCE_DIR", REPO_ROOT / "alerts" / "ai"))
+    default_backend_url = os.environ.get("BACKEND_URL", "http://localhost:4000")
+    default_incident_api_url = os.environ.get("INCIDENT_API_URL")
 
     parser = argparse.ArgumentParser(description="Run the standalone CTIP realtime AI camera monitor.")
-    parser.add_argument("--project-dir", type=Path, default=default_project_dir)
+    parser.add_argument(
+        "--project-dir",
+        type=Path,
+        default=default_project_dir,
+        help="Project root containing local-only artifacts, datasets, and models. Defaults to this repo.",
+    )
     parser.add_argument("--model-path", type=Path)
     parser.add_argument("--hand-model-path", type=Path)
-    parser.add_argument("--evidence-dir", type=Path, default=default_evidence_dir)
+    parser.add_argument(
+        "--evidence-dir",
+        type=Path,
+        default=default_evidence_dir,
+        help="Runtime alert evidence folder. Defaults to repo alerts/ai.",
+    )
     parser.add_argument("--alert-dir", type=Path, help=argparse.SUPPRESS)
-    parser.add_argument("--camera-index", type=int, default=0)
-    parser.add_argument("--incident-api-url", default=default_api_url)
+    parser.add_argument(
+        "--camera-index",
+        type=int,
+        default=0,
+        help="OpenCV camera index for normal webcams. iPhone camera availability is environment-dependent.",
+    )
+    parser.add_argument(
+        "--backend-url",
+        default=default_backend_url,
+        help="Backend origin that serves /api/incidents and /evidence/ai. Defaults to http://localhost:4000.",
+    )
+    parser.add_argument("--incident-api-url", default=default_incident_api_url, help=argparse.SUPPRESS)
     parser.add_argument("--no-backend-sync", action="store_true")
     return parser.parse_args()
+
+
+def resolve_incident_api_url(args):
+    if args.incident_api_url:
+        return args.incident_api_url
+
+    backend_url = args.backend_url.rstrip("/")
+    if backend_url.endswith("/api/incidents"):
+        return backend_url
+    return f"{backend_url}/api/incidents"
 
 
 def load_model(model_path, device):
@@ -329,6 +360,7 @@ def run_monitor(args):
     evidence_dir_arg = args.alert_dir or args.evidence_dir
     alert_dir = evidence_dir_arg.expanduser().resolve()
     alert_dir.mkdir(parents=True, exist_ok=True)
+    incident_api_url = resolve_incident_api_url(args)
 
     if not model_path.exists():
         raise FileNotFoundError(f"Model not found: {model_path}")
@@ -345,7 +377,8 @@ def run_monitor(args):
     print("Model path:", model_path)
     print("Hand model:", hand_model_path)
     print("Evidence dir:", alert_dir)
-    print("Incident API:", args.incident_api_url)
+    print("Backend URL:", args.backend_url.rstrip("/"))
+    print("Incident API:", incident_api_url)
     print("Press 'q' or ESC to quit | Press 's' to save snapshot")
     print("===================================================")
 
@@ -470,7 +503,7 @@ def run_monitor(args):
                     touch_votes=counts["Touching"],
                     event_class=event_class,
                     alert_dir=alert_dir,
-                    incident_api_url=args.incident_api_url,
+                    incident_api_url=incident_api_url,
                     sync_backend=not args.no_backend_sync,
                     prefix="alert",
                 )
@@ -499,7 +532,7 @@ def run_monitor(args):
                     touch_votes=counts["Touching"],
                     event_class="ManualSnapshot",
                     alert_dir=alert_dir,
-                    incident_api_url=args.incident_api_url,
+                    incident_api_url=incident_api_url,
                     sync_backend=not args.no_backend_sync,
                     prefix="manual",
                 )

@@ -1,1 +1,158 @@
+# =========================================================
+# macOS system files
+# =========================================================
 .DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Finder folder metadata
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+
+# =========================================================
+# Windows system files
+# =========================================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+# =========================================================
+# Node.js dependencies
+# =========================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# =========================================================
+# React / Vite build output
+# =========================================================
+dist/
+build/
+.vite/
+.cache/
+.expo/
+.expo-shared/
+
+
+# =========================================================
+# Environment files
+# =========================================================
+.env
+.env.*
+!.env.example
+
+
+# =========================================================
+# Python virtual environments
+# =========================================================
+.venv/
+venv/
+env/
+ENV/
+
+
+# =========================================================
+# Python cache files
+# =========================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+
+# =========================================================
+# Jupyter Notebook temporary files
+# =========================================================
+.ipynb_checkpoints/
+
+
+# =========================================================
+# AI datasets, models, and generated outputs
+# =========================================================
+datasets/
+datasets
+Datasets/
+Datasets
+models/
+models
+Models/
+Models
+artifacts/
+artifacts
+Artifacts/
+Artifacts
+outputs/
+outputs
+Outputs/
+Outputs
+
+
+# Trained model files
+*.pt
+*.pth
+*.task
+*.tflite
+*.pb
+*.h5
+*.keras
+*.onnx
+*.pkl
+*.joblib
+
+
+# =========================================================
+# Local evidence / captured images / runtime media
+# =========================================================
+evidence/
+Evidence/
+captures/
+Captures/
+screenshots/
+Screenshots/
+user_login/server/data/*.runtime.json
+
+
+# =========================================================
+# Logs and runtime files
+# =========================================================
+logs/
+*.log
+*.tmp
+*.temp
+
+
+# =========================================================
+# IDE and editor settings
+# =========================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# =========================================================
+# OS / package manager lock backups
+# =========================================================
+package-lock.json.bak
+yarn.lock.bak
+pnpm-lock.yaml.bak
+
+
+# =========================================================
+# Miscellaneous backup files
+# =========================================================
+*.bak
+*.backup
+*.old
+*.orig

@@ -6,6 +6,8 @@ const publicAsset = (path) => `${adminBasePath}${path}`;
 
 export const INCIDENT_STATUSES = ["New", "Reviewed", "False Alarm"];
 
+export const RANGER_INCIDENT_STATUSES = ["Acknowledged", "In Review", "Resolved", "False Alarm"];
+
 export const INCIDENT_FILTERS = [
   { id: "all", label: "All" },
   { id: "AI_CAMERA", label: "AI Camera" },
@@ -64,7 +66,7 @@ const seededIncidentRecords = [
     status: "New",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-plants.jpg"),
-      json_path: "C:/COS30049 Assignment/Alerts/ai/2026-04-27_10-30-00_alert_TouchingPlants.json",
+      json_path: "alerts/ai/2026-04-27_10-30-00_alert_TouchingPlants.json",
     },
     ai: {
       predicted_class: "TouchingPlants",
@@ -90,7 +92,7 @@ const seededIncidentRecords = [
     status: "Reviewed",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-wildlife.jpg"),
-      json_path: "C:/COS30049 Assignment/Alerts/ai/2026-04-27_11-12-44_alert_TouchingWildlife.json",
+      json_path: "alerts/ai/2026-04-27_11-12-44_alert_TouchingWildlife.json",
     },
     ai: {
       predicted_class: "TouchingWildlife",
@@ -138,7 +140,7 @@ const seededIncidentRecords = [
     status: "False Alarm",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-plants.jpg"),
-      json_path: "C:/COS30049 Assignment/Alerts/ai/2026-04-27_12-05-33_alert_TouchingPlants.json",
+      json_path: "alerts/ai/2026-04-27_12-05-33_alert_TouchingPlants.json",
     },
     ai: {
       predicted_class: "TouchingPlants",
@@ -196,6 +198,9 @@ export const summarizeIncidents = (incidents) => {
     iot: normalizedIncidents.filter((item) => item.source === "IOT_SENSOR").length,
     new: countByStatus.New || 0,
     reviewed: countByStatus.Reviewed || 0,
+    acknowledged: normalizedIncidents.filter((item) => item.status === "Acknowledged").length,
+    inReview: normalizedIncidents.filter((item) => item.status === "In Review").length,
+    resolved: normalizedIncidents.filter((item) => item.status === "Resolved").length,
     falseAlarm: countByStatus["False Alarm"] || 0,
   };
 };
