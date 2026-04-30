@@ -14,9 +14,12 @@ import {
   normalizeNotificationRow,
   normalizeProfileRow,
   normalizeScheduleRow,
+  saveProfileField,
+  saveScheduleItem,
 } from './services/databaseFrames'
 
 const STORAGE_KEY = 'sfc_citrus_training_demo'
+const editableProfileFields = new Set(['phone', 'yearsExperience', 'address'])
 
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
 
@@ -152,15 +155,18 @@ function App() {
     ? currentUser
     : {
         ...currentUser,
-        displayName: '',
-        email: '',
-        phone: '',
-        assignedPark: '',
-        position: '',
-        yearsExperience: '',
-        address: '',
+        displayName: currentUser.displayName || 'Guide',
+        email: currentUser.email || '-',
+        phone: currentUser.phone || '-',
+        assignedPark: currentUser.assignedPark || '-',
+        position: currentUser.position || '-',
+        yearsExperience: currentUser.yearsExperience || '-',
+        address: currentUser.address || '-',
+        guideId: currentUser.guideId || '-',
+        role: currentUser.role || 'guide',
         status: 'Waiting for database profile',
-        avatar: null,
+        avatar: currentUser.avatar || null,
+        avatarColor: currentUser.avatarColor,
       }
   const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || null
 
@@ -401,18 +407,26 @@ function App() {
   const addScheduleItem = (event) => {
     event.preventDefault()
     if (!scheduleForm.date || !scheduleForm.title.trim()) return
+    const scheduleItem = {
+      id: `${currentUser.id}-schedule-${Date.now()}`,
+      user_id: currentUser.id,
+      title: scheduleForm.title.trim(),
+      date: scheduleForm.date,
+      location: scheduleForm.location.trim() || 'Self-paced',
+      type: scheduleForm.type,
+      status: 'Scheduled',
+    }
+    setDatabaseSchedule((items) => [scheduleItem, ...items].sort((a, b) => a.date.localeCompare(b.date)))
     updateCurrentUser((user) => ({
       ...user,
       schedule: [
-        {
-          id: `${user.id}-schedule-${Date.now()}`,
-          ...scheduleForm,
-          title: scheduleForm.title.trim(),
-          location: scheduleForm.location.trim() || 'Self-paced',
-        },
+        scheduleItem,
         ...(user.schedule || []),
       ].sort((a, b) => a.date.localeCompare(b.date)),
     }))
+    saveScheduleItem(scheduleItem).catch(() => {
+      // Keep the local schedule item visible while the database endpoint is not connected.
+    })
     setScheduleForm({ date: scheduleForm.date, title: '', location: '', type: 'Reminder' })
     addNotification('Schedule updated', 'A personal learning reminder was added to your schedule.', 'schedule')
   }
@@ -448,7 +462,16 @@ function App() {
   }
 
   const updateProfileField = (field, value) => {
+    if (!editableProfileFields.has(field)) return
     updateCurrentUser((user) => ({ ...user, [field]: value }))
+    setDatabaseProfile((profile) => (profile ? { ...profile, [field]: value } : profile))
+  }
+
+  const saveProfileEdit = (field, value) => {
+    if (!editableProfileFields.has(field)) return
+    saveProfileField(field, value).catch(() => {
+      // Keep the local edit visible while the database endpoint is not connected.
+    })
   }
 
   const handleAvatarUpload = (event) => {
@@ -457,6 +480,7 @@ function App() {
     const reader = new FileReader()
     reader.onload = () => {
       updateCurrentUser((user) => ({ ...user, avatar: reader.result }))
+      setDatabaseProfile((profile) => (profile ? { ...profile, avatar: reader.result } : profile))
     }
     reader.readAsDataURL(file)
     event.target.value = ''
@@ -1143,8 +1167,10 @@ function App() {
                         {label}
                         <input
                           type="text"
-                          value={currentUser[field] || ''}
+                          value={profileUser[field] || '-'}
+                          disabled={!editableProfileFields.has(field)}
                           onChange={(event) => updateProfileField(field, event.target.value)}
+                          onBlur={(event) => saveProfileEdit(field, event.target.value)}
                         />
                       </label>
                     ))}
@@ -1154,7 +1180,7 @@ function App() {
                     </label>
                     <label>
                       Role
-                      <input type="text" value={currentUser.role} disabled />
+                      <input type="text" value={profileUser.role} disabled />
                     </label>
                   </form>
                 </section>

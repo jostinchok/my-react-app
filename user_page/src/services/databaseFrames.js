@@ -21,38 +21,85 @@ export const API_LINKS = {
 }
 
 export const DB_SQL_SCHEMA = {
-  sourceFile: 'user_login/server/db.sql',
+  sourceFile: 'database/db.sql',
   database: MYSQL_DATABASE_NAME,
   tables: {
     roles: ['role_id', 'role_name'],
     users: ['user_id', 'role_id', 'name', 'email', 'password_hash', 'created_at'],
     password_reset_tokens: ['token_id', 'user_id', 'token_hash', 'expires_at', 'used_at', 'created_at'],
-    guide_profiles: ['guide_id', 'phone', 'organization', 'status'],
-    training_modules: ['module_id', 'title', 'description', 'created_by', 'created_at'],
+    guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
+    training_modules: [
+      'module_id',
+      'title',
+      'description',
+      'category',
+      'park',
+      'level',
+      'duration',
+      'format',
+      'image_url',
+      'accent_color',
+      'badge_name',
+      'objectives',
+      'created_by',
+      'created_at',
+    ],
     lessons: ['lesson_id', 'module_id', 'title', 'content', 'media_url'],
     quizzes: ['quiz_id', 'module_id', 'title'],
     questions: ['question_id', 'quiz_id', 'question_text'],
     options: ['option_id', 'question_id', 'option_text', 'is_correct'],
-    progress: ['progress_id', 'user_id', 'module_id', 'status', 'completion_date'],
-    certifications: ['cert_id', 'user_id', 'module_id', 'issue_date', 'expiry_date'],
+    progress: ['progress_id', 'user_id', 'module_id', 'completed_lessons', 'quiz_passed', 'quiz_score', 'status', 'completion_date'],
+    certifications: ['cert_id', 'user_id', 'module_id', 'title', 'status', 'issue_date', 'expiry_date'],
     incidents: ['incident_id', 'guide_id', 'incident_type', 'confidence', 'timestamp', 'status'],
     evidence: ['evidence_id', 'incident_id', 'file_path', 'file_type', 'uploaded_at'],
-    notifications: ['notification_id', 'user_id', 'message', 'is_read', 'created_at'],
+    notifications: ['notification_id', 'user_id', 'title', 'type', 'message', 'is_read', 'created_at'],
+    schedule: ['schedule_id', 'user_id', 'module_id', 'title', 'date', 'location', 'type', 'status', 'created_at'],
   },
 }
 
 export const DATABASE_TABLE_TEMPLATE = {
   users: ['user_id', 'role_id', 'name', 'email', 'created_at'],
-  guide_profiles: ['guide_id', 'phone', 'organization', 'status'],
-  training_modules: ['module_id', 'title', 'description', 'created_by', 'created_at'],
+  guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
+  training_modules: [
+    'module_id',
+    'title',
+    'description',
+    'category',
+    'park',
+    'level',
+    'duration',
+    'format',
+    'image_url',
+    'accent_color',
+    'badge_name',
+    'objectives',
+    'created_by',
+    'created_at',
+  ],
   lessons: ['lesson_id', 'module_id', 'title', 'content', 'media_url'],
   quizzes: ['quiz_id', 'module_id', 'title'],
   questions: ['question_id', 'quiz_id', 'question_text'],
   options: ['option_id', 'question_id', 'option_text', 'is_correct'],
-  progress: ['progress_id', 'user_id', 'module_id', 'status', 'completion_date'],
-  certifications: ['cert_id', 'user_id', 'module_id', 'issue_date', 'expiry_date'],
-  notifications: ['notification_id', 'user_id', 'message', 'is_read', 'created_at'],
-  schedule: 'Not in db.sql yet. Add a schedule table or expose schedule rows from your backend when ready.',
+  progress: ['progress_id', 'user_id', 'module_id', 'completed_lessons', 'quiz_passed', 'quiz_score', 'status', 'completion_date'],
+  certifications: ['cert_id', 'user_id', 'module_id', 'title', 'status', 'issue_date', 'expiry_date'],
+  notifications: ['notification_id', 'user_id', 'title', 'type', 'message', 'is_read', 'created_at'],
+  schedule: ['schedule_id', 'user_id', 'module_id', 'title', 'date', 'location', 'type', 'status', 'created_at'],
+}
+
+export const PROFILE_FIELD_RULES = {
+  readOnlyFromDatabase: ['displayName', 'email', 'assignedPark', 'position', 'guideId', 'role'],
+  editableAndSavedToDatabase: ['phone', 'yearsExperience', 'address'],
+  dbSqlReadyFields: {
+    phone: 'guide_profiles.phone',
+    displayName: 'users.name',
+    email: 'users.email',
+    assignedPark: 'guide_profiles.organization',
+    guideId: 'guide_profiles.guide_id',
+    role: 'roles.role_name',
+  },
+  needsDbSqlColumn: {
+    avatar: 'guide_profiles.avatar_url is available for loading profile photos. Upload storage still needs backend handling.',
+  },
 }
 
 const placeholderImage = '/training/protected-areas.png'
@@ -63,6 +110,15 @@ export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
       tm.module_id,
       tm.title,
       tm.description,
+      tm.category,
+      tm.park,
+      tm.level,
+      tm.duration,
+      tm.format,
+      tm.image_url,
+      tm.accent_color,
+      tm.badge_name,
+      tm.objectives,
       tm.created_at
     FROM training_modules tm
     ORDER BY tm.created_at DESC;
@@ -94,10 +150,15 @@ export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
       u.user_id,
       u.name,
       u.email,
+      r.role_name,
       gp.phone,
       gp.organization,
+      gp.years_experience,
+      gp.address,
+      gp.avatar_url,
       gp.status
     FROM users u
+    LEFT JOIN roles r ON r.role_id = u.role_id
     LEFT JOIN guide_profiles gp ON gp.guide_id = u.user_id
     WHERE u.user_id = ?;
   `,
@@ -106,6 +167,8 @@ export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
       c.cert_id,
       c.user_id,
       c.module_id,
+      c.title,
+      c.status,
       c.issue_date,
       c.expiry_date,
       tm.title AS module_title
@@ -115,15 +178,21 @@ export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
     ORDER BY c.issue_date DESC;
   `,
   notifications: `
-    SELECT notification_id, user_id, message, is_read, created_at
+    SELECT notification_id, user_id, title, type, message, is_read, created_at
     FROM notifications
     WHERE user_id = ?
     ORDER BY created_at DESC;
   `,
   progress: `
-    SELECT progress_id, user_id, module_id, status, completion_date
+    SELECT progress_id, user_id, module_id, completed_lessons, quiz_passed, quiz_score, status, completion_date
     FROM progress
     WHERE user_id = ?;
+  `,
+  schedule: `
+    SELECT schedule_id, user_id, module_id, title, date, location, type, status, created_at
+    FROM schedule
+    WHERE user_id = ?
+    ORDER BY date ASC, created_at DESC;
   `,
 }
 
@@ -194,11 +263,15 @@ export const normalizeModuleRow = (row, index = 0) => {
 
 export const normalizeProfileRow = (row = {}) => ({
   id: asText(firstValue(row.user_id, row.guide_id, row.id)),
+  guideId: asText(firstValue(row.guide_id, row.guideId, row.user_id)),
   displayName: asText(firstValue(row.display_name, row.name)),
   email: asText(row.email),
   phone: asText(row.phone),
   assignedPark: asText(firstValue(row.assigned_park, row.park, row.organization)),
   position: asText(firstValue(row.position, row.role_name), 'Park Guide'),
+  yearsExperience: asText(firstValue(row.years_experience, row.yearsExperience)),
+  address: asText(row.address),
+  role: asText(firstValue(row.role, row.role_name), 'guide'),
   status: asText(row.status, 'active'),
   avatar: asText(firstValue(row.avatar_url, row.avatar)),
 })
@@ -249,9 +322,39 @@ export const loadDatabaseFrame = async (url, keys, normalizer) => {
   const response = await fetch(url, { cache: 'no-store' })
   const payload = await response.json().catch(() => ({}))
 
-  if (!response.ok) {
+    if (!response.ok) {
     throw new Error(payload.message || `Unable to load ${url}.`)
   }
-
+  
   return normalizeCollection(payload, keys, normalizer)
+}
+
+export const saveProfileField = async (field, value) => {
+  const response = await fetch(API_LINKS.profile, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field, value }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || `Unable to save ${field}.`)
+  }
+
+  return payload
+}
+
+export const saveScheduleItem = async (item) => {
+  const response = await fetch(API_LINKS.schedule, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to save schedule item.')
+  }
+
+  return payload
 }
