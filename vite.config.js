@@ -18,6 +18,11 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
     },
+      '/login': {
+        target: 'http://localhost:5173',
+        changeOrigin: true,
+        ws: true,
+      },
   },
   }
 })

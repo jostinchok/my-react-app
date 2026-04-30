@@ -135,7 +135,7 @@ app.delete('/api/courses/:courseId', async (req, res) => {
   }
 })
 
-const port = Number(process.env.PORT) || 4000
+const port = Number(process.env.PORT) || 4001
 
 app.listen(port, () => {
   console.log(`Admin database server running on http://localhost:${port}`)
