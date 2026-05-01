@@ -186,6 +186,8 @@ python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000
 ```
 
+When backend token auth is enabled, the script automatically reads `AI_CAMERA_TOKEN` from `user_login/server/.env` if `--device-token` is not provided.
+
 Expected behavior:
 
 - MacBook camera is the default camera.
@@ -300,6 +302,8 @@ python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000 \
   --device-token "<copy-generated-ai-token>"
 ```
+
+`--device-token` is only needed when overriding the token from `user_login/server/.env` or from the shell `AI_CAMERA_TOKEN` variable.
 
 IoT token mode:
 

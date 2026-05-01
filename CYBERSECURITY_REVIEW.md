@@ -156,6 +156,8 @@ python scripts/run_ai_camera_monitor.py \
   --device-token "<copy-generated-ai-token>"
 ```
 
+The camera script also reads `AI_CAMERA_TOKEN` from `user_login/server/.env` automatically when `--device-token` is omitted, so normal demo runs do not need to paste the token in the terminal.
+
 Run IoT publisher with token mode:
 
 ```bash

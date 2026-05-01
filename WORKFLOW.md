@@ -180,7 +180,7 @@ python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000
 ```
 
-Run the AI camera when `DEVICE_TOKEN_AUTH_ENABLED=true`:
+When `DEVICE_TOKEN_AUTH_ENABLED=true`, the script reads `AI_CAMERA_TOKEN` from `user_login/server/.env` automatically. Use `--device-token` only to override it:
 
 ```bash
 python scripts/run_ai_camera_monitor.py \
