@@ -87,6 +87,73 @@ cp user_login/server/.env.example user_login/server/.env
 
 Do not commit real `.env` files.
 
+## Local Asset Setup
+
+The AI/CV model weights, MediaPipe task file, and training datasets are intentionally not committed to GitHub because they are large local assets. Teammates should download them from the shared Google Drive folder, place them inside this repo, and verify the structure before running the AI camera.
+
+Required local structure:
+
+```text
+my-react-app/
+├── artifacts/
+│   └── clip_2class_touching_species.pt
+├── models/
+│   └── hand_landmarker.task
+├── datasets/
+│   ├── touching-plants/
+│   └── touching-wildlife/
+├── alerts/
+│   ├── ai/
+│   └── iot/
+└── user_login/server/.env
+```
+
+Install the Google Drive helper:
+
+```bash
+python3 -m pip install gdown
+```
+
+Download local assets. Replace the placeholder with the shared Google Drive folder link:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 scripts/download_assets_gdrive.py \
+  --url "<GOOGLE_DRIVE_FOLDER_URL>"
+```
+
+Verify local assets:
+
+```bash
+python3 scripts/check_required_assets.py
+```
+
+If the Google Drive folder is private, set it to "Anyone with the link can view" or download manually. Manual fallback: download `artifacts/`, `models/`, and `datasets/` from Google Drive and place those folders directly inside `my-react-app`.
+
+Do not commit downloaded `artifacts/`, `datasets/`, `models/`, `.asset-download-tmp/`, `.venv/`, `node_modules/`, real `.env`, or personal alert images. Curated AI evidence already tracked in Git can remain; personal `alerts/iot` camera captures should stay local unless explicitly approved.
+
+Teammate quick-start after this branch is merged:
+
+```bash
+cd /path/to/my-react-app
+git checkout main
+git pull origin main
+npm install
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python3 -m pip install gdown
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+python3 scripts/check_required_assets.py
+cp user_login/server/.env.example user_login/server/.env
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+npm run dev
+```
+
+AI dataset improvement remains future work and is not part of this merge.
+
 ## Run The Full Demo
 
 The standard demo run uses MySQL for AI/IoT incidents. Start MySQL first, confirm `cos30049_assignment` exists, then run:

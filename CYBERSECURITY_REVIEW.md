@@ -60,6 +60,7 @@ The full training platform remains frontend-seeded. MySQL persistence currently 
 - Admin and Park Ranger pages use different UI scopes and status-update roles.
 - MySQL monitoring tables store AI/IoT incident records, metadata, actions, and evidence references.
 - Runtime `.DS_Store`, dependency folders, model artifacts, datasets, and real environment files are excluded from the intended repository state.
+- Local asset setup scripts verify required AI/CV files without committing model weights, datasets, `.env`, or personal alert evidence.
 
 ## 5. Demo-Safe Optional Controls
 
@@ -85,7 +86,7 @@ cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
 npm run generate:tokens
 ```
 
-Do not commit the generated token values.
+Do not commit the generated token values. Do not commit downloaded Google Drive assets, `.asset-download-tmp/`, real `.env`, or personal camera evidence.
 
 ## 6. Components Covered
 

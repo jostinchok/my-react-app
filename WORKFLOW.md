@@ -48,6 +48,33 @@ Visual identity check:
 - Use `/admin/ranger` for the Park Ranger screenshot so the route includes the Admin shell/sidebar and shared logo.
 - For the cybersecurity tutor check, also open `CYBERSECURITY_REVIEW.md` and show that the route access is demo-open while API-level token/role controls can be enabled.
 
+## Terminal 0: Local Asset Setup
+
+Run this once on a teammate machine before AI camera testing:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 -m pip install gdown
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+python3 scripts/check_required_assets.py
+```
+
+The Google Drive URL is a placeholder until the shared folder link is inserted. If the folder is private, set it to "Anyone with the link can view" or download `artifacts/`, `models/`, and `datasets/` manually into the repo root.
+
+Required local-only assets:
+
+```text
+artifacts/clip_2class_touching_species.pt
+models/hand_landmarker.task
+datasets/touching-plants/
+datasets/touching-wildlife/
+alerts/ai/
+alerts/iot/
+user_login/server/.env
+```
+
+Do not commit downloaded assets, `.env`, `.venv`, `node_modules`, `dist`, `.asset-download-tmp`, or personal camera evidence. AI dataset improvement remains future work and is not part of this merge.
+
 ## Cybersecurity Tutor Mode
 
 Generate local demo tokens:
@@ -381,6 +408,7 @@ Capture:
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 npm install
+python3 scripts/check_required_assets.py
 npm --prefix user_page run build
 npm --prefix admin_page run build
 node --check user_login/server/index.js

@@ -33,8 +33,13 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 
 - [ ] Run `npm install` from `/Users/chiayuenkai/Desktop/GitHub/my-react-app`.
 - [ ] Recreate `.venv` inside this folder if needed.
+- [ ] Install Google Drive helper with `python3 -m pip install gdown`.
+- [ ] Download local-only AI assets with `python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"`.
+- [ ] Run `python3 scripts/check_required_assets.py`.
 - [ ] Confirm `artifacts/clip_2class_touching_species.pt` exists locally.
 - [ ] Confirm `models/hand_landmarker.task` exists locally.
+- [ ] Confirm `datasets/touching-plants` and `datasets/touching-wildlife` exist locally.
+- [ ] Confirm `user_login/server/.env` exists locally and is not staged.
 - [ ] Confirm `alerts/ai` contains a few clean demo JPG/JSON evidence pairs.
 - [ ] Confirm `alerts/iot` exists for browser-captured IoT evidence.
 - [ ] Run `npm --prefix user_page run build`.
@@ -66,6 +71,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 - Device-token rotation/revocation UI and audit review UI.
 - Automated sync from memory fallback incidents into MySQL.
 - Further AI threshold/model retraining.
+- AI dataset improvement and collection of larger training data.
 
 ## Quick Safety Checks
 
@@ -86,3 +92,14 @@ rg "<old absolute repo path>"
 ```
 
 Expected: no old absolute runbook paths.
+
+Asset setup commands:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 -m pip install gdown
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+python3 scripts/check_required_assets.py
+```
+
+Do not commit downloaded `artifacts/`, `datasets/`, `models/`, `.asset-download-tmp/`, real `.env`, `.venv`, `node_modules`, `dist`, or personal alert images.

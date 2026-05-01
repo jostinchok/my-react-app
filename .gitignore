@@ -97,6 +97,7 @@ outputs/
 outputs
 Outputs/
 Outputs
+.asset-download-tmp/
 
 
 # Trained model files
