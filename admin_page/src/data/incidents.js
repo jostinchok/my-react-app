@@ -4,7 +4,14 @@ const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
 
 const publicAsset = (path) => `${adminBasePath}${path}`;
 
-export const INCIDENT_STATUSES = ["New", "Reviewed", "False Alarm"];
+export const INCIDENT_STATUSES = [
+  "New",
+  "Reviewed",
+  "Acknowledged",
+  "In Review",
+  "Resolved",
+  "False Alarm",
+];
 
 export const RANGER_INCIDENT_STATUSES = ["Acknowledged", "In Review", "Resolved", "False Alarm"];
 
@@ -13,7 +20,10 @@ export const INCIDENT_FILTERS = [
   { id: "AI_CAMERA", label: "AI Camera" },
   { id: "IOT_SENSOR", label: "IoT Sensor" },
   { id: "New", label: "New" },
+  { id: "Acknowledged", label: "Acknowledged" },
+  { id: "In Review", label: "In Review" },
   { id: "Reviewed", label: "Reviewed" },
+  { id: "Resolved", label: "Resolved" },
   { id: "False Alarm", label: "False Alarm" },
 ];
 

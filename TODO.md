@@ -1,70 +1,105 @@
-# TODO
+# TODO / Demo Readiness Checklist
 
-Current working directory:
+Working folder:
 
 ```text
 /Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
 
-## Immediate Next Tasks
+Git is available in this team repo branch for the final checkpoint. Do not stage real `.env`, `.venv`, `node_modules`, `datasets`, `artifacts`, `models`, `dist`, or `.DS_Store`.
 
-- Keep polishing the existing `user_page` Park Guide/User rebuild.
-- Visually confirm all module images render on:
-  - Dashboard hero image area.
-  - Module card image areas.
-  - Module Details hero image.
-  - Certificate cards with module artwork.
-- Polish Dashboard spacing and image balance.
-- Polish Module cards and Module Details hero image composition.
-- Polish Certificates page visual richness.
-- Polish Profile page layout so it feels less empty.
-- Check responsive layout at desktop and mobile widths.
-- Fix any remaining admin visual polish issues.
-- Capture admin incident dashboard screenshots for report evidence.
-- Verify live AI/IoT alert sync in the Admin Incident Dashboard.
-- Verify the Park Ranger Alert Console at `http://localhost:5174/admin/ranger`.
-- Verify Admin and Park Ranger read the same `/api/incidents` backend queue.
-- Verify Park Ranger can update status to `Acknowledged`, `In Review`, `Resolved`, and `False Alarm`.
-- Verify AI evidence previews load from `http://localhost:4000/evidence/ai/...` in the admin detail panel.
-- Review current untracked `alerts/ai` demo evidence and keep only clean files that should be committed.
-- Re-run `INCIDENT_STORAGE=memory` and `INCIDENT_STORAGE=mysql` smoke checks before final commit if more backend changes are made.
-- Keep frontend seeded data only for now.
-- Do not connect the full training platform to MySQL yet.
+## Project Scope Checklist
 
-## Bugs To Fix
+| Component | Classification | Demo check |
+| --- | --- | --- |
+| Review Hub | Demo-ready | Open `http://localhost:5173`; show all direct links, role notes, and optional cybersecurity-control notes. |
+| Login/Register/Forgot Password | Partial / Demo-ready | Show demo users/roles and localStorage demo logout. Explain production JWT/session auth is deferred. |
+| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, modules, quiz, progress, certificates, notifications, schedule, resources, profile, and help. |
+| Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces. |
+| Admin Dashboard | Demo-ready | Open `http://localhost:5174/admin`; confirm admin landing page loads. |
+| Admin Incident Detection | Demo-ready | Open `http://localhost:5174/admin/detection`; show AI and IoT rows, summary cards, filters, evidence, metadata, fallback/live states, and status update. |
+| Park Ranger Console | Demo-ready | Open `http://localhost:5174/admin/ranger`; show response-only role, urgent incidents, field notes, and action buttons. |
+| Backend API | Demo-ready | `curl http://localhost:4000/api/health`; confirm `persistence=mysql`, `requested=mysql`, and `active=mysql`. |
+| AI camera script | Demo-ready | Run `scripts/run_ai_camera_monitor.py` from local `.venv`; use `--device-token` when token auth is enabled; press `q` or ESC to stop safely. |
+| IoT simulation / physical sensor support | Partial / Demo-ready | Run `cd user_login/server && npm run publish:test-iot` or trigger the physical sensor while Admin Detection is open. Browser capture saves curated evidence under `alerts/iot`, serves `/evidence/iot/<filename>`, and shares the same memory/MySQL incident record with Park Ranger. |
+| MySQL incident persistence | Demo-ready | Apply migration, run with `INCIDENT_STORAGE=mysql` and `INCIDENT_MYSQL_FALLBACK=none`, then query `monitoring_incidents`. |
+| Cybersecurity controls | Partial / Demo-ready | Show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generator, optional device tokens, optional role checks, validation behavior, and smoke test output. |
+| Evidence/screenshot readiness | Demo-ready | Use README, WORKFLOW, and CYBERSECURITY_REVIEW screenshot checklists. |
+| Citrus Energetic UI consistency | Done / Demo-ready | Hub, User Portal, Admin Dashboard, Admin Detection, Park Ranger, and Mobile preview now share the same forest/citrus/cream/lime visual system. |
+| Shared demo logo | Done / Demo-ready | Generated logo mark is optimized and applied to the Hub, login surfaces, User Portal, Admin shell, Park Ranger route through Admin navigation, and Mobile preview. |
+| Frontend image optimization | Done / Demo-ready | Generated hub hero is 136 KB; training images are WebP files below 100 KB each; `alerts/ai` evidence remains untouched. |
 
-- Visual browser review is still needed after the image path helper fix.
-- Working tree currently shows generated/install artifact noise under `user_page/dist`, `user_page/node_modules`, and `user_login/server/node_modules`.
-- `user_page` build can fail after dependency churn if Rollup optional native packages are missing.
-- Root `npm run dev` now checks `http://localhost:4000/api/health` and skips starting a duplicate backend when one is already running.
-- Backend `/api/health` no longer requires MySQL for memory incident-sync testing and now reports incident storage mode plus degraded fallback state.
-- Root review hub service checks can show backend offline when MySQL is unavailable even though Express itself starts.
-- MQTT public broker testing can fail if internet access or the public broker is unavailable; backend should keep running.
-- AI evidence path fix is implemented: backend uses configurable `AI_EVIDENCE_DIR`, admin resolves backend evidence URLs, and MySQL incident mode stores browser-safe evidence URLs only.
-- Local AI assets should stay inside the project working directory under ignored `.venv/`, `artifacts/`, `datasets/`, and `models/` folders. `alerts/` is not ignored so curated demo evidence can stay in the repo.
-- Standalone AI monitor runtime flags are now local-repo ready: `--project-dir`, `--evidence-dir`, `--camera-index`, and `--backend-url`.
-- Camera docs should keep iPhone Continuity Camera as environment-dependent: tested through iPhone hotspot and Yoriichi's Router, but not guaranteed through OpenCV camera index switching.
+## Before Lecturer Demo
 
-## Improvements To Consider
+- [ ] Run `npm install` from `/Users/chiayuenkai/Desktop/GitHub/my-react-app`.
+- [ ] Recreate `.venv` inside this folder if needed.
+- [ ] Install Google Drive helper with `python3 -m pip install gdown`.
+- [ ] Download local-only AI assets with `python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"`.
+- [ ] Run `python3 scripts/check_required_assets.py`.
+- [ ] Confirm `artifacts/clip_2class_touching_species.pt` exists locally.
+- [ ] Confirm `models/hand_landmarker.task` exists locally.
+- [ ] Confirm `datasets/touching-plants` and `datasets/touching-wildlife` exist locally.
+- [ ] Confirm `user_login/server/.env` exists locally and is not staged.
+- [ ] Confirm `alerts/ai` contains a few clean demo JPG/JSON evidence pairs.
+- [ ] Confirm `alerts/iot` exists for browser-captured IoT evidence.
+- [ ] Run `npm --prefix user_page run build`.
+- [ ] Run `npm --prefix admin_page run build`.
+- [ ] Run `node --check user_login/server/index.js`.
+- [ ] Run `node --check scripts/dev-all.mjs`.
+- [ ] Run `node --check scripts/hub-server.mjs`.
+- [ ] Run `node --check user_login/server/scripts/publish-test-iot.js`.
+- [ ] Run `node --check user_login/server/scripts/security-smoke-test.js`.
+- [ ] Run `node --check user_login/server/scripts/generate-demo-tokens.js`.
+- [ ] Run `source .venv/bin/activate && python -m py_compile scripts/run_ai_camera_monitor.py`.
+- [ ] Generate local demo tokens with `cd user_login/server && npm run generate:tokens`.
+- [ ] If showing cybersecurity controls, start app with `DEVICE_TOKEN_AUTH_ENABLED=true ROLE_CHECK_ENABLED=true`.
+- [ ] Run `cd user_login/server && npm run security:smoke` with the same token values.
+- [ ] Run backend API checks in MySQL mode and confirm `/api/health` does not show `active=memory`.
+- [ ] Create `cos30049_assignment`, apply migration, create/reset `ctip_user`, and run MySQL mode.
+- [ ] In Admin Detection, trigger IoT once and confirm the 2-second delayed 720p browser capture appears in both Admin and Park Ranger.
+- [ ] Confirm browser MQTT and backend MQTT do not duplicate the same IoT trigger; same `public_id` or same source/event/sensor within 10 seconds should merge.
+- [ ] Capture screenshots listed in README/WORKFLOW.
+- [x] Confirm the shared Citrus logo is visible in the hub, User Portal sidebar, Admin sidebar, Park Ranger page through Admin, and Mobile preview.
+- [ ] Manually review the UI surfaces for final screenshot framing after starting `npm run dev`.
 
-- Add proper `.gitignore` rules for generated build/dependency folders after confirming whether this assignment repo expects them tracked.
-- Replace alert-based UI feedback with polished toast messages.
-- Add loading/empty/error states for future API-backed sections.
-- Redesign admin and mobile to match the citrus energetic website theme after the user website is stable.
-- Add backend endpoints for training modules, quiz progress, notifications, certificates, and file metadata later.
-- Live backend/API bridge for AI JSON and IoT MQTT events is now implemented with memory/local JSON storage.
-- Park Ranger alert console now uses the same backend incident API for response-only review.
-- Add seeded MySQL setup for the full training platform later.
-- Add an automated smoke test for memory and MySQL incident storage modes.
-- Add lightweight tests or smoke checks for website build and review launcher.
+## Intentionally Deferred
 
-## Items That Should Not Be Changed Yet
+- Full training platform persistence in MySQL.
+- Production-grade authentication and password reset.
+- Production-grade JWT/session route protection.
+- Private MQTT broker with TLS/authentication.
+- Device-token rotation/revocation UI and audit review UI.
+- Automated sync from memory fallback incidents into MySQL.
+- Further AI threshold/model retraining.
+- AI dataset improvement and collection of larger training data.
 
-- Do not add optional VR/AR until required Part 1, security, and monitoring requirements are stable.
-- Do not physically merge `user_page`, `mobile_app`, `admin_page`, and `user_login/server` into one source app.
-- Do not replace the current website GUI with a completely unrelated template.
-- Do not remove existing admin/mobile/backend folders.
-- Do not delete assignment artifacts such as `Project Scope.pdf`, `alerts/`, `artifacts/`, `datasets/`, `models/`, or the CTIP notebook unless explicitly requested.
-- Do not connect the full training platform to MySQL yet.
-- Do not change the current Admin Incident Dashboard UI while testing incident storage.
-- Do not commit `.DS_Store`, local `node_modules`, or generated `dist` output unless the user explicitly decides the repo must track them.
+## Quick Safety Checks
+
+Local-only folders should stay local:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+find . -path './.git' -prune -o -name '.DS_Store' -print
+```
+
+Expected: no output outside `.git`.
+
+Check old paths are gone:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+rg "<old absolute repo path>"
+```
+
+Expected: no old absolute runbook paths.
+
+Asset setup commands:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 -m pip install gdown
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+python3 scripts/check_required_assets.py
+```
+
+Do not commit downloaded `artifacts/`, `datasets/`, `models/`, `.asset-download-tmp/`, real `.env`, `.venv`, `node_modules`, `dist`, or personal alert images.

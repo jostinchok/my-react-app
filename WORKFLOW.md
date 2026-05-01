@@ -1,446 +1,429 @@
-# COS30049 End-to-End Testing Workflow
+# End-to-End Lecturer Demo Workflow
 
-This file is the step-by-step testing workflow for the current `my-react-app` project setup.
-
-Current working directory:
+Use this workflow from the team repository folder:
 
 ```text
 /Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
 
-The goal is to test the full incident pipeline:
+This workflow is for local lecturer demonstration from the team repo branch before merging to `main`.
 
-```text
-AI camera + IoT sensor
-→ backend API
-→ MySQL database
-→ Admin Incident Detection page
-→ Park Ranger Alert Console
-```
+## Terminal 1: Run The Full App
 
----
-
-## Part 0: Clean Start First
-
-Before running anything, stop old servers that may still be occupying ports.
-
-Open a terminal and run:
-
-```bash
-lsof -tiTCP:4000 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5174 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5175 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:8081 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-```
-
-Then confirm the ports are clear:
-
-```bash
-lsof -nP -iTCP:4000 -sTCP:LISTEN
-lsof -nP -iTCP:5173 -sTCP:LISTEN
-lsof -nP -iTCP:5174 -sTCP:LISTEN
-lsof -nP -iTCP:5175 -sTCP:LISTEN
-lsof -nP -iTCP:8081 -sTCP:LISTEN
-```
-
-Expected result:
-
-```text
-No output
-```
-
-If there is no output, the ports are free.
-
----
-
-## Part 1: Terminal 1, Start Full Project in MySQL Mode
-
-Open **Terminal 1** and run:
+Standard MySQL mode:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-
 INCIDENT_STORAGE=mysql \
+INCIDENT_MYSQL_FALLBACK=none \
 DB_DATABASE=cos30049_assignment \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
 npm run dev
 ```
 
-Keep this terminal running.
-
-Expected local URLs:
+Expected health storage:
 
 ```text
-Review hub:               http://localhost:5173
-Backend API:              http://localhost:4000
-User / Park Guide portal: http://localhost:5175/user
-Admin dashboard:          http://localhost:5174/admin
-Admin incidents:          http://localhost:5174/admin/detection
-Park Ranger console:      http://localhost:5174/admin/ranger
-Mobile web preview:       http://localhost:8081
+incidents.persistence = mysql
+incidents.storage.requested = mysql
+incidents.storage.active = mysql
+incidents.storage.fallback = none
 ```
 
----
+Expected services:
 
-## Part 2: Terminal 2, Verify Backend and MySQL Mode
+```text
+Backend API: http://localhost:4000
+Root hub: http://localhost:5173
+Admin app: http://localhost:5174/admin
+User app: http://localhost:5175/user
+Mobile preview: http://localhost:8081
+```
 
-Open **Terminal 2** and run:
+Visual identity check:
+
+- Confirm the shared Citrus logo appears on the Review Hub, User Portal sidebar, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview header.
+- Keep the original generated logo source out of the app runtime; use the optimized WebP/PNG copies already placed in each app.
+- Use `/admin/ranger` for the Park Ranger screenshot so the route includes the Admin shell/sidebar and shared logo.
+- For the cybersecurity tutor check, also open `CYBERSECURITY_REVIEW.md` and show that the route access is demo-open while API-level token/role controls can be enabled.
+
+## Terminal 0: Local Asset Setup
+
+Run this once on a teammate machine before AI camera testing:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 -m pip install gdown
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+python3 scripts/check_required_assets.py
 ```
 
-Check backend health:
+The Google Drive URL is a placeholder until the shared folder link is inserted. If the folder is private, set it to "Anyone with the link can view" or download `artifacts/`, `models/`, and `datasets/` manually into the repo root.
+
+Required local-only assets:
+
+```text
+artifacts/clip_2class_touching_species.pt
+models/hand_landmarker.task
+datasets/touching-plants/
+datasets/touching-wildlife/
+alerts/ai/
+alerts/iot/
+user_login/server/.env
+```
+
+Do not commit downloaded assets, `.env`, `.venv`, `node_modules`, `dist`, `.asset-download-tmp`, or personal camera evidence. AI dataset improvement remains future work and is not part of this merge.
+
+## Cybersecurity Tutor Mode
+
+Generate local demo tokens:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+npm run generate:tokens
+```
+
+Start the full app with optional security controls. Use the generated values locally only:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+DEVICE_TOKEN_AUTH_ENABLED=true \
+ROLE_CHECK_ENABLED=true \
+INCIDENT_STORAGE=mysql \
+INCIDENT_MYSQL_FALLBACK=none \
+DB_DATABASE=cos30049_assignment \
+AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
+npm run dev
+```
+
+Run the automated security smoke test in another terminal:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+DEVICE_TOKEN_AUTH_ENABLED=true \
+ROLE_CHECK_ENABLED=true \
+AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+npm run security:smoke
+```
+
+Expected evidence:
+
+- `/api/health` returns security-control state.
+- Invalid incident source is rejected.
+- Invalid status is rejected.
+- `/api/incidents` does not expose `/Users/...`.
+- Wrong AI/IoT tokens return `401`.
+- Correct AI/IoT tokens return `201`.
+- `park_guide` status patch returns `403`.
+- `park_ranger` and `admin` status patches return `200`.
+
+## Terminal 2: API And MySQL Checks
+
+API health:
 
 ```bash
 curl http://localhost:4000/api/health
-```
-
-Expected result:
-
-```text
-Backend is online.
-Incident storage active mode is mysql.
-Storage status is online.
-```
-
-Check incidents:
-
-```bash
 curl http://localhost:4000/api/incidents
 curl http://localhost:4000/api/incidents/summary
 ```
 
-Check MySQL rows:
+Create MySQL database:
 
 ```bash
-mysql -u root cos30049_assignment \
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+```
+
+Create or reset the app database user:
+
+```bash
+mysql -u root -p -e "CREATE USER IF NOT EXISTS 'ctip_user'@'localhost' IDENTIFIED BY 'user'; ALTER USER 'ctip_user'@'localhost' IDENTIFIED BY 'user'; GRANT ALL PRIVILEGES ON cos30049_assignment.* TO 'ctip_user'@'localhost'; FLUSH PRIVILEGES;"
+```
+
+Apply migration:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+Check tables:
+
+```bash
+mysql -u root -p cos30049_assignment -e "SHOW TABLES;"
+```
+
+Check latest incidents:
+
+```bash
+mysql -u root -p cos30049_assignment \
   -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
 ```
 
-Expected result:
+Check latest incidents using the app user:
 
-```text
-Existing AI_CAMERA or IOT_SENSOR incidents are listed if records exist.
+```bash
+MYSQL_PWD=user mysql -u ctip_user -h localhost -P 3306 cos30049_assignment \
+  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
 ```
 
----
+Check IoT metadata and evidence rows:
 
-## Part 3: Browser Tabs to Open
+```bash
+mysql -u root -p cos30049_assignment \
+  -e "SELECT i.public_id, m.sensor_id, m.distance_cm, m.threshold_cm, m.mqtt_topic FROM monitoring_incidents i JOIN monitoring_incident_iot_metadata m ON i.incident_id = m.incident_id ORDER BY i.occurred_at DESC LIMIT 10;"
 
-Open these pages in the browser:
-
-```text
-http://localhost:5173
-http://localhost:5174/admin/detection
-http://localhost:5174/admin/ranger
-http://localhost:5175/user
+mysql -u root -p cos30049_assignment \
+  -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
 ```
 
-Check the following:
+Patch status:
 
-```text
-Hub opens successfully.
-Admin Incident Detection opens successfully.
-Park Ranger Alert Console opens successfully.
-User portal opens successfully.
-Admin and Park Ranger show the same incident queue.
+```bash
+curl -X PATCH http://localhost:4000/api/incidents/<INCIDENT_ID>/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"In Review"}'
 ```
 
----
+## Terminal 3: AI Camera Monitor
 
-## Part 4: Terminal 3, Test AI Camera Alert Flow
-
-Open **Terminal 3** and run:
+Prepare Python:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 source .venv/bin/activate
 ```
 
-Run the AI camera monitor:
+Run the AI camera:
 
 ```bash
 python scripts/run_ai_camera_monitor.py \
   --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
+  --backend-url http://localhost:4000
 ```
 
-Expected behavior:
-
-```text
-Camera opens.
-Hand is detected.
-TouchingPlants or TouchingWildlife is classified.
-JPG and JSON evidence files are saved into alerts/ai.
-Incident is posted to backend.
-Incident is stored in MySQL.
-Admin Incident Detection page shows the incident.
-Park Ranger Alert Console shows the incident.
-Evidence image loads correctly.
-```
-
-Realtime controls:
-
-```text
-q    Quit
-ESC  Quit
-s    Save manual snapshot
-```
-
-Expected shutdown message:
-
-```text
-Realtime camera stopped safely.
-```
-
-After generating one AI alert, go back to **Terminal 2** and run:
+When `DEVICE_TOKEN_AUTH_ENABLED=true`, the script reads `AI_CAMERA_TOKEN` from `user_login/server/.env` automatically. Use `--device-token` only to override it:
 
 ```bash
-curl http://localhost:4000/api/incidents/summary
-
-mysql -u root cos30049_assignment \
-  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
+python scripts/run_ai_camera_monitor.py \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
+  --backend-url http://localhost:4000 \
+  --device-token "<copy-generated-ai-token>"
 ```
 
-Expected result:
+Optional normal webcam index:
 
-```text
-A new AI_CAMERA incident appears in MySQL.
+```bash
+python scripts/run_ai_camera_monitor.py \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
+  --backend-url http://localhost:4000 \
+  --camera-index 1
 ```
 
----
+Camera notes:
 
-## Part 5: Terminal 4, Generate IoT Sensor Data
+- MacBook camera is the default.
+- `--camera-index` helps with normal webcams.
+- iPhone Continuity Camera is environment-dependent.
+- It has worked when MacBook connects to the iPhone hotspot.
+- It has also worked when both MacBook and iPhone connect to Yoriichi's Router.
+- Do not claim camera index switching always selects the iPhone camera.
+- Press `q` or ESC to exit safely.
 
-Start with software MQTT testing before using the physical ESP32 sensor.
+Check output:
 
-Open **Terminal 4** and run:
+```bash
+ls -lah alerts/ai
+curl http://localhost:4000/api/incidents
+```
+
+## Terminal 4: IoT Simulation
+
+Publish a test IoT proximity alert:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
 npm run publish:test-iot
 ```
 
-Expected behavior:
-
-```text
-Backend receives MQTT payload.
-A new IOT_SENSOR incident appears in /api/incidents.
-Admin Incident Detection page shows the IoT incident.
-Park Ranger Alert Console shows the IoT incident.
-MySQL stores the IoT incident.
-```
-
-Then check from **Terminal 2**:
+Publish a test IoT proximity alert when `DEVICE_TOKEN_AUTH_ENABLED=true`:
 
 ```bash
-curl http://localhost:4000/api/incidents | grep IOT_SENSOR
-curl http://localhost:4000/api/incidents/summary
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" npm run publish:test-iot
 ```
 
-Check MySQL:
+The script tries the configured MQTT broker first. If the public broker times out, it falls back to posting the same simulated incident to the local backend API.
 
-```bash
-mysql -u root cos30049_assignment \
-  -e "SELECT public_id, source, event_type, status, location, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 10;"
-```
-
-Expected MySQL row:
+Expected incident fields:
 
 ```text
 source = IOT_SENSOR
 event_type = ObjectCloseToPlant
+sensor_id = plant-zone-01
+location = Plant Zone 01
+distance_cm = simulated distance
+threshold_cm = 20
 status = New
-```
-
----
-
-## Part 6: If `npm run publish:test-iot` Fails
-
-Use direct API simulation first. This confirms that backend, MySQL, Admin, and Park Ranger are working even if the MQTT broker is unavailable.
-
-Run this from **Terminal 2**:
-
-```bash
-curl -X POST http://localhost:4000/api/incidents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "source": "IOT_SENSOR",
-    "eventType": "ObjectCloseToPlant",
-    "severity": "low",
-    "location": "Plant Zone 01",
-    "status": "New",
-    "iot": {
-      "sensorId": "plant-zone-01",
-      "distanceCm": 14.6,
-      "thresholdCm": 20,
-      "topic": "ctip/sensor/plant-zone-01/proximity"
-    },
-    "notes": "Manual IoT sensor simulation from curl."
-  }'
+severity = low
+topic = ctip/sensor/plant-zone-01/proximity
 ```
 
 Then check:
 
 ```bash
-curl http://localhost:4000/api/incidents | grep IOT_SENSOR
-
-mysql -u root cos30049_assignment \
-  -e "SELECT public_id, source, event_type, status, location, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 10;"
+curl http://localhost:4000/api/incidents
+curl http://localhost:4000/api/incidents/summary
 ```
 
-If this works, the backend, MySQL, Admin page, and Park Ranger page are fine. Any remaining issue is likely MQTT publishing or broker availability.
+## Terminal 5: Browser IoT Evidence Capture
 
----
-
-## Part 7: Test Status Update from Park Ranger
-
-Open:
-
-```text
-http://localhost:5174/admin/ranger
-```
-
-Click an AI or IoT incident.
-
-Change the status to one of these:
-
-```text
-Acknowledged
-In Review
-Resolved
-False Alarm
-```
-
-Then verify in **Terminal 2**:
-
-```bash
-mysql -u root cos30049_assignment \
-  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 10;"
-```
-
-Expected result:
-
-```text
-The selected incident status changes in MySQL.
-```
-
-Then open Admin Incident Detection:
+Open both response views:
 
 ```text
 http://localhost:5174/admin/detection
+http://localhost:5174/admin/ranger
 ```
 
-Expected result:
+In Admin Incident Detection:
+
+1. Click `Start Camera`, or let the IoT trigger open the preview.
+2. Click `Test Trigger`, or trigger the physical proximity sensor.
+3. Wait for the 2-second camera warmup.
+4. Confirm one compressed JPEG is captured at max 1280x720.
+5. Confirm the saved URL starts with `/evidence/iot/`.
+6. Confirm the same incident and image appear in Park Ranger.
+7. Change the status in either page and refresh the other page.
+
+Backend verification:
+
+```bash
+curl http://localhost:4000/api/incidents
+curl http://localhost:4000/api/incidents/summary
+ls -lah alerts/iot
+```
+
+The browser posts captures to `POST /api/incidents/iot-capture` with `X-Actor-Role: admin`. The frontend does not expose `IOT_SENSOR_TOKEN`; the backend writes the incident through the active memory/MySQL incident store.
+
+Duplicate handling:
+
+- If browser MQTT and backend MQTT share the same `public_id`, the backend updates the existing incident instead of creating a duplicate.
+- If there is no shared ID, IoT records with the same source, event type, sensor ID, and timestamp within 10 seconds are merged.
+- The saved browser evidence is attached to the existing incident when possible.
+
+Camera contention note:
+
+- The Admin browser preview and `scripts/run_ai_camera_monitor.py` can compete for the same physical camera.
+- Stop the browser preview before running the standalone Python AI camera on that same camera.
+
+## Browser Tabs To Open
 
 ```text
-Admin sees the same updated status.
+http://localhost:5173
+http://localhost:5175/user
+http://localhost:5174/admin
+http://localhost:5174/admin/detection
+http://localhost:5174/admin/ranger
+http://localhost:8081
+http://localhost:4000/api/health
+http://localhost:4000/api/incidents
+http://localhost:4000/api/incidents/summary
 ```
 
----
+## Visual Consistency Checks
 
-## Part 8: Full Final Test Order
+The demo should now read as one Citrus Energetic system:
 
-Use this exact order when recording evidence:
+- Hub: rainforest launcher, forest/citrus hero, rounded service cards, live status pills.
+- User/Park Guide: warm citrus learning portal, cream cards, orange actions, lime progress states.
+- Admin Dashboard: command-center view with charcoal/forest structure and citrus monitoring cards.
+- Admin Incident Detection: consistent filters, table badges, evidence frame, metadata cards, and status actions.
+- Park Ranger Console: forest field-response identity, urgent queue, evidence panel, and citrus response actions.
+- Mobile Preview: simplified Park Guide palette with cream surfaces and citrus actions.
+
+Image rule for report/demo assets:
+
+- Hero images should stay below 500 KB.
+- Card thumbnails should stay below 150 KB.
+- Do not optimize or delete `alerts/ai` runtime evidence.
+- Current generated hub hero is `images/citrus-rainforest-hero.webp` at 136 KB.
+- Current user training WebP images are below 100 KB each.
+
+## Manual Demo Order
+
+1. Open `http://localhost:5173` and show the root hub cards and service links.
+2. Open Login/Register, then Park Guide/User Portal at `http://localhost:5175/user`.
+3. Switch User01/User02/User03.
+4. Show modules, module detail, quiz, progress, certificates/badges, notifications, schedule, resources/files, profile, and help/permission guide.
+5. Open mobile preview at `http://localhost:8081`.
+6. Open Admin Dashboard at `http://localhost:5174/admin`.
+7. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
+8. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, and status update.
+9. Open Park Ranger Console at `http://localhost:5174/admin/ranger`.
+10. Show response-only role boundary, urgent/new incident queue, selected detail, evidence, field notes, and action buttons.
+11. Run AI camera or IoT simulation.
+12. Refresh Admin and Ranger pages and show the same backend incident data.
+13. Patch status from the UI or curl and show persistence in API/MySQL.
+14. For cybersecurity check, show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generation, smoke test PASS output, and `/api/health` security state.
+15. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
+
+## Screenshot Checklist
+
+Capture:
 
 ```text
-Terminal 1:
-Start full workspace in MySQL mode.
-
-Terminal 2:
-Run curl and MySQL checks.
-
-Browser:
-Open Hub, Admin Incident Detection, Park Ranger Console, and User Portal.
-
-Terminal 3:
-Run AI camera and trigger one TouchingPlants or TouchingWildlife alert.
-
-Terminal 2:
-Check /api/incidents and MySQL table.
-
-Terminal 4:
-Run npm run publish:test-iot.
-
-Terminal 2:
-Check /api/incidents and MySQL table again.
-
-Browser:
-Confirm both AI_CAMERA and IOT_SENSOR incidents appear in Admin and Park Ranger.
-
-Browser:
-Use Park Ranger to update incident status.
-
-Terminal 2:
-Confirm the status update in MySQL.
+1. Root hub with all demo links.
+2. Park Guide dashboard.
+3. Module catalog and module detail/quiz.
+4. Progress and certificates/badges.
+5. Notifications, resources/files, profile, and permission guide.
+6. Mobile preview.
+7. Admin dashboard.
+8. Admin Incident Detection with AI and IoT rows.
+9. Admin selected incident detail with AI evidence image.
+10. Admin IoT metadata card.
+11. Park Ranger response console.
+12. Park Ranger status action update.
+13. /api/health.
+14. /api/incidents.
+15. /api/incidents/summary.
+16. alerts/ai folder with JPG/JSON evidence.
+17. alerts/iot folder with browser-captured IoT evidence.
+18. MySQL query showing monitoring incidents if MySQL mode is used.
+19. MySQL query showing IoT metadata and evidence file rows.
+20. CYBERSECURITY_REVIEW.md vulnerability table.
+21. Security smoke test output.
+22. /api/health with security settings.
 ```
 
----
-
-## Part 9: Evidence Screenshots to Capture
-
-Capture these screenshots for report evidence:
-
-```text
-1. Terminal 1 showing npm run dev running in MySQL mode.
-2. /api/health showing MySQL active and online.
-3. AI camera realtime detection window.
-4. alerts/ai folder showing JPG and JSON evidence.
-5. Admin Incident Detection showing AI_CAMERA and IOT_SENSOR.
-6. Park Ranger Console showing the same incidents.
-7. Park Ranger status update action.
-8. MySQL query showing saved AI and IoT rows.
-9. npm run publish:test-iot output or ESP32 serial monitor output.
-10. Root review hub.
-```
-
----
-
-## Part 10: Full Git Checking, Staging, Committing, and Pushing Flow
-
-Use this after testing, when you are ready to save the checkpoint to GitHub.
-
-Do **not** run `git add .` immediately. Check first.
-
----
-
-### Step 10.1: Go to the repo root
-
-Open a fresh terminal and run:
+## Verification Commands
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm install
+python3 scripts/check_required_assets.py
+npm --prefix user_page run build
+npm --prefix admin_page run build
+node --check user_login/server/index.js
+node --check scripts/dev-all.mjs
+node --check scripts/hub-server.mjs
+node --check user_login/server/scripts/publish-test-iot.js
+node --check user_login/server/scripts/security-smoke-test.js
+node --check user_login/server/scripts/generate-demo-tokens.js
+source .venv/bin/activate
+python -m py_compile scripts/run_ai_camera_monitor.py
 ```
 
-Confirm location:
+## Troubleshooting
 
-```bash
-pwd
-```
-
-Expected:
-
-```text
-/Users/chiayuenkai/Desktop/GitHub/my-react-app
-```
-
----
-
-### Step 10.2: Stop local servers before committing
-
-This prevents runtime files from changing while you are staging.
-
-```bash
-lsof -tiTCP:4000 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5174 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5175 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:8081 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-```
-
-Confirm they are stopped:
+If a port is already in use:
 
 ```bash
 lsof -nP -iTCP:4000 -sTCP:LISTEN
@@ -450,404 +433,37 @@ lsof -nP -iTCP:5175 -sTCP:LISTEN
 lsof -nP -iTCP:8081 -sTCP:LISTEN
 ```
 
-Expected:
+If `/api/health` still shows `requested=memory` or `active=memory`, stop and restart the backend after confirming `user_login/server/.env` has `INCIDENT_STORAGE=mysql`.
 
-```text
-No output
-```
-
----
-
-### Step 10.3: Check current Git status
+Emergency memory mode is available only when MySQL is unavailable:
 
 ```bash
-git status --short --untracked-files=all
-```
-
-Look for three groups:
-
-```text
-1. Source/docs changes:
-   README.md, PROJECT_NOTES.md, TODO.md, source files, migration files
-
-2. Alert evidence:
-   alerts/ai/*.jpg
-   alerts/ai/*.json
-
-3. Dangerous files:
-   node_modules, .venv, dist, artifacts, datasets, models, .pt, .pth, .DS_Store, .env
-```
-
-If you see dangerous files, do **not** commit yet.
-
----
-
-### Step 10.4: Run Git diff whitespace check
-
-```bash
-git diff --check
-```
-
-Expected:
-
-```text
-No output
-```
-
-If it prints trailing whitespace or conflict marker warnings, fix those files before continuing.
-
----
-
-### Step 10.5: Run unsafe tracked file safety check
-
-```bash
-git ls-files | grep -E "node_modules|\.venv|datasets|artifacts|models|\.pt|\.pth|dist|\.DS_Store"
-```
-
-Expected:
-
-```text
-No output
-```
-
-If it prints anything, those files are already tracked and must be removed from Git tracking before pushing.
-
-Remove tracked generated/local-only files without deleting local copies:
-
-```bash
-git rm -r --cached user_login/server/node_modules 2>/dev/null
-git rm -r --cached user_page/node_modules 2>/dev/null
-git rm -r --cached admin_page/node_modules 2>/dev/null
-git rm -r --cached mobile_app/node_modules 2>/dev/null
-git rm -r --cached user_page/dist 2>/dev/null
-git rm -r --cached admin_page/dist 2>/dev/null
-git rm -r --cached mobile_app/dist 2>/dev/null
-git rm -r --cached .venv 2>/dev/null
-git rm -r --cached artifacts 2>/dev/null
-git rm -r --cached datasets 2>/dev/null
-git rm -r --cached models 2>/dev/null
-git rm --cached .DS_Store 2>/dev/null
-```
-
-Then run the safety check again.
-
----
-
-### Step 10.6: Check `.env` safety
-
-Real `.env` files must not be committed.
-
-Run:
-
-```bash
-git status --short --untracked-files=all | grep -E "\.env$|\.env\."
-```
-
-Allowed:
-
-```text
-user_login/server/.env.example
-```
-
-Not allowed:
-
-```text
-.env
-.env.local
-user_login/server/.env
-```
-
-If a real `.env` appears, do not add it. Make sure it is ignored.
-
-Check:
-
-```bash
-git check-ignore -v .env 2>/dev/null || echo ".env is not ignored"
-git check-ignore -v user_login/server/.env 2>/dev/null || echo "user_login/server/.env is not ignored"
-```
-
-Expected: `.gitignore` rule should be shown.
-
----
-
-### Step 10.7: Review alert evidence before adding
-
-Because `alerts/` is intentionally not ignored, only commit clean demo evidence.
-
-Check size and file count:
-
-```bash
-du -sh alerts/ai
-find alerts/ai -type f | wc -l
-find alerts/ai -maxdepth 1 -type f | sort
-```
-
-Recommended:
-
-```text
-Keep only a few clean JPG + JSON pairs.
-Avoid committing large noisy runtime dumps.
-```
-
-A clean pair should look like:
-
-```text
-alerts/ai/2026-04-29_02-57-00_alert_TouchingPlants.jpg
-alerts/ai/2026-04-29_02-57-00_alert_TouchingPlants.json
-```
-
-If you want to remove noisy duplicates, delete only the unwanted files manually:
-
-```bash
-rm alerts/ai/<unwanted-file-name>.jpg
-rm alerts/ai/<unwanted-file-name>.json
-```
-
-Then recheck:
-
-```bash
-find alerts/ai -maxdepth 1 -type f | sort
-```
-
----
-
-### Step 10.8: Stage safe project files
-
-Stage docs and source files explicitly:
-
-```bash
-git add README.md PROJECT_NOTES.md TODO.md
-git add .gitignore
-git add user_login/server/index.js
-git add user_login/server/.env.example
-git add user_login/server/migrations/001_create_monitoring_incident_tables.sql
-git add user_login/server/src/incident/incidentUtils.js
-git add user_login/server/src/incident/memoryIncidentStore.js
-git add user_login/server/src/incident/mysqlIncidentStore.js
-git add admin_page/src/pages/ParkRangerConsole.jsx
-git add admin_page/src/main.jsx
-git add admin_page/src/Admin.css
-git add admin_page/src/data/incidents.js
-git add index.html login/hub.css login/hub.js
-git add scripts/run_ai_camera_monitor.py
-git add CTIP_AI_Camera_Training_and_Incident_Detection.ipynb
-```
-
-Stage curated alert evidence only if you are happy with the files:
-
-```bash
-git add alerts/ai
-```
-
-Do not use `git add .` unless you have already checked everything carefully.
-
----
-
-### Step 10.9: Review staged files
-
-```bash
-git diff --cached --stat
-```
-
-Then check staged paths:
-
-```bash
-git diff --cached --name-only
-```
-
-Make sure the staged list does **not** include:
-
-```text
-node_modules/
-.venv/
-dist/
-artifacts/
-datasets/
-models/
-*.pt
-*.pth
-.DS_Store
-.env
-```
-
-If you accidentally staged something bad, unstage it:
-
-```bash
-git restore --staged <path>
-```
-
-Example:
-
-```bash
-git restore --staged .env
-git restore --staged user_page/dist
-```
-
----
-
-### Step 10.10: Final safety check before commit
-
-Run this again:
-
-```bash
-git ls-files | grep -E "node_modules|\.venv|datasets|artifacts|models|\.pt|\.pth|dist|\.DS_Store"
-```
-
-Expected:
-
-```text
-No output
-```
-
-Also check staged files:
-
-```bash
-git diff --cached --name-only | grep -E "node_modules|\.venv|datasets|artifacts|models|\.pt|\.pth|dist|\.DS_Store|\.env$"
-```
-
-Expected:
-
-```text
-No output
-```
-
-If the second command prints `user_login/server/.env.example`, that is okay. `.env.example` is allowed.
-
----
-
-### Step 10.11: Commit
-
-Use a clear commit message.
-
-For the current checkpoint, recommended:
-
-```bash
-git commit -m "Add MySQL incident persistence and ranger monitoring flow"
-```
-
-Alternative messages:
-
-```bash
-git commit -m "Add AI IoT incident persistence workflow"
-```
-
-```bash
-git commit -m "Add ranger incident console and MySQL monitoring storage"
-```
-
----
-
-### Step 10.12: Pull latest main before pushing
-
-Since this is a shared repo, pull before pushing.
-
-```bash
-git pull --rebase origin main
-```
-
-If there are no conflicts, continue.
-
-If there are conflicts:
-
-```bash
-git status
-```
-
-Open the conflicted files in VS Code, fix the conflict markers, then run:
-
-```bash
-git add <fixed-file>
-git rebase --continue
-```
-
-If the rebase becomes messy and you want to stop:
-
-```bash
-git rebase --abort
-```
-
-Then ask for help before pushing.
-
----
-
-### Step 10.13: Push to main
-
-```bash
-git push origin main
-```
-
-If the push is rejected because remote has new commits, run:
-
-```bash
-git pull --rebase origin main
-git push origin main
-```
-
----
-
-### Step 10.14: Verify GitHub and local clean state
-
-After pushing:
-
-```bash
-git status
-git log --oneline -5
-```
-
-Expected:
-
-```text
-Your branch is up to date with 'origin/main'.
-nothing to commit, working tree clean
-```
-
-If `alerts/ai` still has untracked files after commit, decide whether they are new runtime evidence. If they are noisy, leave them uncommitted or delete them.
-
----
-
-### Step 10.15: Quick post-push sanity check
-
-After pushing, restart the app once:
-
-```bash
-INCIDENT_STORAGE=mysql \
-DB_DATABASE=cos30049_assignment \
+INCIDENT_STORAGE=memory \
+INCIDENT_MYSQL_FALLBACK=memory \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
 npm run dev
 ```
 
-Open:
-
-```text
-http://localhost:5173
-http://localhost:5174/admin/detection
-http://localhost:5174/admin/ranger
-```
-
-Then stop servers again if you are done:
+If the camera script cannot import OpenCV or MediaPipe, recreate and activate `.venv` inside `my-react-app`:
 
 ```bash
-lsof -tiTCP:4000 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5174 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:5175 -sTCP:LISTEN | xargs kill -9 2>/dev/null
-lsof -tiTCP:8081 -sTCP:LISTEN | xargs kill -9 2>/dev/null
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
----
+If live evidence does not appear, confirm the backend and script use the same evidence folder:
 
-## Part 11: Final Expected System
+```bash
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai"
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot"
+```
 
-After all tests pass, the working prototype becomes:
+Frontend evidence should render through:
 
 ```text
-AI camera + IoT sensor
-→ backend API
-→ MySQL database
-→ Admin Incident Detection page
-→ Park Ranger Alert Console
-→ incident status update
-→ MySQL status persistence
+http://localhost:4000/evidence/ai/<filename>
+http://localhost:4000/evidence/iot/<filename>
 ```
-
-This is the key evidence that the project is no longer just a toy demo. It is a working AI/IoT incident monitoring prototype.

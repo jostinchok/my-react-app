@@ -1,9 +1,9 @@
 :root {
-  --forest: #3a2a16;
-  --forest-2: #874500;
-  --charcoal: #28251d;
-  --leaf: #6bdc45;
-  --lime: #b8f22f;
+  --forest: #0b3b28;
+  --forest-2: #175f3e;
+  --charcoal: #1e2a22;
+  --leaf: #4db94b;
+  --lime: #a8e64a;
   --citrus: #ff7a1a;
   --sun: #ffd23f;
   --cream: #fff9e9;
@@ -12,7 +12,7 @@
   --line: #dfe8d6;
   --muted: #617064;
   --danger: #c74f3f;
-  --shadow: 0 16px 40px rgba(135, 69, 0, 0.13);
+  --shadow: 0 18px 44px rgba(23, 95, 62, 0.13);
 }
 
 * {
@@ -34,8 +34,8 @@ button {
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
   background:
-    radial-gradient(circle at top left, rgba(255, 210, 63, 0.3), transparent 28rem),
-    linear-gradient(135deg, #fffdf4 0%, #eff7e8 42%, #fff4dd 100%);
+    radial-gradient(circle at top left, rgba(255, 210, 63, 0.32), transparent 28rem),
+    linear-gradient(135deg, #fffdf4 0%, #eff7e8 44%, #fff0d6 100%);
   color: var(--charcoal);
 }
 
@@ -50,6 +50,7 @@ button {
   flex-direction: column;
   gap: 22px;
   z-index: 20;
+  box-shadow: 14px 0 34px rgba(23, 95, 62, 0.12);
 }
 
 .brand-block {
@@ -65,10 +66,18 @@ button {
   border-radius: 8px;
   display: grid;
   place-items: center;
-  color: var(--forest);
-  background: linear-gradient(135deg, var(--white), var(--lime));
-  font-weight: 900;
+  padding: 2px;
+  overflow: hidden;
+  background: var(--cream);
   box-shadow: 0 10px 24px rgba(255, 210, 63, 0.28);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
 .brand-block strong,
@@ -323,7 +332,7 @@ button {
   justify-content: center;
   color: var(--forest);
   background-image:
-    linear-gradient(135deg, rgba(255, 122, 26, 0.92), rgba(255, 210, 63, 0.78)),
+    linear-gradient(135deg, rgba(255, 122, 26, 0.88), rgba(255, 210, 63, 0.72), rgba(168, 230, 74, 0.38)),
     var(--hero-image);
   background-position: center;
   background-size: cover;

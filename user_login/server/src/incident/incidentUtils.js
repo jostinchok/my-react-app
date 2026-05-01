@@ -1,5 +1,11 @@
 export const VALID_SOURCES = new Set(['AI_CAMERA', 'IOT_SENSOR'])
 
+export const VALID_EVENT_TYPES = new Set([
+  'TouchingPlants',
+  'TouchingWildlife',
+  'ObjectCloseToPlant',
+])
+
 export const VALID_STATUSES = new Set([
   'New',
   'Reviewed',
@@ -47,13 +53,23 @@ export const buildIncidentId = (source, timestamp, count) => {
 
 export const evidenceUrlFromPath = (value) => {
   if (!value || typeof value !== 'string') return null
-  if (value.startsWith('/evidence/ai/') || value.startsWith('http://') || value.startsWith('https://')) {
+  if (
+    value.startsWith('/evidence/ai/') ||
+    value.startsWith('/evidence/iot/') ||
+    value.startsWith('http://') ||
+    value.startsWith('https://')
+  ) {
     return value
   }
 
   const normalizedPath = value.replaceAll('\\', '/')
   const filename = normalizedPath.split('/').filter(Boolean).at(-1)
-  return filename ? `/evidence/ai/${encodeURIComponent(filename)}` : null
+  if (!filename) return null
+
+  const route = normalizedPath.includes('/alerts/iot/') || normalizedPath.includes('/Alerts/iot/')
+    ? '/evidence/iot'
+    : '/evidence/ai'
+  return `${route}/${encodeURIComponent(filename)}`
 }
 
 const decodeFilename = (value) => {
@@ -80,11 +96,12 @@ export const buildEvidenceFileMetadata = (value) => {
 
   const rawFileName = browserUrl.split('/').filter(Boolean).at(-1)
   const fileName = rawFileName ? decodeFilename(rawFileName) : 'evidence-file'
+  const evidenceFolder = browserUrl.startsWith('/evidence/iot/') ? 'iot' : 'ai'
 
   return {
     evidenceType: mimeTypeForFile(fileName).startsWith('image/') ? 'image' : 'other',
     browserUrl,
-    storageKey: `alerts/ai/${fileName}`,
+    storageKey: `alerts/${evidenceFolder}/${fileName}`,
     fileName,
     mimeType: mimeTypeForFile(fileName),
     sizeBytes: null,
@@ -134,20 +151,18 @@ export const normalizeIncident = (input = {}, options = {}) => {
     source === 'IOT_SENSOR' ? 'ObjectCloseToPlant' : aiInput?.predictedClass || aiInput?.predicted_class
   )
 
-  if (!eventType) return null
+  if (!eventType || !VALID_EVENT_TYPES.has(eventType)) return null
 
   const ai = source === 'AI_CAMERA' ? normalizeAi(aiInput) : null
   const iot = source === 'IOT_SENSOR' ? normalizeIot(input.iot || input.iotMetadata || input.iot_metadata || input, options.topic) : null
-  const evidenceImage = source === 'AI_CAMERA'
-    ? evidenceUrlFromPath(
-        input.evidenceImage ||
-        input.evidence_image ||
-        input.evidenceUrl ||
-        input.evidence_url ||
-        input.evidence?.browser_url ||
-        input.evidence?.image_path
-      )
-    : null
+  const evidenceImage = evidenceUrlFromPath(
+    input.evidenceImage ||
+    input.evidence_image ||
+    input.evidenceUrl ||
+    input.evidence_url ||
+    input.evidence?.browser_url ||
+    input.evidence?.image_path
+  )
 
   return {
     id: input.id || input.public_id || input.incident_id || null,
@@ -187,6 +202,14 @@ export const sanitizeIncidentPayload = (input, normalizedIncident) => {
   if (!input || typeof input !== 'object') return null
 
   const sanitized = JSON.parse(JSON.stringify(input))
+  delete sanitized.device_token
+  delete sanitized.deviceToken
+
+  if (sanitized.iot && typeof sanitized.iot === 'object') {
+    delete sanitized.iot.device_token
+    delete sanitized.iot.deviceToken
+  }
+
   if (normalizedIncident?.evidenceImage) {
     sanitized.evidenceImage = normalizedIncident.evidenceImage
     if (sanitized.evidence && typeof sanitized.evidence === 'object') {

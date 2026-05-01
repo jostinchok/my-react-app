@@ -9,6 +9,7 @@ import {
 } from './data/trainingPlatform'
 
 const STORAGE_KEY = 'sfc_citrus_training_demo'
+const brandLogo = `${import.meta.env.BASE_URL}sfc-citrus-logo.webp`
 
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
 
@@ -218,6 +219,15 @@ function App() {
     setActiveTab('dashboard')
   }
 
+  const logoutDemoSession = () => {
+    try {
+      localStorage.removeItem('sfc_demo_session')
+    } catch {
+      // Demo session storage is optional.
+    }
+    alert('Demo session cleared. Routes remain open for lecturer review; production route guards are documented in CYBERSECURITY_REVIEW.md.')
+  }
+
   const openModule = (moduleId) => {
     setSelectedModuleId(moduleId)
     setActiveTab('module')
@@ -375,7 +385,9 @@ function App() {
     <div className="app-shell">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand-block">
-          <div className="brand-mark">SFC</div>
+          <div className="brand-mark">
+            <img src={brandLogo} alt="SFC Digital Guide logo" />
+          </div>
           <div>
             <strong>Guide Center</strong>
             <span>Digital Training</span>
@@ -428,6 +440,9 @@ function App() {
             </select>
             <button type="button" className="reset-button" onClick={resetDemo}>
               Reset Demo
+            </button>
+            <button type="button" className="reset-button" onClick={logoutDemoSession}>
+              Demo Logout
             </button>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
               <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>

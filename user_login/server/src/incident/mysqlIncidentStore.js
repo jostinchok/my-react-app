@@ -10,6 +10,7 @@ import {
 } from './incidentUtils.js'
 
 const ACTION_ACTORS = new Set(['system', 'admin', 'park_ranger', 'ai_camera', 'iot_sensor', 'api'])
+const IOT_DEDUPE_WINDOW_SECONDS = 10
 
 const parseJsonColumn = (value, fallback = null) => {
   if (value === null || value === undefined) return fallback
@@ -170,6 +171,93 @@ export const createMysqlIncidentStore = ({ pool } = {}) => {
     return hydrated[0] || null
   }
 
+  const findDuplicateIotIncidentRow = async (connection, incident) => {
+    if (incident.source !== 'IOT_SENSOR') return null
+
+    const sensorId = incident.iot?.sensorId || 'plant-zone-01'
+    const occurredAt = formatMysqlDateTime(incident.timestamp)
+    const [rows] = await connection.query(
+      `SELECT i.incident_id, i.public_id
+       FROM monitoring_incidents i
+       JOIN monitoring_incident_iot_metadata m ON i.incident_id = m.incident_id
+       WHERE i.source = 'IOT_SENSOR'
+         AND i.event_type = ?
+         AND m.sensor_id = ?
+         AND ABS(TIMESTAMPDIFF(SECOND, i.occurred_at, ?)) <= ?
+       ORDER BY ABS(TIMESTAMPDIFF(SECOND, i.occurred_at, ?)) ASC, i.incident_id DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [incident.eventType, sensorId, occurredAt, IOT_DEDUPE_WINDOW_SECONDS, occurredAt]
+    )
+
+    return rows[0] || null
+  }
+
+  const attachEvidenceToExistingIncident = async (connection, existingRow, incident) => {
+    if (incident.notes && incident.evidenceImage) {
+      await connection.query(
+        `UPDATE monitoring_incidents
+         SET notes = ?
+         WHERE incident_id = ?`,
+        [incident.notes, existingRow.incident_id]
+      )
+    }
+
+    if (incident.iot) {
+      await connection.query(
+        `INSERT INTO monitoring_incident_iot_metadata
+           (incident_id, sensor_id, distance_cm, threshold_cm, mqtt_topic, received_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           sensor_id = VALUES(sensor_id),
+           distance_cm = VALUES(distance_cm),
+           threshold_cm = VALUES(threshold_cm),
+           mqtt_topic = VALUES(mqtt_topic),
+           received_at = VALUES(received_at)`,
+        [
+          existingRow.incident_id,
+          incident.iot.sensorId,
+          incident.iot.distanceCm,
+          incident.iot.thresholdCm,
+          incident.iot.topic,
+          formatMysqlDateTime(incident.timestamp),
+        ]
+      )
+    }
+
+    const evidence = buildEvidenceFileMetadata(incident.evidenceImage)
+    if (evidence) {
+      await connection.query(
+        `INSERT IGNORE INTO monitoring_incident_evidence_files
+           (incident_id, evidence_type, browser_url, storage_key, file_name, mime_type, size_bytes, sha256)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          existingRow.incident_id,
+          evidence.evidenceType,
+          evidence.browserUrl,
+          evidence.storageKey,
+          evidence.fileName,
+          evidence.mimeType,
+          evidence.sizeBytes,
+          evidence.sha256,
+        ]
+      )
+    }
+
+    if (incident.evidenceImage) {
+      await connection.query(
+        `INSERT INTO monitoring_incident_actions
+           (incident_id, action_type, actor_role, actor_label, comment, raw_context)
+         VALUES (?, 'metadata_updated', 'admin', 'Admin incident dashboard', ?, ?)`,
+        [
+          existingRow.incident_id,
+          'IoT camera evidence attached from browser capture.',
+          jsonValue({ evidenceImage: incident.evidenceImage }),
+        ]
+      )
+    }
+  }
+
   return {
     type: 'mysql',
     persistence: 'mysql',
@@ -234,6 +322,30 @@ export const createMysqlIncidentStore = ({ pool } = {}) => {
       const connection = await pool.getConnection()
       try {
         await connection.beginTransaction()
+
+        if (incident.id && incident.source === 'IOT_SENSOR') {
+          const [existingRows] = await connection.query(
+            `SELECT incident_id, public_id
+             FROM monitoring_incidents
+             WHERE public_id = ?
+             LIMIT 1
+             FOR UPDATE`,
+            [incident.id]
+          )
+
+          if (existingRows.length) {
+            await attachEvidenceToExistingIncident(connection, existingRows[0], incident)
+            await connection.commit()
+            return await fetchIncidentByPublicId(incident.id, connection)
+          }
+        }
+
+        const duplicateIotRow = await findDuplicateIotIncidentRow(connection, incident)
+        if (duplicateIotRow) {
+          await attachEvidenceToExistingIncident(connection, duplicateIotRow, incident)
+          await connection.commit()
+          return await fetchIncidentByPublicId(duplicateIotRow.public_id, connection)
+        }
 
         incident.id = await makeUniquePublicId(connection, incident.id, incident.source, incident.timestamp)
         const rawPayload = sanitizeIncidentPayload(input, incident)

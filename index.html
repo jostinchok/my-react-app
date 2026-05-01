@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/fd87f0d6-56d3-49eb-b3e8-5a80cf4fc818.png" />
+    <link rel="icon" type="image/png" href="/images/sfc-citrus-logo.png" />
     <link rel="stylesheet" href="/login/hub.css" />
     <title>SFC Review Hub</title>
   </head>
   <body>
     <main class="hub-shell">
-      <section class="hub-hero">
+      <section class="hub-hero" aria-label="Sarawak rainforest digital training launcher">
         <div class="brand-row">
-          <img src="/fd87f0d6-56d3-49eb-b3e8-5a80cf4fc818.png" alt="SFC Digital Portal" />
+          <img src="/images/sfc-citrus-logo.webp" alt="SFC Digital Guide logo" />
           <div>
             <p>Sarawak Forestry Corporation</p>
             <h1>SFC Review Hub</h1>
@@ -23,7 +23,7 @@
         </p>
         <div class="command-panel">
           <span>Run from repo root</span>
-          <code>npm run dev</code>
+          <code>cd /Users/chiayuenkai/Desktop/GitHub/my-react-app && npm run dev</code>
         </div>
         <nav class="hub-actions" aria-label="Demo navigation">
           <a href="/user" target="_blank" rel="noreferrer">Login / Register</a>
@@ -31,8 +31,10 @@
           <a href="/admin" target="_blank" rel="noreferrer">Admin Dashboard</a>
           <a href="/admin/detection" target="_blank" rel="noreferrer">Admin Incident Detection</a>
           <a href="/admin/ranger" target="_blank" rel="noreferrer">Park Ranger Alert Console</a>
+          <a href="http://localhost:8081" target="_blank" rel="noreferrer">Mobile Preview</a>
           <a href="/api/health" target="_blank" rel="noreferrer">Backend API Health</a>
           <a href="/api/incidents" target="_blank" rel="noreferrer">Incidents API</a>
+          <a href="/api/incidents/summary" target="_blank" rel="noreferrer">Incidents Summary API</a>
         </nav>
       </section>
 
@@ -95,11 +97,25 @@
             <span class="status-pill" data-status-for="backend">checking</span>
           </div>
           <h2>Backend API</h2>
-          <p>Express runtime API for health checks, AI/IoT incidents, and evidence image serving. MySQL is deferred.</p>
+          <p>Express runtime API for health checks, AI/IoT incidents, evidence image serving, and memory/MySQL incident storage modes.</p>
           <div class="link-row">
             <a href="/api/health" target="_blank" rel="noreferrer">Health check</a>
             <a href="/api/incidents" target="_blank" rel="noreferrer">Incidents</a>
+            <a href="/api/incidents/summary" target="_blank" rel="noreferrer">Summary</a>
             <a href="http://localhost:4000/api/health" target="_blank" rel="noreferrer">Direct</a>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-top">
+            <span class="service-icon">S</span>
+            <span class="status-pill" data-status-for="summary">checking</span>
+          </div>
+          <h2>Incident Summary</h2>
+          <p>Quick JSON summary for screenshot evidence: totals by source and status from the same backend incident store.</p>
+          <div class="link-row">
+            <a href="/api/incidents/summary" target="_blank" rel="noreferrer">Open summary</a>
+            <a href="http://localhost:4000/api/incidents/summary" target="_blank" rel="noreferrer">Direct</a>
           </div>
         </article>
       </section>
@@ -108,7 +124,10 @@
         <h2>Review Notes</h2>
         <ul>
           <li>Use this hub for one-session review; the source apps remain separated by responsibility.</li>
-          <li>MySQL is intentionally not connected for the current AI/CV incident demo.</li>
+          <li>Demo access roles: Park Guide, Admin, and Park Ranger are shown for tutor review. Current route access is demo-open; API role checks can be enabled with <code>ROLE_CHECK_ENABLED=true</code>.</li>
+          <li>The training platform is a seeded front-end demo; only AI/IoT monitoring incidents use the backend storage layer.</li>
+          <li>AI camera and IoT incident ingestion can require device tokens with <code>DEVICE_TOKEN_AUTH_ENABLED=true</code>.</li>
+          <li>Incident storage can run in memory mode for quick demos or MySQL mode using <code>cos30049_assignment</code>.</li>
           <li>Direct links are useful if a dev server websocket does not work through the hub proxy.</li>
         </ul>
       </section>

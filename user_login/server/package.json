@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "publish:test-iot": "node scripts/publish-test-iot.js"
+    "publish:test-iot": "node scripts/publish-test-iot.js",
+    "security:smoke": "node scripts/security-smoke-test.js",
+    "generate:tokens": "node scripts/generate-demo-tokens.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

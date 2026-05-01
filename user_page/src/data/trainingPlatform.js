@@ -16,7 +16,7 @@ export const trainingModules = [
     level: 'Beginner',
     duration: '30 min',
     format: 'Online',
-    image: asset('protected-areas.png'),
+    image: asset('protected-areas.webp'),
     accent: '#ff7a1a',
     badge: 'Protected Areas Starter',
     objectives: [
@@ -54,7 +54,7 @@ export const trainingModules = [
     level: 'Beginner',
     duration: '45 min',
     format: 'Field',
-    image: asset('biodiversity-basics.png'),
+    image: asset('biodiversity-basics.webp'),
     accent: '#55c938',
     badge: 'Biodiversity Scout',
     objectives: [
@@ -92,7 +92,7 @@ export const trainingModules = [
     level: 'Intermediate',
     duration: '40 min',
     format: 'Online',
-    image: asset('rules-compliance.png'),
+    image: asset('rules-compliance.webp'),
     accent: '#f7b801',
     badge: 'Rules Ready',
     objectives: [
@@ -130,7 +130,7 @@ export const trainingModules = [
     level: 'Advanced',
     duration: '55 min',
     format: 'Lab',
-    image: asset('visitor-safety.png'),
+    image: asset('visitor-safety.webp'),
     accent: '#ff9f1c',
     badge: 'Safety Responder',
     objectives: [
@@ -169,7 +169,7 @@ export const trainingModules = [
     level: 'Beginner',
     duration: '35 min',
     format: 'Online',
-    image: asset('ecotourism-communication.png'),
+    image: asset('ecotourism-communication.webp'),
     accent: '#ffd23f',
     badge: 'Story Guide',
     objectives: [
@@ -207,7 +207,7 @@ export const trainingModules = [
     level: 'Intermediate',
     duration: '50 min',
     format: 'Online',
-    image: asset('incident-ai-monitoring.png'),
+    image: asset('incident-ai-monitoring.webp'),
     accent: '#00b894',
     badge: 'Alert Aware',
     objectives: [
@@ -245,7 +245,7 @@ export const trainingModules = [
     level: 'Intermediate',
     duration: '45 min',
     format: 'Field',
-    image: asset('bako-trail-guiding.png'),
+    image: asset('bako-trail-guiding.webp'),
     accent: '#ff6b35',
     badge: 'Bako Trail Guide',
     objectives: [
@@ -283,7 +283,7 @@ export const trainingModules = [
     level: 'Intermediate',
     duration: '42 min',
     format: 'Field',
-    image: asset('kubah-rainforest-safety.png'),
+    image: asset('kubah-rainforest-safety.webp'),
     accent: '#8ac926',
     badge: 'Kubah Rainforest Guide',
     objectives: [
@@ -321,7 +321,7 @@ export const trainingModules = [
     level: 'Advanced',
     duration: '50 min',
     format: 'Field',
-    image: asset('gunung-gading-conservation.png'),
+    image: asset('gunung-gading-conservation.webp'),
     accent: '#f15bb5',
     badge: 'Sensitive Site Steward',
     objectives: [
@@ -359,7 +359,7 @@ export const trainingModules = [
     level: 'Advanced',
     duration: '52 min',
     format: 'Field',
-    image: asset('batang-ai-community-protocol.png'),
+    image: asset('batang-ai-community-protocol.webp'),
     accent: '#ffb703',
     badge: 'Batang Ai Protocol Lead',
     objectives: [
@@ -667,6 +667,6 @@ export const supportTopics = [
   },
   {
     title: 'Where does this demo data come from?',
-    body: 'This pass uses front-end seeded data only. Express and MySQL integration is intentionally deferred.',
+    body: 'The Park Guide training portal uses front-end seeded demo data. AI/IoT monitoring incidents can run through the backend in memory or MySQL mode.',
   },
 ]

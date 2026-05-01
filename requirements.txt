@@ -19,3 +19,6 @@ numpy
 scikit-learn
 tqdm
 matplotlib
+
+# HTTP posting in scripts/run_ai_camera_monitor.py uses Python standard library urllib.
+# MySQL persistence is handled by the Node/Express backend, not Python.

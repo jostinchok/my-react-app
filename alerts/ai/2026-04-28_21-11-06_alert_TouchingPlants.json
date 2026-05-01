@@ -6,8 +6,8 @@
   "timestamp": "2026-04-28T21:11:06+08:00",
   "location": "Demo Camera Zone",
   "status": "New",
-  "evidenceImage": "/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai/2026-04-28_21-11-06_alert_TouchingPlants.jpg",
-  "evidenceJson": "/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai/2026-04-28_21-11-06_alert_TouchingPlants.json",
+  "evidenceImage": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-28_21-11-06_alert_TouchingPlants.jpg",
+  "evidenceJson": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-28_21-11-06_alert_TouchingPlants.json",
   "ai": {
     "predictedClass": "TouchingPlants",
     "confidence": 0.7892867922782898,
