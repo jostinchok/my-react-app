@@ -18,6 +18,8 @@ import {
 import { Dimensions } from 'react-native';
 import FilesPage from './components/FilesPage';
 
+const brandLogo = require('./assets/sfc-citrus-logo.png');
+
 const copy = {
   en: {
     dashboard: 'Dashboard',
@@ -223,14 +225,15 @@ const copy = {
 }
 
 const palette = {
-  bg: '#f0f2f0',
-  panel: '#ffffff',
-  text: '#2d3436',
-  muted: '#636e72',
-  border: '#e6efea',
-  accent: '#379237',
-  accentSoft: '#eaf5ef',
-  primaryDark: '#062C1E',
+  bg: '#fff8e6',
+  panel: '#fffdf7',
+  text: '#1e2a22',
+  muted: '#607166',
+  border: '#dce7d7',
+  accent: '#ff7a1a',
+  accentSoft: '#fff1cf',
+  primaryDark: '#0b3b28',
+  lime: '#a8e64a',
 }
 
 const navTabs = ['profile', 'files', 'settings', 'logout']
@@ -448,6 +451,7 @@ const ProfileView = ({ profile, t }) => {
         >
           <Text style={{ color: palette.text, fontWeight: '900' }}>☰</Text>
         </Pressable>
+        <Image source={brandLogo} style={styles.headerLogo} accessibilityLabel="SFC Digital Guide logo" />
         <Text style={[styles.headerTitle, { color: palette.text }]}>{t.portalTitle}</Text>
       </View>
     </View>
@@ -473,8 +477,11 @@ const ProfileView = ({ profile, t }) => {
 
         {activeTab === 'dashboard' && (
           <View style={styles.stackGap}>
-            <View style={[styles.hero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
-              <Text style={[styles.h1, { color: '#fff' }]}>{t.portalTitle}</Text>
+          <View style={[styles.hero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
+              <View style={styles.heroBrandRow}>
+                <Image source={brandLogo} style={styles.heroLogo} accessibilityLabel="SFC Digital Guide logo" />
+                <Text style={[styles.h1, { color: '#fff' }]}>{t.portalTitle}</Text>
+              </View>
               <Text style={{ color: '#ffffff' }}>{t.welcomeSubtitle}</Text>
             </View>
             <View style={styles.statRow}>
@@ -782,7 +789,10 @@ const ProfileView = ({ profile, t }) => {
               },
             ]}
           >
-            <Text style={[styles.sideNavTitle, { color: '#ffffff' }]}>{t.portalTitle}</Text>
+            <View style={styles.sideNavBrand}>
+              <Image source={brandLogo} style={styles.sideNavLogo} accessibilityLabel="SFC Digital Guide logo" />
+              <Text style={[styles.sideNavTitle, { color: '#ffffff' }]}>{t.portalTitle}</Text>
+            </View>
             {navTabs.map((tab) => (
               <Pressable
                   key={tab}
@@ -858,6 +868,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  headerLogo: { width: 38, height: 38, borderRadius: 9 },
   menuBtn: { 
     borderWidth: 1, 
     borderRadius: 10, 
@@ -883,6 +894,8 @@ const styles = StyleSheet.create({
   h2: { fontSize: 24, fontWeight: '800' },
   stackGap: { gap: 10 },
   hero: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
+  heroBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  heroLogo: { width: 48, height: 48, borderRadius: 12 },
   statRow: { flexDirection: 'row', gap: 8 },
   statCard: { flex: 1, borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
   statBig: { fontSize: 30, fontWeight: '900' },
@@ -924,14 +937,21 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
+  sideNavBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  sideNavLogo: { width: 40, height: 40, borderRadius: 10 },
   sideNavTitle: { 
     fontSize: 18, 
     fontWeight: '700', 
-    marginBottom: 20, 
-    paddingLeft: 20, 
-    paddingVertical: 25,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)'
+    flex: 1,
   },
   sideNavItem: { 
     borderWidth: 0,

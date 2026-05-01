@@ -8,6 +8,7 @@
 Icon?
 ._*
 
+
 # Finder folder metadata
 .Spotlight-V100
 .Trashes
@@ -120,6 +121,12 @@ captures/
 Captures/
 screenshots/
 Screenshots/
+# Browser IoT captures can include private faces. Keep only .gitkeep unless a file is force-added intentionally.
+alerts/iot/*.jpg
+alerts/iot/*.jpeg
+alerts/iot/*.png
+alerts/iot/*.webp
+alerts/iot/*.json
 user_login/server/data/*.runtime.json
 
 

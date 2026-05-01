@@ -213,13 +213,17 @@ def build_ai_incident_payload(
     }
 
 
-def post_incident_to_backend(payload, incident_api_url):
+def post_incident_to_backend(payload, incident_api_url, device_token=None):
     try:
         body = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if device_token:
+            headers["X-Device-Token"] = device_token
+
         request = urllib.request.Request(
             incident_api_url,
             data=body,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             method="POST",
         )
         with urllib.request.urlopen(request, timeout=2) as response:
@@ -240,6 +244,7 @@ def save_alert_frame(
     alert_dir,
     incident_api_url,
     sync_backend,
+    device_token=None,
     prefix="alert",
 ):
     timestamp_file = time.strftime("%Y-%m-%d_%H-%M-%S")
@@ -270,7 +275,7 @@ def save_alert_frame(
     print(f"[SAVE] JSON path: {json_path}")
 
     if prefix == "alert" and sync_backend:
-        post_incident_to_backend(payload, incident_api_url)
+        post_incident_to_backend(payload, incident_api_url, device_token=device_token)
     elif prefix == "alert":
         print("[SYNC] Backend sync disabled. Local evidence saved.")
     else:
@@ -331,6 +336,11 @@ def parse_args():
         help="Backend origin that serves /api/incidents and /evidence/ai. Defaults to http://localhost:4000.",
     )
     parser.add_argument("--incident-api-url", default=default_incident_api_url, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--device-token",
+        default=os.environ.get("AI_CAMERA_TOKEN"),
+        help="Optional AI camera device token. Sent as X-Device-Token when backend token auth is enabled.",
+    )
     parser.add_argument("--no-backend-sync", action="store_true")
     return parser.parse_args()
 
@@ -379,6 +389,7 @@ def run_monitor(args):
     print("Evidence dir:", alert_dir)
     print("Backend URL:", args.backend_url.rstrip("/"))
     print("Incident API:", incident_api_url)
+    print("Device token header:", "enabled" if args.device_token else "not provided")
     print("Press 'q' or ESC to quit | Press 's' to save snapshot")
     print("===================================================")
 
@@ -505,6 +516,7 @@ def run_monitor(args):
                     alert_dir=alert_dir,
                     incident_api_url=incident_api_url,
                     sync_backend=not args.no_backend_sync,
+                    device_token=args.device_token,
                     prefix="alert",
                 )
 
@@ -534,6 +546,7 @@ def run_monitor(args):
                     alert_dir=alert_dir,
                     incident_api_url=incident_api_url,
                     sync_backend=not args.no_backend_sync,
+                    device_token=args.device_token,
                     prefix="manual",
                 )
 
