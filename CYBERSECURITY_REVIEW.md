@@ -123,9 +123,13 @@ Start the app with optional security controls:
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 DEVICE_TOKEN_AUTH_ENABLED=true \
 ROLE_CHECK_ENABLED=true \
+INCIDENT_STORAGE=mysql \
+INCIDENT_MYSQL_FALLBACK=none \
+DB_DATABASE=cos30049_assignment \
 AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
 IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
 npm run dev
 ```
 
@@ -166,7 +170,7 @@ Capture:
 1. `CYBERSECURITY_REVIEW.md` vulnerability table.
 2. `user_login/server/.env.example` placeholders.
 3. `npm run generate:tokens` output with values hidden/redacted in report if needed.
-4. `/api/health` showing `security.deviceTokenAuthEnabled` and `security.roleCheckEnabled`.
+4. `/api/health` showing MySQL incident storage plus `security.deviceTokenAuthEnabled` and `security.roleCheckEnabled`.
 5. `npm run security:smoke` PASS output.
 6. Wrong AI token rejected with `401`.
 7. Wrong IoT token rejected with `401`.

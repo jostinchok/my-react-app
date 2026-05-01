@@ -14,9 +14,9 @@ This project demonstrates the three Project Scope areas:
 
 1. Interactive Digital Training Platform: seeded Park Guide web portal, Expo mobile preview, training modules, quizzes, progress, badges/certificates, notifications, files/resources, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
-3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger response console, evidence serving, memory mode, and optional MySQL incident persistence.
+3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger response console, evidence serving, and MySQL-backed monitoring incident persistence.
 
-The Park Guide training platform remains frontend-seeded for the demo. MySQL persistence is only implemented for AI/IoT monitoring incidents.
+The Park Guide training platform remains frontend-seeded for the demo. MySQL persistence is the default for AI/IoT monitoring incidents only.
 
 ## UI And Asset Status
 
@@ -89,26 +89,31 @@ Do not commit real `.env` files.
 
 ## Run The Full Demo
 
-Memory mode is the safest first run:
-
-```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-INCIDENT_STORAGE=memory \
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
-npm run dev
-```
-
-MySQL incident mode:
+The standard demo run uses MySQL for AI/IoT incidents. Start MySQL first, confirm `cos30049_assignment` exists, then run:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 INCIDENT_STORAGE=mysql \
+INCIDENT_MYSQL_FALLBACK=none \
 DB_DATABASE=cos30049_assignment \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
 npm run dev
 ```
 
-If `INCIDENT_STORAGE=mysql` is selected and MySQL is offline, the backend starts in degraded mode when `INCIDENT_MYSQL_FALLBACK=memory`.
+Health should show MySQL, not local JSON memory:
+
+```json
+"persistence": "mysql",
+"storage": {
+  "requested": "mysql",
+  "active": "mysql",
+  "status": "online",
+  "fallback": "none"
+}
+```
+
+Memory mode is only for emergency local testing. Do not use it for the lecturer demo unless MySQL is unavailable.
 
 ## MySQL Incident Persistence
 
@@ -116,6 +121,18 @@ Create the database:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+```
+
+Create the local app database user used by `.env.example`:
+
+```bash
+mysql -u root -p -e "CREATE USER IF NOT EXISTS 'ctip_user'@'localhost' IDENTIFIED BY 'user'; GRANT ALL PRIVILEGES ON cos30049_assignment.* TO 'ctip_user'@'localhost'; FLUSH PRIVILEGES;"
+```
+
+If `ctip_user` already existed with an older password, reset it:
+
+```bash
+mysql -u root -p -e "ALTER USER 'ctip_user'@'localhost' IDENTIFIED BY 'user'; GRANT ALL PRIVILEGES ON cos30049_assignment.* TO 'ctip_user'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
 Apply the monitoring migration:
@@ -129,6 +146,13 @@ Check stored incidents:
 
 ```bash
 mysql -u root -p cos30049_assignment \
+  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
+```
+
+Check with the app user:
+
+```bash
+MYSQL_PWD=user mysql -u ctip_user -h localhost -P 3306 cos30049_assignment \
   -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
 ```
 

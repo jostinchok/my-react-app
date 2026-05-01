@@ -1,16 +1,24 @@
-# React + Vite
+# Admin Page
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Run this app through the repository root so the Admin UI and backend share the same environment:
 
-Currently, two official plugins are available:
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The backend should use MySQL incident storage for the lecturer demo. Confirm:
 
-## React Compiler
+```bash
+curl -s http://localhost:4000/api/health | python3 -m json.tool
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Expected storage values:
 
-## Expanding the ESLint configuration
+```text
+incidents.persistence = mysql
+incidents.storage.requested = mysql
+incidents.storage.active = mysql
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Do not commit real `.env` files. Use `../user_login/server/.env.example` as the safe template.

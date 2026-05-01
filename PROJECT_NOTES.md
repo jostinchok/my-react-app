@@ -77,10 +77,10 @@ my-react-app/
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
 | Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, and status updates. Sends admin role header for optional role-check mode. |
 | Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Acknowledged/In Review/Resolved/False Alarm actions. Sends park_ranger role header for optional role-check mode. |
-| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, and `PATCH /api/incidents/:id/status` support memory/MySQL stores, validation, optional tokens, and optional role checks. |
+| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, and `PATCH /api/incidents/:id/status` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. |
 | AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, `--device-token`, JPG/JSON evidence, backend POST, and safe shutdown. |
 | IoT simulation / physical sensor support | Partial / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant payloads to `ctip/sensor/plant-zone-01/proximity` and supports token mode. Physical sensor deployment is environment-dependent. |
-| MySQL incident persistence | Demo-ready | Optional `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment` and monitoring tables for AI/IoT incidents only. Memory mode remains available. |
+| MySQL incident persistence | Demo-ready | Default `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment`, `ctip_user`, and monitoring tables for AI/IoT incidents only. Memory mode remains an emergency/testing fallback only. |
 | Cybersecurity controls | Partial / Demo-ready | `CYBERSECURITY_REVIEW.md`, `.env.example`, browser-safe evidence URLs, payload validation, optional device tokens, optional role checks, demo auth notes, smoke test script, and production hardening recommendations are available. |
 | Evidence/screenshot readiness | Demo-ready | README, WORKFLOW, and CYBERSECURITY_REVIEW include screenshot checklists and exact URLs/commands. |
 
@@ -151,7 +151,7 @@ IoT browser capture contract:
 - Polished Admin Incident Detection for clearer summary cards, filters, table readability, selected detail panel, evidence preview, metadata, loading, empty, and offline fallback states.
 - Polished Park Ranger Console as a response-only field console with urgent incidents, field notes, status actions, and role boundaries.
 - Added a demo-safe IoT test publisher fallback: MQTT remains the first path, but public-broker timeouts can fall back to the local incidents API with the same IOT_SENSOR payload.
-- Updated documentation for memory mode, MySQL mode, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
+- Updated documentation for MySQL-first incident persistence, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
 - Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
 - Generated and applied a shared Citrus logo mark across the hub, login surfaces, User Portal, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview. Optimized copies are 17 KB WebP for browser UI and 80 KB PNG for favicon/mobile usage.
 - Fixed the Park Ranger route to render through the Admin shell/sidebar, keeping logo placement and navigation consistent for final demo screenshots.
@@ -159,3 +159,4 @@ IoT browser capture contract:
 - Optimized frontend training images into WebP files under `user_page/public/training/`; each optimized training image is below 100 KB and the large unused PNG originals were removed from the public frontend folder.
 - Added demo-safe cybersecurity controls for the tutor check: optional AI/IoT device tokens, optional Admin/Park Ranger status-update role checks, generated token helper, security smoke test script, and `CYBERSECURITY_REVIEW.md`.
 - Completed IoT browser-camera evidence integration: `/api/incidents/iot-capture` saves compressed captures to `alerts/iot`, serves `/evidence/iot/<filename>`, writes through memory/MySQL incident storage, and deduplicates browser/backend MQTT triggers.
+- Updated run instructions so `/api/health` should show `persistence=mysql`, `requested=mysql`, `active=mysql`, and `fallback=none` for the lecturer demo.

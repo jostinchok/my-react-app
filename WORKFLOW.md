@@ -10,25 +10,25 @@ This workflow is for local lecturer demonstration from the team repo branch befo
 
 ## Terminal 1: Run The Full App
 
-Memory mode:
+Standard MySQL mode:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-INCIDENT_STORAGE=memory \
+INCIDENT_STORAGE=mysql \
+INCIDENT_MYSQL_FALLBACK=none \
+DB_DATABASE=cos30049_assignment \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
 IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
 npm run dev
 ```
 
-MySQL mode:
+Expected health storage:
 
-```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-INCIDENT_STORAGE=mysql \
-DB_DATABASE=cos30049_assignment \
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
-IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
-npm run dev
+```text
+incidents.persistence = mysql
+incidents.storage.requested = mysql
+incidents.storage.active = mysql
+incidents.storage.fallback = none
 ```
 
 Expected services:
@@ -63,9 +63,13 @@ Start the full app with optional security controls. Use the generated values loc
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 DEVICE_TOKEN_AUTH_ENABLED=true \
 ROLE_CHECK_ENABLED=true \
+INCIDENT_STORAGE=mysql \
+INCIDENT_MYSQL_FALLBACK=none \
+DB_DATABASE=cos30049_assignment \
 AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
 IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
 npm run dev
 ```
 
@@ -107,6 +111,12 @@ Create MySQL database:
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
 ```
 
+Create or reset the app database user:
+
+```bash
+mysql -u root -p -e "CREATE USER IF NOT EXISTS 'ctip_user'@'localhost' IDENTIFIED BY 'user'; ALTER USER 'ctip_user'@'localhost' IDENTIFIED BY 'user'; GRANT ALL PRIVILEGES ON cos30049_assignment.* TO 'ctip_user'@'localhost'; FLUSH PRIVILEGES;"
+```
+
 Apply migration:
 
 ```bash
@@ -124,6 +134,13 @@ Check latest incidents:
 
 ```bash
 mysql -u root -p cos30049_assignment \
+  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
+```
+
+Check latest incidents using the app user:
+
+```bash
+MYSQL_PWD=user mysql -u ctip_user -h localhost -P 3306 cos30049_assignment \
   -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
 ```
 
@@ -388,10 +405,13 @@ lsof -nP -iTCP:5175 -sTCP:LISTEN
 lsof -nP -iTCP:8081 -sTCP:LISTEN
 ```
 
-If MySQL is offline, run memory mode first:
+If `/api/health` still shows `requested=memory` or `active=memory`, stop and restart the backend after confirming `user_login/server/.env` has `INCIDENT_STORAGE=mysql`.
+
+Emergency memory mode is available only when MySQL is unavailable:
 
 ```bash
 INCIDENT_STORAGE=memory \
+INCIDENT_MYSQL_FALLBACK=memory \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
 npm run dev
 ```
