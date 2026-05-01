@@ -1,184 +1,357 @@
-# CTIP 2-Class Touching Species Prototype
+# COS30049 Assignment - Sarawak Forestry Digital Park Guide System
 
-This project is a controlled-condition AI/CV prototype for the COS30049 Computing Technology Innovation Project (CTIP).
+This repository is the active team repo for the COS30049 Computing Technology
+Innovation Project.
 
-The current selected prototype model is a **2-class classifier**:
-
-- **TouchingPlants**
-- **TouchingWildlife**
-
-It includes:
-
-- dataset renaming and organization
-- 90/10 train/test split
-- CLIP-based 2-class training
-- offline evaluation
-- real-time camera inference
-- MediaPipe hand detection
-- alert image saving
-- JSON metadata saving
-- IoT proximity sensor payload contract
-
----
-
-## Project Goal
-
-The purpose of this notebook is to support a real-time abnormal-interaction prototype for a digital park guide system.
-
-The current AI direction is intentionally narrow:
-- detect a hand region
-- classify the touching interaction as either **TouchingPlants** or **TouchingWildlife**
-- trigger an alert under controlled conditions
-- save evidence for later admin-side integration
-
-This is a **prototype**, not a production-ready field detector.
-
----
-
-## Files
-
-Main notebook:
-- `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb`
-
-IoT Arduino sketch:
-- `CTIP_IoT_Plant_Proximity_Monitor.ino`
-
-Dependency file:
-- `requirements.txt`
-
-Expected trained model output:
-- `C:\COS30049 Assignment\Artifacts\clip_2class_touching_species.pt`
-
-Expected realtime alert output:
-- `C:\COS30049 Assignment\Alerts\ai\`
-
-Expected IoT MQTT topic:
-- `ctip/sensor/plant-zone-01/proximity`
-
----
-
-## Recommended Folder Structure
-
-Use this structure on Windows:
+Project path:
 
 ```text
-C:\COS30049 Assignment
-├── Alerts
-├── Artifacts
-├── Datasets
-│   ├── TouchingPlants
-│   └── TouchingWildlife
-├── Models
-│   └── hand_landmarker.task
-└── CTIP_AI_Camera_Training_and_Incident_Detection.ipynb
+/Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
+
+The prototype combines:
+
+- Park Guide / User training portal
+- Admin dashboard
+- Admin Incident Detection dashboard
+- Park Ranger Alert Console
+- AI camera monitoring prototype
+- IoT proximity monitoring prototype
+- Express backend for auth and live AI/IoT incident APIs
+
+The current MySQL work is scoped only to AI/IoT incident persistence. The full
+training platform, modules, quizzes, certificates, and progress data are still
+frontend-seeded and are not connected to MySQL yet.
 
 ---
 
-## Dataset
+## Current Status
 
-The 2-class experiment expects only these folders:
+Implemented:
 
-- `TouchingPlants`
-- `TouchingWildlife`
+- Root review hub with quick links to all demo surfaces.
+- User / Park Guide portal under `user_page`.
+- Admin dashboard under `admin_page`.
+- Admin Incident Detection page at `/admin/detection`.
+- Park Ranger Alert Console at `/admin/ranger`.
+- Backend incident API under `user_login/server`.
+- AI camera monitor script at `scripts/run_ai_camera_monitor.py`.
+- AI evidence serving from `/evidence/ai/<filename>`.
+- MQTT IoT bridge for `ctip/sensor/plant-zone-01/proximity`.
+- Memory/local JSON incident storage mode.
+- Optional MySQL incident storage mode for AI/IoT incidents only.
 
-The notebook will:
-1. rename the image files
-2. split the dataset into `train` and `test`
-3. train the model
-4. evaluate the model
-5. run the realtime camera system
+Not implemented yet:
 
----
-
-## Installation
-
-Create and activate your Python environment first.
-
-Then install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### GPU note
-
-If you want GPU support, install the correct PyTorch CUDA build first, then install the remaining requirements.
-
-Example:
-
-```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-pip install -r requirements.txt
-```
-
-After installation, verify CUDA inside Python:
-
-```python
-import torch
-print(torch.cuda.is_available())
-print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No CUDA")
-```
+- Full training platform persistence in MySQL.
+- Production authentication/authorization hardening.
+- Production MQTT broker authentication.
+- Production-grade AI model validation.
 
 ---
 
-## MediaPipe Hand Model
+## Main Local URLs
 
-For the realtime notebook section, you must place the MediaPipe hand landmarker model here:
-
-```text
-C:\COS30049 Assignment\Models\hand_landmarker.task
-```
-
-If this file is missing, the realtime section will fail.
-
----
-
-## How to Run
-
-Open the notebook and run cells in order.
-
-### Live Admin Incident Sync
-
-The Admin Incident Dashboard can now read live AI and IoT alerts through the lightweight Express runtime incident bridge. This bridge uses in-memory/local JSON storage only. MySQL is still not required for incident sync.
-
-Install and start the backend:
-
-```bash
-cd user_login/server
-npm install
-npm run dev
-```
-
-Expected backend URL:
-
-```text
-http://localhost:4000
-```
-
-By default, AI evidence is served from this repo's `Alerts/ai` folder at `/evidence/ai`. If your notebook or standalone camera script saves evidence to another folder, start the backend with `AI_EVIDENCE_DIR` pointing at that `Alerts/ai` directory. The backend converts local file paths into browser-safe URLs such as `/evidence/ai/example.jpg`, and the admin page renders those through `http://localhost:4000`.
-
-Recommended Mac live-evidence workflow:
+Run the full workspace from the repo root:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-
-source /Users/chiayuenkai/cos30049/.venv/bin/activate
-
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/Alerts/ai" npm run dev
-
-python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/cos30049 \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/Alerts/ai
+npm run dev
 ```
 
-Expected evidence behavior:
+Expected URLs:
 
-- AI alert images are saved into `/Users/chiayuenkai/Desktop/GitHub/my-react-app/Alerts/ai`.
-- Backend serves them from `http://localhost:4000/evidence/ai/<image-name>.jpg`.
-- Admin image previews load from the backend URL, not the admin Vite URL.
+```text
+Review hub:               http://localhost:5173
+Backend API:              http://localhost:4000
+User / Park Guide portal: http://localhost:5175/user
+Admin dashboard:          http://localhost:5174/admin
+Admin incidents:          http://localhost:5174/admin/detection
+Park Ranger console:      http://localhost:5174/admin/ranger
+Mobile web preview:       http://localhost:8081
+```
 
-Useful API checks:
+Useful backend URLs:
+
+```text
+GET http://localhost:4000/api/health
+GET http://localhost:4000/api/incidents
+GET http://localhost:4000/api/incidents/summary
+```
+
+---
+
+## Repository Layout
+
+```text
+my-react-app/
+├── admin_page/
+├── user_page/
+├── mobile_app/
+├── user_login/
+│   └── server/
+│       ├── index.js
+│       ├── .env.example
+│       ├── db.sql
+│       ├── migrations/
+│       │   └── 001_create_monitoring_incident_tables.sql
+│       └── src/
+│           └── incident/
+│               ├── incidentUtils.js
+│               ├── memoryIncidentStore.js
+│               └── mysqlIncidentStore.js
+├── scripts/
+│   ├── dev-all.mjs
+│   ├── hub-server.mjs
+│   └── run_ai_camera_monitor.py
+├── login/
+├── alerts/
+│   └── ai/
+├── CTIP_AI_Camera_Training_and_Incident_Detection.ipynb
+├── CTIP_IoT_Plant_Proximity_Monitor.ino
+├── Project Scope.pdf
+├── requirements.txt
+├── package.json
+├── README.md
+├── PROJECT_NOTES.md
+├── TODO.md
+└── .gitignore
+```
+
+Local-only folders that should exist on your Mac but should not be committed:
+
+```text
+.venv/
+artifacts/
+datasets/
+models/
+node_modules/
+dist/
+```
+
+`alerts/` is intentionally not ignored. Keep only small curated demo evidence in
+Git. Do not commit large unreviewed runtime dumps.
+
+---
+
+## External AI Assets
+
+Large AI files are stored outside GitHub.
+
+Google Drive asset folder:
+
+```text
+https://drive.google.com/drive/folders/1CQjiJNnVJYRK3W0qHI2qcUDwjG2cA0qV?usp=sharing
+```
+
+Expected local asset structure:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/
+├── artifacts/
+│   └── clip_2class_touching_species.pt
+├── datasets/
+│   ├── touching-plants/
+│   └── touching-wildlife/
+├── models/
+│   └── hand_landmarker.task
+└── alerts/
+    └── ai/
+```
+
+Do not move `.venv` from another checkout. Recreate it inside this repo.
+
+---
+
+## Install Dependencies
+
+Install Node dependencies from the repo root:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm install
+```
+
+This runs the root `postinstall` script and installs dependencies for:
+
+- `user_page`
+- `admin_page`
+- `mobile_app`
+- `user_login/server`
+
+---
+
+## Python Environment
+
+Create `.venv` inside `my-react-app`:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -r requirements.txt
+```
+
+Verify key packages:
+
+```bash
+python - <<'PY'
+import cv2
+import mediapipe as mp
+import torch
+import transformers
+
+print("cv2:", cv2.__version__)
+print("mediapipe:", mp.__version__)
+print("torch:", torch.__version__)
+print("MPS available:", torch.backends.mps.is_available())
+print("transformers:", transformers.__version__)
+PY
+```
+
+---
+
+## Backend Environment
+
+Safe template:
+
+```text
+user_login/server/.env.example
+```
+
+Expected variables:
+
+```env
+PORT=4000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_DATABASE=cos30049_assignment
+INCIDENT_STORAGE=memory
+INCIDENT_MYSQL_FALLBACK=memory
+AI_EVIDENCE_DIR=/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
+MQTT_ENABLED=true
+MQTT_BROKER_URL=mqtt://broker.hivemq.com:1883
+MQTT_TOPIC=ctip/sensor/plant-zone-01/proximity
+```
+
+Do not commit a real `.env` file.
+
+Storage modes:
+
+```text
+INCIDENT_STORAGE=memory  default; memory plus local runtime JSON
+INCIDENT_STORAGE=mysql   optional; AI/IoT monitoring incidents stored in MySQL
+```
+
+If `INCIDENT_STORAGE=mysql` is selected but MySQL is unavailable, the backend
+still starts when `INCIDENT_MYSQL_FALLBACK=memory`. `/api/health` reports
+degraded storage and the incident API uses memory fallback. Fallback memory
+incidents are not auto-synced into MySQL.
+
+---
+
+## Incident API
+
+Main endpoints:
+
+```text
+GET   /api/health
+GET   /api/incidents
+GET   /api/incidents/summary
+POST  /api/incidents
+PATCH /api/incidents/:id/status
+```
+
+Supported sources:
+
+```text
+AI_CAMERA
+IOT_SENSOR
+```
+
+Supported statuses:
+
+```text
+New
+Reviewed
+Acknowledged
+In Review
+Resolved
+False Alarm
+```
+
+Evidence paths returned to the frontend must be browser-safe:
+
+```text
+/evidence/ai/<filename>
+```
+
+Do not expose absolute local filesystem paths such as
+`/Users/.../alerts/ai/file.jpg` in frontend responses.
+
+---
+
+## MySQL Incident Persistence
+
+Database name:
+
+```text
+cos30049_assignment
+```
+
+Migration:
+
+```text
+user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+Tables:
+
+```text
+monitoring_incidents
+monitoring_incident_ai_metadata
+monitoring_incident_iot_metadata
+monitoring_incident_actions
+monitoring_incident_evidence_files
+```
+
+Create database:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+```
+
+Apply migration:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+Run backend/workspace in memory mode:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+INCIDENT_STORAGE=memory \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+npm run dev
+```
+
+Run backend/workspace in MySQL mode:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+INCIDENT_STORAGE=mysql \
+DB_DATABASE=cos30049_assignment \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+npm run dev
+```
+
+Test API:
 
 ```bash
 curl http://localhost:4000/api/health
@@ -186,275 +359,332 @@ curl http://localhost:4000/api/incidents
 curl http://localhost:4000/api/incidents/summary
 ```
 
-Start the admin page:
-
-```bash
-cd admin_page
-npm install
-npm run dev
-```
-
-Open the Vite URL printed by the terminal, then go to the Incidents/Detection resource. If the backend is online, the dashboard polls `GET /api/incidents` every 2.5 seconds. If the backend is offline, it shows the seeded fallback incidents from `admin_page/src/data/incidents.js`.
-
-Manual AI incident test:
-
-```bash
-curl -X POST http://localhost:4000/api/incidents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "source": "AI_CAMERA",
-    "eventType": "TouchingPlants",
-    "severity": "medium",
-    "location": "Demo Camera Zone",
-    "status": "New",
-    "evidenceImage": null,
-    "ai": {
-      "predictedClass": "TouchingPlants",
-      "confidence": 0.91,
-      "margin": 0.72,
-      "bbox": [120, 80, 420, 360],
-      "probabilities": {
-        "TouchingPlants": 0.91,
-        "TouchingWildlife": 0.09
-      }
-    },
-    "iot": null,
-    "notes": "Manual test AI incident from curl."
-  }'
-```
-
-Manual AI incident with an existing evidence image:
-
-```bash
-curl -X POST http://localhost:4000/api/incidents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "source": "AI_CAMERA",
-    "eventType": "TouchingPlants",
-    "severity": "medium",
-    "location": "Demo Camera Zone",
-    "status": "New",
-    "evidenceImage": "/evidence/ai/<actual-alert-image-filename>.jpg",
-    "ai": {
-      "predictedClass": "TouchingPlants",
-      "confidence": 0.91,
-      "margin": 0.72,
-      "bbox": [120, 80, 420, 360],
-      "probabilities": {
-        "TouchingPlants": 0.91,
-        "TouchingWildlife": 0.09
-      }
-    },
-    "iot": null,
-    "notes": "Manual test AI incident with image."
-  }'
-```
-
-Confirm static evidence serving:
-
-```bash
-ls /Users/chiayuenkai/Desktop/GitHub/my-react-app/Alerts/ai
-curl -I "http://localhost:4000/evidence/ai/<actual-alert-image-filename>.jpg"
-```
-
-Expected: `HTTP/1.1 200 OK` when the image exists in the served evidence directory.
-
-Manual IoT MQTT test:
-
-```bash
-cd user_login/server
-npm run publish:test-iot
-```
-
-Expected result: the backend logs an IoT incident received from `ctip/sensor/plant-zone-01/proximity`, and the admin dashboard shows it within the polling interval.
-
-Status update test:
+Patch status:
 
 ```bash
 curl -X PATCH http://localhost:4000/api/incidents/<INCIDENT_ID>/status \
   -H "Content-Type: application/json" \
-  -d '{"status":"Reviewed"}'
+  -d '{"status":"In Review"}'
 ```
 
-AI notebook integration: in the realtime helper cell, `save_alert_frame(...)` writes the image/JSON under `Alerts/ai` and calls `post_incident_to_backend(...)` for automatic alert saves. If the backend is offline, the notebook prints `[SYNC WARNING] Backend incident POST failed...` and continues saving local evidence.
+Check database rows:
 
-### Part A: Training pipeline
-This section will:
-- rename images
-- count images
-- split dataset into 90% train / 10% test
-- train the 2-class CLIP model
-- save the trained model
-- evaluate the test set
-
-Saved model path:
-
-```text
-C:\COS30049 Assignment\Artifacts\clip_2class_touching_species.pt
-```
-
-### Part B: Realtime camera system
-This section will:
-- load the trained 2-class model
-- open the webcam
-- detect hands using MediaPipe
-- crop the hand region
-- classify it as:
-  - TouchingPlants
-  - TouchingWildlife
-  - or reject it as Unknown / No Alert
-- trigger alerts
-- save evidence images
-- save JSON metadata
-
----
-
-## Realtime Controls
-
-Inside the realtime window:
-
-- Press **`q`** to quit
-- Press **`s`** to manually save a snapshot
-
-Saved alert files go to:
-
-```text
-C:\COS30049 Assignment\Alerts\ai
+```bash
+mysql -u root -p cos30049_assignment \
+  -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
 ```
 
 ---
 
-## AI / IoT Incident Contract
+## AI Camera Monitor
 
-The monitoring subsystem now uses two complementary sources:
+Terminal 1 - backend/workspace:
 
-- `AI_CAMERA`: real-time camera detection for `TouchingPlants` and `TouchingWildlife`.
-- `IOT_SENSOR`: ultrasonic proximity sensing for `ObjectCloseToPlant`.
-
-AI evidence is saved as image and JSON files under:
-
-```text
-C:\COS30049 Assignment\Alerts\ai
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" npm run dev
 ```
 
-The IoT sketch publishes JSON to:
+Terminal 2 - AI camera:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+source .venv/bin/activate
+
+python scripts/run_ai_camera_monitor.py \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
+```
+
+Optional flags:
+
+```text
+--camera-index    OpenCV camera index for normal webcams
+--backend-url     backend origin, defaults to http://localhost:4000
+```
+
+Expected behavior:
+
+- Camera opens.
+- Hand is detected.
+- Interaction is classified as `TouchingPlants` or `TouchingWildlife`.
+- Alert JPG and JSON are saved to `alerts/ai`.
+- Backend receives an AI incident if it is running.
+- Frontend receives evidence as `/evidence/ai/<filename>`.
+- Admin and Park Ranger pages show the incident.
+
+Realtime controls:
+
+```text
+q    quit
+ESC  quit
+s    save manual snapshot
+```
+
+Expected shutdown output:
+
+```text
+Realtime camera stopped safely.
+```
+
+iPhone Continuity Camera is environment-dependent. The MacBook camera is the
+default. `--camera-index` helps with normal webcams, but it does not guarantee
+manual iPhone selection. Continuity Camera has worked through iPhone hotspot and
+when both MacBook and iPhone were connected to Yoriichi's Router.
+
+---
+
+## Manual AI Incident Test
+
+```bash
+curl -X POST http://localhost:4000/api/incidents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "AI_CAMERA",
+    "eventType": "TouchingPlants",
+    "severity": "medium",
+    "location": "Demo Camera Zone",
+    "status": "New",
+    "evidenceImage": "/evidence/ai/example.jpg",
+    "ai": {
+      "predictedClass": "TouchingPlants",
+      "confidence": 0.91,
+      "margin": 0.72,
+      "bbox": [120, 80, 420, 360],
+      "probabilities": {
+        "TouchingPlants": 0.91,
+        "TouchingWildlife": 0.09
+      }
+    },
+    "notes": "Manual AI incident test."
+  }'
+```
+
+---
+
+## IoT MQTT Prototype
+
+Arduino sketch:
+
+```text
+CTIP_IoT_Plant_Proximity_Monitor.ino
+```
+
+Default topic:
 
 ```text
 ctip/sensor/plant-zone-01/proximity
 ```
 
-The admin/dashboard integration should treat both as incidents with source, event type, timestamp, location, status, severity, and source-specific evidence fields.
+Manual MQTT publish test:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+npm run publish:test-iot
+```
+
+Expected result:
+
+- Backend receives the MQTT payload.
+- A new `IOT_SENSOR` incident appears in `/api/incidents`.
+- Admin and Park Ranger pages show distance, threshold, and topic metadata.
 
 ---
 
-## Realtime Decision Logic
+## AI Notebook
 
-The realtime system uses:
-- hand detection via MediaPipe
-- CLIP classification on the hand crop
-- confidence threshold
-- top-1 vs top-2 margin check
-- bounding box sanity filtering
-- rolling touching votes
-- cooldown to reduce repeated alerts
+Notebook:
 
-This is important because a 2-class model alone would otherwise force every image into one of the two touching classes.
+```text
+CTIP_AI_Camera_Training_and_Incident_Detection.ipynb
+```
 
----
+The notebook covers:
 
-## Expected Outputs
-
-### Training
-- renamed images
+- dataset preparation
 - train/test split
-- saved model
-- classification report
-- confusion matrix
+- CLIP model training
+- model evaluation
+- realtime camera helper logic
+- backend incident POST helper
 
-### Realtime
-- bounding box around detected hand
-- class label on screen
-- confidence and margin display
-- saved alert image
-- saved JSON metadata
+Expected local files:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/models/hand_landmarker.task
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/datasets/touching-plants/
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/datasets/touching-wildlife/
+```
+
+For live demo, prefer the standalone script instead of running realtime camera
+cells inside Jupyter.
 
 ---
 
-## Limitations
+## Git Safety
 
-This prototype has several limitations:
+Do not commit:
 
-- it is a **2-class touching-species classifier**, not a full abnormal detector
-- it works best in **controlled conditions**
-- it still depends on:
-  - hand detection quality
-  - crop quality
-  - threshold tuning
-  - dataset quality
-- non-touching and unrelated scenes are handled through rejection logic, not a dedicated negative-class final model
+```text
+.DS_Store
+.venv/
+node_modules/
+dist/
+artifacts/
+datasets/
+models/
+*.pt
+*.pth
+.env
+.env.*
+```
 
-Because of this, the system should be used as a **CTIP prototype** for demonstration and integration, not as a final deployment-ready park surveillance system.
+`.env.example` is allowed.
+
+Run before committing:
+
+```bash
+git status --short --untracked-files=all
+git diff --check
+git ls-files | grep -E "node_modules|\.venv|datasets|artifacts|models|\.pt|\.pth|dist|\.DS_Store"
+```
+
+Expected result for the `git ls-files` safety command:
+
+```text
+no output
+```
+
+`alerts/ai` is intentionally not ignored:
+
+```bash
+git check-ignore -v alerts/ai 2>/dev/null || echo "alerts/ai is not ignored"
+```
+
+Expected:
+
+```text
+alerts/ai is not ignored
+```
 
 ---
 
 ## Troubleshooting
 
-### 1. Webcam does not open
+### Port 4000 Already In Use
+
 Check:
-- camera permissions
-- whether another app is already using the webcam
-- whether `cv2.VideoCapture(0)` is correct for your machine
 
-### 2. Model file not found
-Make sure this file exists:
-
-```text
-C:\COS30049 Assignment\Artifacts\clip_2class_touching_species.pt
+```bash
+lsof -nP -iTCP:4000 -sTCP:LISTEN
 ```
 
-### 3. Hand model not found
-Make sure this file exists:
+Stop the process:
 
-```text
-C:\COS30049 Assignment\Models\hand_landmarker.task
+```bash
+lsof -tiTCP:4000 -sTCP:LISTEN | xargs kill
 ```
 
-### 4. No GPU detected
-Check:
-- whether PyTorch was installed with CUDA support
-- whether the notebook kernel is the correct environment
-- whether `torch.cuda.is_available()` returns `True`
+Then restart:
 
-### 5. Alerts are not saving
-Usually this means the alert condition is not being triggered.
-Check:
-- confidence threshold
-- margin threshold
-- rolling vote settings
-- whether the hand detection box is valid
+```bash
+npm run dev
+```
+
+### Evidence Image Does Not Load
+
+Check the file exists:
+
+```bash
+ls /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
+```
+
+Check backend serving:
+
+```bash
+curl -I "http://localhost:4000/evidence/ai/<actual-image-name>.jpg"
+```
+
+Restart with the explicit evidence directory:
+
+```bash
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" npm run dev
+```
+
+### MySQL Mode Falls Back To Memory
+
+Check health:
+
+```bash
+curl http://localhost:4000/api/health
+```
+
+If storage reports degraded, confirm MySQL is running and the migration has been
+applied:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+### Model File Missing
+
+Expected file:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/artifacts/clip_2class_touching_species.pt
+```
+
+### Hand Landmarker Missing
+
+Expected file:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/my-react-app/models/hand_landmarker.task
+```
 
 ---
 
-## Suggested Next Step
+## Known Limitations
 
-After confirming the notebook works, the next development step is:
-
-- connect the alert image and JSON output into the backend
-- show incidents on the admin page
-- support review status such as:
-  - New
-  - Reviewed
-  - False Alarm
+- AI model is a 2-class academic prototype.
+- It detects `TouchingPlants` and `TouchingWildlife` only.
+- Non-touching scenes are handled by rejection logic, not a trained negative class.
+- Hand detection can fail under poor lighting, close camera distance, or gloves.
+- MQTT currently uses prototype public/local broker settings.
+- MySQL persistence currently covers AI/IoT monitoring incidents only.
+- The full training platform remains frontend-seeded for now.
 
 ---
 
-## Author / Project Context
+## Suggested Report Evidence
+
+Recommended screenshots:
+
+1. Root review hub.
+2. User / Park Guide portal.
+3. Admin Incident Detection dashboard.
+4. Park Ranger Alert Console.
+5. AI camera realtime detection.
+6. AI alert JPG and JSON saved under `alerts/ai`.
+7. Backend `/api/incidents` JSON response.
+8. Backend `/api/incidents/summary` JSON response.
+9. MySQL `monitoring_incidents` query result.
+10. IoT MQTT publish test or ESP32 serial output.
+
+---
+
+## Project Context
 
 Course:
-- **COS30049 Computing Technology Innovation Project**
 
-Role:
-- **AI / Computer Vision Lead**
+```text
+COS30049 Computing Technology Innovation Project
+```
 
-Current AI prototype direction:
-- **2-class TouchingPlants vs TouchingWildlife**
+Project:
+
+```text
+Sarawak Forestry Digital Park Guide System
+```

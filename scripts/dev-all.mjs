@@ -1,11 +1,18 @@
 import { spawn } from 'node:child_process'
+import http from 'node:http'
+import net from 'node:net'
+
+const backendPort = 4000
+const backendHealthUrl = `http://localhost:${backendPort}/api/health`
+const backendPortWarning =
+  `Port ${backendPort} is occupied by another process. Run: lsof -nP -iTCP:${backendPort} -sTCP:LISTEN`
 
 const services = [
   {
     name: 'server',
     command: 'npm',
     args: ['run', 'dev:server'],
-    url: 'http://localhost:4000/api/health',
+    url: backendHealthUrl,
   },
   {
     name: 'user',
@@ -35,6 +42,63 @@ const services = [
 
 const children = new Map()
 let shuttingDown = false
+
+function checkBackendHealth() {
+  return new Promise((resolve) => {
+    const request = http.get(backendHealthUrl, { timeout: 1200 }, (response) => {
+      response.resume()
+      resolve(response.statusCode >= 200 && response.statusCode < 300)
+    })
+
+    request.on('timeout', () => {
+      request.destroy()
+      resolve(false)
+    })
+
+    request.on('error', () => resolve(false))
+  })
+}
+
+function checkPortOpenOnHost(port, host) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port })
+
+    socket.setTimeout(1200)
+    socket.on('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.on('timeout', () => {
+      socket.destroy()
+      resolve(false)
+    })
+    socket.on('error', () => resolve(false))
+  })
+}
+
+async function checkPortOpen(port) {
+  const checks = await Promise.all([
+    checkPortOpenOnHost(port, '127.0.0.1'),
+    checkPortOpenOnHost(port, '::1'),
+  ])
+  return checks.some(Boolean)
+}
+
+async function shouldStartService(service) {
+  if (service.name !== 'server') return true
+
+  if (await checkBackendHealth()) {
+    console.log(`server already running on http://localhost:${backendPort}, skipping backend start`)
+    return false
+  }
+
+  if (await checkPortOpen(backendPort)) {
+    console.warn(backendPortWarning)
+    return false
+  }
+
+  return true
+}
 
 function colorFor(name) {
   const colors = {
@@ -99,8 +163,17 @@ function shutdown(code = 0) {
 process.on('SIGINT', () => shutdown(0))
 process.on('SIGTERM', () => shutdown(0))
 
-console.log('Starting SFC review workspace:')
-for (const service of services) {
-  console.log(`- ${service.name}: ${service.url}`)
-  startService(service)
+async function main() {
+  console.log('Starting SFC review workspace:')
+  for (const service of services) {
+    console.log(`- ${service.name}: ${service.url}`)
+    if (await shouldStartService(service)) {
+      startService(service)
+    }
+  }
 }
+
+main().catch((error) => {
+  console.error(`Launcher failed: ${error.message}`)
+  shutdown(1)
+})

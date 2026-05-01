@@ -62,6 +62,7 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
   const [userAnchor, setUserAnchor] = useState(null);
 
   const currentLabel = useMemo(() => {
+    if (location.pathname.startsWith("/admin/course")) return "COURSE";
     if (location.pathname.startsWith("/admin/training")) return "TRAINING";
     if (location.pathname.startsWith("/admin/students")) return "STUDENTS";
     if (location.pathname.startsWith("/admin/badge")) return "BADGE";

@@ -10,6 +10,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: "📊", to: "/admin" },
+    { id: "course", label: "Course", icon: "📚", to: "/admin/course" },
     { id: "training", label: "Training", icon: "📖", to: "/admin/training" },
     { id: "students", label: "Students", icon: "👥", to: "/admin/students" },
     { id: "badge", label: "Badge", icon: "📜", to: "/admin/badge" },

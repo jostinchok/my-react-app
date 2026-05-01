@@ -1,7 +1,9 @@
 const checks = [
   { key: 'backend', url: '/api/health' },
+  { key: 'incidents', url: '/api/incidents' },
   { key: 'user', url: '/user' },
   { key: 'admin', url: '/admin' },
+  { key: 'ranger', url: '/admin/ranger' },
   { key: 'mobile', url: 'http://localhost:8081' },
 ]
 

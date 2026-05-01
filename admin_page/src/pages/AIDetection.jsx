@@ -310,7 +310,6 @@ const AIDetection = () => {
           onStatusChange={updateIncidentStatus}
         />
       </Box>
-
     </Box>
   );
 };

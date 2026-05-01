@@ -6,15 +6,22 @@ Checkpoint date: 2026-04-27.
 
 This project is a Sarawak Forestry Corporation digital park guide training platform based on `Project Scope.pdf`.
 
+Current working directory:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/my-react-app
+```
+
 The repo is still organized as separate surfaces:
 
 - `user_page`: guide-facing website and current main implementation target.
 - `mobile_app`: React Native / Expo guide-facing mobile app.
 - `admin_page`: admin website.
+- `admin_page/src/pages/ParkRangerConsole.jsx`: Park Ranger incident-response console.
 - `user_login/server`: Express/MySQL backend.
 - root project: review launcher and review hub.
 
-Current active scope is Part 1: Interactive Digital Training Platform. The latest implementation pass rebuilt the `user_page` Park Guide/User side using front-end seeded demo data only. Express/MySQL integration is intentionally deferred.
+Current active scope is Part 1: Interactive Digital Training Platform. The latest implementation pass rebuilt the `user_page` Park Guide/User side using front-end seeded demo data only. Full training-platform MySQL integration is intentionally deferred, but AI/IoT monitoring incidents now have an optional MySQL persistence mode.
 
 ## Current UI Direction
 
@@ -30,6 +37,7 @@ The user-side website is moving toward a citrus energetic theme:
 
 ```text
 my-react-app/
+├── .venv/
 ├── Project Scope.pdf
 ├── README.md
 ├── PROJECT_NOTES.md
@@ -55,10 +63,23 @@ my-react-app/
 ├── mobile_app/
 ├── admin_page/
 ├── user_login/server/
-├── Alerts/
+├── alerts/
+│   └── ai/
+├── artifacts/
+│   └── clip_2class_touching_species.pt
+├── datasets/
+│   ├── touching-plants/
+│   └── touching-wildlife/
 ├── models/
+│   └── hand_landmarker.task
 └── images/
 ```
+
+The Google Drive `cos30049-assignment-assets` package is only the download source.
+After download, `artifacts/`, `datasets/`, and `models/` stay inside the project
+working directory as local-only ignored folders. `.venv/` must be recreated
+inside `my-react-app`, not moved from another checkout. `alerts/` stays inside
+the repo and is not ignored so selected demo AI evidence can be committed.
 
 ## Important Files
 
@@ -76,11 +97,17 @@ my-react-app/
 - `mobile_app/App.js`: current mobile app shell, not redesigned in the latest pass.
 - `admin_page/src/Admin.jsx`: current admin dashboard shell, not redesigned in the latest pass.
 - `user_login/server/index.js`: Express API server, not connected to the new training UI yet.
+- `user_login/server/src/incident/memoryIncidentStore.js`: default memory/local JSON incident store.
+- `user_login/server/src/incident/mysqlIncidentStore.js`: optional MySQL store for AI/IoT monitoring incidents only.
+- `user_login/server/src/incident/incidentUtils.js`: shared incident normalization, evidence URL sanitizing, status, and summary helpers.
+- `user_login/server/migrations/001_create_monitoring_incident_tables.sql`: MySQL migration for monitoring incidents.
+- `user_login/server/.env.example`: safe backend environment template for local memory or MySQL incident storage.
 - `user_login/server/db.sql`: MySQL schema/seed baseline, not used by the new seeded frontend pass yet.
 - `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb`: AI/CV training, real-time camera detection, AI evidence saving, and shared AI/IoT incident schema documentation.
 - `CTIP_IoT_Plant_Proximity_Monitor.ino`: ESP32 ultrasonic proximity sensor sketch publishing JSON to `ctip/sensor/plant-zone-01/proximity`.
 - `admin_page/src/data/incidents.js`: seeded admin incident examples and summary helpers for AI Camera and IoT Sensor monitoring.
 - `admin_page/src/pages/AIDetection.jsx`: seeded Admin Incident Dashboard table, filters, detail panel, evidence preview, metadata, notes, and local-only status changes.
+- `admin_page/src/pages/ParkRangerConsole.jsx`: live Park Ranger Alert Console that reads `/api/incidents` and updates response status through `/api/incidents/:id/status`.
 - `admin_page/src/Admin.jsx`: admin monitoring overview now summarizes seeded incident counts.
 - `admin_page/src/Admin.css`: citrus incident dashboard styling, including table readability fixes.
 - `admin_page/src/components/Sidebar.jsx`: admin menu label updated from Detection to Incidents.
@@ -163,8 +190,8 @@ Checkpoint/docs files:
 - AI Camera examples cover `TouchingPlants` and `TouchingWildlife` with alert image evidence and metadata such as confidence, margin, bbox, and probabilities.
 - IoT Sensor examples cover `ObjectCloseToPlant` with sensor ID, location, distance, threshold, severity, and MQTT topic metadata.
 - Incident review supports local UI status changes for `New`, `Reviewed`, and `False Alarm`.
-- Data is local seeded data only through `admin_page/src/data/incidents.js`.
-- Express/MySQL is still not connected.
+- Data falls back to local seeded examples from `admin_page/src/data/incidents.js` when the backend is offline.
+- The live incident backend can use memory/local JSON or optional MySQL storage for AI/IoT incidents only.
 - Changed files include:
   - `admin_page/src/data/incidents.js`
   - `admin_page/src/pages/AIDetection.jsx`
@@ -175,25 +202,38 @@ Checkpoint/docs files:
 
 ## Live Incident Bridge Status
 
-- Lightweight real-time alert synchronization has been implemented without Express/MySQL integration.
-- `user_login/server/index.js` now has a runtime incident store backed by memory plus optional local JSON persistence at `user_login/server/data/incidents.runtime.json`.
+- Lightweight real-time alert synchronization has been implemented with a storage abstraction.
+- `user_login/server/index.js` now supports `INCIDENT_STORAGE=memory` for the default runtime incident store backed by memory plus optional local JSON persistence at `user_login/server/data/incidents.runtime.json`.
+- `INCIDENT_STORAGE=mysql` stores AI/IoT monitoring incidents in `cos30049_assignment` using the new monitoring tables only.
+- If MySQL is offline and `INCIDENT_MYSQL_FALLBACK=memory`, the backend still starts, `/api/health` reports degraded storage, and the incident API uses memory fallback without auto-syncing fallback incidents into MySQL.
 - Backend incident API endpoints now exist:
   - `GET /api/incidents`
   - `POST /api/incidents`
   - `PATCH /api/incidents/:id/status`
   - `GET /api/incidents/summary`
-- Backend serves AI evidence images from root `Alerts/ai` at `/evidence/ai`.
+- Runtime status updates now allow both admin review labels and Park Ranger response labels:
+  - `New`
+  - `Reviewed`
+  - `Acknowledged`
+  - `In Review`
+  - `Resolved`
+  - `False Alarm`
+- Root `npm run dev` now checks `http://localhost:4000/api/health` before starting the backend. If a backend is already running, `scripts/dev-all.mjs` skips the duplicate backend start instead of letting port `4000` crash the whole launcher.
+- If port `4000` is occupied by a non-backend process, the launcher warns with the `lsof -nP -iTCP:4000 -sTCP:LISTEN` command and continues starting the other review services.
+- Backend serves AI evidence images from root `alerts/ai` at `/evidence/ai`.
 - AI evidence image path preview has been fixed for live incidents:
-  - backend uses `AI_EVIDENCE_DIR` when provided, otherwise defaults to repo root `Alerts/ai`;
+  - backend uses `AI_EVIDENCE_DIR` when provided, otherwise defaults to repo root `alerts/ai`;
   - backend converts absolute local image paths into browser-safe `/evidence/ai/<filename>` values;
   - admin converts `/evidence/ai/...` into `http://localhost:4000/evidence/ai/...` before rendering images.
 - Backend subscribes to MQTT topic `ctip/sensor/plant-zone-01/proximity` and normalizes IoT payloads into dashboard incidents.
 - MQTT uses `mqtt://broker.hivemq.com:1883` by default for prototype testing only and should not crash the backend if the broker is unavailable.
 - `admin_page/src/pages/AIDetection.jsx` now polls the live backend every 2.5 seconds and falls back to seeded demo incidents if the backend is offline.
 - Admin status buttons call `PATCH /api/incidents/:id/status` when the backend is online and fall back to local-only updates when offline.
+- `admin_page/src/pages/ParkRangerConsole.jsx` polls the same backend every 2.5 seconds and is scoped to incident response only. It does not expose user management, training module management, certificate approval, or system setting links.
+- The review hub links directly to the Park Guide/User portal, Admin Dashboard, Admin Incident Detection, Park Ranger Alert Console, backend health, and incident API for smoother demo testing.
 - `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` now posts saved AI alert incidents to `http://localhost:4000/api/incidents` using Python standard library HTTP calls, while continuing local evidence saving if the backend is offline.
-- `scripts/run_ai_camera_monitor.py` supports `--evidence-dir` so model files can stay under `/Users/chiayuenkai/cos30049` while alert images are saved under repo `Alerts/ai`.
-- Express/MySQL is still intentionally not connected to training or incident persistence.
+- `scripts/run_ai_camera_monitor.py` supports `--project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app` for local-only model assets under the repo root, `--evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai` for repo-local AI evidence, `--camera-index` for normal webcam selection, and `--backend-url` for the backend origin. The default backend URL is `http://localhost:4000`.
+- Express/MySQL is still intentionally not connected to the training platform, but AI/IoT incident persistence can now use MySQL.
 
 ## Known Issues Or Risks
 
@@ -201,10 +241,11 @@ Checkpoint/docs files:
 - `user_page/dist`, `node_modules`, and package-lock changes are noisy and should be reviewed carefully before commit.
 - There is an unreferenced duplicate-looking generated image file, `user_page/public/training/incident-ai-monitoring copy.png`; do not delete it unless clearly confirmed safe.
 - Admin and mobile have not yet been updated to match the citrus theme.
-- Backend `/api/health` now reports API status without requiring MySQL, but database-specific checks still show offline until local MySQL is running and seeded.
+- Backend `/api/health` now reports incident storage mode and degraded fallback status when MySQL incident storage is requested but unavailable.
 - Training data is not yet persisted to MySQL.
-- Live incident persistence is still prototype-level memory/local JSON, not MySQL.
+- Live incident persistence defaults to prototype-level memory/local JSON, with optional MySQL persistence for AI/IoT incidents only.
 - MQTT public broker delivery depends on internet access and public broker availability.
+- MacBook built-in camera works as the default camera. iPhone Continuity Camera is environment-dependent: it has worked through iPhone hotspot and on Yoriichi's Router, but OpenCV camera index switching is not guaranteed to manually select the iPhone camera.
 - `Project Scope.pdf` is untracked; decide whether to commit it as assignment reference material.
 
 ## Next Priority
@@ -218,16 +259,16 @@ Specifically check:
 - Certificate page visual richness.
 - Profile page layout density.
 - Responsive layout at desktop and mobile widths.
-- Keep frontend seeded data only; do not connect Express/MySQL yet.
+- Keep frontend seeded data only; do not connect the full training platform to Express/MySQL yet.
 
-For incident monitoring specifically, the next backend task is persistent MySQL integration after seeded/live runtime behavior and report evidence are stable.
+For incident monitoring specifically, the MySQL migration and API smoke path were verified locally on `cos30049_assignment`. The next task is to review which `alerts/ai` demo evidence files should be kept in Git.
 
 ## Rules / Instructions Not To Forget
 
 - Do not start new feature work during checkpoint/cleanup tasks.
 - Do not delete files unless clearly safe or explicitly approved.
 - Keep front-end seeded data only for now.
-- Do not connect Express/MySQL yet.
+- Do not connect the full training platform to Express/MySQL yet.
 - Preserve existing repo surfaces: website, mobile app, admin app, backend.
 - Work with the current GUI in `user_page`.
 - Keep website and mobile design/function consistent when mobile work resumes.
