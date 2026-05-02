@@ -1,65 +1,39 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo, useEffect, useContext } from "react";
 import {
   AppBar,
   Toolbar,
   Box,
-  Badge,
   Menu,
   MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { useLocation } from "react-router-dom";
 import "../Admin.css";
-
-const NotificationButton = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const notifications = [
-    { id: 1, message: "New user registered" },
-    { id: 2, message: "New post created" },
-    { id: 3, message: "New course added" },
-  ];
-
-  const open = Boolean(anchorEl);
-
-  return (
-    <Box>
-      <Box
-        component="button"
-        className="admin-top-icon-btn"
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-      >
-        <Badge badgeContent={notifications.length} color="error" className="admin-top-badge">
-          <NotificationsIcon />
-        </Badge>
-      </Box>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={() => setAnchorEl(null)}
-        PaperProps={{
-          sx: {
-            width: 240,
-            mt: 1.2,
-            borderRadius: "18px",
-            border: "1px solid #e5e5e5",
-            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.12)",
-          },
-        }}
-      >
-        {notifications.map((note) => (
-          <MenuItem key={note.id}>{note.message}</MenuItem>
-        ))}
-      </Menu>
-    </Box>
-  );
-};
+import { ParkContext } from "../ParkContext";
 
 const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
   const location = useLocation();
   const [userAnchor, setUserAnchor] = useState(null);
+
+  const [parks, setParks] = useState([]);
+  const {selectedPark, setSelectedPark} = useContext(ParkContext);
+
+  useEffect(() => {
+    fetch("http://localhost:4001/api/parks")
+      .then(res => res.json())
+      .then(data => {
+        const parkList = Array.isArray(data) ? data : (data.parks || []);
+        setParks(parkList);
+        if (parkList.length > 0 && selectedPark === "") {
+          setSelectedPark(parkList[0].park_id);
+        }
+      })
+      .catch(err => console.error("Failed to load parks", err));
+  }, [setSelectedPark, selectedPark]);
 
   const currentLabel = useMemo(() => {
     if (location.pathname.startsWith("/admin/course")) return "COURSE";
@@ -113,28 +87,41 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
               boxShadow: "none",
               "&:hover": {
                 transform: "translateY(-1px)",
-                background: open ? "#379237" : "#379237",
-                color: open ? "#ffffff" : "#f6f6f6",
+                background: "#379237",
+                color: "#ffffff",
               },
             }}
           >
             {open ? <CloseIcon /> : <MenuIcon />}
           </Box>
-              <Box
-                sx={{
-                  fontWeight: 500,
-                  color: "var(--primary-mid)",
-                  letterSpacing: "0.2px",
-                  fontSize: "1rem",
-                }}
-              >
-              SFC / {currentLabel}
-              </Box>
+          <Box
+            sx={{
+              fontWeight: 500,
+              color: "var(--primary-mid)",
+              letterSpacing: "0.2px",
+              fontSize: "1rem",
+            }}
+          >
+            SFC / {currentLabel}
           </Box>
-          
-        <Box className="admin-top-actions">
-          <NotificationButton />
 
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Park</InputLabel>
+            <Select
+              value={selectedPark}
+              label="Park"
+              onChange={(e) => setSelectedPark(e.target.value)}
+            >
+              {(parks || []).map((park) => (
+                <MenuItem key={park.park_id} value={park.park_id}>
+                  {park.park_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Box className="admin-top-actions">
           <Box
             component="button"
             className="admin-top-user-btn"

@@ -8,7 +8,8 @@
     "server": "node adminServer.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "concurrently \"npm run dev\" \"npm run server\""
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -19,7 +20,6 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "lucide-react": "^0.577.0",
-    "mqtt": "^5.15.1",
     "mysql2": "^3.22.3",
     "ra-data-simple-rest": "^5.14.4",
     "react": "^19.2.4",
@@ -34,6 +34,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
