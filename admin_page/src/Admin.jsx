@@ -278,10 +278,11 @@ const MonitoringTrendOnly = React.memo(({ monitoringData }) => (
 
 const GuideProgress = React.memo(({ trend }) => {
   const [guideStats, setGuideStats] = useState([]);
-
+  const { selectedPark } = useContext(ParkContext);
+  
   useEffect(() => {
     let isMounted = true;
-    fetch(`${API_BASE}/dashboard/stats`)
+    fetch(`${API_BASE}/dashboard/stats?parkId=${selectedPark}`)
       .then(res => res.json())
       .then(data => {
         if (isMounted) {
@@ -294,7 +295,7 @@ const GuideProgress = React.memo(({ trend }) => {
       })
       .catch(() => {});
     return () => { isMounted = false; };
-  }, []);
+  }, [selectedPark]);
 
   return (
     <Box sx={{ mt: 4 }}>

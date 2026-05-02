@@ -40,7 +40,7 @@ const BadgeManagement = () => {
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [tabValue, setTabValue] = useState(0);
 
-  const { selectedPark, setSelectedPark } = useContext(ParkContext);
+  const { selectedPark } = useContext(ParkContext);
   const filteredBadges = badges.filter(b => Number(b.park_id) === Number(selectedPark));
 
   useEffect(() => {
@@ -177,9 +177,18 @@ const BadgeManagement = () => {
 
             return (
               <Box key={badge.module_id} sx={{ width: 380, maxWidth: "100%", flexShrink: 0 }}>
-                <Card sx={{ borderRadius: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", border: "1px solid", borderColor: "divider" }}>
+                <Card sx={{ 
+                  height: 680, // ✅ 固定卡片高度
+                  borderRadius: 4, 
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.06)", 
+                  border: "1px solid", 
+                  borderColor: "divider",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden" // ✅ 防止内部内容溢出破坏固定尺寸
+                }}>
                   {/* 卡片头部 */}
-                  <Box sx={{ position: "relative", p: 3, pb: 2, background: config.bg }}>
+                  <Box sx={{ position: "relative", p: 3, pb: 2, background: config.bg, flexShrink: 0 }}>
                     <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                       <Avatar sx={{ bgcolor: config.color, width: 52, height: 52, fontSize: "1.4rem", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
                         {config.icon}
@@ -212,9 +221,9 @@ const BadgeManagement = () => {
                   </Box>
 
                   {/* 卡片内容区域 */}
-                  <Box sx={{ p: 3, pt: 2, flex: 1, display: "flex", flexDirection: "column", bgcolor: "rgba(255,255,255,0.5)" }}>
-                    {/* 统计概览 */}
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, px: 1 }}>
+                  <Box sx={{ p: 3, pt: 2, flex: 1, display: "flex", flexDirection: "column", bgcolor: "rgba(255,255,255,0.5)", minHeight: 0 }}>
+                    {/* 统计概览 (固定不压缩) */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, px: 1, flexShrink: 0 }}>
                       <Box sx={{ textAlign: "center" }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>Students</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800, color: "#333" }}>{(badge.students || []).length}</Typography>
@@ -233,8 +242,8 @@ const BadgeManagement = () => {
                       </Box>
                     </Box>
 
-                    {/* 条件 */}
-                    <Box sx={{ mb: 2, px: 1 }}>
+                    {/* 条件 (固定不压缩) */}
+                    <Box sx={{ mb: 2, px: 1, flexShrink: 0 }}>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                         Issuance Criteria:
                       </Typography>
@@ -243,10 +252,10 @@ const BadgeManagement = () => {
                       </Typography>
                     </Box>
 
-                    <Divider sx={{ mb: 2 }} />
+                    <Divider sx={{ mb: 2, flexShrink: 0 }} />
 
-                    {/* 学生列表 */}
-                    <Box sx={{ flex: 1, overflowY: "auto", pr: 1, maxHeight: 300 }}>
+                    {/* 学生列表 (自动填充剩余空间并滚动) */}
+                    <Box sx={{ flex: 1, overflowY: "auto", pr: 1, minHeight: 0 }}>
                       {(badge.students || []).length > 0 ? (
                         <Stack spacing={1.5}>
                           {badge.students.map(s => (
@@ -297,8 +306,8 @@ const BadgeManagement = () => {
                       )}
                     </Box>
 
-                    {/* 底部按钮 */}
-                    <Box sx={{ mt: 3, pt: 1, borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+                    {/* 底部按钮 (固定不压缩) */}
+                    <Box sx={{ mt: 2, pt: 1, borderTop: "1px solid rgba(0,0,0,0.05)", flexShrink: 0 }}>
                       <Button 
                         variant="contained" 
                         fullWidth 

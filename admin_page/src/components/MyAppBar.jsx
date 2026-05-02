@@ -3,59 +3,17 @@ import {
   AppBar,
   Toolbar,
   Box,
-  Badge,
   Menu,
   MenuItem,
   Select,
   FormControl,
   InputLabel
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { useLocation } from "react-router-dom";
 import "../Admin.css";
 import { ParkContext } from "../ParkContext";
-
-const NotificationButton = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-
-  const open = Boolean(anchorEl);
-
-  return (
-    <Box>
-      <Box
-        component="button"
-        className="admin-top-icon-btn"
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-      >
-        <Badge badgeContent={notifications.length} color="error" className="admin-top-badge">
-          <NotificationsIcon />
-        </Badge>
-      </Box>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={() => setAnchorEl(null)}
-        PaperProps={{
-          sx: {
-            width: 240,
-            mt: 1.2,
-            borderRadius: "18px",
-            border: "1px solid #e5e5e5",
-            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.12)",
-          },
-        }}
-      >
-        {notifications.map((note) => (
-          <MenuItem key={note.id}>{note.message}</MenuItem>
-        ))}
-      </Menu>
-    </Box>
-  );
-};
 
 const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
   const location = useLocation();
@@ -164,8 +122,6 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
         </Box>
 
         <Box className="admin-top-actions">
-          <NotificationButton />
-
           <Box
             component="button"
             className="admin-top-user-btn"
