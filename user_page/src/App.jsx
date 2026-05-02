@@ -14,12 +14,14 @@ import {
   normalizeNotificationRow,
   normalizeProfileRow,
   normalizeScheduleRow,
+  deleteScheduleItem,
   saveProfileField,
   saveScheduleItem,
+  updateScheduleItem,
 } from './services/databaseFrames'
 
 const STORAGE_KEY = 'sfc_citrus_training_demo'
-const editableProfileFields = new Set(['phone', 'yearsExperience', 'address'])
+const editableProfileFields = new Set(['displayName', 'email', 'phone', 'yearsExperience', 'address'])
 
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
 
@@ -78,6 +80,7 @@ function App() {
     location: '',
     type: 'Reminder',
   })
+  const [editingScheduleId, setEditingScheduleId] = useState(null)
 
   useEffect(() => {
     try {
@@ -156,7 +159,9 @@ function App() {
     : {
         ...currentUser,
         displayName: currentUser.displayName || 'Guide',
+        realName: currentUser.realName || '-',
         email: currentUser.email || '-',
+        birthday: currentUser.birthday || '-',
         phone: currentUser.phone || '-',
         assignedPark: currentUser.assignedPark || '-',
         position: currentUser.position || '-',
@@ -239,7 +244,7 @@ function App() {
   }, [currentUser, enrolledModules, trainingModules])
 
   const userNotifications = databaseNotifications.length > 0 ? databaseNotifications : []
-  const userSchedule = databaseSchedule.length > 0 ? databaseSchedule : []
+  const userSchedule = databaseSchedule.length > 0 ? databaseSchedule : currentUser.schedule || []
   const unreadCount = userNotifications.filter((item) => !item.read).length || 0
 
   const certificates = useMemo(() => {
@@ -404,11 +409,31 @@ function App() {
     }))
   }
 
+  const upsertLocalScheduleItem = (scheduleItem) => {
+    setDatabaseSchedule((items) => {
+      const existing = items.length > 0 ? items : userSchedule
+      const nextItems = existing.some((item) => item.id === scheduleItem.id)
+        ? existing.map((item) => (item.id === scheduleItem.id ? scheduleItem : item))
+        : [scheduleItem, ...existing]
+      return nextItems.sort((a, b) => a.date.localeCompare(b.date))
+    })
+    updateCurrentUser((user) => {
+      const existing = user.schedule || []
+      const nextItems = existing.some((item) => item.id === scheduleItem.id)
+        ? existing.map((item) => (item.id === scheduleItem.id ? scheduleItem : item))
+        : [scheduleItem, ...existing]
+      return {
+        ...user,
+        schedule: nextItems.sort((a, b) => a.date.localeCompare(b.date)),
+      }
+    })
+  }
+
   const addScheduleItem = (event) => {
     event.preventDefault()
     if (!scheduleForm.date || !scheduleForm.title.trim()) return
     const scheduleItem = {
-      id: `${currentUser.id}-schedule-${Date.now()}`,
+      id: editingScheduleId || `${currentUser.id}-schedule-${Date.now()}`,
       user_id: currentUser.id,
       title: scheduleForm.title.trim(),
       date: scheduleForm.date,
@@ -416,19 +441,48 @@ function App() {
       type: scheduleForm.type,
       status: 'Scheduled',
     }
-    setDatabaseSchedule((items) => [scheduleItem, ...items].sort((a, b) => a.date.localeCompare(b.date)))
-    updateCurrentUser((user) => ({
-      ...user,
-      schedule: [
-        scheduleItem,
-        ...(user.schedule || []),
-      ].sort((a, b) => a.date.localeCompare(b.date)),
-    }))
-    saveScheduleItem(scheduleItem).catch(() => {
+    upsertLocalScheduleItem(scheduleItem)
+    const saveRequest = editingScheduleId ? updateScheduleItem(scheduleItem) : saveScheduleItem(scheduleItem)
+    saveRequest.catch(() => {
       // Keep the local schedule item visible while the database endpoint is not connected.
     })
     setScheduleForm({ date: scheduleForm.date, title: '', location: '', type: 'Reminder' })
-    addNotification('Schedule updated', 'A personal learning reminder was added to your schedule.', 'schedule')
+    setEditingScheduleId(null)
+    addNotification(
+      'Schedule updated',
+      editingScheduleId
+        ? 'A personal learning reminder was edited in your schedule.'
+        : 'A personal learning reminder was added to your schedule.',
+      'schedule'
+    )
+  }
+
+  const startScheduleEdit = (item) => {
+    setEditingScheduleId(item.id)
+    setScheduleForm({
+      date: item.date || '',
+      title: item.title || '',
+      location: item.location || '',
+      type: item.type || 'Reminder',
+    })
+  }
+
+  const cancelScheduleEdit = () => {
+    setEditingScheduleId(null)
+    setScheduleForm({ date: scheduleForm.date || '2026-05-20', title: '', location: '', type: 'Reminder' })
+  }
+
+  const removeScheduleItem = (scheduleId) => {
+    setDatabaseSchedule((items) => (items.length > 0 ? items : userSchedule).filter((item) => item.id !== scheduleId))
+    updateCurrentUser((user) => ({
+      ...user,
+      schedule: (user.schedule || []).filter((item) => item.id !== scheduleId),
+    }))
+    if (editingScheduleId === scheduleId) cancelScheduleEdit()
+    deleteScheduleItem(scheduleId).catch(() => {
+      // Keep the local delete visible while the database endpoint is not connected.
+    })
+    addNotification('Schedule updated', 'A personal learning reminder was deleted from your schedule.', 'schedule')
   }
 
   const toggleResource = (resourceId) => {
@@ -546,13 +600,6 @@ function App() {
             <h1>{currentUser.assignedPark}</h1>
           </div>
           <div className="topbar-actions">
-            <select value={currentUserId} onChange={(event) => switchUser(event.target.value)} aria-label="User switcher">
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.username} - {user.assignedPark}
-                </option>
-              ))}
-            </select>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
               {currentUser.avatar ? (
                 <img src={currentUser.avatar} alt="User avatar" />
@@ -608,7 +655,7 @@ function App() {
                 <StatCard label="Unread updates" value={String(unreadCount).padStart(2, '0')} detail="Training, resources, schedule" />
               </div>
 
-              <div className="content-grid">
+              <div className="content-grid single-panel">
                 <section className="panel wide">
                   <PanelTitle kicker="Learning path" title={`${currentUser.username}'s active modules`} />
                   <div className="compact-module-list">
@@ -628,23 +675,6 @@ function App() {
                   </div>
                 </section>
 
-                <section className="panel">
-                  <PanelTitle kicker="User account" title="Quick review switcher" />
-                  <div className="user-switcher">
-                    {users.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        className={user.id === currentUserId ? 'active' : ''}
-                        onClick={() => switchUser(user.id)}
-                      >
-                        <span style={{ background: user.avatarColor }}>{initials(user.displayName)}</span>
-                        <strong>{user.username}</strong>
-                        <small>{user.position}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
               </div>
 
               <div className="content-grid">
@@ -909,11 +939,9 @@ function App() {
                 body="This page gives the Park Guide a clear view of module completion and where to focus next."
               />
 
-              <div className="stat-grid">
+              <div className="stat-grid progress-stat-grid">
                 <StatCard label="Overall" value={`${overallProgress}%`} detail="Average across enrolled modules" />
                 <StatCard label="Lessons done" value={String(enrolledModules.reduce((sum, module) => sum + (currentUser.completedLessons?.[module.id]?.length || 0), 0))} detail="Checklist items completed" />
-                <StatCard label="Passed quizzes" value={String(Object.values(currentUser.quizResults || {}).filter((result) => result.passed).length)} detail="Scenario assessments" />
-                <StatCard label="Badges ready" value={String(completedModules.length)} detail="Completed module badges" />
               </div>
 
               <div className="content-grid">
@@ -1069,13 +1097,17 @@ function App() {
                           <h3>{item.title}</h3>
                           <p>{item.location}</p>
                         </div>
+                        <div className="schedule-card-actions">
+                          <button type="button" onClick={() => startScheduleEdit(item)}>Edit</button>
+                          <button type="button" className="danger-button" onClick={() => removeScheduleItem(item.id)}>Delete</button>
+                        </div>
                       </article>
                     ))}
                   </div>
                 </section>
 
                 <section className="panel">
-                  <PanelTitle kicker="Personal reminder" title="Add to my schedule" />
+                  <PanelTitle kicker="Personal reminder" title={editingScheduleId ? 'Edit schedule item' : 'Add to my schedule'} />
                   <form className="schedule-form" onSubmit={addScheduleItem}>
                     <label>
                       Date
@@ -1098,7 +1130,12 @@ function App() {
                         <option>Certificate</option>
                       </select>
                     </label>
-                    <button type="submit">Add reminder</button>
+                    <button type="submit">{editingScheduleId ? 'Save changes' : 'Add reminder'}</button>
+                    {editingScheduleId && (
+                      <button type="button" className="secondary-form-button" onClick={cancelScheduleEdit}>
+                        Cancel edit
+                      </button>
+                    )}
                   </form>
                 </section>
               </div>
@@ -1155,6 +1192,8 @@ function App() {
                   <PanelTitle kicker="Editable details" title="My account" />
                   <form className="profile-form" onSubmit={(event) => event.preventDefault()}>
                     {[
+                      ['realName', 'Real name'],
+                      ['birthday', 'Birthday'],
                       ['displayName', 'Display name'],
                       ['email', 'Email'],
                       ['phone', 'Phone'],
