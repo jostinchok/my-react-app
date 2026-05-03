@@ -24,7 +24,7 @@ export const API_LINKS = {
 }
 
 export const DB_SQL_SCHEMA = {
-  sourceFile: 'database/db.sql',
+  sourceFile: 'user_login/server/db.sql',
   database: MYSQL_DATABASE_NAME,
   tables: {
     roles: ['role_id', 'role_name'],
@@ -94,7 +94,7 @@ export const PROFILE_FIELD_RULES = {
   editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
     realName: 'users.name',
-    birthday: 'not included in database/db.sql',
+    birthday: 'not included in user_login/server/db.sql',
     phone: 'guide_profiles.phone',
     displayName: 'users.name',
     email: 'users.email',

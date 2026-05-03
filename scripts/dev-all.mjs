@@ -1,51 +1,102 @@
 import { spawn } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import http from 'node:http'
 import net from 'node:net'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 
-const backendPort = 4000
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const rootDir = resolve(__dirname, '..')
+const userPageDir = resolve(rootDir, 'user_page')
+const adminPageDir = resolve(rootDir, 'admin_page')
+const mobileAppDir = resolve(rootDir, 'mobile_app')
+const sharedEnvPath = resolve(rootDir, 'user_login', 'server', '.env')
+const nodeCommand = process.execPath
+
+function parseEnvFile(filePath) {
+  if (!existsSync(filePath)) return {}
+
+  return readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .reduce((env, line) => {
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+      if (!match) return env
+
+      const [, key, rawValue] = match
+      const value = rawValue.trim().replace(/^(['"])(.*)\1$/, '$2')
+      env[key] = value
+      return env
+    }, {})
+}
+
+const sharedEnv = parseEnvFile(sharedEnvPath)
+const backendPort = Number(sharedEnv.PORT || 4000)
+const userApiHost = sharedEnv.API_HOST || '127.0.0.1'
+const userApiPort = Number(sharedEnv.API_PORT || 4001)
+const smokeSeconds = Number(process.env.DEV_ALL_SMOKE_SECONDS || 0)
 const backendHealthUrl = `http://localhost:${backendPort}/api/health`
-const backendPortWarning =
-  `Port ${backendPort} is occupied by another process. Run: lsof -nP -iTCP:${backendPort} -sTCP:LISTEN`
+const userApiHealthUrl = `http://${userApiHost}:${userApiPort}/api/health`
 
 const services = [
   {
     name: 'server',
-    command: 'npm',
-    args: ['run', 'dev:server'],
+    command: nodeCommand,
+    args: [resolve(rootDir, 'user_login', 'server', 'index.js')],
     url: backendHealthUrl,
+    port: backendPort,
+    healthUrl: backendHealthUrl,
+  },
+  {
+    name: 'user-api',
+    command: nodeCommand,
+    args: [resolve(userPageDir, 'server', 'index.js')],
+    url: userApiHealthUrl,
+    port: userApiPort,
+    healthUrl: userApiHealthUrl,
   },
   {
     name: 'user',
-    command: 'npm',
-    args: ['run', 'dev:user'],
+    command: nodeCommand,
+    args: [resolve(userPageDir, 'node_modules', 'vite', 'bin', 'vite.js')],
+    cwd: userPageDir,
     url: 'http://localhost:5175/user',
+    port: 5175,
+    healthUrl: 'http://localhost:5175/user',
   },
   {
     name: 'admin',
-    command: 'npm',
-    args: ['run', 'dev:admin'],
+    command: nodeCommand,
+    args: [resolve(adminPageDir, 'node_modules', 'vite', 'bin', 'vite.js')],
+    cwd: adminPageDir,
     url: 'http://localhost:5174/admin',
+    port: 5174,
+    healthUrl: 'http://localhost:5174/admin',
   },
   {
     name: 'mobile',
-    command: 'npm',
-    args: ['run', 'dev:mobile'],
+    command: nodeCommand,
+    args: [resolve(mobileAppDir, 'node_modules', 'expo', 'bin', 'cli'), 'start', '--web', '--port', '8081'],
+    cwd: mobileAppDir,
     url: 'http://localhost:8081',
+    port: 8081,
   },
   {
     name: 'hub',
-    command: 'npm',
-    args: ['run', 'dev:hub'],
+    command: nodeCommand,
+    args: [resolve(rootDir, 'scripts', 'hub-server.mjs')],
     url: 'http://localhost:5173',
+    port: 5173,
+    healthUrl: 'http://localhost:5173',
   },
 ]
 
 const children = new Map()
 let shuttingDown = false
 
-function checkBackendHealth() {
+function checkHttpOk(url) {
   return new Promise((resolve) => {
-    const request = http.get(backendHealthUrl, { timeout: 1200 }, (response) => {
+    const request = http.get(url, { timeout: 1200 }, (response) => {
       response.resume()
       resolve(response.statusCode >= 200 && response.statusCode < 300)
     })
@@ -85,24 +136,31 @@ async function checkPortOpen(port) {
 }
 
 async function shouldStartService(service) {
-  if (service.name !== 'server') return true
+  if (!service.port) return true
 
-  if (await checkBackendHealth()) {
-    console.log(`server already running on http://localhost:${backendPort}, skipping backend start`)
+  if (service.healthUrl && await checkHttpOk(service.healthUrl)) {
+    console.log(`${service.name} already running on ${service.url}, skipping start`)
     return false
   }
 
-  if (await checkPortOpen(backendPort)) {
-    console.warn(backendPortWarning)
+  if (await checkPortOpen(service.port)) {
+    console.warn(`Port ${service.port} is occupied by another process, skipping ${service.name} start`)
     return false
   }
 
   return true
 }
 
+async function probeService(service) {
+  if (service.healthUrl && await checkHttpOk(service.healthUrl)) return 'ok'
+  if (service.port && await checkPortOpen(service.port)) return 'port-open'
+  return 'offline'
+}
+
 function colorFor(name) {
   const colors = {
     server: '\x1b[36m',
+    'user-api': '\x1b[92m',
     user: '\x1b[32m',
     admin: '\x1b[35m',
     mobile: '\x1b[33m',
@@ -127,15 +185,17 @@ function prefixLine(name, chunk) {
 
 function startService(service) {
   const child = spawn(service.command, service.args, {
-    cwd: process.cwd(),
+    cwd: service.cwd || rootDir,
     env: {
       ...process.env,
+      ...sharedEnv,
       BROWSER: 'none',
       EXPO_NO_TELEMETRY: '1',
       FORCE_COLOR: '1',
     },
     stdio: ['inherit', 'pipe', 'pipe'],
-    shell: process.platform === 'win32',
+    shell: false,
+    windowsHide: true,
   })
 
   children.set(service.name, child)
@@ -151,11 +211,24 @@ function startService(service) {
   })
 }
 
+function stopChild(child) {
+  if (child.killed) return
+  if (process.platform === 'win32' && child.pid) {
+    spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+      stdio: 'ignore',
+      windowsHide: true,
+    })
+    return
+  }
+
+  child.kill('SIGTERM')
+}
+
 function shutdown(code = 0) {
   if (shuttingDown) return
   shuttingDown = true
   for (const child of children.values()) {
-    if (!child.killed) child.kill('SIGTERM')
+    stopChild(child)
   }
   setTimeout(() => process.exit(code), 400)
 }
@@ -170,6 +243,16 @@ async function main() {
     if (await shouldStartService(service)) {
       startService(service)
     }
+  }
+
+  if (smokeSeconds > 0) {
+    setTimeout(async () => {
+      console.log(`Dev smoke check after ${smokeSeconds}s:`)
+      for (const service of services) {
+        console.log(`- ${service.name}: ${await probeService(service)} (${service.url})`)
+      }
+      shutdown(0)
+    }, smokeSeconds * 1000)
   }
 }
 

@@ -6,30 +6,34 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mysql from 'mysql2/promise'
 
-dotenv.config()
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const appRoot = path.resolve(__dirname, '..')
+dotenv.config({ path: path.resolve(appRoot, '..', 'user_login', 'server', '.env') })
+
 const avatarUploadDir = path.join(appRoot, 'public', 'uploads', 'avatars')
 
 const app = express()
-const port = Number(process.env.API_PORT || 4000)
+const port = Number(process.env.API_PORT || 4001)
 const host = process.env.API_HOST || '127.0.0.1'
 const defaultUserEmail = process.env.DEFAULT_USER_EMAIL || 'guide@test.com'
+const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
+const corsOrigin = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
+  ? true
+  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'park_guide_database',
+  database: databaseName,
   waitForConnections: true,
   connectionLimit: 10,
   namedPlaceholders: true,
 })
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || true }))
+app.use(cors({ origin: corsOrigin }))
 app.use(express.json({ limit: '8mb' }))
 app.use('/uploads', express.static(path.join(appRoot, 'public', 'uploads')))
 
@@ -39,7 +43,7 @@ const asyncRoute = (handler) => async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({
-      message: 'Database request failed. Check that XAMPP MySQL is running and database/db.sql has been imported.',
+      message: 'Database request failed. Check that XAMPP MySQL is running and user_login/server/db.sql has been imported.',
       detail: process.env.NODE_ENV === 'production' ? undefined : error.message,
     })
   }
@@ -72,7 +76,7 @@ const resolveUserId = async (req) => {
   )
   if (firstGuide?.user_id) return firstGuide.user_id
 
-  throw new Error(`No guide user found. Import database/db.sql or create ${defaultUserEmail}.`)
+  throw new Error(`No guide user found. Import user_login/server/db.sql or create ${defaultUserEmail}.`)
 }
 
 const parseCompletedLessons = (value) => {
@@ -219,7 +223,7 @@ const buildModules = async (userId) => {
 
 app.get('/api/health', asyncRoute(async (_req, res) => {
   await pool.query('SELECT 1')
-  res.json({ ok: true, database: process.env.DB_NAME || 'park_guide_database' })
+  res.json({ ok: true, database: databaseName })
 }))
 
 app.get('/api/training-modules', asyncRoute(async (req, res) => {

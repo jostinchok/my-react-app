@@ -18,10 +18,10 @@ import {
   VALID_STATUSES,
 } from './src/incident/incidentUtils.js'
 
-dotenv.config()
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+dotenv.config({ path: path.join(__dirname, '.env') })
+
 const repoRoot = path.resolve(__dirname, '../..')
 const runtimeDataDir = path.join(__dirname, 'data')
 const runtimeIncidentFile = path.join(runtimeDataDir, 'incidents.runtime.json')
@@ -69,7 +69,7 @@ const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_DATABASE || 'cos30049_assignment',
+  database: process.env.DB_DATABASE || process.env.DB_NAME || 'park_guide_database',
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   waitForConnections: true,
   connectionLimit: 10,
@@ -656,7 +656,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 })
 
-const port = Number(process.env.PORT) || 4000
+const port = Number(process.env.PORT || process.env.API_PORT) || 4000
 
 const startMqttBridge = () => {
   if (!MQTT_ENABLED) {
