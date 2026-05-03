@@ -13,6 +13,8 @@
     "dev:server": "npm --prefix user_login/server start",
     "build:user": "npm --prefix user_page run build",
     "build:admin": "npm --prefix admin_page run build",
+    "check:assets": "python3 scripts/check_required_assets.py",
+    "download:assets": "python3 scripts/download_assets_gdrive.py",
     "check:mobile": "npm --prefix mobile_app exec expo config -- --type public"
   }
 }

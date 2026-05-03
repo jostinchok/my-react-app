@@ -49,6 +49,17 @@ h1 {
   letter-spacing: -0.5px;
 }
 
+.demo-auth-note {
+  margin: -10px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid #f5cf9b;
+  border-radius: 12px;
+  background: #fff8e6;
+  color: #684316;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 input[type="text"],
 input[type="password"],
 select {

@@ -575,6 +575,10 @@ button {
   gap: 14px;
 }
 
+.progress-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .stat-card {
   min-height: 150px;
   border-radius: 8px;
@@ -615,6 +619,10 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
   gap: 22px;
+}
+
+.content-grid.single-panel {
+  grid-template-columns: 1fr;
 }
 
 .content-grid.detail-layout {
@@ -1321,7 +1329,8 @@ button {
   border-radius: 8px;
   padding: 14px;
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  align-items: center;
   gap: 14px;
   background: var(--mist);
 }
@@ -1334,6 +1343,34 @@ button {
 .schedule-list h3 {
   margin: 4px 0;
   color: var(--forest);
+}
+
+.schedule-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.schedule-card-actions button,
+.secondary-form-button {
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--white);
+  color: var(--forest);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.schedule-card-actions button:hover,
+.secondary-form-button:hover {
+  border-color: var(--citrus);
+}
+
+.schedule-card-actions .danger-button {
+  color: #9d2f23;
+  border-color: rgba(157, 47, 35, 0.24);
+  background: #fff0ed;
 }
 
 .schedule-form,
@@ -1355,7 +1392,7 @@ button {
   min-width: 0;
 }
 
-.profile-form label:nth-child(7) {
+.profile-form label:nth-child(9) {
   grid-column: 1 / -1;
 }
 

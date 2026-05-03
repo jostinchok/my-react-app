@@ -1,277 +1,180 @@
 # Project Notes
 
-## Current Project State
-
-Checkpoint date: 2026-04-27.
-
-This project is a Sarawak Forestry Corporation digital park guide training platform based on `Project Scope.pdf`.
-
-Current working directory:
+Team repository folder:
 
 ```text
 /Users/chiayuenkai/Desktop/GitHub/my-react-app
 ```
 
-The repo is still organized as separate surfaces:
+This is the active team repository. The completed lecturer-demo work was synced from the local stable source copy `my-react-app1` into this branch for review before merging to `main`.
 
-- `user_page`: guide-facing website and current main implementation target.
-- `mobile_app`: React Native / Expo guide-facing mobile app.
-- `admin_page`: admin website.
-- `admin_page/src/pages/ParkRangerConsole.jsx`: Park Ranger incident-response console.
-- `user_login/server`: Express/MySQL backend.
-- root project: review launcher and review hub.
+## Architecture Snapshot
 
-Current active scope is Part 1: Interactive Digital Training Platform. The latest implementation pass rebuilt the `user_page` Park Guide/User side using front-end seeded demo data only. Full training-platform MySQL integration is intentionally deferred, but AI/IoT monitoring incidents now have an optional MySQL persistence mode.
+- Root hub: `http://localhost:5173`
+- Park Guide web portal: `user_page`, Vite, `http://localhost:5175/user`
+- Admin portal: `admin_page`, Vite, `http://localhost:5174/admin`
+- Admin Incident Detection: `http://localhost:5174/admin/detection`
+- Park Ranger Alert Console: `http://localhost:5174/admin/ranger`
+- Mobile preview: `mobile_app`, Expo web, `http://localhost:8081`
+- Backend API: `user_login/server`, Express, `http://localhost:4000`
+- AI camera script: `scripts/run_ai_camera_monitor.py`
+- Evidence folders: `alerts/ai` for AI camera evidence and `alerts/iot` for browser-captured IoT evidence.
+- MySQL database for monitoring incidents only: `cos30049_assignment`
 
-## Current UI Direction
+The training platform is seeded frontend demo data. The backend and MySQL integration are scoped to AI/IoT monitoring incidents only.
 
-The user-side website is moving toward a citrus energetic theme:
+## Citrus Energetic UI System
 
-- Fresh, modern, outdoors, nature-tech feeling.
-- Citrus orange, lime, warm yellow, cream, leaf green, dark forest, and charcoal contrast.
-- Rounded-but-controlled 8px cards, high-contrast dashboard panels, bright progress bars, clear chips, and realistic nature training visuals.
-- Product-like user experience instead of a generic admin template.
-- Mobile-responsive layout with sidebar collapse and card/grid breakpoints.
+Palette:
 
-## Current Folder/File Structure
+- Deep forest green: `#0b3b28` and `#175f3e` for official navigation, admin command surfaces, ranger response headers, and trustworthy system areas.
+- Warm citrus orange: `#ff7a1a` for primary actions, active filters, review highlights, and demo call-to-action controls.
+- Soft yellow/cream: `#fff8e6`, `#fff9e9`, and `#ffd23f` for warm page backgrounds, learning cards, and approachable guide-facing surfaces.
+- Lime green: `#a8e64a` and `#8ac926` for healthy/live/success state, progress indicators, and completion badges.
+- Warm charcoal: `#1e2a22` for high-contrast dashboard text and command-center structure.
+
+Component rules:
+
+- Logo usage: use the shared generated Citrus logo as a small app mark in the Hub, User/Park Guide portal, Admin shell, Park Ranger route, and Mobile preview. Keep the optimized WebP/PNG copies below 150 KB and do not use the original generated PNG directly.
+- Cards use rounded corners, light borders, cream/white surfaces, and soft green/citrus shadows.
+- Buttons use pill or rounded shapes, strong font weight, citrus gradients for primary actions, and forest/cream contrast for secondary actions.
+- Status badges use compact rounded pills with source/status-specific colors; live/healthy states should use lime/green, active review states use citrus/yellow, and risk states use warm red/orange.
+- Tables use light cream rows, readable dark text, uppercase headers, clear hover/selected states, and no low-contrast dark body rows.
+- Evidence images use rounded frames, stable aspect ratios, `object-fit: cover`, and browser-safe URLs such as `/evidence/ai/<filename>` and `/evidence/iot/<filename>`.
+- Page spacing uses dashboard-like grids, 16-28px gaps, and wide cards only where the content needs scanning.
+
+Role identity:
+
+- User/Park Guide: warm citrus learning portal with friendly cream cards, orange actions, and progress-focused visuals.
+- Admin: command center with warm charcoal/forest structure, citrus cards, monitoring summaries, and clear review hierarchy.
+- Park Ranger: field response console with forest green headers, urgent incident emphasis, and citrus response buttons.
+- Hub: neutral launcher using the same palette, rainforest hero, service health badges, and direct links.
+- Mobile: simplified version of the Park Guide theme with cream surfaces, forest text, and citrus actions.
+
+## Expected Local Structure
 
 ```text
 my-react-app/
 ├── .venv/
-├── Project Scope.pdf
-├── README.md
-├── PROJECT_NOTES.md
-├── TODO.md
-├── package.json
-├── package-lock.json
-├── index.html
-├── scripts/
-│   ├── dev-all.mjs
-│   └── hub-server.mjs
-├── login/
-│   ├── hub.css
-│   └── hub.js
-├── user_page/
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── public/training/
-│   └── src/
-│       ├── App.jsx
-│       ├── App.css
-│       ├── index.css
-│       └── data/trainingPlatform.js
-├── mobile_app/
-├── admin_page/
-├── user_login/server/
-├── alerts/
-│   └── ai/
-├── artifacts/
-│   └── clip_2class_touching_species.pt
-├── datasets/
-│   ├── touching-plants/
-│   └── touching-wildlife/
-├── models/
-│   └── hand_landmarker.task
-└── images/
+├── artifacts/clip_2class_touching_species.pt
+├── datasets/touching-plants/
+├── datasets/touching-wildlife/
+├── models/hand_landmarker.task
+├── alerts/ai/
+└── alerts/iot/
 ```
 
-The Google Drive `cos30049-assignment-assets` package is only the download source.
-After download, `artifacts/`, `datasets/`, and `models/` stay inside the project
-working directory as local-only ignored folders. `.venv/` must be recreated
-inside `my-react-app`, not moved from another checkout. `alerts/` stays inside
-the repo and is not ignored so selected demo AI evidence can be committed.
+`.venv`, `artifacts`, `datasets`, and `models` are local-only. `alerts/ai` and `alerts/iot` are intentionally retained for curated demo evidence.
 
-## Important Files
+## Local Asset Setup Contract
 
-- `Project Scope.pdf`: assignment source file.
-- `package.json`: root launcher scripts for one-command review.
-- `scripts/dev-all.mjs`: starts the review services.
-- `scripts/hub-server.mjs`: serves the root review hub on `localhost:5173`.
-- `index.html`: root review hub page.
-- `login/hub.css` and `login/hub.js`: review hub styling and service checks.
-- `user_page/src/App.jsx`: rebuilt guide-facing user portal UI.
-- `user_page/src/App.css`: citrus energetic visual system and responsive layout.
-- `user_page/src/index.css`: Vite/global reset cleanup.
-- `user_page/src/data/trainingPlatform.js`: 10 front-end seeded modules, `User01`, `User02`, `User03`, schedules, certificates, notifications, resources, and role boundaries.
-- `user_page/public/training/*.png`: generated training visuals for module artwork.
-- `mobile_app/App.js`: current mobile app shell, not redesigned in the latest pass.
-- `admin_page/src/Admin.jsx`: current admin dashboard shell, not redesigned in the latest pass.
-- `user_login/server/index.js`: Express API server, not connected to the new training UI yet.
-- `user_login/server/src/incident/memoryIncidentStore.js`: default memory/local JSON incident store.
-- `user_login/server/src/incident/mysqlIncidentStore.js`: optional MySQL store for AI/IoT monitoring incidents only.
-- `user_login/server/src/incident/incidentUtils.js`: shared incident normalization, evidence URL sanitizing, status, and summary helpers.
-- `user_login/server/migrations/001_create_monitoring_incident_tables.sql`: MySQL migration for monitoring incidents.
-- `user_login/server/.env.example`: safe backend environment template for local memory or MySQL incident storage.
-- `user_login/server/db.sql`: MySQL schema/seed baseline, not used by the new seeded frontend pass yet.
-- `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb`: AI/CV training, real-time camera detection, AI evidence saving, and shared AI/IoT incident schema documentation.
-- `CTIP_IoT_Plant_Proximity_Monitor.ino`: ESP32 ultrasonic proximity sensor sketch publishing JSON to `ctip/sensor/plant-zone-01/proximity`.
-- `admin_page/src/data/incidents.js`: seeded admin incident examples and summary helpers for AI Camera and IoT Sensor monitoring.
-- `admin_page/src/pages/AIDetection.jsx`: seeded Admin Incident Dashboard table, filters, detail panel, evidence preview, metadata, notes, and local-only status changes.
-- `admin_page/src/pages/ParkRangerConsole.jsx`: live Park Ranger Alert Console that reads `/api/incidents` and updates response status through `/api/incidents/:id/status`.
-- `admin_page/src/Admin.jsx`: admin monitoring overview now summarizes seeded incident counts.
-- `admin_page/src/Admin.css`: citrus incident dashboard styling, including table readability fixes.
-- `admin_page/src/components/Sidebar.jsx`: admin menu label updated from Detection to Incidents.
-- `admin_page/public/incidents/*.jpg`: AI evidence assets added for seeded admin incident examples.
+Local AI/CV assets are distributed outside GitHub through the shared Google Drive folder. The current documentation uses `<GOOGLE_DRIVE_FOLDER_URL>` as a placeholder unless the real shared URL is provided later.
 
-## Files Changed
+Teammate setup commands:
 
-Latest user-side rebuild changed or added:
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+python3 -m pip install gdown
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+python3 scripts/check_required_assets.py
+```
 
-- `user_page/src/App.jsx`
-- `user_page/src/App.css`
-- `user_page/src/index.css`
-- `user_page/src/data/trainingPlatform.js`
-- `user_page/public/training/*.png`
+`scripts/check_required_assets.py` verifies `artifacts/clip_2class_touching_species.pt`, `models/hand_landmarker.task`, both dataset folders, `alerts/ai`, `alerts/iot`, and `user_login/server/.env`. `scripts/download_assets_gdrive.py` downloads into `.asset-download-tmp/`, copies `artifacts/`, `models/`, and `datasets/` without replacing existing files, creates alert evidence folders, and runs the checker.
 
-Generated by build/checks and currently showing as changed or untracked:
+Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`, `.venv`, `node_modules`, `dist`, and personal alert images must stay out of Git. AI dataset improvement remains future work and is not part of this merge.
 
-- `user_page/dist/*`
-- `user_page/package-lock.json`
-- `user_page/node_modules/*`
-- `mobile_app/package-lock.json`
-- `user_login/server/node_modules/*`
+## Project Scope Audit
 
-Previously changed root review launcher/hub files still pending:
+| Component | Classification | Notes |
+| --- | --- | --- |
+| Review Hub | Demo-ready | Links all demo surfaces, API endpoints, role notes, and optional security-control notes. |
+| Login/Register/Forgot Password | Partial / Demo-ready | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Production route/session auth is deferred. |
+| Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. |
+| Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence. Screens are simpler than the full web portal. |
+| Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
+| Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, and status updates. Sends admin role header for optional role-check mode. |
+| Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Acknowledged/In Review/Resolved/False Alarm actions. Sends park_ranger role header for optional role-check mode. |
+| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, and `PATCH /api/incidents/:id/status` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. |
+| AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, optional `--device-token`, automatic `AI_CAMERA_TOKEN` loading from `user_login/server/.env`, JPG/JSON evidence, backend POST, and safe shutdown. |
+| IoT simulation / physical sensor support | Partial / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant payloads to `ctip/sensor/plant-zone-01/proximity` and supports token mode. Physical sensor deployment is environment-dependent. |
+| MySQL incident persistence | Demo-ready | Default `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment`, `ctip_user`, and monitoring tables for AI/IoT incidents only. Memory mode remains an emergency/testing fallback only. |
+| Cybersecurity controls | Partial / Demo-ready | `CYBERSECURITY_REVIEW.md`, `.env.example`, browser-safe evidence URLs, payload validation, optional device tokens, optional role checks, demo auth notes, smoke test script, and production hardening recommendations are available. |
+| Evidence/screenshot readiness | Demo-ready | README, WORKFLOW, and CYBERSECURITY_REVIEW include screenshot checklists and exact URLs/commands. |
 
-- `package.json`
-- `package-lock.json`
-- `index.html`
-- `scripts/dev-all.mjs`
-- `scripts/hub-server.mjs`
-- `login/hub.css`
-- `login/hub.js`
+## Monitoring Incident Contract
 
-Checkpoint/docs files:
+Supported sources:
 
-- `.gitignore`
-- `PROJECT_NOTES.md`
-- `TODO.md`
-- `Project Scope.pdf` is currently untracked.
-- `CTIP_2class_training_and_realtime_notebook.ipynb` was renamed to `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` and replaced with the updated AI/CV notebook content.
-- `sketch_apr06a.ino` was renamed to `CTIP_IoT_Plant_Proximity_Monitor.ino` and replaced with the updated IoT proximity MQTT sketch.
+```text
+AI_CAMERA
+IOT_SENSOR
+```
 
-## Key Decisions Made
+Supported event types:
 
-- Use `user_page` as the main target for the Park Guide/User side.
-- Keep front-end seeded demo data first; do not connect Express/MySQL yet.
-- Replace the old 4-module setup with 10 modules from the brief.
-- Seed three reviewable users: `User01`, `User02`, and `User03`.
-- Add a demo user switcher so each user state can be reviewed quickly.
-- Keep Park Guide/User permissions clearly separate from Admin permissions.
-- Save project-used generated raster assets inside `user_page/public/training/`.
-- Do not physically merge `user_page`, `mobile_app`, `admin_page`, and `user_login/server` into a single React app.
+```text
+TouchingPlants
+TouchingWildlife
+ObjectCloseToPlant
+```
 
-## Current Working Status
+Supported statuses:
 
-- The Park Guide/User source has been rebuilt around:
-  - Dashboard
-  - My Modules
-  - Module Details
-  - Learning Progress
-  - Certificates / Badges
-  - Notifications
-  - Schedule
-  - Saved Resources / Files
-  - Profile
-  - Help / Support
-- `npm --prefix user_page run build` passed during the latest implementation pass.
-- The frontend remains seeded locally through `user_page/src/data/trainingPlatform.js`.
-- The root review launcher and hub are still separate from this latest UI pass.
-- The broken module image path issue was fixed by normalizing Vite's `/user` base path before building `user_page/public/training/*` URLs.
-- Verified working URLs:
-  - `http://127.0.0.1:5175/user/`
-  - `http://127.0.0.1:5175/user/training/protected-areas.png`
-  - `http://127.0.0.1:5175/user/training/incident-ai-monitoring.png`
+```text
+New
+Reviewed
+Acknowledged
+In Review
+Resolved
+False Alarm
+```
 
-## Admin Incident Dashboard Status
+Frontend evidence must use browser-safe URLs such as:
 
-- Admin Incident Dashboard has been implemented using seeded data.
-- It supports AI Camera incidents and IoT Sensor incidents.
-- AI Camera examples cover `TouchingPlants` and `TouchingWildlife` with alert image evidence and metadata such as confidence, margin, bbox, and probabilities.
-- IoT Sensor examples cover `ObjectCloseToPlant` with sensor ID, location, distance, threshold, severity, and MQTT topic metadata.
-- Incident review supports local UI status changes for `New`, `Reviewed`, and `False Alarm`.
-- Data falls back to local seeded examples from `admin_page/src/data/incidents.js` when the backend is offline.
-- The live incident backend can use memory/local JSON or optional MySQL storage for AI/IoT incidents only.
-- Changed files include:
-  - `admin_page/src/data/incidents.js`
-  - `admin_page/src/pages/AIDetection.jsx`
-  - `admin_page/src/Admin.jsx`
-  - `admin_page/src/Admin.css`
-  - `admin_page/src/components/Sidebar.jsx`
-  - AI evidence assets added under `admin_page/public/incidents/`.
+```text
+/evidence/ai/example.jpg
+/evidence/iot/example.jpg
+```
 
-## Live Incident Bridge Status
+Absolute local paths such as `/Users/...` should not be returned to the frontend.
 
-- Lightweight real-time alert synchronization has been implemented with a storage abstraction.
-- `user_login/server/index.js` now supports `INCIDENT_STORAGE=memory` for the default runtime incident store backed by memory plus optional local JSON persistence at `user_login/server/data/incidents.runtime.json`.
-- `INCIDENT_STORAGE=mysql` stores AI/IoT monitoring incidents in `cos30049_assignment` using the new monitoring tables only.
-- If MySQL is offline and `INCIDENT_MYSQL_FALLBACK=memory`, the backend still starts, `/api/health` reports degraded storage, and the incident API uses memory fallback without auto-syncing fallback incidents into MySQL.
-- Backend incident API endpoints now exist:
-  - `GET /api/incidents`
-  - `POST /api/incidents`
-  - `PATCH /api/incidents/:id/status`
-  - `GET /api/incidents/summary`
-- Runtime status updates now allow both admin review labels and Park Ranger response labels:
-  - `New`
-  - `Reviewed`
-  - `Acknowledged`
-  - `In Review`
-  - `Resolved`
-  - `False Alarm`
-- Root `npm run dev` now checks `http://localhost:4000/api/health` before starting the backend. If a backend is already running, `scripts/dev-all.mjs` skips the duplicate backend start instead of letting port `4000` crash the whole launcher.
-- If port `4000` is occupied by a non-backend process, the launcher warns with the `lsof -nP -iTCP:4000 -sTCP:LISTEN` command and continues starting the other review services.
-- Backend serves AI evidence images from root `alerts/ai` at `/evidence/ai`.
-- AI evidence image path preview has been fixed for live incidents:
-  - backend uses `AI_EVIDENCE_DIR` when provided, otherwise defaults to repo root `alerts/ai`;
-  - backend converts absolute local image paths into browser-safe `/evidence/ai/<filename>` values;
-  - admin converts `/evidence/ai/...` into `http://localhost:4000/evidence/ai/...` before rendering images.
-- Backend subscribes to MQTT topic `ctip/sensor/plant-zone-01/proximity` and normalizes IoT payloads into dashboard incidents.
-- MQTT uses `mqtt://broker.hivemq.com:1883` by default for prototype testing only and should not crash the backend if the broker is unavailable.
-- `admin_page/src/pages/AIDetection.jsx` now polls the live backend every 2.5 seconds and falls back to seeded demo incidents if the backend is offline.
-- Admin status buttons call `PATCH /api/incidents/:id/status` when the backend is online and fall back to local-only updates when offline.
-- `admin_page/src/pages/ParkRangerConsole.jsx` polls the same backend every 2.5 seconds and is scoped to incident response only. It does not expose user management, training module management, certificate approval, or system setting links.
-- The review hub links directly to the Park Guide/User portal, Admin Dashboard, Admin Incident Detection, Park Ranger Alert Console, backend health, and incident API for smoother demo testing.
-- `CTIP_AI_Camera_Training_and_Incident_Detection.ipynb` now posts saved AI alert incidents to `http://localhost:4000/api/incidents` using Python standard library HTTP calls, while continuing local evidence saving if the backend is offline.
-- `scripts/run_ai_camera_monitor.py` supports `--project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app` for local-only model assets under the repo root, `--evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai` for repo-local AI evidence, `--camera-index` for normal webcam selection, and `--backend-url` for the backend origin. The default backend URL is `http://localhost:4000`.
-- Express/MySQL is still intentionally not connected to the training platform, but AI/IoT incident persistence can now use MySQL.
+IoT browser capture contract:
 
-## Known Issues Or Risks
+- Admin Incident Detection listens to the browser MQTT websocket on `ctip/sensor/plant-zone-01/proximity`.
+- A payload is treated as a trigger when `status=triggered` or `distance_cm <= threshold_cm`.
+- The browser opens the camera, waits for the frame, delays 2 seconds, compresses one JPEG to max 1280x720, and posts it to `POST /api/incidents/iot-capture`.
+- The backend saves the image in `alerts/iot` and returns `/evidence/iot/<filename>`.
+- The route uses `X-Actor-Role: admin` instead of exposing `IOT_SENSOR_TOKEN` in frontend code.
+- The incident is written through the active memory/MySQL store, so Admin and Park Ranger read the same incident and status from `GET /api/incidents`.
+- Deduplication first matches a stable `public_id`; otherwise IoT triggers with the same source, event type, sensor ID, and timestamp within 10 seconds are merged.
 
-- Module image paths were fixed in `user_page/src/data/trainingPlatform.js`, but a final visual browser review is still needed to confirm all pages look right at desktop and mobile widths.
-- `user_page/dist`, `node_modules`, and package-lock changes are noisy and should be reviewed carefully before commit.
-- There is an unreferenced duplicate-looking generated image file, `user_page/public/training/incident-ai-monitoring copy.png`; do not delete it unless clearly confirmed safe.
-- Admin and mobile have not yet been updated to match the citrus theme.
-- Backend `/api/health` now reports incident storage mode and degraded fallback status when MySQL incident storage is requested but unavailable.
-- Training data is not yet persisted to MySQL.
-- Live incident persistence defaults to prototype-level memory/local JSON, with optional MySQL persistence for AI/IoT incidents only.
-- MQTT public broker delivery depends on internet access and public broker availability.
-- MacBook built-in camera works as the default camera. iPhone Continuity Camera is environment-dependent: it has worked through iPhone hotspot and on Yoriichi's Router, but OpenCV camera index switching is not guaranteed to manually select the iPhone camera.
-- `Project Scope.pdf` is untracked; decide whether to commit it as assignment reference material.
+## Security Notes
 
-## Next Priority
+- Real `.env` files must remain local.
+- Database credentials are loaded from environment variables, not hardcoded source.
+- The backend validates allowed incident source, event type, severity, status, and basic IoT fields.
+- AI camera and IoT ingestion can require device tokens with `DEVICE_TOKEN_AUTH_ENABLED=true`.
+- Incident status changes can require Admin or Park Ranger role headers with `ROLE_CHECK_ENABLED=true`.
+- Admin, Park Ranger, and Park Guide role boundaries are clearly shown in the demo.
+- Frontend route guards are intentionally not enforced in production style; this remains documented as a limitation for the tutor check.
+- Production MQTT should use a private broker with authentication and TLS.
+- Production AI camera and IoT ingestion should require HTTPS and device tokens.
+- SSDLC/vulnerability assessment evidence can reference this notes file, `.env.example`, validation code, role-boundary screenshots, and API health/error behavior.
 
-Polish the already-built user-side experience before adding or redesigning more features.
+## Recent Demo Prep Changes
 
-Specifically check:
-
-- Dashboard hero background image path.
-- Module card and Module Details hero image rendering.
-- Certificate page visual richness.
-- Profile page layout density.
-- Responsive layout at desktop and mobile widths.
-- Keep frontend seeded data only; do not connect the full training platform to Express/MySQL yet.
-
-For incident monitoring specifically, the MySQL migration and API smoke path were verified locally on `cos30049_assignment`. The next task is to review which `alerts/ai` demo evidence files should be kept in Git.
-
-## Rules / Instructions Not To Forget
-
-- Do not start new feature work during checkpoint/cleanup tasks.
-- Do not delete files unless clearly safe or explicitly approved.
-- Keep front-end seeded data only for now.
-- Do not connect the full training platform to Express/MySQL yet.
-- Preserve existing repo surfaces: website, mobile app, admin app, backend.
-- Work with the current GUI in `user_page`.
-- Keep website and mobile design/function consistent when mobile work resumes.
-- Use realistic seeded examples; avoid placeholder-only UI.
-- Do not commit `.DS_Store`, local dependency folders, or generated build output unless explicitly required.
-- Do not revert user or previous work unless explicitly asked.
+- Localized runbook and notebook examples to `/Users/chiayuenkai/Desktop/GitHub/my-react-app`.
+- Updated the root hub with direct links for Login/Register, Park Guide, Admin, Admin Detection, Park Ranger, Mobile Preview, API Health, Incidents API, and Incidents Summary API.
+- Polished Admin Incident Detection for clearer summary cards, filters, table readability, selected detail panel, evidence preview, metadata, loading, empty, and offline fallback states.
+- Polished Park Ranger Console as a response-only field console with urgent incidents, field notes, status actions, and role boundaries.
+- Added a demo-safe IoT test publisher fallback: MQTT remains the first path, but public-broker timeouts can fall back to the local incidents API with the same IOT_SENSOR payload.
+- Updated documentation for MySQL-first incident persistence, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
+- Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
+- Generated and applied a shared Citrus logo mark across the hub, login surfaces, User Portal, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview. Optimized copies are 17 KB WebP for browser UI and 80 KB PNG for favicon/mobile usage.
+- Fixed the Park Ranger route to render through the Admin shell/sidebar, keeping logo placement and navigation consistent for final demo screenshots.
+- Added one generated Sarawak rainforest hero image at `images/citrus-rainforest-hero.webp` and optimized it to 136 KB for the hub background.
+- Optimized frontend training images into WebP files under `user_page/public/training/`; each optimized training image is below 100 KB and the large unused PNG originals were removed from the public frontend folder.
+- Added demo-safe cybersecurity controls for the tutor check: optional AI/IoT device tokens, optional Admin/Park Ranger status-update role checks, generated token helper, security smoke test script, and `CYBERSECURITY_REVIEW.md`.
+- Completed IoT browser-camera evidence integration: `/api/incidents/iot-capture` saves compressed captures to `alerts/iot`, serves `/evidence/iot/<filename>`, writes through memory/MySQL incident storage, and deduplicates browser/backend MQTT triggers.
+- Updated run instructions so `/api/health` should show `persistence=mysql`, `requested=mysql`, `active=mysql`, and `fallback=none` for the lecturer demo.
+- Added local asset setup and verification scripts for teammates: `scripts/download_assets_gdrive.py` and `scripts/check_required_assets.py`.

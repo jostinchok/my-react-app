@@ -25,7 +25,7 @@ export const DB_SQL_SCHEMA = {
   database: MYSQL_DATABASE_NAME,
   tables: {
     roles: ['role_id', 'role_name'],
-    users: ['user_id', 'role_id', 'name', 'email', 'password_hash', 'created_at'],
+    users: ['user_id', 'role_id', 'name', 'real_name', 'display_name', 'email', 'birthday', 'password_hash', 'created_at'],
     password_reset_tokens: ['token_id', 'user_id', 'token_hash', 'expires_at', 'used_at', 'created_at'],
     guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
     training_modules: [
@@ -58,7 +58,7 @@ export const DB_SQL_SCHEMA = {
 }
 
 export const DATABASE_TABLE_TEMPLATE = {
-  users: ['user_id', 'role_id', 'name', 'email', 'created_at'],
+  users: ['user_id', 'role_id', 'name', 'real_name', 'display_name', 'email', 'birthday', 'created_at'],
   guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
   training_modules: [
     'module_id',
@@ -87,11 +87,13 @@ export const DATABASE_TABLE_TEMPLATE = {
 }
 
 export const PROFILE_FIELD_RULES = {
-  readOnlyFromDatabase: ['displayName', 'email', 'assignedPark', 'position', 'guideId', 'role'],
-  editableAndSavedToDatabase: ['phone', 'yearsExperience', 'address'],
+  readOnlyFromDatabase: ['realName', 'birthday', 'assignedPark', 'position', 'guideId', 'role'],
+  editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
+    realName: 'users.real_name',
+    birthday: 'users.birthday',
     phone: 'guide_profiles.phone',
-    displayName: 'users.name',
+    displayName: 'users.display_name',
     email: 'users.email',
     assignedPark: 'guide_profiles.organization',
     guideId: 'guide_profiles.guide_id',
@@ -149,7 +151,10 @@ export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
     SELECT
       u.user_id,
       u.name,
+      u.real_name,
+      u.display_name,
       u.email,
+      u.birthday,
       r.role_name,
       gp.phone,
       gp.organization,
@@ -265,7 +270,9 @@ export const normalizeProfileRow = (row = {}) => ({
   id: asText(firstValue(row.user_id, row.guide_id, row.id)),
   guideId: asText(firstValue(row.guide_id, row.guideId, row.user_id)),
   displayName: asText(firstValue(row.display_name, row.name)),
+  realName: asText(firstValue(row.real_name, row.realName, row.full_name, row.name)),
   email: asText(row.email),
+  birthday: asText(firstValue(row.birthday, row.birth_date, row.date_of_birth)),
   phone: asText(row.phone),
   assignedPark: asText(firstValue(row.assigned_park, row.park, row.organization)),
   position: asText(firstValue(row.position, row.role_name), 'Park Guide'),
@@ -354,6 +361,34 @@ export const saveScheduleItem = async (item) => {
 
   if (!response.ok) {
     throw new Error(payload.message || 'Unable to save schedule item.')
+  }
+
+  return payload
+}
+
+export const updateScheduleItem = async (item) => {
+  const response = await fetch(`${API_LINKS.schedule}/${encodeURIComponent(item.id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to update schedule item.')
+  }
+
+  return payload
+}
+
+export const deleteScheduleItem = async (scheduleId) => {
+  const response = await fetch(`${API_LINKS.schedule}/${encodeURIComponent(scheduleId)}`, {
+    method: 'DELETE',
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to delete schedule item.')
   }
 
   return payload

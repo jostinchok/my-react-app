@@ -8,6 +8,8 @@ import {
   summarizeIncidents,
 } from './incidentUtils.js'
 
+const IOT_DEDUPE_WINDOW_MS = 10000
+
 export const createMemoryIncidentStore = ({
   runtimeIncidentFile,
   maxRuntimeIncidents = 250,
@@ -47,6 +49,41 @@ export const createMemoryIncidentStore = ({
     return nextId
   }
 
+  const incidentTimestampMs = (incident) => {
+    const value = new Date(incident.timestamp).getTime()
+    return Number.isFinite(value) ? value : 0
+  }
+
+  const findDuplicateIotIncidentIndex = (incident) => {
+    if (incident.source !== 'IOT_SENSOR') return -1
+
+    const exactIndex = incident.id ? incidents.findIndex((item) => item.id === incident.id) : -1
+    if (exactIndex !== -1) return exactIndex
+
+    const incidentTime = incidentTimestampMs(incident)
+    const sensorId = incident.iot?.sensorId || 'plant-zone-01'
+
+    return incidents.findIndex((item) =>
+      item.source === 'IOT_SENSOR' &&
+      item.eventType === incident.eventType &&
+      (item.iot?.sensorId || 'plant-zone-01') === sensorId &&
+      Math.abs(incidentTimestampMs(item) - incidentTime) <= IOT_DEDUPE_WINDOW_MS
+    )
+  }
+
+  const mergeIotIncident = (existing, incoming) => ({
+    ...existing,
+    ...incoming,
+    id: existing.id,
+    status: existing.status || incoming.status,
+    iot: {
+      ...(existing.iot || {}),
+      ...(incoming.iot || {}),
+    },
+    evidenceImage: incoming.evidenceImage || existing.evidenceImage,
+    notes: incoming.evidenceImage ? incoming.notes : existing.notes || incoming.notes,
+  })
+
   return {
     type: 'memory',
     persistence: 'local-json',
@@ -73,6 +110,13 @@ export const createMemoryIncidentStore = ({
       const incident = normalizeIncident(input, options)
       if (!incident) {
         throw new Error('Incident must include source and event type.')
+      }
+
+      const duplicateIotIndex = findDuplicateIotIncidentIndex(incident)
+      if (duplicateIotIndex !== -1) {
+        incidents[duplicateIotIndex] = mergeIotIncident(incidents[duplicateIotIndex], incident)
+        await persistRuntimeIncidents()
+        return incidents[duplicateIotIndex]
       }
 
       incident.id = makeUniqueIncidentId(incident.id, incident.source, incident.timestamp)

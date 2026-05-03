@@ -7,8 +7,8 @@
   "location": "Demo Camera Zone",
   "status": "New",
   "evidence": {
-    "image_path": "/Users/chiayuenkai/cos30049/Alerts/ai/2026-04-27_12-20-18_alert_TouchingPlants.jpg",
-    "json_path": "/Users/chiayuenkai/cos30049/Alerts/ai/2026-04-27_12-20-18_alert_TouchingPlants.json"
+    "image_path": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-27_12-20-18_alert_TouchingPlants.jpg",
+    "json_path": "/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai/2026-04-27_12-20-18_alert_TouchingPlants.json"
   },
   "ai": {
     "predicted_class": "TouchingPlants",

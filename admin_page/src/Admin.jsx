@@ -1,5 +1,6 @@
 import React from "react";
-import { Admin, Resource, ListGuesser, Layout, useGetList } from "react-admin";
+import { Admin, Resource, ListGuesser, Layout, useGetList, CustomRoutes } from "react-admin";
+import { Route } from "react-router-dom";
 import { Paper, Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress, Chip
 } from "@mui/material";
 import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
@@ -11,6 +12,7 @@ import TrainingModuleSetup from "./pages/training_module.jsx"
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
+import ParkRangerConsole from "./pages/ParkRangerConsole.jsx";
 import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
 
 import { People, CheckCircle, School } from '@mui/icons-material';
@@ -22,124 +24,128 @@ import BookIcon from "@mui/icons-material/Book";
 const dataProvider = simpleRestProvider("https://jsonplaceholder.typicode.com");
 
 function Dashboard() {
-  const stats = [
-    { label: "Total Students", value: 8855, change: "+8.2%", icon: <PeopleIcon sx={{ color: "blue" }} />, progress: 82 },
-    { label: "Completed Courses", value: 1240, change: "+5.4%", icon: <BookIcon sx={{ color: "purple" }} />, progress: 54 },
-    { label: "Qualification", value: 124, change: "+12.5%", icon: <BookIcon sx={{ color: "green" }} />, progress: 50 },
-    { label: "Pending Notifications", value: 45, change: "-2.1%", icon: <NotificationsIcon sx={{ color: "orange" }} />, progress: 30 },
-  ];
   const incidentSummary = summarizeIncidents(seededIncidents);
-
+  const activeIncidents = incidentSummary.new + incidentSummary.acknowledged + incidentSummary.inReview;
+  const stats = [
+    {
+      label: "Total Incidents",
+      value: incidentSummary.total,
+      detail: "AI/IoT monitoring records",
+      icon: <NotificationsIcon />,
+      progress: Math.min(100, incidentSummary.total * 16),
+      tone: "citrus",
+    },
+    {
+      label: "AI Camera Alerts",
+      value: incidentSummary.ai,
+      detail: "TouchingPlants / TouchingWildlife",
+      icon: <BookIcon />,
+      progress: Math.min(100, incidentSummary.ai * 18),
+      tone: "green",
+    },
+    {
+      label: "IoT Sensor Alerts",
+      value: incidentSummary.iot,
+      detail: "ObjectCloseToPlant events",
+      icon: <CheckCircle />,
+      progress: Math.min(100, incidentSummary.iot * 28),
+      tone: "lime",
+    },
+    {
+      label: "Training Overview",
+      value: "10",
+      detail: "Seeded Park Guide modules",
+      icon: <School />,
+      progress: 100,
+      tone: "sun",
+    },
+    {
+      label: "Pending Actions",
+      value: activeIncidents,
+      detail: "New or under review",
+      icon: <PeopleIcon />,
+      progress: Math.min(100, activeIncidents * 22),
+      tone: "amber",
+    },
+    {
+      label: "System Health",
+      value: "OK",
+      detail: "Memory/MySQL-ready backend",
+      icon: <CheckCircle />,
+      progress: 92,
+      tone: "healthy",
+    },
+  ];
 
   return (
-    <Box sx={{ width: "100%", backgroundColor: "var(--bg-light)", minHeight: "100vh" }}>
+    <Box className="admin-dashboard-shell">
       <Box
-        className="admin-hero-banner"
+        className="admin-hero-banner admin-dashboard-hero"
         sx={{
-          borderRadius: "24px",
-          padding: "40px",
-          marginBottom: "40px",
+          borderRadius: "20px",
+          padding: { xs: "28px", md: "42px" },
+          marginBottom: "28px",
         }}
       >
+        <Typography className="admin-dashboard-kicker">Admin command center</Typography>
         <Typography
           className="admin-hero-title"
           sx={{ margin: 0, fontSize: { xs: "2.2rem", md: "3.6rem" }, fontWeight: 800 }}
         >
-          SFC Guide Center
+          SFC Operations Dashboard
         </Typography>
 
         <Typography
           className="admin-hero-subtitle"
-          sx={{ marginTop: "10px", fontSize: "1.1rem" }}
+          sx={{ marginTop: "10px", fontSize: "1.1rem", maxWidth: 760 }}
         >
-          Professional digital training and certification for Sarawak's parks.
+          Training oversight, monitoring health, AI camera evidence, IoT sensor alerts, and ranger response readiness in one citrus command-center view.
         </Typography>
+        <Box className="admin-hero-chip-row">
+          <span>Memory / MySQL incidents</span>
+          <span>AI_CAMERA + IOT_SENSOR</span>
+          <span>Park Guide training seeded</span>
+        </Box>
       </Box>
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "25px",
-          marginBottom: "40px",
-        }}
-      >
+      <Box className="admin-dashboard-card-grid">
+        {stats.map((item) => (
+          <Card className={`admin-dashboard-card tone-${item.tone}`} key={item.label}>
+            <CardContent>
+              <Box className="admin-dashboard-card-top">
+                <span>{item.icon}</span>
+                <Typography>{item.label}</Typography>
+              </Box>
+              <Typography component="strong">{String(item.value).padStart(2, "0")}</Typography>
+              <Typography component="p">{item.detail}</Typography>
+              <LinearProgress className="admin-linear-progress" variant="determinate" value={item.progress} />
+            </CardContent>
+          </Card>
+        ))}
       </Box>
-      <Box sx={{ px: 2, mb: 4 }}>
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            fontWeight: "bold", 
-            mb: 3, 
-            color: "var(--primary-dark)",
-            pb: 2,
-            borderBottom: '2px solid',
-            borderColor: 'divider'
-          }}
-        >
-          Incident Monitoring Overview
-        </Typography>
 
+      <Box className="admin-dashboard-section">
+        <Typography component="h2">Incident Monitoring Overview</Typography>
         <Box className="incident-stat-grid">
           {[
-            { label: "Total Incidents", value: incidentSummary.total, detail: "primary" },
-            { label: "AI Camera", value: incidentSummary.ai, detail: "info" },
-            { label: "IoT Sensor", value: incidentSummary.iot, detail: "secondary" },
-            { label: "New", value: incidentSummary.new, detail: "warning" },
-            { label: "Reviewed", value: incidentSummary.reviewed, detail: "success" },
-            { label: "False Alarm", value: incidentSummary.falseAlarm, detail: "error" },
+            { label: "Total", value: incidentSummary.total, detail: "All seeded/live records" },
+            { label: "AI Camera", value: incidentSummary.ai, detail: "Image evidence alerts" },
+            { label: "IoT Sensor", value: incidentSummary.iot, detail: "Distance threshold alerts" },
+            { label: "New", value: incidentSummary.new, detail: "Needs review" },
+            { label: "In Review", value: incidentSummary.inReview, detail: "Active investigation" },
+            { label: "Resolved", value: incidentSummary.resolved, detail: "Closed response" },
+            { label: "False Alarm", value: incidentSummary.falseAlarm, detail: "Audit trail" },
           ].map((item) => (
             <Paper className="incident-stat-card" key={item.label}>
               <span className="incident-label">{item.label}</span>
-              <strong className={`incident-value ${item.detail}`}>
-                {String(item.value).padStart(2, "0")}
-              </strong>
+              <strong className="incident-value">{String(item.value).padStart(2, "0")}</strong>
               <p className="incident-detail">{item.detail}</p>
             </Paper>
           ))}
         </Box>
-
       </Box>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "25px", marginBottom: "40px"}}>
-        {stats.map((s, i) => (
-          <Card sx={{
-              minHeight: 170,
-              borderRadius: 5,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              transition: 'transform 0.2s',
-                "&:hover": { transform: 'translateY(-5px)'},
-                boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-              }}>
-
-              <CardContent sx={{ flexGrow: 1, p: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  {s.icon}
-                  <Typography variant="subtitle1" sx={{ ml: 1 }}>
-                    {s.label}
-                  </Typography>
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 'bold', color:"#1976d2" }}>
-                  {s.value}
-                </Typography>
-                <Typography color={s.change.startsWith("+") ? "green" : "error"}>
-                  {s.change} vs last month
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <LinearProgress 
-                  variant="determinate" 
-                  value={s.progress} 
-                  sx={{height: 5, borderRadius: 5}}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-        ))}
-      </Box>
-
-      <Box sx={{ display: "flex", gap: 5 }}>
+      <Box className="admin-chart-grid">
         <Box sx={{ flex: 1 }}>
           <StudentProgressOverview />
         </Box>
@@ -148,11 +154,11 @@ function Dashboard() {
         </Box>
       </Box>
 
-      <Box sx={{ mb:5, mt:5 }}>
+      <Box className="admin-dashboard-section">
         <MonitoringTrendOnly />
       </Box>
 
-      <Box sx={{ mb:4 }}>
+      <Box className="admin-dashboard-section">
         <GuideProgress />
       </Box>
     </Box>
@@ -180,7 +186,7 @@ function StudentProgressOverview() {
       <Typography variant="h5" sx={{ 
         textAlign: "center", 
         mb: 3, 
-        background: "linear-gradient(90deg, #1976d2, #42a5f5)", 
+        background: "linear-gradient(90deg, #0b3b28, #ff7a1a)",
         WebkitBackgroundClip: "text", 
         webKitTextFillColor: "transparent",
         letterSpacing: 1,
@@ -215,7 +221,7 @@ function StudentProgressOverview() {
                   <LinearProgress
                     variant="determinate"
                     value={s.progressPercent}
-                    sx={{ height: 10, borderRadius: 5, backgroundColor: '#e0e0e0', '& .MuiLinearProgress-bar': { backgroundColor: '#1976d2' } }}
+                    sx={{ height: 10, borderRadius: 5, backgroundColor: '#edf3e8', '& .MuiLinearProgress-bar': { background: 'linear-gradient(90deg, #8ac926, #ff7a1a)' } }}
                   />
                   <Typography variant="caption" sx={{ mt: 0.5, display: 'block', textAlign: 'right', fontWeight: 'bold' }}>
                     {s.progressPercent}% Completed
@@ -265,7 +271,7 @@ function MonitoringPieOnly() {
     { name: "Suspicious Object", value: monitoringData.object },
   ]
 
-  const COLORS = ["#4caf50", "#2196f3", "#f44336", "#ff9800"];
+  const COLORS = ["#1f6f44", "#ff7a1a", "#b6d94c", "#f3b23a"];
 
   return (
     <Card sx={{ 
@@ -334,10 +340,10 @@ function MonitoringTrendOnly() {
             <YAxis />
             <Tooltip />
             <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{marginLeft: 30}}/>
-            <Bar dataKey="plant" stackId="a" fill="#4caf50" />
-            <Bar dataKey="wildlife" stackId="a" fill="#2196f3" />
-            <Bar dataKey="trail" stackId="a" fill="#f44336" />
-            <Bar dataKey="object" stackId="a" fill="#ff9800" />
+            <Bar dataKey="plant" stackId="a" fill="#1f6f44" />
+            <Bar dataKey="wildlife" stackId="a" fill="#ff7a1a" />
+            <Bar dataKey="trail" stackId="a" fill="#d7553f" />
+            <Bar dataKey="object" stackId="a" fill="#f3b23a" />
         </BarChart>
         </ResponsiveContainer>
       </CardContent>
@@ -360,9 +366,9 @@ function GuideProgress() {
   };
 
   const stats = [
-    { label: "Total Guides", value: 12, total: 20, color: "#1976d2", icon: <People /> },
-    { label: "Certified", value: 8, total: 12, color: "#4caf50", icon: <CheckCircle /> },
-    { label: "In Training", value: 4, total: 12, color: "#ff9800", icon: <School /> },
+    { label: "Total Guides", value: 12, total: 20, color: "#1f6f44", icon: <People /> },
+    { label: "Certified", value: 8, total: 12, color: "#8ac926", icon: <CheckCircle /> },
+    { label: "In Training", value: 4, total: 12, color: "#ff7a1a", icon: <School /> },
   ];
 
   return (
@@ -376,10 +382,10 @@ function GuideProgress() {
             sx={{ 
               mb: 3.5, 
               fontWeight: 800, 
-              color: '#333',
+              color: '#1e2a22',
               pb: 1, // 底部内边距，留出下划线空间
               borderBottom: '3px solid',
-              borderColor: 'primary.main', // 使用主题色
+              borderColor: '#ff7a1a',
               display: 'inline-block',
               background: 'linear-gradient(120deg, #000000 0%, #252727a7 100%)',
               WebkitBackgroundClip: 'text',
@@ -398,7 +404,7 @@ function GuideProgress() {
                   boxShadow: "0 2px 10px rgba(0,0,0,0.05)", // 1. 阴影更柔和
                   p: 2.5, // 稍微增加一点内边距，显得不那么挤
                   height: '100%',
-                  border: '1px solid #f0f0f0', // 2. 增加极淡的边框，增加层次感
+                  border: '1px solid #dce7d7',
                   transition: 'transform 0.2s', // 3. 加个鼠标悬停的小动画
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }
                 }}>
@@ -413,8 +419,8 @@ function GuideProgress() {
                       </Typography>
                     </Box>
                     
-                    <Typography variant="h5" sx={{ fontWeight: "800", color: '#2c3e50', mb: 2 }}>
-                      {s.value} <Typography component="span" variant="body2" sx={{ color: '#999', fontWeight: 'normal' }}>/ {s.total}</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: "800", color: '#1e2a22', mb: 2 }}>
+                      {s.value} <Typography component="span" variant="body2" sx={{ color: '#607166', fontWeight: 'normal' }}>/ {s.total}</Typography>
                     </Typography>
                     
                     <Box sx={{ mt: 1 }}>
@@ -424,7 +430,7 @@ function GuideProgress() {
                         sx={{ 
                           height: 6, // 4. 进度条稍微细一点，更精致
                           borderRadius: 5, 
-                          backgroundColor: '#f0f2f5', // 5. 进度条背景改为浅灰蓝
+                          backgroundColor: '#edf3e8',
                           '& .MuiLinearProgress-bar': { 
                             backgroundColor: s.color, // 颜色保留
                             borderRadius: 5,
@@ -464,8 +470,8 @@ function GuideProgress() {
                     <YAxis />
                     <Tooltip />
                     <Legend layout="vertical" align="right" verticalAlign="middle" />
-                    <Line type="monotone" dataKey="completed" stroke="#4caf50" strokeWidth={3} />
-                    <Line type="monotone" dataKey="certified" stroke="#9c27b0" strokeWidth={3} />
+                    <Line type="monotone" dataKey="completed" stroke="#1f6f44" strokeWidth={3} />
+                    <Line type="monotone" dataKey="certified" stroke="#ff7a1a" strokeWidth={3} />
                   </LineChart>
                 </ResponsiveContainer>
               </Box>
@@ -485,6 +491,9 @@ function AdminPage() {
       <Resource name="students" list={StudentManagement} />
       <Resource name="badge" list={BadgeManagement} />
       <Resource name="detection" list={AIDetection} />
+      <CustomRoutes>
+        <Route path="/ranger" element={<ParkRangerConsole />} />
+      </CustomRoutes>
     </Admin>
   );
 }

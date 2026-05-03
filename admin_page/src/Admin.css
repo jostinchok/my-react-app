@@ -1,3 +1,28 @@
+.admin-dashboard-shell,
+.incident-dashboard,
+.ranger-console {
+  --ce-forest: #0b3b28;
+  --ce-forest-2: #175f3e;
+  --ce-citrus: #ff7a1a;
+  --ce-sun: #ffd23f;
+  --ce-lime: #a8e64a;
+  --ce-cream: #fff8e6;
+  --ce-mist: #f4f8ef;
+  --ce-charcoal: #1e2a22;
+  --ce-line: #dce7d7;
+  --ce-muted: #607166;
+  --ce-shadow: 0 20px 52px rgba(23, 95, 62, 0.12);
+}
+
+.admin-dashboard-shell {
+  min-height: 100vh;
+  padding: 24px;
+  color: var(--ce-charcoal);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 210, 63, 0.25), transparent 24rem),
+    linear-gradient(135deg, #fffaf0 0%, #eef7e8 54%, #fff0d6 100%);
+}
+
 .admin-sidebar {
   background: #032c1d;
   color: #ffffff;
@@ -8,8 +33,19 @@
 }
 
 .admin-sidebar-badge {
-  background: #43b246;
-  color: #ffffff;
+  padding: 2px;
+  overflow: hidden;
+  background: #fff8e6;
+  color: #0b3b28;
+  box-shadow: 0 10px 24px rgba(255, 122, 26, 0.22);
+}
+
+.admin-sidebar-logo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
 .admin-sidebar-title {
@@ -47,9 +83,12 @@
 }
 
 .admin-hero-banner {
-  background: linear-gradient(90deg, #032c1d 0%, #116c32 100%);
+  background:
+    radial-gradient(circle at 86% 8%, rgba(255, 210, 63, 0.42), transparent 15rem),
+    linear-gradient(135deg, #10241a 0%, #0b3b28 48%, #ff7a1a 132%);
   color: #ffffff;
-  box-shadow: 0 12px 30px rgba(6, 44, 30, 0.2);
+  box-shadow: var(--ce-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .admin-hero-title {
@@ -58,6 +97,167 @@
 
 .admin-hero-subtitle {
   color: rgba(255, 255, 255, 0.86);
+}
+
+.admin-dashboard-kicker {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: #dff7c7;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+
+.admin-hero-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.admin-hero-chip-row span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff8e6;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-dashboard-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.admin-dashboard-card {
+  min-height: 182px;
+  border-radius: 18px !important;
+  border: 1px solid var(--ce-line);
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 16px 38px rgba(23, 95, 62, 0.1) !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-dashboard-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--ce-forest-2), var(--ce-citrus), var(--ce-sun));
+}
+
+.admin-dashboard-card .MuiCardContent-root {
+  height: 100%;
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  padding: 20px !important;
+}
+
+.admin-dashboard-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dashboard-card-top span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--ce-forest);
+}
+
+.admin-dashboard-card-top svg {
+  width: 21px;
+  height: 21px;
+}
+
+.admin-dashboard-card-top p {
+  color: var(--ce-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-dashboard-card strong {
+  display: block;
+  color: var(--ce-charcoal);
+  font-size: clamp(2rem, 4vw, 2.85rem);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.admin-dashboard-card p {
+  margin: 0;
+  color: var(--ce-muted);
+  line-height: 1.45;
+}
+
+.admin-dashboard-card.tone-citrus .admin-dashboard-card-top span,
+.admin-dashboard-card.tone-amber .admin-dashboard-card-top span {
+  background: linear-gradient(135deg, var(--ce-citrus), var(--ce-sun));
+  color: #1e2a22;
+}
+
+.admin-dashboard-card.tone-lime .admin-dashboard-card-top span,
+.admin-dashboard-card.tone-healthy .admin-dashboard-card-top span {
+  background: linear-gradient(135deg, var(--ce-forest-2), var(--ce-lime));
+}
+
+.admin-dashboard-section {
+  margin: 26px 0;
+}
+
+.admin-dashboard-section > h2 {
+  margin: 0 0 16px;
+  color: var(--ce-charcoal);
+  font-size: 1.45rem;
+  font-weight: 950;
+}
+
+.admin-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 16px;
+}
+
+.admin-dashboard-shell .MuiCard-root {
+  border-radius: 18px !important;
+  border: 1px solid var(--ce-line);
+  box-shadow: 0 16px 38px rgba(23, 95, 62, 0.09) !important;
+}
+
+.admin-dashboard-shell .recharts-cartesian-grid line {
+  stroke: #e3eadf;
+}
+
+.admin-dashboard-shell .recharts-default-tooltip {
+  border-radius: 12px !important;
+  border: 1px solid var(--ce-line) !important;
+  box-shadow: 0 12px 28px rgba(23, 95, 62, 0.12) !important;
+}
+
+@media (max-width: 1040px) {
+  .admin-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-shell {
+    padding: 16px;
+  }
 }
 
 .admin-progress-track {
@@ -798,5 +998,362 @@
 
   .ranger-stat-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Final lecturer demo polish for Admin Incident Detection and Park Ranger response views. */
+.incident-dashboard {
+  --incident-ink: #153326;
+  --incident-muted: #5b6d63;
+  --incident-border: #d7e5dc;
+  --incident-panel: rgba(255, 255, 255, 0.94);
+  --incident-soft: #f4f8f1;
+  --incident-green: #1f6f44;
+  --incident-lime: #b6d94c;
+  --incident-amber: #f3b23a;
+  --incident-red: #d7553f;
+  width: min(100% - 32px, 1480px);
+}
+
+.incident-state-banner,
+.ranger-boundary-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0;
+  padding: 15px 18px;
+  border: 1px solid var(--incident-border, #d7e5dc);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--incident-ink, #153326);
+  box-shadow: 0 14px 36px rgba(30, 60, 38, 0.08);
+}
+
+.incident-state-banner strong,
+.ranger-boundary-card strong {
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.incident-state-banner span,
+.ranger-boundary-card span {
+  color: var(--incident-muted, #5b6d63);
+  line-height: 1.45;
+}
+
+.incident-state-banner.online {
+  border-color: #bfe2c7;
+  background: #effaf1;
+}
+
+.incident-state-banner.fallback {
+  border-color: #f5d39a;
+  background: #fff8e8;
+}
+
+.incident-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.incident-stat-card,
+.ranger-stat-card {
+  min-height: 132px;
+  border: 1px solid var(--incident-border, #d7e5dc);
+  border-radius: 8px;
+  box-shadow: 0 14px 32px rgba(30, 60, 38, 0.08);
+}
+
+.incident-stat-card strong,
+.ranger-stat-card strong {
+  letter-spacing: 0;
+}
+
+.incident-filter-row {
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #dce7df;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.incident-filter-row .MuiButton-root {
+  min-height: 40px;
+  gap: 8px;
+  border-radius: 8px;
+  color: #244234;
+  font-weight: 850;
+}
+
+.incident-filter-row .MuiButton-root span {
+  min-width: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(36, 66, 52, 0.09);
+  font-size: 0.76rem;
+}
+
+.incident-filter-row .MuiButton-root.active {
+  background: #1f6f44;
+  color: #fff;
+}
+
+.incident-filter-row .MuiButton-root.active span {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.incident-table-panel,
+.ranger-table-panel,
+.incident-detail-panel,
+.ranger-detail-panel {
+  border: 1px solid var(--incident-border, #d7e5dc);
+  border-radius: 8px;
+  background: var(--incident-panel, rgba(255, 255, 255, 0.94));
+  box-shadow: 0 18px 42px rgba(30, 60, 38, 0.1);
+}
+
+.incident-table {
+  table-layout: fixed;
+}
+
+.incident-table th {
+  background: #f0f6ed;
+  color: #233d30;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.incident-table td {
+  color: #1c2f25;
+  vertical-align: middle;
+}
+
+.incident-table-row {
+  cursor: pointer;
+}
+
+.incident-table-row.is-selected td {
+  background: #fff7d9;
+}
+
+.incident-table-row.is-urgent td:first-of-type {
+  box-shadow: inset 4px 0 0 #d7553f;
+}
+
+.incident-id-cell {
+  max-width: 230px;
+  overflow: hidden;
+  color: #234836;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-chip,
+.severity-chip,
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.source-chip.ai_camera {
+  background: #e7f1ff;
+  color: #174b86;
+}
+
+.source-chip.iot_sensor {
+  background: #e8f7df;
+  color: #2d6b1e;
+}
+
+.severity-chip.low {
+  background: #eef8e7;
+  color: #2f6b26;
+}
+
+.severity-chip.medium {
+  background: #fff1cf;
+  color: #8d5b05;
+}
+
+.severity-chip.high {
+  background: #ffe0d6;
+  color: #a43a24;
+}
+
+.status-chip.new {
+  background: #ffe0d6;
+  color: #a43a24;
+}
+
+.status-chip.reviewed {
+  background: #e9f1ff;
+  color: #26527f;
+}
+
+.status-chip.acknowledged {
+  background: #f4ecff;
+  color: #5d338f;
+}
+
+.status-chip.in-review {
+  background: #fff1cf;
+  color: #8d5b05;
+}
+
+.status-chip.resolved {
+  background: #e1f6e7;
+  color: #236234;
+}
+
+.status-chip.false-alarm {
+  background: #edf0f2;
+  color: #56636a;
+}
+
+.incident-detail-panel,
+.ranger-detail-panel {
+  padding: 22px;
+}
+
+.incident-detail-kicker {
+  margin: 4px 0 14px;
+  color: var(--incident-muted, #5b6d63);
+  line-height: 1.45;
+}
+
+.incident-evidence-frame {
+  overflow: hidden;
+  border: 1px solid #dbe5dc;
+  border-radius: 8px;
+  background: #102419;
+}
+
+.incident-evidence-frame img {
+  width: 100%;
+  height: 280px;
+  display: block;
+  object-fit: cover;
+}
+
+.incident-evidence-caption {
+  display: block;
+  padding: 9px 12px;
+  background: #f7faf5;
+  color: #566a5f;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.incident-no-image {
+  border-radius: 8px;
+  border-style: dashed;
+}
+
+.incident-detail-grid,
+.incident-metadata-card,
+.incident-notes,
+.ranger-notes,
+.incident-status-actions {
+  border-radius: 8px;
+}
+
+.incident-metadata-card,
+.incident-notes,
+.incident-status-actions {
+  border: 1px solid #dce7df;
+  background: #fbfdf9;
+}
+
+.incident-detail-item strong {
+  word-break: break-word;
+}
+
+.incident-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.incident-status-actions h3 {
+  width: 100%;
+  margin: 0 0 4px;
+}
+
+.incident-status-actions .MuiButton-root {
+  border: 1px solid #c8d8ce;
+  border-radius: 8px;
+  background: #fff;
+  color: #213d2f;
+  font-weight: 850;
+}
+
+.incident-status-actions .MuiButton-root.active {
+  background: #1f6f44;
+  border-color: #1f6f44;
+  color: #fff;
+}
+
+.ranger-console {
+  --incident-border: #d7e5dc;
+  --incident-muted: #5b6d63;
+  --ranger-ink: #153326;
+}
+
+.ranger-header,
+.ranger-workspace {
+  gap: 20px;
+}
+
+.ranger-title {
+  letter-spacing: 0;
+}
+
+.ranger-live-card {
+  border-radius: 8px;
+  box-shadow: 0 18px 42px rgba(30, 60, 38, 0.1);
+}
+
+.ranger-boundary-card {
+  margin-top: 0;
+}
+
+.ranger-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.ranger-detail-panel {
+  top: 18px;
+}
+
+.ranger-evidence-frame img {
+  height: 260px;
+}
+
+@media (max-width: 760px) {
+  .incident-state-banner,
+  .ranger-boundary-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .incident-table {
+    table-layout: auto;
+  }
+
+  .incident-evidence-frame img,
+  .ranger-evidence-frame img {
+    height: 220px;
   }
 }
