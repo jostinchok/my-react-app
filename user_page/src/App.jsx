@@ -5,11 +5,23 @@ import {
   demoUsers,
   roleBoundaries,
   supportTopics,
-  trainingModules,
 } from './data/trainingPlatform'
+import {
+  API_LINKS,
+  loadDatabaseFrame,
+  normalizeCertificateRow,
+  normalizeModuleRow,
+  normalizeNotificationRow,
+  normalizeProfileRow,
+  normalizeScheduleRow,
+  deleteScheduleItem,
+  saveProfileField,
+  saveScheduleItem,
+  updateScheduleItem,
+} from './services/databaseFrames'
 
 const STORAGE_KEY = 'sfc_citrus_training_demo'
-const brandLogo = `${import.meta.env.BASE_URL}sfc-citrus-logo.webp`
+const editableProfileFields = new Set(['displayName', 'email', 'phone', 'yearsExperience', 'address'])
 
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
 
@@ -47,8 +59,17 @@ function App() {
   const [users, setUsers] = useState(readStoredUsers)
   const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [selectedModuleId, setSelectedModuleId] = useState(users[0]?.enrolledModuleIds?.[0] || trainingModules[0].id)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [trainingModules, setTrainingModules] = useState([])
+  const [moduleFrame, setModuleFrame] = useState({
+    status: 'loading',
+    message: 'Waiting for module records from database.',
+  })
+  const [databaseProfile, setDatabaseProfile] = useState(null)
+  const [databaseCertificates, setDatabaseCertificates] = useState([])
+  const [databaseNotifications, setDatabaseNotifications] = useState([])
+  const [databaseSchedule, setDatabaseSchedule] = useState([])
+  const [selectedModuleId, setSelectedModuleId] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [moduleSearch, setModuleSearch] = useState('')
   const [moduleStatus, setModuleStatus] = useState('all')
   const [moduleCategory, setModuleCategory] = useState('all')
@@ -59,6 +80,7 @@ function App() {
     location: '',
     type: 'Reminder',
   })
+  const [editingScheduleId, setEditingScheduleId] = useState(null)
 
   useEffect(() => {
     try {
@@ -68,12 +90,94 @@ function App() {
     }
   }, [users])
 
-  const currentUser = users.find((user) => user.id === currentUserId) || users[0] || cloneSeedUsers()[0]
-  const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || trainingModules[0]
+  useEffect(() => {
+    let ignore = false
+
+    loadDatabaseFrame(API_LINKS.modules, ['modules', 'trainingModules', 'courses'], normalizeModuleRow)
+      .then((modules) => {
+        if (ignore) return
+        setTrainingModules(modules)
+        setSelectedModuleId(modules[0]?.id || null)
+        setModuleFrame({
+          status: modules.length > 0 ? 'ready' : 'empty',
+          message: modules.length > 0
+            ? `${modules.length} module${modules.length === 1 ? '' : 's'} loaded from database.`
+            : 'Database connected, but no module rows were returned.',
+        })
+      })
+      .catch((error) => {
+        if (ignore) return
+        setTrainingModules([])
+        setSelectedModuleId(null)
+        setModuleFrame({
+          status: 'empty',
+          message: `${error.message} Check the endpoint in user_page/src/services/databaseFrames.js.`,
+        })
+      })
+
+    loadDatabaseFrame(API_LINKS.profile, ['profile', 'user', 'guideProfile'], normalizeProfileRow)
+      .then((profiles) => {
+        if (!ignore) setDatabaseProfile(profiles[0] || null)
+      })
+      .catch(() => {
+        if (!ignore) setDatabaseProfile(null)
+      })
+
+    loadDatabaseFrame(API_LINKS.certifications, ['certifications', 'certificates'], normalizeCertificateRow)
+      .then((items) => {
+        if (!ignore) setDatabaseCertificates(items)
+      })
+      .catch(() => {
+        if (!ignore) setDatabaseCertificates([])
+      })
+
+    loadDatabaseFrame(API_LINKS.notifications, ['notifications'], normalizeNotificationRow)
+      .then((items) => {
+        if (!ignore) setDatabaseNotifications(items)
+      })
+      .catch(() => {
+        if (!ignore) setDatabaseNotifications([])
+      })
+
+    loadDatabaseFrame(API_LINKS.schedule, ['schedule', 'schedules', 'trainingSchedule', 'progress'], normalizeScheduleRow)
+      .then((items) => {
+        if (!ignore) setDatabaseSchedule(items)
+      })
+      .catch(() => {
+        if (!ignore) setDatabaseSchedule([])
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const seededUser = users.find((user) => user.id === currentUserId) || users[0] || cloneSeedUsers()[0]
+  const currentUser = databaseProfile ? { ...seededUser, ...databaseProfile } : seededUser
+  const profileUser = databaseProfile
+    ? currentUser
+    : {
+        ...currentUser,
+        displayName: currentUser.displayName || 'Guide',
+        realName: currentUser.realName || '-',
+        email: currentUser.email || '-',
+        birthday: currentUser.birthday || '-',
+        phone: currentUser.phone || '-',
+        assignedPark: currentUser.assignedPark || '-',
+        position: currentUser.position || '-',
+        yearsExperience: currentUser.yearsExperience || '-',
+        address: currentUser.address || '-',
+        guideId: currentUser.guideId || '-',
+        role: currentUser.role || 'guide',
+        status: 'Waiting for database profile',
+        avatar: currentUser.avatar || null,
+        avatarColor: currentUser.avatarColor,
+      }
+  const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || null
 
   const moduleMap = useMemo(
     () => new Map(trainingModules.map((module) => [module.id, module])),
-    []
+    [trainingModules]
   )
 
   const allResources = useMemo(
@@ -87,7 +191,7 @@ function App() {
           park: module.park,
         }))
       ),
-    []
+    [trainingModules]
   )
 
   const updateCurrentUser = (updater) => {
@@ -113,35 +217,38 @@ function App() {
     }))
   }
 
-  const isEnrolled = (module, user = currentUser) => user.enrolledModuleIds?.includes(module.id)
+  const isEnrolled = (module, user = currentUser) => !!module && user.enrolledModuleIds?.includes(module.id)
 
   const getProgress = (module, user = currentUser) => {
+    if (!module) return 0
     if (!isEnrolled(module, user)) return 0
     const lessonsDone = user.completedLessons?.[module.id]?.length || 0
     const quizDone = user.quizResults?.[module.id]?.passed ? 1 : 0
-    return Math.round(((lessonsDone + quizDone) / (module.lessons.length + 1)) * 100)
+    return Math.round(((lessonsDone + quizDone) / ((module.lessons?.length || 0) + 1)) * 100)
   }
 
   const enrolledModules = useMemo(
     () => trainingModules.filter((module) => isEnrolled(module)),
-    [currentUser]
+    [currentUser, trainingModules]
   )
 
   const completedModules = useMemo(
     () => trainingModules.filter((module) => getProgress(module) === 100),
-    [currentUser]
+    [currentUser, trainingModules]
   )
 
   const overallProgress = useMemo(() => {
     if (enrolledModules.length === 0) return 0
     const total = enrolledModules.reduce((sum, module) => sum + getProgress(module), 0)
     return Math.round(total / enrolledModules.length)
-  }, [currentUser, enrolledModules])
+  }, [currentUser, enrolledModules, trainingModules])
 
-  const unreadCount = currentUser.notifications?.filter((item) => !item.read).length || 0
+  const userNotifications = databaseNotifications.length > 0 ? databaseNotifications : []
+  const userSchedule = databaseSchedule.length > 0 ? databaseSchedule : currentUser.schedule || []
+  const unreadCount = userNotifications.filter((item) => !item.read).length || 0
 
   const certificates = useMemo(() => {
-    const baseCertificates = currentUser.certificates || []
+    const baseCertificates = databaseCertificates
     const certifiedModuleIds = new Set(baseCertificates.map((certificate) => certificate.moduleId))
     const readyToReview = completedModules
       .filter((module) => !certifiedModuleIds.has(module.id))
@@ -154,7 +261,7 @@ function App() {
         expiryDate: '1 year after approval',
       }))
     return [...baseCertificates, ...readyToReview]
-  }, [currentUser, completedModules])
+  }, [currentUser, completedModules, databaseCertificates])
 
   const earnedBadgeIds = useMemo(
     () => new Set(completedModules.map((module) => module.id)),
@@ -163,12 +270,12 @@ function App() {
 
   const nextModule = useMemo(() => {
     const active = enrolledModules.find((module) => getProgress(module) < 100)
-    return active || trainingModules.find((module) => !isEnrolled(module)) || trainingModules[0]
-  }, [currentUser, enrolledModules])
+    return active || trainingModules.find((module) => !isEnrolled(module)) || null
+  }, [currentUser, enrolledModules, trainingModules])
 
   const categories = useMemo(
     () => ['all', ...new Set(trainingModules.map((module) => module.category))],
-    []
+    [trainingModules]
   )
 
   const filteredModules = useMemo(() => {
@@ -186,7 +293,7 @@ function App() {
       const matchesCategory = moduleCategory === 'all' || moduleCategory === module.category
       return matchesSearch && matchesStatus && matchesCategory
     })
-  }, [currentUser, moduleSearch, moduleStatus, moduleCategory])
+  }, [currentUser, moduleSearch, moduleStatus, moduleCategory, trainingModules])
 
   const categoryProgress = useMemo(() => {
     return [...new Set(trainingModules.map((module) => module.category))].map((category) => {
@@ -196,7 +303,7 @@ function App() {
       )
       return { category, average }
     })
-  }, [currentUser])
+  }, [currentUser, trainingModules])
 
   const savedResourceIds = new Set(currentUser.savedResources || [])
   const savedResources = [
@@ -207,34 +314,19 @@ function App() {
   const switchUser = (userId) => {
     const nextUser = users.find((user) => user.id === userId)
     setCurrentUserId(userId)
-    setSelectedModuleId(nextUser?.enrolledModuleIds?.[0] || trainingModules[0].id)
+    setSelectedModuleId(nextUser?.enrolledModuleIds?.[0] || trainingModules[0]?.id || null)
     setActiveTab('dashboard')
-  }
-
-  const resetDemo = () => {
-    const freshUsers = cloneSeedUsers()
-    setUsers(freshUsers)
-    setCurrentUserId(freshUsers[0].id)
-    setSelectedModuleId(freshUsers[0].enrolledModuleIds[0])
-    setActiveTab('dashboard')
-  }
-
-  const logoutDemoSession = () => {
-    try {
-      localStorage.removeItem('sfc_demo_session')
-    } catch {
-      // Demo session storage is optional.
-    }
-    alert('Demo session cleared. Routes remain open for lecturer review; production route guards are documented in CYBERSECURITY_REVIEW.md.')
   }
 
   const openModule = (moduleId) => {
+    if (!moduleId) return
     setSelectedModuleId(moduleId)
     setActiveTab('module')
     setSidebarOpen(false)
   }
 
   const enrollModule = (module) => {
+    if (!module) return
     if (isEnrolled(module)) {
       openModule(module.id)
       return
@@ -250,6 +342,7 @@ function App() {
   }
 
   const toggleLesson = (module, lessonIndex) => {
+    if (!module) return
     if (!isEnrolled(module)) return
     updateCurrentUser((user) => {
       const existing = user.completedLessons?.[module.id] || []
@@ -267,6 +360,7 @@ function App() {
   }
 
   const submitQuiz = (module) => {
+    if (!module) return
     if (!isEnrolled(module)) return
     const selected = Number(quizDraft[module.id])
     if (Number.isNaN(selected)) return
@@ -315,23 +409,80 @@ function App() {
     }))
   }
 
+  const upsertLocalScheduleItem = (scheduleItem) => {
+    setDatabaseSchedule((items) => {
+      const existing = items.length > 0 ? items : userSchedule
+      const nextItems = existing.some((item) => item.id === scheduleItem.id)
+        ? existing.map((item) => (item.id === scheduleItem.id ? scheduleItem : item))
+        : [scheduleItem, ...existing]
+      return nextItems.sort((a, b) => a.date.localeCompare(b.date))
+    })
+    updateCurrentUser((user) => {
+      const existing = user.schedule || []
+      const nextItems = existing.some((item) => item.id === scheduleItem.id)
+        ? existing.map((item) => (item.id === scheduleItem.id ? scheduleItem : item))
+        : [scheduleItem, ...existing]
+      return {
+        ...user,
+        schedule: nextItems.sort((a, b) => a.date.localeCompare(b.date)),
+      }
+    })
+  }
+
   const addScheduleItem = (event) => {
     event.preventDefault()
     if (!scheduleForm.date || !scheduleForm.title.trim()) return
+    const scheduleItem = {
+      id: editingScheduleId || `${currentUser.id}-schedule-${Date.now()}`,
+      user_id: currentUser.id,
+      title: scheduleForm.title.trim(),
+      date: scheduleForm.date,
+      location: scheduleForm.location.trim() || 'Self-paced',
+      type: scheduleForm.type,
+      status: 'Scheduled',
+    }
+    upsertLocalScheduleItem(scheduleItem)
+    const saveRequest = editingScheduleId ? updateScheduleItem(scheduleItem) : saveScheduleItem(scheduleItem)
+    saveRequest.catch(() => {
+      // Keep the local schedule item visible while the database endpoint is not connected.
+    })
+    setScheduleForm({ date: scheduleForm.date, title: '', location: '', type: 'Reminder' })
+    setEditingScheduleId(null)
+    addNotification(
+      'Schedule updated',
+      editingScheduleId
+        ? 'A personal learning reminder was edited in your schedule.'
+        : 'A personal learning reminder was added to your schedule.',
+      'schedule'
+    )
+  }
+
+  const startScheduleEdit = (item) => {
+    setEditingScheduleId(item.id)
+    setScheduleForm({
+      date: item.date || '',
+      title: item.title || '',
+      location: item.location || '',
+      type: item.type || 'Reminder',
+    })
+  }
+
+  const cancelScheduleEdit = () => {
+    setEditingScheduleId(null)
+    setScheduleForm({ date: scheduleForm.date || '2026-05-20', title: '', location: '', type: 'Reminder' })
+  }
+
+  const removeScheduleItem = (scheduleId) => {
+    setDatabaseSchedule((items) => (items.length > 0 ? items : userSchedule).filter((item) => item.id !== scheduleId))
     updateCurrentUser((user) => ({
       ...user,
-      schedule: [
-        {
-          id: `${user.id}-schedule-${Date.now()}`,
-          ...scheduleForm,
-          title: scheduleForm.title.trim(),
-          location: scheduleForm.location.trim() || 'Self-paced',
-        },
-        ...(user.schedule || []),
-      ].sort((a, b) => a.date.localeCompare(b.date)),
+      schedule: (user.schedule || []).filter((item) => item.id !== scheduleId),
     }))
-    setScheduleForm({ date: scheduleForm.date, title: '', location: '', type: 'Reminder' })
-    addNotification('Schedule updated', 'A personal learning reminder was added to your schedule.', 'schedule')
+    if (editingScheduleId === scheduleId) cancelScheduleEdit()
+    deleteScheduleItem(scheduleId).catch(() => {
+      // Keep the local delete visible while the database endpoint is not connected.
+    })
+    addNotification('Schedule updated', 'A personal learning reminder was deleted from your schedule.', 'schedule')
   }
 
   const toggleResource = (resourceId) => {
@@ -365,7 +516,28 @@ function App() {
   }
 
   const updateProfileField = (field, value) => {
+    if (!editableProfileFields.has(field)) return
     updateCurrentUser((user) => ({ ...user, [field]: value }))
+    setDatabaseProfile((profile) => (profile ? { ...profile, [field]: value } : profile))
+  }
+
+  const saveProfileEdit = (field, value) => {
+    if (!editableProfileFields.has(field)) return
+    saveProfileField(field, value).catch(() => {
+      // Keep the local edit visible while the database endpoint is not connected.
+    })
+  }
+
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      updateCurrentUser((user) => ({ ...user, avatar: reader.result }))
+      setDatabaseProfile((profile) => (profile ? { ...profile, avatar: reader.result } : profile))
+    }
+    reader.readAsDataURL(file)
+    event.target.value = ''
   }
 
   const navItems = [
@@ -376,18 +548,14 @@ function App() {
     { id: 'certificates', label: 'Certificates', icon: 'C' },
     { id: 'notifications', label: 'Notifications', icon: 'N' },
     { id: 'schedule', label: 'Schedule', icon: 'S' },
-    { id: 'resources', label: 'Resources', icon: 'R' },
     { id: 'profile', label: 'Profile', icon: 'U' },
-    { id: 'help', label: 'Help', icon: '?' },
   ]
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="brand-block">
-          <div className="brand-mark">
-            <img src={brandLogo} alt="SFC Digital Guide logo" />
-          </div>
+          <div className="brand-mark">SFC</div>
           <div>
             <strong>Guide Center</strong>
             <span>Digital Training</span>
@@ -418,8 +586,9 @@ function App() {
           <p>Training access only. Admin controls stay locked.</p>
         </div>
       </aside>
+      <div className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-      <main className="workspace">
+      <main className={`workspace ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <header className="topbar">
           <button className="menu-button" type="button" onClick={() => setSidebarOpen((value) => !value)}>
             <span />
@@ -431,21 +600,12 @@ function App() {
             <h1>{currentUser.assignedPark}</h1>
           </div>
           <div className="topbar-actions">
-            <select value={currentUserId} onChange={(event) => switchUser(event.target.value)} aria-label="Demo user switcher">
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.username} - {user.assignedPark}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="reset-button" onClick={resetDemo}>
-              Reset Demo
-            </button>
-            <button type="button" className="reset-button" onClick={logoutDemoSession}>
-              Demo Logout
-            </button>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
-              <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
+              {currentUser.avatar ? (
+                <img src={currentUser.avatar} alt="User avatar" />
+              ) : (
+                <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
+              )}
             </button>
           </div>
         </header>
@@ -456,7 +616,7 @@ function App() {
               <div className="hero-grid">
                 <div
                   className="hero-copy"
-                  style={{ '--hero-image': `url(${trainingModules[0].image})` }}
+                  style={{ '--hero-image': nextModule ? `url(${nextModule.image})` : 'none' }}
                 >
                   <span className="kicker">Citrus learning path</span>
                   <h2>Fresh field training for Sarawak park guides.</h2>
@@ -464,8 +624,8 @@ function App() {
                     Continue assigned modules, pass scenario quizzes, save field resources, and build certificate evidence from one polished user portal.
                   </p>
                   <div className="hero-actions">
-                    <button type="button" onClick={() => openModule(nextModule.id)}>
-                      Continue {nextModule.title}
+                    <button type="button" disabled={!nextModule} onClick={() => openModule(nextModule?.id)}>
+                      {nextModule ? `Continue ${nextModule.title}` : 'Waiting for modules'}
                     </button>
                     <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
                       Browse all modules
@@ -473,27 +633,35 @@ function App() {
                   </div>
                 </div>
                 <div className="next-card">
-                  <img src={nextModule.image} alt="" />
-                  <div>
-                    <span>Next action</span>
-                    <strong>{nextModule.title}</strong>
-                    <ProgressBar value={getProgress(nextModule)} />
-                    <small>{getProgress(nextModule)}% complete</small>
-                  </div>
+                  {nextModule ? (
+                    <>
+                      <img src={nextModule.image} alt="" />
+                      <div>
+                        <span>Next action</span>
+                        <strong>{nextModule.title}</strong>
+                        <small>{getProgress(nextModule)}% complete</small>
+                      </div>
+                    </>
+                  ) : (
+                    <EmptyFrame title="Module frame" body={moduleFrame.message} />
+                  )}
                 </div>
               </div>
 
               <div className="stat-grid">
                 <StatCard label="Overall progress" value={`${overallProgress}%`} detail={`${enrolledModules.length} enrolled modules`} />
-                <StatCard label="Completed modules" value={`${completedModules.length}/10`} detail="Lessons plus quiz required" />
+                <StatCard label="Completed modules" value={`${completedModules.length}/${trainingModules.length}`} detail="Lessons plus quiz required" />
                 <StatCard label="Certificates" value={String(certificates.length).padStart(2, '0')} detail="Verified or ready for review" />
                 <StatCard label="Unread updates" value={String(unreadCount).padStart(2, '0')} detail="Training, resources, schedule" />
               </div>
 
-              <div className="content-grid">
+              <div className="content-grid single-panel">
                 <section className="panel wide">
                   <PanelTitle kicker="Learning path" title={`${currentUser.username}'s active modules`} />
                   <div className="compact-module-list">
+                    {enrolledModules.length === 0 && (
+                      <EmptyFrame title="No database modules yet" body="This box will show enrolled module rows after the database returns module data." />
+                    )}
                     {enrolledModules.map((module) => (
                       <button key={module.id} type="button" onClick={() => openModule(module.id)}>
                         <img src={module.image} alt="" />
@@ -507,23 +675,6 @@ function App() {
                   </div>
                 </section>
 
-                <section className="panel">
-                  <PanelTitle kicker="Demo user" title="Quick review switcher" />
-                  <div className="user-switcher">
-                    {users.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        className={user.id === currentUserId ? 'active' : ''}
-                        onClick={() => switchUser(user.id)}
-                      >
-                        <span style={{ background: user.avatarColor }}>{initials(user.displayName)}</span>
-                        <strong>{user.username}</strong>
-                        <small>{user.position}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
               </div>
 
               <div className="content-grid">
@@ -551,9 +702,12 @@ function App() {
             <section className="page-stack">
               <PageIntro
                 kicker="My Modules"
-                title="Ten module training catalog"
-                body="Search, filter, enroll, and continue every required Park Guide training module from the user side."
+                title={`${trainingModules.length} database module${trainingModules.length === 1 ? '' : 's'}`}
+                body="Search, filter, enroll, and continue modules returned by your database endpoint."
               />
+              <div className={`module-source-banner ${moduleFrame.status}`}>
+                {moduleFrame.message}
+              </div>
 
               <div className="toolbar">
                 <input
@@ -578,6 +732,25 @@ function App() {
               </div>
 
               <div className="module-grid">
+                {filteredModules.length === 0 && (
+                  <article className="module-card module-card-empty">
+                    <div className="module-image empty-module-image" />
+                    <div className="module-card-body">
+                      <div className="module-meta">
+                        <span>Database</span>
+                        <span>Frame</span>
+                        <span>Ready</span>
+                      </div>
+                      <h3>Module data frame</h3>
+                      <p>The card design is ready. It will show real module rows after the endpoint in databaseFrames.js returns data.</p>
+                      <ProgressBar value={0} />
+                      <div className="module-actions">
+                        <button type="button" disabled>Waiting for data</button>
+                        <span>0%</span>
+                      </div>
+                    </div>
+                  </article>
+                )}
                 {filteredModules.map((module) => {
                   const progress = getProgress(module)
                   const enrolled = isEnrolled(module)
@@ -610,7 +783,7 @@ function App() {
             </section>
           )}
 
-          {activeTab === 'module' && (
+          {activeTab === 'module' && selectedModule && (
             <section className="page-stack">
               <div className="module-detail-hero">
                 <img src={selectedModule.image} alt="" />
@@ -720,6 +893,44 @@ function App() {
             </section>
           )}
 
+          {activeTab === 'module' && !selectedModule && (
+            <section className="page-stack">
+              <div className="module-detail-hero empty-detail-hero">
+                <div className="empty-module-image" />
+                <div>
+                  <span className="kicker">Database Module / Empty Frame</span>
+                  <h2>Module detail template</h2>
+                  <p>{moduleFrame.message}</p>
+                  <div className="detail-chips">
+                    <span>Level</span>
+                    <span>Duration</span>
+                    <span>Format</span>
+                    <span>0% complete</span>
+                  </div>
+                  <ProgressBar value={0} />
+                  <div className="hero-actions">
+                    <button type="button" disabled>Waiting for data</button>
+                    <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
+                      Back to modules
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="content-grid detail-layout">
+                <section className="panel wide">
+                  <PanelTitle kicker="Learning objectives" title="Database frame" />
+                  <EmptyFrame title="Objectives will render here" body="Link objective rows or JSON arrays to the objectives field in databaseFrames.js." />
+                  <PanelTitle kicker="Lesson checklist" title="Database frame" />
+                  <EmptyFrame title="Lessons will render here" body="Rows from the lessons table will become the checklist items." />
+                </section>
+                <aside className="panel">
+                  <PanelTitle kicker="Scenario quiz" title="Assessment" />
+                  <EmptyFrame title="Quiz will render here" body="Questions and options from your database will fill this box." />
+                </aside>
+              </div>
+            </section>
+          )}
+
           {activeTab === 'progress' && (
             <section className="page-stack">
               <PageIntro
@@ -728,17 +939,18 @@ function App() {
                 body="This page gives the Park Guide a clear view of module completion and where to focus next."
               />
 
-              <div className="stat-grid">
+              <div className="stat-grid progress-stat-grid">
                 <StatCard label="Overall" value={`${overallProgress}%`} detail="Average across enrolled modules" />
                 <StatCard label="Lessons done" value={String(enrolledModules.reduce((sum, module) => sum + (currentUser.completedLessons?.[module.id]?.length || 0), 0))} detail="Checklist items completed" />
-                <StatCard label="Passed quizzes" value={String(Object.values(currentUser.quizResults || {}).filter((result) => result.passed).length)} detail="Scenario assessments" />
-                <StatCard label="Badges ready" value={String(completedModules.length)} detail="Completed module badges" />
               </div>
 
               <div className="content-grid">
                 <section className="panel wide">
                   <PanelTitle kicker="Module progress" title="Completion evidence" />
                   <div className="progress-table">
+                    {trainingModules.length === 0 && (
+                      <EmptyFrame title="No module progress yet" body="Progress rows can be joined by module_id after your database modules are available." />
+                    )}
                     {trainingModules.map((module) => (
                       <button key={module.id} type="button" onClick={() => openModule(module.id)}>
                         <span>{module.title}</span>
@@ -751,7 +963,10 @@ function App() {
 
                 <section className="panel">
                   <PanelTitle kicker="Category view" title="Strength map" />
-                  <div className="category-bars">
+                <div className="category-bars">
+                    {categoryProgress.length === 0 && (
+                      <EmptyFrame title="No categories yet" body="Category bars will appear after module category values load from the database." />
+                    )}
                     {categoryProgress.map((item) => (
                       <div key={item.category}>
                         <span>{item.category}</span>
@@ -796,8 +1011,8 @@ function App() {
                           <dd>{certificate.expiryDate}</dd>
                         </div>
                       </dl>
-                      <button type="button" onClick={() => alert('Certificate download is a front-end demo action.')}>
-                        Download demo certificate
+                      <button type="button" onClick={() => alert('Connect this button to your certificate file endpoint.')}>
+                        Download certificate
                       </button>
                     </article>
                   )
@@ -807,6 +1022,9 @@ function App() {
               <section className="panel">
                 <PanelTitle kicker="Badges" title="All module milestones" />
                 <div className="badge-grid">
+                  {trainingModules.length === 0 && (
+                    <EmptyFrame title="No badge rows yet" body="Badges will use module badge_name or badge fields when database modules load." />
+                  )}
                   {trainingModules.map((module) => (
                     <div key={module.id} className={earnedBadgeIds.has(module.id) ? 'badge earned' : 'badge locked'}>
                       <span style={{ background: module.accent }}>{module.badge.slice(0, 2).toUpperCase()}</span>
@@ -832,7 +1050,10 @@ function App() {
                 </button>
               </div>
               <div className="notification-list">
-                {(currentUser.notifications || []).map((notification) => (
+                {userNotifications.length === 0 && (
+                  <EmptyFrame title="No notifications yet" body="Notification cards will appear after the database returns rows from the notifications endpoint." />
+                )}
+                {userNotifications.map((notification) => (
                   <article key={notification.id} className={notification.read ? 'read' : 'unread'}>
                     <div>
                       <span>{notification.type}</span>
@@ -859,13 +1080,16 @@ function App() {
               <PageIntro
                 kicker="Schedule"
                 title="Training due dates and field sessions"
-                body="Park Guides can review assigned sessions and add personal reminders for their own learning plan."
+                body="Training schedule cards are ready to receive rows from your database."
               />
               <div className="content-grid">
                 <section className="panel wide">
                   <PanelTitle kicker="Upcoming" title={`${currentUser.username}'s schedule`} />
                   <div className="schedule-list">
-                    {(currentUser.schedule || []).map((item) => (
+                    {userSchedule.length === 0 && (
+                      <EmptyFrame title="No schedule rows yet" body="Schedule items will appear after your schedule endpoint returns date, title, location, and type fields." />
+                    )}
+                    {userSchedule.map((item) => (
                       <article key={item.id}>
                         <time>{formatDate(item.date)}</time>
                         <div>
@@ -873,13 +1097,17 @@ function App() {
                           <h3>{item.title}</h3>
                           <p>{item.location}</p>
                         </div>
+                        <div className="schedule-card-actions">
+                          <button type="button" onClick={() => startScheduleEdit(item)}>Edit</button>
+                          <button type="button" className="danger-button" onClick={() => removeScheduleItem(item.id)}>Delete</button>
+                        </div>
                       </article>
                     ))}
                   </div>
                 </section>
 
                 <section className="panel">
-                  <PanelTitle kicker="Personal reminder" title="Add to my schedule" />
+                  <PanelTitle kicker="Personal reminder" title={editingScheduleId ? 'Edit schedule item' : 'Add to my schedule'} />
                   <form className="schedule-form" onSubmit={addScheduleItem}>
                     <label>
                       Date
@@ -902,50 +1130,13 @@ function App() {
                         <option>Certificate</option>
                       </select>
                     </label>
-                    <button type="submit">Add reminder</button>
+                    <button type="submit">{editingScheduleId ? 'Save changes' : 'Add reminder'}</button>
+                    {editingScheduleId && (
+                      <button type="button" className="secondary-form-button" onClick={cancelScheduleEdit}>
+                        Cancel edit
+                      </button>
+                    )}
                   </form>
-                </section>
-              </div>
-            </section>
-          )}
-
-          {activeTab === 'resources' && (
-            <section className="page-stack">
-              <PageIntro
-                kicker="Saved Resources / Files"
-                title="Training files, quick guides, and personal uploads"
-                body="Save module resources for later and keep demo personal files inside the current user profile."
-              />
-              <div className="content-grid">
-                <section className="panel wide">
-                  <PanelTitle kicker="Library" title="Available module resources" />
-                  <div className="resource-grid">
-                    {allResources.map((resource) => (
-                      <ResourceCard
-                        key={resource.id}
-                        resource={resource}
-                        saved={savedResourceIds.has(resource.id)}
-                        onToggle={() => toggleResource(resource.id)}
-                      />
-                    ))}
-                  </div>
-                </section>
-                <section className="panel">
-                  <PanelTitle kicker="Saved" title="My saved files" />
-                  <label className="upload-drop">
-                    <input type="file" onChange={handlePersonalFile} />
-                    <span>Upload demo file</span>
-                    <small>PDF, image, video, or notes</small>
-                  </label>
-                  <div className="saved-list">
-                    {savedResources.map((resource) => (
-                      <div key={resource.id}>
-                        <strong>{resource.title}</strong>
-                        <span>{resource.type} - {resource.moduleTitle}</span>
-                      </div>
-                    ))}
-                    {savedResources.length === 0 && <p>No saved files yet.</p>}
-                  </div>
                 </section>
               </div>
             </section>
@@ -956,23 +1147,34 @@ function App() {
               <PageIntro
                 kicker="Profile / Account"
                 title="Park Guide profile"
-                body="Users can manage their own profile details. Role and admin authority are not editable here."
+                body="Profile fields are ready to receive guide profile rows from your database."
               />
               <div className="content-grid">
                 <section className="panel profile-panel">
-                  <div className="profile-avatar" style={{ background: currentUser.avatarColor }}>
-                    {initials(currentUser.displayName)}
+                  {!databaseProfile && (
+                    <EmptyFrame title="Profile database frame" body="Connect VITE_PROFILE_API_URL or the profile link in databaseFrames.js to fill this profile from your database." />
+                  )}
+                  <div className="profile-avatar" style={{ background: profileUser.avatarColor }}>
+                    {profileUser.avatar ? (
+                      <img src={profileUser.avatar} alt="Profile avatar" />
+                    ) : (
+                      initials(profileUser.displayName)
+                    )}
                   </div>
-                  <h3>{currentUser.displayName}</h3>
-                  <p>{currentUser.position}</p>
-                  <span>{currentUser.status}</span>
+                  <label className="avatar-upload-button">
+                    Change photo
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} />
+                  </label>
+                  <h3>{profileUser.displayName}</h3>
+                  <p>{profileUser.position}</p>
+                  <span>{profileUser.status}</span>
                   <div className="profile-mini-grid">
                     <div>
                       <strong>{overallProgress}%</strong>
                       <small>Overall progress</small>
                     </div>
                     <div>
-                      <strong>{completedModules.length}/10</strong>
+                      <strong>{completedModules.length}/{trainingModules.length}</strong>
                       <small>Modules complete</small>
                     </div>
                     <div>
@@ -982,14 +1184,16 @@ function App() {
                   </div>
                   <div className="profile-park-card">
                     <span>Assigned park</span>
-                    <strong>{currentUser.assignedPark}</strong>
-                    <small>{currentUser.guideId}</small>
+                    <strong>{profileUser.assignedPark}</strong>
+                    <small>{profileUser.guideId}</small>
                   </div>
                 </section>
                 <section className="panel wide">
                   <PanelTitle kicker="Editable details" title="My account" />
                   <form className="profile-form" onSubmit={(event) => event.preventDefault()}>
                     {[
+                      ['realName', 'Real name'],
+                      ['birthday', 'Birthday'],
                       ['displayName', 'Display name'],
                       ['email', 'Email'],
                       ['phone', 'Phone'],
@@ -1002,18 +1206,20 @@ function App() {
                         {label}
                         <input
                           type="text"
-                          value={currentUser[field] || ''}
+                          value={profileUser[field] || '-'}
+                          disabled={!editableProfileFields.has(field)}
                           onChange={(event) => updateProfileField(field, event.target.value)}
+                          onBlur={(event) => saveProfileEdit(field, event.target.value)}
                         />
                       </label>
                     ))}
                     <label>
                       Guide ID
-                      <input type="text" value={currentUser.guideId} disabled />
+                      <input type="text" value={profileUser.guideId} disabled />
                     </label>
                     <label>
                       Role
-                      <input type="text" value={currentUser.role} disabled />
+                      <input type="text" value={profileUser.role} disabled />
                     </label>
                   </form>
                 </section>
@@ -1021,44 +1227,17 @@ function App() {
             </section>
           )}
 
-          {activeTab === 'help' && (
-            <section className="page-stack">
-              <PageIntro
-                kicker="Help / Support"
-                title="User-side support and permission guide"
-                body="This area explains what Park Guides can access in the demo and what is intentionally reserved for admins."
-              />
-              <div className="content-grid">
-                <section className="panel">
-                  <PanelTitle kicker="Allowed" title="Park Guide can access" />
-                  <ul className="permission-list can">
-                    {roleBoundaries.can.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </section>
-                <section className="panel">
-                  <PanelTitle kicker="Locked" title="Admin-only actions" />
-                  <ul className="permission-list cannot">
-                    {roleBoundaries.cannot.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </section>
-              </div>
-              <div className="faq-grid">
-                {supportTopics.map((topic) => (
-                  <article key={topic.title} className="panel">
-                    <span className="kicker">Support</span>
-                    <h3>{topic.title}</h3>
-                    <p>{topic.body}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </main>
+    </div>
+  )
+}
+
+function EmptyFrame({ title, body }) {
+  return (
+    <div className="empty-frame">
+      <strong>{title}</strong>
+      <p>{body}</p>
     </div>
   )
 }
