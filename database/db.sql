@@ -187,3 +187,160 @@ ON DUPLICATE KEY UPDATE
 
 INSERT IGNORE INTO guide_profiles (guide_id, phone, organization)
 VALUES ((SELECT user_id FROM users WHERE email = 'guide@test.com'), '0123456789', 'Sarawak Forestry');
+
+INSERT INTO training_modules
+    (title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, created_by)
+SELECT
+    'Introduction to Sarawak Protected Areas',
+    'Learn protected area zones, visitor expectations, and guide conduct.',
+    'Orientation',
+    'All Parks',
+    'Beginner',
+    '30 min',
+    'Online',
+    '/training/protected-areas.webp',
+    '#ff7a1a',
+    'Protected Areas Starter',
+    '["Explain the role of SFC protected areas","Recognize visitor zones and access expectations","Use the guide code of conduct during briefings"]',
+    (SELECT user_id FROM users WHERE email = 'admin@test.com')
+WHERE NOT EXISTS (
+    SELECT 1 FROM training_modules WHERE title = 'Introduction to Sarawak Protected Areas'
+);
+
+INSERT INTO training_modules
+    (title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, created_by)
+SELECT
+    'Visitor Safety and Emergency Response',
+    'Prepare for weather changes, injury response, visitor separation, and radio escalation.',
+    'Safety',
+    'All Parks',
+    'Intermediate',
+    '55 min',
+    'Field',
+    '/training/visitor-safety.webp',
+    '#ff9f1c',
+    'Safety Responder',
+    '["Assess visitor risk quickly","Use radio escalation protocol","Document handover notes clearly"]',
+    (SELECT user_id FROM users WHERE email = 'admin@test.com')
+WHERE NOT EXISTS (
+    SELECT 1 FROM training_modules WHERE title = 'Visitor Safety and Emergency Response'
+);
+
+INSERT INTO lessons (module_id, title, content, media_url)
+SELECT tm.module_id, 'Protected area purpose and zones', 'Understand why zones exist and how guides explain them.', '/training/protected-areas.webp'
+FROM training_modules tm
+WHERE tm.title = 'Introduction to Sarawak Protected Areas'
+AND NOT EXISTS (
+    SELECT 1 FROM lessons l WHERE l.module_id = tm.module_id AND l.title = 'Protected area purpose and zones'
+);
+
+INSERT INTO lessons (module_id, title, content, media_url)
+SELECT tm.module_id, 'Guide conduct and visitor briefing', 'Practice the expectations to explain before a route begins.', '/training/ecotourism-briefing.webp'
+FROM training_modules tm
+WHERE tm.title = 'Introduction to Sarawak Protected Areas'
+AND NOT EXISTS (
+    SELECT 1 FROM lessons l WHERE l.module_id = tm.module_id AND l.title = 'Guide conduct and visitor briefing'
+);
+
+INSERT INTO lessons (module_id, title, content, media_url)
+SELECT tm.module_id, 'Weather risk and route decision tree', 'Identify when conditions require a route change or escalation.', '/training/safety-response.webp'
+FROM training_modules tm
+WHERE tm.title = 'Visitor Safety and Emergency Response'
+AND NOT EXISTS (
+    SELECT 1 FROM lessons l WHERE l.module_id = tm.module_id AND l.title = 'Weather risk and route decision tree'
+);
+
+INSERT INTO lessons (module_id, title, content, media_url)
+SELECT tm.module_id, 'Radio escalation protocol', 'Use clear radio messages during visitor safety incidents.', '/training/visitor-safety.webp'
+FROM training_modules tm
+WHERE tm.title = 'Visitor Safety and Emergency Response'
+AND NOT EXISTS (
+    SELECT 1 FROM lessons l WHERE l.module_id = tm.module_id AND l.title = 'Radio escalation protocol'
+);
+
+INSERT INTO quizzes (module_id, title)
+SELECT tm.module_id, 'Protected Areas Check'
+FROM training_modules tm
+WHERE tm.title = 'Introduction to Sarawak Protected Areas'
+AND NOT EXISTS (
+    SELECT 1 FROM quizzes q WHERE q.module_id = tm.module_id AND q.title = 'Protected Areas Check'
+);
+
+INSERT INTO quizzes (module_id, title)
+SELECT tm.module_id, 'Safety Response Check'
+FROM training_modules tm
+WHERE tm.title = 'Visitor Safety and Emergency Response'
+AND NOT EXISTS (
+    SELECT 1 FROM quizzes q WHERE q.module_id = tm.module_id AND q.title = 'Safety Response Check'
+);
+
+INSERT INTO questions (quiz_id, question_text)
+SELECT q.quiz_id, 'What should a guide confirm before leading visitors into a protected area zone?'
+FROM quizzes q
+WHERE q.title = 'Protected Areas Check'
+AND NOT EXISTS (
+    SELECT 1 FROM questions qs WHERE qs.quiz_id = q.quiz_id
+);
+
+INSERT INTO questions (quiz_id, question_text)
+SELECT q.quiz_id, 'When should a guide escalate a weather risk?'
+FROM quizzes q
+WHERE q.title = 'Safety Response Check'
+AND NOT EXISTS (
+    SELECT 1 FROM questions qs WHERE qs.quiz_id = q.quiz_id
+);
+
+INSERT INTO `options` (question_id, option_text, is_correct)
+SELECT qs.question_id, 'Route permissions, visitor expectations, and conservation rules', TRUE
+FROM questions qs
+WHERE qs.question_text = 'What should a guide confirm before leading visitors into a protected area zone?'
+AND NOT EXISTS (
+    SELECT 1 FROM `options` o WHERE o.question_id = qs.question_id
+);
+
+INSERT INTO `options` (question_id, option_text, is_correct)
+SELECT qs.question_id, 'Only the estimated walking time', FALSE
+FROM questions qs
+WHERE qs.question_text = 'What should a guide confirm before leading visitors into a protected area zone?'
+AND NOT EXISTS (
+    SELECT 1 FROM `options` o WHERE o.question_id = qs.question_id AND o.option_text = 'Only the estimated walking time'
+);
+
+INSERT INTO `options` (question_id, option_text, is_correct)
+SELECT qs.question_id, 'When conditions cross the risk threshold or visibility drops', TRUE
+FROM questions qs
+WHERE qs.question_text = 'When should a guide escalate a weather risk?'
+AND NOT EXISTS (
+    SELECT 1 FROM `options` o WHERE o.question_id = qs.question_id
+);
+
+INSERT INTO `options` (question_id, option_text, is_correct)
+SELECT qs.question_id, 'Only after visitors complain', FALSE
+FROM questions qs
+WHERE qs.question_text = 'When should a guide escalate a weather risk?'
+AND NOT EXISTS (
+    SELECT 1 FROM `options` o WHERE o.question_id = qs.question_id AND o.option_text = 'Only after visitors complain'
+);
+
+INSERT INTO notifications (user_id, title, type, message)
+SELECT user_id, 'Training modules ready', 'training', 'Your first database-backed training modules are available.'
+FROM users
+WHERE email = 'guide@test.com'
+AND NOT EXISTS (
+    SELECT 1 FROM notifications WHERE title = 'Training modules ready'
+);
+
+INSERT INTO schedule (user_id, module_id, title, date, location, type, status)
+SELECT
+    (SELECT user_id FROM users WHERE email = 'guide@test.com'),
+    tm.module_id,
+    'Review protected areas module',
+    DATE_ADD(CURRENT_DATE, INTERVAL 7 DAY),
+    'Self-paced',
+    'Reminder',
+    'Scheduled'
+FROM training_modules tm
+WHERE tm.title = 'Introduction to Sarawak Protected Areas'
+AND NOT EXISTS (
+    SELECT 1 FROM schedule WHERE title = 'Review protected areas module'
+);

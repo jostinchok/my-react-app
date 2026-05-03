@@ -1,25 +1,28 @@
 # Database TODO
 
-`db.sql` now includes the tables and columns required by the user page.
+`db.sql` now includes the tables, columns, and starter seed rows required by the user page.
 
-Still needed outside this SQL file:
+Added outside this SQL file:
 
-- Create or update backend API routes that connect the user page to MySQL:
+- `user_page/server/index.js` connects the user page to MySQL with:
   - `GET /api/training-modules`
   - `GET /api/user-profile`
   - `PATCH /api/user-profile`
+  - `POST /api/user-profile/avatar`
   - `GET /api/certifications`
   - `GET /api/notifications`
   - `GET /api/schedule`
   - `POST /api/schedule`
+  - `PATCH /api/schedule/:scheduleId`
+  - `DELETE /api/schedule/:scheduleId`
 
-- Store uploaded profile photos:
-  - `guide_profiles.avatar_url` is now available.
-  - The backend still needs to accept an upload, save the file, and write the URL.
+- Uploaded profile photos are saved under `user_page/public/uploads/avatars`.
+- The saved URL is written to `guide_profiles.avatar_url`.
 
-- Decide whether `progress.completed_lessons` stores:
+Still to decide:
+
+- Whether `progress.completed_lessons` stores:
   - JSON text such as `[0,1,2]`, or
   - a comma-separated string such as `0,1,2`.
 
-- Optional seed data:
-  - Add real `training_modules`, `lessons`, `quizzes`, `questions`, `options`, `notifications`, and `schedule` rows for testing.
+- Whether module enrollments, lesson completion, and quiz attempts should also be saved from the user page into `progress`.
