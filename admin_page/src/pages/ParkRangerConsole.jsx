@@ -18,7 +18,7 @@ import {
 } from "../data/incidents";
 import "../Admin.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4001";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 const backendBaseUrl = API_BASE_URL.replace(/\/$/, "");
 
 const sourceLabel = {
