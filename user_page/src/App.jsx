@@ -15,6 +15,7 @@ import {
   normalizeProfileRow,
   normalizeScheduleRow,
   deleteScheduleItem,
+  saveAvatarUpload,
   saveProfileField,
   saveScheduleItem,
   updateScheduleItem,
@@ -63,6 +64,10 @@ function App() {
   const [moduleFrame, setModuleFrame] = useState({
     status: 'loading',
     message: 'Waiting for module records from database.',
+  })
+  const [profileFrame, setProfileFrame] = useState({
+    status: 'loading',
+    message: 'Waiting for profile record from database.',
   })
   const [databaseProfile, setDatabaseProfile] = useState(null)
   const [databaseCertificates, setDatabaseCertificates] = useState([])
@@ -117,10 +122,22 @@ function App() {
 
     loadDatabaseFrame(API_LINKS.profile, ['profile', 'user', 'guideProfile'], normalizeProfileRow)
       .then((profiles) => {
-        if (!ignore) setDatabaseProfile(profiles[0] || null)
+        if (ignore) return
+        setDatabaseProfile(profiles[0] || null)
+        setProfileFrame({
+          status: profiles[0] ? 'ready' : 'empty',
+          message: profiles[0]
+            ? 'Profile loaded from database.'
+            : 'Database connected, but no guide profile row was returned.',
+        })
       })
-      .catch(() => {
-        if (!ignore) setDatabaseProfile(null)
+      .catch((error) => {
+        if (ignore) return
+        setDatabaseProfile(null)
+        setProfileFrame({
+          status: 'empty',
+          message: error.message,
+        })
       })
 
     loadDatabaseFrame(API_LINKS.certifications, ['certifications', 'certificates'], normalizeCertificateRow)
@@ -443,9 +460,14 @@ function App() {
     }
     upsertLocalScheduleItem(scheduleItem)
     const saveRequest = editingScheduleId ? updateScheduleItem(scheduleItem) : saveScheduleItem(scheduleItem)
-    saveRequest.catch(() => {
-      // Keep the local schedule item visible while the database endpoint is not connected.
-    })
+    saveRequest
+      .then((payload) => {
+        const savedItem = payload?.schedule ? normalizeScheduleRow(payload.schedule) : null
+        if (savedItem?.id) upsertLocalScheduleItem(savedItem)
+      })
+      .catch(() => {
+        // Keep the local schedule item visible while the database endpoint is not connected.
+      })
     setScheduleForm({ date: scheduleForm.date, title: '', location: '', type: 'Reminder' })
     setEditingScheduleId(null)
     addNotification(
@@ -533,8 +555,18 @@ function App() {
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      updateCurrentUser((user) => ({ ...user, avatar: reader.result }))
-      setDatabaseProfile((profile) => (profile ? { ...profile, avatar: reader.result } : profile))
+      const previewUrl = reader.result
+      updateCurrentUser((user) => ({ ...user, avatar: previewUrl }))
+      setDatabaseProfile((profile) => (profile ? { ...profile, avatar: previewUrl } : profile))
+      saveAvatarUpload({ fileName: file.name, dataUrl: previewUrl })
+        .then((savedProfile) => {
+          if (!savedProfile.avatar) return
+          updateCurrentUser((user) => ({ ...user, avatar: savedProfile.avatar }))
+          setDatabaseProfile((profile) => (profile ? { ...profile, avatar: savedProfile.avatar } : profile))
+        })
+        .catch(() => {
+          // Keep the local preview visible while the database endpoint is not connected.
+        })
     }
     reader.readAsDataURL(file)
     event.target.value = ''
@@ -1152,7 +1184,7 @@ function App() {
               <div className="content-grid">
                 <section className="panel profile-panel">
                   {!databaseProfile && (
-                    <EmptyFrame title="Profile database frame" body="Connect VITE_PROFILE_API_URL or the profile link in databaseFrames.js to fill this profile from your database." />
+                    <EmptyFrame title="Profile database frame" body={profileFrame.message} />
                   )}
                   <div className="profile-avatar" style={{ background: profileUser.avatarColor }}>
                     {profileUser.avatar ? (

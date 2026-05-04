@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = 'http://localhost:4000'
+const DEFAULT_API_BASE_URL = ''
 
 export const MYSQL_DATABASE_NAME = 'park_guide_database'
 
@@ -18,14 +18,17 @@ export const API_LINKS = {
   schedule:
     import.meta.env.VITE_SCHEDULE_API_URL ||
     `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/schedule`,
+  avatar:
+    import.meta.env.VITE_AVATAR_API_URL ||
+    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/user-profile/avatar`,
 }
 
 export const DB_SQL_SCHEMA = {
-  sourceFile: 'database/db.sql',
+  sourceFile: 'user_login/server/db.sql',
   database: MYSQL_DATABASE_NAME,
   tables: {
     roles: ['role_id', 'role_name'],
-    users: ['user_id', 'role_id', 'name', 'real_name', 'display_name', 'email', 'birthday', 'password_hash', 'created_at'],
+    users: ['user_id', 'role_id', 'name', 'email', 'password_hash', 'created_at'],
     password_reset_tokens: ['token_id', 'user_id', 'token_hash', 'expires_at', 'used_at', 'created_at'],
     guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
     training_modules: [
@@ -58,7 +61,7 @@ export const DB_SQL_SCHEMA = {
 }
 
 export const DATABASE_TABLE_TEMPLATE = {
-  users: ['user_id', 'role_id', 'name', 'real_name', 'display_name', 'email', 'birthday', 'created_at'],
+  users: ['user_id', 'role_id', 'name', 'email', 'created_at'],
   guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
   training_modules: [
     'module_id',
@@ -90,10 +93,10 @@ export const PROFILE_FIELD_RULES = {
   readOnlyFromDatabase: ['realName', 'birthday', 'assignedPark', 'position', 'guideId', 'role'],
   editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
-    realName: 'users.real_name',
-    birthday: 'users.birthday',
+    realName: 'users.name',
+    birthday: 'not included in user_login/server/db.sql',
     phone: 'guide_profiles.phone',
-    displayName: 'users.display_name',
+    displayName: 'users.name',
     email: 'users.email',
     assignedPark: 'guide_profiles.organization',
     guideId: 'guide_profiles.guide_id',
@@ -329,8 +332,9 @@ export const loadDatabaseFrame = async (url, keys, normalizer) => {
   const response = await fetch(url, { cache: 'no-store' })
   const payload = await response.json().catch(() => ({}))
 
-    if (!response.ok) {
-    throw new Error(payload.message || `Unable to load ${url}.`)
+  if (!response.ok) {
+    const detail = payload.detail ? ` Detail: ${payload.detail}` : ''
+    throw new Error(`${payload.message || `Unable to load ${url}.`}${detail}`)
   }
   
   return normalizeCollection(payload, keys, normalizer)
@@ -349,6 +353,21 @@ export const saveProfileField = async (field, value) => {
   }
 
   return payload
+}
+
+export const saveAvatarUpload = async ({ fileName, dataUrl }) => {
+  const response = await fetch(API_LINKS.avatar, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName, dataUrl }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to upload avatar.')
+  }
+
+  return normalizeProfileRow({ avatar_url: payload.avatar_url })
 }
 
 export const saveScheduleItem = async (item) => {
