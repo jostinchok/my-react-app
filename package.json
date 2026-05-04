@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "npm --prefix user_page install && npm --prefix admin_page install && npm --prefix mobile_app install && npm --prefix user_login/server install",
+    "postinstall": "npm --prefix login install && npm --prefix user_page install && npm --prefix admin_page install && npm --prefix mobile_app install && npm --prefix user_login/server install",
     "dev": "node scripts/dev-all.mjs",
     "dev:hub": "node scripts/hub-server.mjs",
+    "dev:login": "npm --prefix login run dev",
     "dev:user": "npm --prefix user_page run dev",
     "dev:admin": "npm --prefix admin_page run dev",
     "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",

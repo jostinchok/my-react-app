@@ -9,6 +9,7 @@ const root = process.cwd()
 
 const proxies = [
   { prefix: '/api', target: 'http://localhost:4000' },
+  { prefix: '/login', target: 'http://localhost:5176' },
   { prefix: '/user', target: 'http://localhost:5175' },
   { prefix: '/admin', target: 'http://localhost:5174' },
 ]
