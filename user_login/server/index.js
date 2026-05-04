@@ -69,7 +69,7 @@ const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_DATABASE || 'cos30049_assignment',
+  database: process.env.DB_DATABASE || 'park_guide_database',
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   waitForConnections: true,
   connectionLimit: 10,
@@ -100,6 +100,37 @@ const incidentStorageInfo = () => ({
 })
 
 const errorMessage = (error) => error?.message || error?.code || String(error)
+
+/** Useful detail when catch receives AggregateError (empty `.message`) or mysql2 errors. */
+const serializeCaughtError = (error) => {
+  if (error == null) return 'Unknown error'
+  if (typeof error === 'string') return error
+  const nested = Array.isArray(error.errors)
+    ? error.errors.map((e) => e?.message || String(e)).filter(Boolean).join('; ')
+    : ''
+  return (
+    error.message ||
+    error.sqlMessage ||
+    nested ||
+    error.code ||
+    String(error)
+  )
+}
+
+/** bcrypt expects a UTF-8 string; mysql2 may surface BINARY-ish columns as Buffer. */
+const bcryptHashString = (hash) => {
+  if (hash == null) return ''
+  if (Buffer.isBuffer(hash)) return hash.toString('utf8')
+  return String(hash)
+}
+
+/** mysql2 may return BIGINT as BigInt; JSON.stringify throws → Express 500 on res.json(). */
+const authUserPayload = ({ user_id, name, email }, role_name) => ({
+  user_id: Number(user_id),
+  name: name == null ? '' : String(name),
+  email: email == null ? '' : String(email),
+  role_name,
+})
 
 const securityControlInfo = () => ({
   deviceTokenAuthEnabled: DEVICE_TOKEN_AUTH_ENABLED,
@@ -512,12 +543,16 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
+    const { name, email, password } = body
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required.' })
     }
 
-    const [existing] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
+    const [existing] = await pool.query(
+      'SELECT user_id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))',
+      [email]
+    )
     if (existing.length > 0) {
       return res.status(409).json({ message: 'This email is already registered.' })
     }
@@ -534,12 +569,7 @@ app.post('/api/auth/register', async (req, res) => {
     )
 
     return res.status(201).json({
-      user: {
-        user_id: result.insertId,
-        name,
-        email,
-        role_name: 'guide',
-      },
+      user: authUserPayload({ user_id: result.insertId, name, email }, 'guide'),
       message: 'User registered successfully.',
     })
   } catch (error) {
@@ -549,14 +579,20 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password, role } = req.body
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
+    const email = body.email
+    const password = body.password
+    const role = body.role
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' })
     }
 
+    const emailTrim = String(email).trim()
     const [rows] = await pool.query(
-      'SELECT u.user_id, u.name, u.email, u.password_hash, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.email = ?',
-      [email]
+      `SELECT user_id, name, email, password_hash, role_id
+       FROM users
+       WHERE LOWER(TRIM(email)) = LOWER(?)`,
+      [emailTrim]
     )
 
     if (rows.length === 0) {
@@ -564,25 +600,43 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = rows[0]
-    const validPassword = await bcrypt.compare(password, user.password_hash)
+    if (!user.password_hash) {
+      return res.status(401).json({ message: 'Invalid credentials.' })
+    }
+
+    let validPassword = false
+    try {
+      validPassword = await bcrypt.compare(String(password), bcryptHashString(user.password_hash))
+    } catch {
+      return res.status(401).json({ message: 'Invalid credentials.' })
+    }
     if (!validPassword) {
       return res.status(401).json({ message: 'Invalid credentials.' })
     }
 
-    if (role && user.role_name !== role) {
+    const roleNameFromId = (rid) => {
+      const n = Number(rid)
+      if (n === 1) return 'admin'
+      if (n === 2) return 'guide'
+      return 'guide'
+    }
+    const resolvedRole = roleNameFromId(user.role_id)
+
+    if (role && resolvedRole !== role) {
       return res.status(403).json({ message: `Access denied for role ${role}.` })
     }
 
     return res.json({
-      user: {
-        user_id: user.user_id,
-        name: user.name,
-        email: user.email,
-        role_name: user.role_name,
-      },
+      user: authUserPayload(user, resolvedRole),
     })
   } catch (error) {
-    return res.status(500).json({ message: 'Login failed.', error: error.message })
+    const detail = serializeCaughtError(error)
+    console.error('[auth/login]', detail, error?.stack)
+    const hint =
+      detail.includes('ECONNREFUSED') || detail.includes('connect')
+        ? ' Check DB_HOST/DB_PORT and that MySQL is running.'
+        : ''
+    return res.status(500).json({ message: 'Login failed.', error: `${detail}${hint}` })
   }
 })
 

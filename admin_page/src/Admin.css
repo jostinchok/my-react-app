@@ -1,17 +1,17 @@
 .admin-dashboard-shell,
 .incident-dashboard,
 .ranger-console {
-  --ce-forest: #0b3b28;
-  --ce-forest-2: #175f3e;
+  --ce-forest: #3a2a16;
+  --ce-forest-2: #874500;
   --ce-citrus: #ff7a1a;
   --ce-sun: #ffd23f;
-  --ce-lime: #a8e64a;
-  --ce-cream: #fff8e6;
-  --ce-mist: #f4f8ef;
-  --ce-charcoal: #1e2a22;
-  --ce-line: #dce7d7;
-  --ce-muted: #607166;
-  --ce-shadow: 0 20px 52px rgba(23, 95, 62, 0.12);
+  --ce-lime: #b8f22f;
+  --ce-cream: #fff9e9;
+  --ce-mist: #f4f8ee;
+  --ce-charcoal: #28251d;
+  --ce-line: #dfe8d6;
+  --ce-muted: #617064;
+  --ce-shadow: var(--shadow);
 }
 
 .admin-dashboard-shell {
@@ -19,25 +19,26 @@
   padding: 24px;
   color: var(--ce-charcoal);
   background:
-    radial-gradient(circle at 8% 0%, rgba(255, 210, 63, 0.25), transparent 24rem),
-    linear-gradient(135deg, #fffaf0 0%, #eef7e8 54%, #fff0d6 100%);
+    radial-gradient(circle at top left, rgba(255, 210, 63, 0.26), transparent 28rem),
+    linear-gradient(135deg, #fffdf4 0%, #eff7e8 42%, #fff4dd 100%);
 }
 
 .admin-sidebar {
-  background: #032c1d;
-  color: #ffffff;
+  background: linear-gradient(180deg, #fff0a8 0%, #ffb334 42%, #ff7a1a 100%);
+  color: var(--forest);
+  box-shadow: 4px 0 28px rgba(135, 69, 0, 0.12);
 }
 
 .admin-sidebar-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(58, 42, 22, 0.12);
 }
 
 .admin-sidebar-badge {
   padding: 2px;
   overflow: hidden;
-  background: #fff8e6;
-  color: #0b3b28;
-  box-shadow: 0 10px 24px rgba(255, 122, 26, 0.22);
+  background: linear-gradient(135deg, var(--white), var(--lime));
+  color: var(--forest);
+  box-shadow: 0 10px 24px rgba(255, 210, 63, 0.28);
 }
 
 .admin-sidebar-logo {
@@ -49,19 +50,19 @@
 }
 
 .admin-sidebar-title {
-  color: #ffffff;
+  color: var(--forest);
 }
 
 .admin-sidebar-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(58, 42, 22, 0.12);
 }
 
 .admin-sidebar-version {
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(58, 42, 22, 0.58);
 }
 
 .nav-item {
-  color: rgba(255, 255, 255, 0.86);
+  color: #563716;
   background: transparent;
   transition: 0.25s ease;
 }
@@ -71,23 +72,23 @@
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--forest);
 }
 
 .nav-item.active {
-  background: #165c33;
-  color: #ffffff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--forest);
+  box-shadow: inset 4px 0 0 var(--lime);
   font-weight: 700;
 }
 
 .admin-hero-banner {
   background:
     radial-gradient(circle at 86% 8%, rgba(255, 210, 63, 0.42), transparent 15rem),
-    linear-gradient(135deg, #10241a 0%, #0b3b28 48%, #ff7a1a 132%);
+    linear-gradient(135deg, var(--forest) 0%, var(--forest-2) 42%, var(--citrus) 118%);
   color: #ffffff;
-  box-shadow: var(--ce-shadow);
+  box-shadow: var(--shadow);
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
@@ -269,7 +270,7 @@
 }
 
 .admin-progress-fill {
-  background: #379237;
+  background: var(--leaf);
   height: 100%;
   border-radius: 999px;
 }
@@ -277,11 +278,11 @@
 .admin-linear-progress {
   height: 10px !important;
   border-radius: 999px !important;
-  background-color: #dfe5df !important;
+  background-color: var(--progress-bg) !important;
 }
 
 .admin-linear-progress .MuiLinearProgress-bar {
-  background-color: #379237 !important;
+  background: linear-gradient(90deg, var(--leaf), var(--lime)) !important;
   border-radius: 999px !important;
 }
 
@@ -308,19 +309,19 @@
   width: 35px;
   height: 35px;
   border-radius: 12px;
-  border: 1px solid #e6e6e6;
-  background: #f3f5ef;
+  border: 1px solid var(--line);
+  background: rgba(255, 253, 244, 0.85);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #d8a620;
+  color: var(--forest-2);
   transition: 0.2s ease;
 }
 
 .admin-top-icon-btn:hover {
-  background: #edf1e8;
-  border-color: #d9dfd4;
+  background: rgba(255, 248, 220, 0.95);
+  border-color: var(--citrus);
 }
 
 .admin-top-user-btn {
@@ -328,8 +329,8 @@
   height: 35px;
   border-radius: 12px;
   border: none;
-  background: #00852e;
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--forest-2), var(--citrus));
+  color: var(--white);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -340,7 +341,7 @@
 }
 
 .admin-top-user-btn:hover {
-  background: var(--accent-green);
+  background: linear-gradient(135deg, var(--forest), #e06510);
   transform: translateY(-1px);
 }
 

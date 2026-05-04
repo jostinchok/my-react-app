@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Card, CardHeader, CardContent, Typography, TextField, Select, MenuItem, Button, IconButton, AppBar, Toolbar, Modal, Accordion, AccordionSummary, Paper, Tooltip, Divider, Snackbar, Alert
+import { Box, Card, CardHeader, CardContent, Typography, TextField, Select, MenuItem, Button, IconButton, AppBar, Toolbar, Modal, Paper, Tooltip, Divider, Snackbar, Alert
 } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import SaveIcon from "@mui/icons-material/Save";
@@ -12,9 +12,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import ImageIcon from "@mui/icons-material/Image";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import QuizIcon from "@mui/icons-material/Quiz";
-import AddIcon from "@mui/icons-material/Add";
-
-const ModuleEditor = ({ module, onBack, onSave }) => {
+export const ModuleEditor = ({ module, onBack, onSave }) => {
     const defaultBlocks = [
       { id: 1, type: "text", title: "Introduction", content: "" },
       { id: 2, type: "text", title: "Description", content: "" },
@@ -93,7 +91,7 @@ const ModuleEditor = ({ module, onBack, onSave }) => {
     };
 
     return (
-      <Box sx={{ height: "100vh", bgcolor: "#f6f7fb", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ height: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
         <AppBar position="sticky" color="transparent" elevation={0}>
           <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -119,7 +117,7 @@ const ModuleEditor = ({ module, onBack, onSave }) => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ flex: 1, p: 3, bgcolor: '#f9f9f9' }}>
+        <Box sx={{ flex: 1, p: 3, bgcolor: "background.default" }}>
         {previewMode ? (
           <Box sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
             
@@ -161,9 +159,10 @@ const ModuleEditor = ({ module, onBack, onSave }) => {
                   </Box>
                   
                   <Typography variant="h5" sx={{ fontWeight: 600, color: '#222', fontSize: '1.4rem' }}>
-                    {block.type === "image" ? "Photo": 
+                    {block.type === "image" ? "Photo" :
                     block.type === "video" ? "Video" :
-                    block.type === "quiz" ? "Quiz":
+                    block.type === "quiz" ? "Quiz" :
+                    block.type === "text" ? (block.title || "Lesson") :
                     block.title || "Untitled Section"}
                   </Typography>
                 </Box>
@@ -491,7 +490,7 @@ const ModuleEditor = ({ module, onBack, onSave }) => {
                   </Typography>
 
                   <Button startIcon={<DescriptionIcon />} variant="outlined" onClick={() => addContentBlock("text")}>
-                    Text
+                    Lesson
                   </Button>
 
                   <Button 
@@ -690,93 +689,7 @@ const ModuleEditor = ({ module, onBack, onSave }) => {
     );
 };
 
-const AdminTrainingModuleSetup = () => {
-  const [course] = useState({
-    id: 1,
-    title: "Conservation Training",
-    description: "Learn about conservation practices and specific national parks.",
-    modules: [
-      { id: 1, title: "Conservation Basics", description: "General introduction to conservation principles", contentBlocks: [], status: "Draft" },
-      { id: 2, title: "Bako National Park", description: "Specific conservation practices in Bako", contentBlocks: [], status: "Published" },
-      { id: 3, title: "Gunung Gania", description: "Exploring conservation in Gunung Gania", contentBlocks: [], status: "Draft" },
-      { id: 4, title: "Physical Training", description: "Hands-on physical conservation training", contentBlocks: [], status: "Draft" }
-    ]
-  });
-  const [selectedModule, setSelectedModule] = useState(null);
-
-  const handleSaveModule = (updated) => {
-    const exists = course.modules.some(m => m.id === updated.id);
-    const updatedModules = exists
-      ? course.modules.map(m => m.id === updated.id ? updated : m)
-      : [...course.modules, updated];   // 如果是新模块就追加
-    course.modules = updatedModules;
-    setSelectedModule(updated);
-  };
-
-  return (
-      <>
-        {!selectedModule ? (
-        <Box sx={{ mt:6, ml: 6}}>
-          <Box sx={{ display: 'flex', justifyContent: "space-between", alignItems: "center" }}>
-            <Typography variant="h4">{course.title}</Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              sx={{ mt: 3, mr: 3}} 
-              startIcon={<AddIcon />}
-              onClick={() => {
-                const newModule = {
-                  id: Date.now(),
-                  title: "New Module",
-                  description: "",
-                  contentBlocks: [],
-                  status: "Draft"
-                };
-                setSelectedModule(newModule);
-              }}
-            >
-              Add Module
-            </Button>
-          </Box>
-
-          <Typography variant="body1" sx={{ mb:2 }}>{course.description}</Typography>
-
-          {course.modules.map((m, idx) => (
-            <Accordion key={m.id} 
-            sx={{ 
-              mt:2, 
-              borderRadius: 2,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              bgcolor: '#fafafa'
-              }}
-              >
-              <AccordionSummary 
-              expandIcon={null}
-              onClick={() => setSelectedModule(m)}
-              sx={{ cursor: 'pointer', py:2, px: 3}}
-              >
-              <Typography sx={{ 
-                fontSize: '1.2rem', 
-                fontWeight: 500,
-                "&:hover": { textDecoration: "underline" }}}>
-                  Module {idx+1}: {m.title}</Typography>
-              </AccordionSummary>
-            </Accordion>
-          ))}
-          
-        </Box>
-      ) : (
-        <Box sx={{ mt:3}}>
-          <ModuleEditor 
-          module={selectedModule} 
-          onBack={() => setSelectedModule(null)} 
-          onSave={handleSaveModule} 
-          />
-        </Box>
-        
-      )}
-      </>
-  );
-};
+/** @deprecated Use Course management — modules are edited per course. */
+const AdminTrainingModuleSetup = () => null;
 
 export default AdminTrainingModuleSetup;

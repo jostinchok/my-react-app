@@ -13,30 +13,35 @@ const services = [
     command: 'npm',
     args: ['run', 'dev:server'],
     url: backendHealthUrl,
+    port: 4000,
   },
   {
     name: 'user',
     command: 'npm',
     args: ['run', 'dev:user'],
     url: 'http://localhost:5175/user',
+    port: 5175,
   },
   {
     name: 'admin',
     command: 'npm',
     args: ['run', 'dev:admin'],
     url: 'http://localhost:5174/admin',
+    port: 5174,
   },
   {
     name: 'mobile',
     command: 'npm',
     args: ['run', 'dev:mobile'],
     url: 'http://localhost:8081',
+    port: 8081,
   },
   {
     name: 'hub',
     command: 'npm',
     args: ['run', 'dev:hub'],
     url: 'http://localhost:5173',
+    port: 5173,
   },
 ]
 
@@ -85,15 +90,17 @@ async function checkPortOpen(port) {
 }
 
 async function shouldStartService(service) {
-  if (service.name !== 'server') return true
-
-  if (await checkBackendHealth()) {
+  if (service.name === 'server' && await checkBackendHealth()) {
     console.log(`server already running on http://localhost:${backendPort}, skipping backend start`)
     return false
   }
 
-  if (await checkPortOpen(backendPort)) {
-    console.warn(backendPortWarning)
+  if (service.port && await checkPortOpen(service.port)) {
+    if (service.name === 'server') {
+      console.warn(backendPortWarning)
+    } else {
+      console.log(`${service.name} already running on ${service.url}, skipping ${service.name} start`)
+    }
     return false
   }
 

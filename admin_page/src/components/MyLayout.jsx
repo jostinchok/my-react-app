@@ -21,15 +21,15 @@ const MyLayout = (props) => {
         />
       )}
       sx={{
-        backgroundColor: "var(--bg-light)",
-
         "& .RaLayout-appFrame": {
           marginTop: "86px",
           minHeight: "calc(100vh - 86px)",
+          backgroundColor: "transparent",
         },
 
         "& .RaLayout-content": {
-          backgroundColor: "var(--bg-light)",
+          background:
+            "linear-gradient(180deg, rgba(255, 253, 244, 0.35) 0%, rgba(244, 248, 238, 0.92) 100%)",
           minHeight: "calc(100vh - 86px)",
           marginLeft: open ? `100px` : "-198px",
           padding: "44px 42px",
