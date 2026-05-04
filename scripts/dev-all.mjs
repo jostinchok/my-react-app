@@ -8,10 +8,12 @@ import { dirname, resolve } from 'node:path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const rootDir = resolve(__dirname, '..')
+const loginPageDir = resolve(rootDir, 'login')
 const userPageDir = resolve(rootDir, 'user_page')
 const adminPageDir = resolve(rootDir, 'admin_page')
 const mobileAppDir = resolve(rootDir, 'mobile_app')
 const sharedEnvPath = resolve(rootDir, 'user_login', 'server', '.env')
+const adminEnvPath = resolve(adminPageDir, '.env')
 const nodeCommand = process.execPath
 
 function parseEnvFile(filePath) {
@@ -31,12 +33,15 @@ function parseEnvFile(filePath) {
 }
 
 const sharedEnv = parseEnvFile(sharedEnvPath)
+const adminEnv = parseEnvFile(adminEnvPath)
 const backendPort = Number(sharedEnv.PORT || 4000)
 const userApiHost = sharedEnv.API_HOST || '127.0.0.1'
 const userApiPort = Number(sharedEnv.API_PORT || 4001)
 const smokeSeconds = Number(process.env.DEV_ALL_SMOKE_SECONDS || 0)
 const backendHealthUrl = `http://localhost:${backendPort}/api/health`
 const userApiHealthUrl = `http://${userApiHost}:${userApiPort}/api/health`
+const adminApiPort = Number(adminEnv.ADMIN_API_PORT || adminEnv.PORT || 4002)
+const adminApiHealthUrl = `http://localhost:${adminApiPort}/api/health`
 
 const services = [
   {
@@ -54,6 +59,25 @@ const services = [
     url: userApiHealthUrl,
     port: userApiPort,
     healthUrl: userApiHealthUrl,
+  },
+  {
+    name: 'admin-api',
+    command: nodeCommand,
+    args: [resolve(adminPageDir, 'adminServer.js')],
+    cwd: adminPageDir,
+    env: adminEnv,
+    url: adminApiHealthUrl,
+    port: adminApiPort,
+    healthUrl: adminApiHealthUrl,
+  },
+  {
+    name: 'login',
+    command: nodeCommand,
+    args: [resolve(loginPageDir, 'node_modules', 'vite', 'bin', 'vite.js')],
+    cwd: loginPageDir,
+    url: 'http://localhost:5176/login',
+    port: 5176,
+    healthUrl: 'http://localhost:5176/login',
   },
   {
     name: 'user',
@@ -161,6 +185,8 @@ function colorFor(name) {
   const colors = {
     server: '\x1b[36m',
     'user-api': '\x1b[92m',
+    'admin-api': '\x1b[92m',
+    login: '\x1b[32m',
     user: '\x1b[32m',
     admin: '\x1b[35m',
     mobile: '\x1b[33m',
@@ -189,6 +215,7 @@ function startService(service) {
     env: {
       ...process.env,
       ...sharedEnv,
+      ...(service.env || {}),
       BROWSER: 'none',
       EXPO_NO_TELEMETRY: '1',
       FORCE_COLOR: '1',
