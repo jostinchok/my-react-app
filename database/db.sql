@@ -168,6 +168,23 @@ CREATE TABLE IF NOT EXISTS schedule (
 );
 -- until here
 
+CREATE TABLE IF NOT EXISTS course_files (
+    file_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    module_id INT NULL,
+    course_key VARCHAR(120) NULL,
+    original_name VARCHAR(255) NOT NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(120),
+    size_bytes BIGINT UNSIGNED DEFAULT 0,
+    file_url VARCHAR(512) NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id) ON DELETE SET NULL,
+    INDEX idx_course_files_user_uploaded (user_id, uploaded_at),
+    INDEX idx_course_files_module (module_id)
+);
+
 CREATE TABLE IF NOT EXISTS courses (
     course_id VARCHAR(50) PRIMARY KEY,
     course_name VARCHAR(255) NOT NULL,

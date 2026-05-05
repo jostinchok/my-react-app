@@ -19,6 +19,9 @@ export const API_LINKS = {
   schedule:
     import.meta.env.VITE_SCHEDULE_API_URL ||
     `${USER_API_BASE_URL}/api/schedule`,
+  files:
+    import.meta.env.VITE_COURSE_FILES_API_URL ||
+    `${USER_API_BASE_URL}/api/course-files`,
   avatar:
     import.meta.env.VITE_AVATAR_API_URL ||
     `${USER_API_BASE_URL}/api/user-profile/avatar`,
@@ -58,6 +61,7 @@ export const DB_SQL_SCHEMA = {
     evidence: ['evidence_id', 'incident_id', 'file_path', 'file_type', 'uploaded_at'],
     notifications: ['notification_id', 'user_id', 'title', 'type', 'message', 'is_read', 'created_at'],
     schedule: ['schedule_id', 'user_id', 'module_id', 'title', 'date', 'location', 'type', 'status', 'created_at'],
+    course_files: ['file_id', 'user_id', 'module_id', 'course_key', 'original_name', 'stored_name', 'mime_type', 'size_bytes', 'file_url', 'uploaded_at'],
   },
 }
 
@@ -88,13 +92,13 @@ export const DATABASE_TABLE_TEMPLATE = {
   certifications: ['cert_id', 'user_id', 'module_id', 'title', 'status', 'issue_date', 'expiry_date'],
   notifications: ['notification_id', 'user_id', 'title', 'type', 'message', 'is_read', 'created_at'],
   schedule: ['schedule_id', 'user_id', 'module_id', 'title', 'date', 'location', 'type', 'status', 'created_at'],
+  course_files: ['file_id', 'user_id', 'module_id', 'course_key', 'original_name', 'stored_name', 'mime_type', 'size_bytes', 'file_url', 'uploaded_at'],
 }
 
 export const PROFILE_FIELD_RULES = {
-  readOnlyFromDatabase: ['realName', 'birthday', 'assignedPark', 'position', 'guideId', 'role'],
+  readOnlyFromDatabase: ['birthday', 'assignedPark', 'position', 'guideId', 'role'],
   editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
-    realName: 'users.name',
     birthday: 'not included in database/db.sql',
     phone: 'guide_profiles.phone',
     displayName: 'users.name',
@@ -274,7 +278,6 @@ export const normalizeProfileRow = (row = {}) => ({
   id: asText(firstValue(row.user_id, row.guide_id, row.id)),
   guideId: asText(firstValue(row.guide_id, row.guideId, row.user_id)),
   displayName: asText(firstValue(row.display_name, row.name)),
-  realName: asText(firstValue(row.real_name, row.realName, row.full_name, row.name)),
   email: asText(row.email),
   birthday: asText(firstValue(row.birthday, row.birth_date, row.date_of_birth)),
   phone: asText(row.phone),
@@ -285,6 +288,18 @@ export const normalizeProfileRow = (row = {}) => ({
   role: asText(firstValue(row.role, row.role_name), 'guide'),
   status: asText(row.status, 'active'),
   avatar: asText(firstValue(row.avatar_url, row.avatar)),
+})
+
+export const normalizeCourseFileRow = (row = {}) => ({
+  id: asText(firstValue(row.id, row.file_id)),
+  moduleId: asText(firstValue(row.moduleId, row.module_id)),
+  course: asText(firstValue(row.course, row.course_key, row.module_title), 'Saved Resources'),
+  name: asText(firstValue(row.name, row.original_name, row.file_name), 'Course file'),
+  mimeType: asText(firstValue(row.mimeType, row.mime_type), 'application/octet-stream'),
+  sizeBytes: Number(firstValue(row.sizeBytes, row.size_bytes, 0)) || 0,
+  size: asText(row.size, ''),
+  uploaded: asText(firstValue(row.uploaded, row.uploaded_at), ''),
+  url: asText(firstValue(row.url, row.file_url, row.download_url), ''),
 })
 
 export const normalizeCertificateRow = (row = {}) => ({
@@ -341,8 +356,14 @@ export const loadDatabaseFrame = async (url, keys, normalizer) => {
   return normalizeCollection(payload, keys, normalizer)
 }
 
-export const saveProfileField = async (field, value) => {
-  const response = await fetch(API_LINKS.profile, {
+const withUserId = (url, userId) => {
+  if (!userId) return url
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}userId=${encodeURIComponent(userId)}`
+}
+
+export const saveProfileField = async (field, value, userId) => {
+  const response = await fetch(withUserId(API_LINKS.profile, userId), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ field, value }),
@@ -356,8 +377,8 @@ export const saveProfileField = async (field, value) => {
   return payload
 }
 
-export const saveAvatarUpload = async ({ fileName, dataUrl }) => {
-  const response = await fetch(API_LINKS.avatar, {
+export const saveAvatarUpload = async ({ fileName, dataUrl, userId }) => {
+  const response = await fetch(withUserId(API_LINKS.avatar, userId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fileName, dataUrl }),
@@ -371,8 +392,8 @@ export const saveAvatarUpload = async ({ fileName, dataUrl }) => {
   return normalizeProfileRow({ avatar_url: payload.avatar_url })
 }
 
-export const saveScheduleItem = async (item) => {
-  const response = await fetch(API_LINKS.schedule, {
+export const saveScheduleItem = async (item, userId) => {
+  const response = await fetch(withUserId(API_LINKS.schedule, userId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item),
@@ -386,8 +407,8 @@ export const saveScheduleItem = async (item) => {
   return payload
 }
 
-export const updateScheduleItem = async (item) => {
-  const response = await fetch(`${API_LINKS.schedule}/${encodeURIComponent(item.id)}`, {
+export const updateScheduleItem = async (item, userId) => {
+  const response = await fetch(withUserId(`${API_LINKS.schedule}/${encodeURIComponent(item.id)}`, userId), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item),
@@ -401,14 +422,53 @@ export const updateScheduleItem = async (item) => {
   return payload
 }
 
-export const deleteScheduleItem = async (scheduleId) => {
-  const response = await fetch(`${API_LINKS.schedule}/${encodeURIComponent(scheduleId)}`, {
+export const deleteScheduleItem = async (scheduleId, userId) => {
+  const response = await fetch(withUserId(`${API_LINKS.schedule}/${encodeURIComponent(scheduleId)}`, userId), {
     method: 'DELETE',
   })
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
     throw new Error(payload.message || 'Unable to delete schedule item.')
+  }
+
+  return payload
+}
+
+export const loadCourseFiles = async (userId) => {
+  const url = userId
+    ? `${API_LINKS.files}?userId=${encodeURIComponent(userId)}`
+    : API_LINKS.files
+  return loadDatabaseFrame(url, ['files'], normalizeCourseFileRow)
+}
+
+export const uploadCourseFile = async ({ userId, moduleId, course, fileName, mimeType, sizeBytes, dataUrl }) => {
+  const url = userId
+    ? `${API_LINKS.files}?userId=${encodeURIComponent(userId)}`
+    : API_LINKS.files
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ moduleId, course, fileName, mimeType, sizeBytes, dataUrl }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to upload course file.')
+  }
+
+  return normalizeCourseFileRow(payload.file)
+}
+
+export const deleteCourseFile = async ({ userId, fileId }) => {
+  const url = userId
+    ? `${API_LINKS.files}/${encodeURIComponent(fileId)}?userId=${encodeURIComponent(userId)}`
+    : `${API_LINKS.files}/${encodeURIComponent(fileId)}`
+  const response = await fetch(url, { method: 'DELETE' })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to delete course file.')
   }
 
   return payload

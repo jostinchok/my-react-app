@@ -12,6 +12,7 @@ const appRoot = path.resolve(__dirname, '..')
 dotenv.config({ path: path.resolve(appRoot, '..', '.env') })
 
 const avatarUploadDir = path.join(appRoot, 'public', 'uploads', 'avatars')
+const courseFileUploadDir = path.join(appRoot, 'public', 'uploads', 'course-files')
 
 const app = express()
 const port = Number(process.env.API_PORT || 4001)
@@ -34,7 +35,7 @@ const pool = mysql.createPool({
 })
 
 app.use(cors({ origin: corsOrigin }))
-app.use(express.json({ limit: '8mb' }))
+app.use(express.json({ limit: '50mb' }))
 app.use('/uploads', express.static(path.join(appRoot, 'public', 'uploads')))
 
 const asyncRoute = (handler) => async (req, res) => {
@@ -112,6 +113,55 @@ const formatDateOnly = (value) => {
   if (value instanceof Date) return value.toISOString().slice(0, 10)
   return String(value).slice(0, 10)
 }
+
+const ensureCourseFilesTable = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course_files (
+      file_id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      module_id INT NULL,
+      course_key VARCHAR(120) NULL,
+      original_name VARCHAR(255) NOT NULL,
+      stored_name VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(120),
+      size_bytes BIGINT UNSIGNED DEFAULT 0,
+      file_url VARCHAR(512) NOT NULL,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+      FOREIGN KEY (module_id) REFERENCES training_modules(module_id) ON DELETE SET NULL,
+      INDEX idx_course_files_user_uploaded (user_id, uploaded_at),
+      INDEX idx_course_files_module (module_id)
+    )
+  `)
+}
+
+const safeFileName = (value = 'course-file') => {
+  const parsed = path.parse(String(value))
+  const name = parsed.name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'course-file'
+  const ext = parsed.ext.replace(/[^a-zA-Z0-9.]/g, '').slice(0, 16)
+  return `${name}${ext}`
+}
+
+const formatBytes = (sizeBytes = 0) => {
+  const size = Number(sizeBytes) || 0
+  if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`
+  if (size >= 1024) return `${(size / 1024).toFixed(1)} KB`
+  return `${size} B`
+}
+
+const normalizeCourseFile = (row = {}) => ({
+  id: row.file_id,
+  userId: row.user_id,
+  moduleId: row.module_id,
+  course: row.course_key || row.module_title || 'Saved Resources',
+  name: row.original_name,
+  mimeType: row.mime_type || 'application/octet-stream',
+  sizeBytes: Number(row.size_bytes || 0),
+  size: formatBytes(row.size_bytes),
+  uploaded: formatDateOnly(row.uploaded_at),
+  uploadedAt: row.uploaded_at,
+  url: row.file_url,
+})
 
 const buildModules = async (userId) => {
   const modules = await rowsOf(
@@ -378,6 +428,99 @@ app.get('/api/schedule', asyncRoute(async (req, res) => {
     [userId]
   )
   res.json({ schedule: schedule.map((item) => ({ ...item, date: formatDateOnly(item.date) })) })
+}))
+
+app.get('/api/course-files', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  await ensureCourseFilesTable()
+  const files = await rowsOf(
+    `SELECT cf.*, tm.title AS module_title
+     FROM course_files cf
+     LEFT JOIN training_modules tm ON tm.module_id = cf.module_id
+     WHERE cf.user_id = ?
+     ORDER BY cf.uploaded_at DESC, cf.file_id DESC`,
+    [userId]
+  )
+  res.json({ files: files.map(normalizeCourseFile) })
+}))
+
+app.post('/api/course-files', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const {
+    fileName = 'course-file',
+    mimeType = 'application/octet-stream',
+    sizeBytes = 0,
+    dataUrl,
+    moduleId = null,
+    module_id = null,
+    course = null,
+  } = req.body || {}
+  const match = /^data:([^;,]+);base64,([a-zA-Z0-9+/=]+)$/.exec(dataUrl || '')
+
+  if (!match) {
+    res.status(400).json({ message: 'Send the uploaded file as a base64 dataUrl.' })
+    return
+  }
+
+  await ensureCourseFilesTable()
+  await fs.mkdir(courseFileUploadDir, { recursive: true })
+
+  const originalName = safeFileName(fileName)
+  const storedName = `user-${userId}-${Date.now()}-${originalName}`
+  const filePath = path.join(courseFileUploadDir, storedName)
+  const fileUrl = `/uploads/course-files/${storedName}`
+  const buffer = Buffer.from(match[2], 'base64')
+  const numericModuleId = Number(moduleId || module_id)
+  const savedModuleId = Number.isInteger(numericModuleId) && numericModuleId > 0 ? numericModuleId : null
+
+  await fs.writeFile(filePath, buffer)
+  const [result] = await pool.query(
+    `INSERT INTO course_files
+       (user_id, module_id, course_key, original_name, stored_name, mime_type, size_bytes, file_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      savedModuleId,
+      course || null,
+      originalName,
+      storedName,
+      mimeType || match[1],
+      Number(sizeBytes) || buffer.length,
+      fileUrl,
+    ]
+  )
+
+  const savedFile = await rowOf(
+    `SELECT cf.*, tm.title AS module_title
+     FROM course_files cf
+     LEFT JOIN training_modules tm ON tm.module_id = cf.module_id
+     WHERE cf.file_id = ?`,
+    [result.insertId]
+  )
+  res.status(201).json({ file: normalizeCourseFile(savedFile) })
+}))
+
+app.delete('/api/course-files/:fileId', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const fileId = Number(req.params.fileId)
+
+  if (!Number.isInteger(fileId)) {
+    res.status(400).json({ message: 'A numeric file id is required.' })
+    return
+  }
+
+  await ensureCourseFilesTable()
+  const file = await rowOf('SELECT * FROM course_files WHERE file_id = ? AND user_id = ?', [fileId, userId])
+  if (!file) {
+    res.status(404).json({ message: 'File not found.' })
+    return
+  }
+
+  await pool.query('DELETE FROM course_files WHERE file_id = ? AND user_id = ?', [fileId, userId])
+  await fs.unlink(path.join(courseFileUploadDir, file.stored_name)).catch((error) => {
+    if (error?.code !== 'ENOENT') throw error
+  })
+  res.json({ ok: true })
 }))
 
 app.post('/api/schedule', asyncRoute(async (req, res) => {

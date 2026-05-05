@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import FileManager from './components/FileManager'
 import {
   demoStorageVersion,
   demoUsers,
@@ -14,6 +15,7 @@ import {
   normalizeNotificationRow,
   normalizeProfileRow,
   normalizeScheduleRow,
+  loadCourseFiles,
   deleteScheduleItem,
   saveAvatarUpload,
   saveProfileField,
@@ -73,6 +75,11 @@ function App() {
   const [databaseCertificates, setDatabaseCertificates] = useState([])
   const [databaseNotifications, setDatabaseNotifications] = useState([])
   const [databaseSchedule, setDatabaseSchedule] = useState([])
+  const [courseFiles, setCourseFiles] = useState([])
+  const [fileFrame, setFileFrame] = useState({
+    status: 'loading',
+    message: 'Waiting for uploaded course files.',
+  })
   const [selectedModuleId, setSelectedModuleId] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [moduleSearch, setModuleSearch] = useState('')
@@ -98,7 +105,9 @@ function App() {
   useEffect(() => {
     let ignore = false
 
-    loadDatabaseFrame(API_LINKS.modules, ['modules', 'trainingModules', 'courses'], normalizeModuleRow)
+    const userQuery = currentUserId ? `?userId=${encodeURIComponent(currentUserId)}` : ''
+
+    loadDatabaseFrame(`${API_LINKS.modules}${userQuery}`, ['modules', 'trainingModules', 'courses'], normalizeModuleRow)
       .then((modules) => {
         if (ignore) return
         setTrainingModules(modules)
@@ -120,7 +129,7 @@ function App() {
         })
       })
 
-    loadDatabaseFrame(API_LINKS.profile, ['profile', 'user', 'guideProfile'], normalizeProfileRow)
+    loadDatabaseFrame(`${API_LINKS.profile}${userQuery}`, ['profile', 'user', 'guideProfile'], normalizeProfileRow)
       .then((profiles) => {
         if (ignore) return
         setDatabaseProfile(profiles[0] || null)
@@ -140,7 +149,7 @@ function App() {
         })
       })
 
-    loadDatabaseFrame(API_LINKS.certifications, ['certifications', 'certificates'], normalizeCertificateRow)
+    loadDatabaseFrame(`${API_LINKS.certifications}${userQuery}`, ['certifications', 'certificates'], normalizeCertificateRow)
       .then((items) => {
         if (!ignore) setDatabaseCertificates(items)
       })
@@ -148,7 +157,7 @@ function App() {
         if (!ignore) setDatabaseCertificates([])
       })
 
-    loadDatabaseFrame(API_LINKS.notifications, ['notifications'], normalizeNotificationRow)
+    loadDatabaseFrame(`${API_LINKS.notifications}${userQuery}`, ['notifications'], normalizeNotificationRow)
       .then((items) => {
         if (!ignore) setDatabaseNotifications(items)
       })
@@ -156,9 +165,24 @@ function App() {
         if (!ignore) setDatabaseNotifications([])
       })
 
-    loadDatabaseFrame(API_LINKS.schedule, ['schedule', 'schedules', 'trainingSchedule', 'progress'], normalizeScheduleRow)
+    loadDatabaseFrame(`${API_LINKS.schedule}${userQuery}`, ['schedule', 'schedules', 'trainingSchedule', 'progress'], normalizeScheduleRow)
       .then((items) => {
         if (!ignore) setDatabaseSchedule(items)
+      })
+
+    loadCourseFiles(currentUserId)
+      .then((items) => {
+        if (ignore) return
+        setCourseFiles(items)
+        setFileFrame({
+          status: items.length > 0 ? 'ready' : 'empty',
+          message: items.length > 0 ? `${items.length} course file${items.length === 1 ? '' : 's'} loaded.` : 'No uploaded course files yet.',
+        })
+      })
+      .catch((error) => {
+        if (ignore) return
+        setCourseFiles([])
+        setFileFrame({ status: 'empty', message: error.message })
       })
       .catch(() => {
         if (!ignore) setDatabaseSchedule([])
@@ -167,7 +191,7 @@ function App() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentUserId])
 
   const seededUser = users.find((user) => user.id === currentUserId) || users[0] || cloneSeedUsers()[0]
   const currentUser = databaseProfile ? { ...seededUser, ...databaseProfile } : seededUser
@@ -176,7 +200,6 @@ function App() {
     : {
         ...currentUser,
         displayName: currentUser.displayName || 'Guide',
-        realName: currentUser.realName || '-',
         email: currentUser.email || '-',
         birthday: currentUser.birthday || '-',
         phone: currentUser.phone || '-',
@@ -459,7 +482,7 @@ function App() {
       status: 'Scheduled',
     }
     upsertLocalScheduleItem(scheduleItem)
-    const saveRequest = editingScheduleId ? updateScheduleItem(scheduleItem) : saveScheduleItem(scheduleItem)
+    const saveRequest = editingScheduleId ? updateScheduleItem(scheduleItem, currentUserId) : saveScheduleItem(scheduleItem, currentUserId)
     saveRequest
       .then((payload) => {
         const savedItem = payload?.schedule ? normalizeScheduleRow(payload.schedule) : null
@@ -501,7 +524,7 @@ function App() {
       schedule: (user.schedule || []).filter((item) => item.id !== scheduleId),
     }))
     if (editingScheduleId === scheduleId) cancelScheduleEdit()
-    deleteScheduleItem(scheduleId).catch(() => {
+    deleteScheduleItem(scheduleId, currentUserId).catch(() => {
       // Keep the local delete visible while the database endpoint is not connected.
     })
     addNotification('Schedule updated', 'A personal learning reminder was deleted from your schedule.', 'schedule')
@@ -537,6 +560,17 @@ function App() {
     addNotification('Resource saved', `${file.name} was added to your saved resources.`, 'resource')
   }
 
+  const handleCourseFileUploaded = (file) => {
+    setCourseFiles((items) => [file, ...items])
+    setFileFrame({ status: 'ready', message: 'Course file uploaded.' })
+    addNotification('File uploaded', `${file.name} was saved to your course files.`, 'resource')
+  }
+
+  const handleCourseFileDeleted = (fileId) => {
+    setCourseFiles((items) => items.filter((file) => file.id !== fileId))
+    addNotification('File deleted', 'A course file was removed from your files.', 'resource')
+  }
+
   const updateProfileField = (field, value) => {
     if (!editableProfileFields.has(field)) return
     updateCurrentUser((user) => ({ ...user, [field]: value }))
@@ -545,7 +579,7 @@ function App() {
 
   const saveProfileEdit = (field, value) => {
     if (!editableProfileFields.has(field)) return
-    saveProfileField(field, value).catch(() => {
+    saveProfileField(field, value, currentUserId).catch(() => {
       // Keep the local edit visible while the database endpoint is not connected.
     })
   }
@@ -558,7 +592,7 @@ function App() {
       const previewUrl = reader.result
       updateCurrentUser((user) => ({ ...user, avatar: previewUrl }))
       setDatabaseProfile((profile) => (profile ? { ...profile, avatar: previewUrl } : profile))
-      saveAvatarUpload({ fileName: file.name, dataUrl: previewUrl })
+      saveAvatarUpload({ fileName: file.name, dataUrl: previewUrl, userId: currentUserId })
         .then((savedProfile) => {
           if (!savedProfile.avatar) return
           updateCurrentUser((user) => ({ ...user, avatar: savedProfile.avatar }))
@@ -580,6 +614,7 @@ function App() {
     { id: 'certificates', label: 'Certificates', icon: 'C' },
     { id: 'notifications', label: 'Notifications', icon: 'N' },
     { id: 'schedule', label: 'Schedule', icon: 'S' },
+    { id: 'files', label: 'Files', icon: 'F' },
     { id: 'profile', label: 'Profile', icon: 'U' },
   ]
 
@@ -1174,6 +1209,20 @@ function App() {
             </section>
           )}
 
+          {activeTab === 'files' && (
+            <FileManager
+              files={courseFiles}
+              modules={trainingModules}
+              userId={currentUserId}
+              onFileUploaded={handleCourseFileUploaded}
+              onFileDeleted={handleCourseFileDeleted}
+              onError={(message) => {
+                setFileFrame({ status: 'empty', message })
+                addNotification('File action failed', message, 'resource')
+              }}
+            />
+          )}
+
           {activeTab === 'profile' && (
             <section className="page-stack">
               <PageIntro
@@ -1224,9 +1273,8 @@ function App() {
                   <PanelTitle kicker="Editable details" title="My account" />
                   <form className="profile-form" onSubmit={(event) => event.preventDefault()}>
                     {[
-                      ['realName', 'Real name'],
-                      ['birthday', 'Birthday'],
                       ['displayName', 'Display name'],
+                      ['birthday', 'Birthday'],
                       ['email', 'Email'],
                       ['phone', 'Phone'],
                       ['assignedPark', 'Assigned park'],

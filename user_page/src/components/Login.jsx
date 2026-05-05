@@ -1,34 +1,53 @@
 import React, { useState } from 'react';
 import '../Login.css';
 
+const AUTH_API_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL || 'http://localhost:4000';
+
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('park_guide');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       alert("Please enter both email and password!");
       return;
     }
-    const demoUsers = {
-      'guide@example.com': { password: '1234', role: 'park_guide', redirect: '/user', label: 'Park Guide' },
-      'admin@example.com': { password: 'admin', role: 'admin', redirect: '/admin', label: 'Admin' },
-      'ranger@example.com': { password: 'ranger', role: 'park_ranger', redirect: '/admin/ranger', label: 'Park Ranger' },
-    };
-    const demoUser = demoUsers[email.toLowerCase()];
 
-    if (demoUser && password === demoUser.password && role === demoUser.role) {
-      localStorage.setItem('sfc_demo_session', JSON.stringify({
-        email,
-        role,
-        label: demoUser.label,
+    const roleMap = {
+      park_guide: 'guide',
+      admin: 'admin',
+      park_ranger: 'park_ranger',
+    };
+
+    try {
+      const response = await fetch(`${AUTH_API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: roleMap[role] }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.message || 'Invalid credentials.');
+      }
+
+      if (payload.user?.role_name !== 'guide') {
+        alert('This page is for Park Guide users only.');
+        return;
+      }
+
+      const session = {
+        userId: payload.user.user_id,
+        email: payload.user.email,
+        name: payload.user.name,
+        role: payload.user.role_name,
         loginAt: new Date().toISOString(),
-      }));
-      alert(`${demoUser.label} demo login successful!`);
-      window.location.href = demoUser.redirect;
-    } else {
-      alert("Invalid credentials. Try again!");
+      };
+      localStorage.setItem('sfc_guide_session', JSON.stringify(session));
+      onLogin?.(session);
+    } catch (error) {
+      alert(error.message);
     }
   };
 
@@ -41,8 +60,7 @@ const Login = ({ onLogin }) => {
       />
       <h1 style={{color: 'var(--primary-dark)', marginBottom: '25px', fontWeight: '800'}}>Digital Park Login</h1>
       <p className="demo-auth-note">
-        Demo authentication only. Use guide@example.com / 1234, admin@example.com / admin,
-        or ranger@example.com / ranger.
+        Use the database guide login, for example guide@test.com / 1234 after importing database/db.sql.
       </p>
       <input
         type="text"
@@ -58,8 +76,6 @@ const Login = ({ onLogin }) => {
       />
       <select value={role} onChange={e => setRole(e.target.value)}>
         <option value="park_guide">Park Guide</option>
-        <option value="admin">Admin</option>
-        <option value="park_ranger">Park Ranger</option>
       </select>
       <button onClick={handleLogin} style={{background: 'linear-gradient(135deg, var(--primary-mid), var(--accent-green))'}}>Login</button>
       <div className="login-links">
