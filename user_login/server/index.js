@@ -13,6 +13,7 @@ import { createMysqlIncidentStore } from './src/incident/mysqlIncidentStore.js'
 import {
   DEFAULT_MQTT_TOPIC,
   VALID_EVENT_TYPES,
+  VALID_RANGER_RECOMMENDATIONS,
   VALID_SEVERITIES,
   VALID_SOURCES,
   VALID_STATUSES,
@@ -49,13 +50,15 @@ const INCIDENT_STORAGE = (process.env.INCIDENT_STORAGE || 'memory').toLowerCase(
 const INCIDENT_MYSQL_FALLBACK = (process.env.INCIDENT_MYSQL_FALLBACK || 'memory').toLowerCase()
 const MAX_RUNTIME_INCIDENTS = 250
 const MAX_IOT_CAPTURE_BYTES = 500 * 1024
+const MAX_RANGER_NOTE_LENGTH = 1000
 
 const flagEnabled = (value) => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase())
 const DEVICE_TOKEN_AUTH_ENABLED = flagEnabled(process.env.DEVICE_TOKEN_AUTH_ENABLED)
 const ROLE_CHECK_ENABLED = flagEnabled(process.env.ROLE_CHECK_ENABLED)
 const AI_CAMERA_TOKEN = process.env.AI_CAMERA_TOKEN || ''
 const IOT_SENSOR_TOKEN = process.env.IOT_SENSOR_TOKEN || ''
-const ALLOWED_STATUS_ACTOR_ROLES = new Set(['admin', 'park_ranger'])
+const ALLOWED_STATUS_ACTOR_ROLES = new Set(['admin'])
+const ALLOWED_RANGER_RECOMMENDATION_ROLES = new Set(['park_ranger'])
 
 const mqttState = {
   enabled: MQTT_ENABLED,
@@ -173,7 +176,8 @@ const securityControlInfo = () => ({
   deviceTokenAuthEnabled: DEVICE_TOKEN_AUTH_ENABLED,
   roleCheckEnabled: ROLE_CHECK_ENABLED,
   tokenSources: DEVICE_TOKEN_AUTH_ENABLED ? ['AI_CAMERA', 'IOT_SENSOR'] : [],
-  statusUpdateRoles: ROLE_CHECK_ENABLED ? ['admin', 'park_ranger'] : ['demo-open'],
+  statusUpdateRoles: ROLE_CHECK_ENABLED ? ['admin'] : ['demo-open'],
+  rangerRecommendationRoles: ROLE_CHECK_ENABLED ? ['park_ranger'] : ['demo-open'],
 })
 
 const safeTokenEqual = (provided, expected) => {
@@ -360,15 +364,69 @@ const statusActorFromRequest = (req) => {
     return {
       allowed: false,
       status: 403,
-      message: 'Status updates require X-Actor-Role admin or park_ranger when ROLE_CHECK_ENABLED=true.',
+      message: 'Official incident status updates require X-Actor-Role admin when ROLE_CHECK_ENABLED=true.',
     }
   }
 
   return {
     allowed: true,
     actorRole,
-    actorLabel: actorRole === 'admin' ? 'Admin incident dashboard' : 'Park Ranger alert console',
+    actorLabel: 'Admin incident dashboard',
   }
+}
+
+const rangerRecommendationActorFromRequest = (req) => {
+  if (!ROLE_CHECK_ENABLED) {
+    return { allowed: true, actorRole: 'park_ranger', actorLabel: 'Park Ranger alert console' }
+  }
+
+  const actorRole = String(req.get('X-Actor-Role') || '').toLowerCase()
+  if (!ALLOWED_RANGER_RECOMMENDATION_ROLES.has(actorRole)) {
+    return {
+      allowed: false,
+      status: 403,
+      message: 'Ranger recommendations require X-Actor-Role park_ranger when ROLE_CHECK_ENABLED=true.',
+    }
+  }
+
+  return {
+    allowed: true,
+    actorRole,
+    actorLabel: 'Park Ranger alert console',
+  }
+}
+
+const validateRangerRecommendationInput = (incidentId, payload = {}) => {
+  const id = String(incidentId || '').trim()
+  if (!id) {
+    return { valid: false, message: 'Incident id is required.' }
+  }
+
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { valid: false, message: 'Recommendation payload must be a JSON object.' }
+  }
+
+  const recommendation = String(payload.recommendation || '').trim()
+  if (!VALID_RANGER_RECOMMENDATIONS.has(recommendation)) {
+    return {
+      valid: false,
+      message: 'Invalid recommendation. Use Recommend Acknowledged, Recommend In Review, Recommend Resolved, or Recommend False Alarm.',
+    }
+  }
+
+  const note = String(payload.note ?? payload.notes ?? '').trim()
+  if (!note) {
+    return { valid: false, message: 'Field note is required.' }
+  }
+
+  if (note.length > MAX_RANGER_NOTE_LENGTH) {
+    return {
+      valid: false,
+      message: `Field note is too long. Keep it at ${MAX_RANGER_NOTE_LENGTH} characters or fewer.`,
+    }
+  }
+
+  return { valid: true, incidentId: id, recommendation, note }
 }
 
 const initializeIncidentStore = async () => {
@@ -578,6 +636,51 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
     return res.json({ incident })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to update incident status.', error: error.message })
+  }
+})
+
+app.post('/api/incidents/:id/ranger-recommendation', async (req, res) => {
+  const validation = validateRangerRecommendationInput(req.params.id, req.body)
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.message })
+  }
+
+  const actor = rangerRecommendationActorFromRequest(req)
+  if (!actor.allowed) {
+    return res.status(actor.status).json({ message: actor.message })
+  }
+
+  try {
+    const incident = await runIncidentStoreOperation(async (store) => {
+      const recommendationInput = {
+        recommendation: validation.recommendation,
+        note: validation.note,
+        actorRole: actor.actorRole,
+        actorLabel: actor.actorLabel,
+      }
+
+      const updatedIncident = await store.addRangerRecommendation(validation.incidentId, recommendationInput)
+      if (updatedIncident) return updatedIncident
+
+      const alertIncidents = await loadAlertFolderIncidents()
+      const alertIncident = alertIncidents.find((item) => item.id === validation.incidentId)
+      if (!alertIncident) return null
+
+      const storedIncident = await store.addIncident(alertIncident)
+      return store.addRangerRecommendation(storedIncident.id, recommendationInput)
+    })
+
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found.' })
+    }
+
+    console.log(`[incidents] Ranger recommendation recorded for ${validation.incidentId}: ${validation.recommendation}`)
+    return res.status(201).json({
+      incident,
+      message: 'Recommendation sent to Admin for review.',
+    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Unable to record ranger recommendation.', error: error.message })
   }
 })
 

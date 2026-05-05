@@ -43,12 +43,12 @@ The full training platform remains frontend-seeded. MySQL persistence currently 
 | Threat | Target | Example | Demo mitigation |
 | --- | --- | --- | --- |
 | Unauthorized incident injection | `/api/incidents` | Fake AI or IoT event posted to backend | Optional `DEVICE_TOKEN_AUTH_ENABLED=true` requires AI/IoT tokens. |
-| Unauthorized status change | `/api/incidents/:id/status` | Park Guide marks an incident resolved | Optional `ROLE_CHECK_ENABLED=true` allows only `admin` and `park_ranger`. |
+| Unauthorized status change | `/api/incidents/:id/status` | Park Guide or Park Ranger marks an incident resolved without Admin decision | Optional `ROLE_CHECK_ENABLED=true` allows only `admin` for official status updates. |
 | Data leakage | Incident API/evidence paths | Frontend receives `/Users/...` local path | Evidence paths normalized to `/evidence/ai/<filename>` or `/evidence/iot/<filename>`. |
 | Invalid payloads | Backend API | Unknown source/status/severity/event type | Backend validates source, event type, severity, status, and basic IoT numeric fields. |
 | Secret exposure | GitHub repo | Real `.env` committed | `.env.example` uses placeholders; real `.env` should remain local. |
 | Public MQTT spoofing | HiveMQ prototype broker | Anyone publishes to topic | Prototype limitation; optional token in payload, production private broker with TLS/auth. |
-| Weak route protection | Frontend demo routes | Direct access to `/admin` | Documented limitation; API-level role check is available for incident status updates. |
+| Weak route protection | Frontend demo routes | Direct access to `/admin` | Documented limitation; API-level role checks are available for Admin status updates and Park Ranger recommendations. |
 
 ## 4. Current Implemented Controls
 
@@ -57,7 +57,7 @@ The full training platform remains frontend-seeded. MySQL persistence currently 
 - `.env.example` exists with placeholders; real `.env` is not intended for Git.
 - Passwords are hashed with `bcryptjs` in the existing MySQL auth endpoints when the legacy auth schema is loaded.
 - Forgot-password backend stores only SHA-256 reset token hashes and expiry timestamps when the legacy auth schema is loaded.
-- Admin and Park Ranger pages use different UI scopes and status-update roles.
+- Admin and Park Ranger pages use different UI scopes: Admin makes official status decisions, while Park Ranger submits field notes and recommendations.
 - MySQL monitoring tables store AI/IoT incident records, metadata, actions, and evidence references.
 - Runtime `.DS_Store`, dependency folders, model artifacts, datasets, and real environment files are excluded from the intended repository state.
 - Local asset setup scripts verify required AI/CV files without committing model weights, datasets, `.env`, or personal alert evidence.
@@ -76,7 +76,8 @@ When enabled:
 - `POST /api/incidents` with `source=AI_CAMERA` requires `X-Device-Token: <AI_CAMERA_TOKEN>`.
 - `POST /api/incidents` with `source=IOT_SENSOR` requires `X-Device-Token: <IOT_SENSOR_TOKEN>` or `payload.device_token`.
 - MQTT IoT payloads support `device_token`.
-- `PATCH /api/incidents/:id/status` allows only `X-Actor-Role: admin` or `X-Actor-Role: park_ranger`.
+- `PATCH /api/incidents/:id/status` allows only `X-Actor-Role: admin`.
+- `POST /api/incidents/:id/ranger-recommendation` allows `X-Actor-Role: park_ranger` to submit field notes and recommended outcomes without changing official status.
 - `X-Actor-Role: park_guide`, missing roles, and unknown roles return `403`.
 
 Generate local tokens:
@@ -95,7 +96,7 @@ Do not commit the generated token values. Do not commit downloaded Google Drive 
 | Login/Auth | Partial / Demo-ready | Demo role accounts are visible. Backend auth endpoints hash passwords if the legacy auth schema is loaded. Frontend route protection is not production-grade. |
 | Park Guide/User Portal | Demo-ready | Role boundary is shown. User data is seeded/local; production persistence and route protection are deferred. |
 | Admin Portal | Demo-ready | Admin dashboard and status updates use admin role header when optional role check is enabled. |
-| Park Ranger Console | Demo-ready | Response-only scope. Sends `park_ranger` role header for status updates. |
+| Park Ranger Console | Demo-ready | Response-only scope. Sends `park_ranger` role header for field-note recommendation posts, not official status updates. |
 | AI Camera Ingestion | Demo-ready | Supports optional `--device-token` and `X-Device-Token` backend validation. |
 | IoT Sensor/MQTT Ingestion | Demo-ready / Prototype | MQTT/API publisher supports `IOT_SENSOR_TOKEN`; public HiveMQ remains prototype-only. |
 | Backend API | Demo-ready | Validates incident payloads, optional token auth, optional role checks, and safe evidence URLs. |
@@ -157,7 +158,7 @@ python scripts/run_ai_camera_monitor.py \
   --device-token "<copy-generated-ai-token>"
 ```
 
-The camera script also reads `AI_CAMERA_TOKEN` from `user_login/server/.env` automatically when `--device-token` is omitted, so normal demo runs do not need to paste the token in the terminal.
+The camera script also reads AI_CAMERA_TOKEN from the root .env automatically when `--device-token` is omitted, so normal demo runs do not need to paste the token in the terminal.
 
 Run IoT publisher with token mode:
 
@@ -178,12 +179,13 @@ Capture:
 6. Wrong AI token rejected with `401`.
 7. Wrong IoT token rejected with `401`.
 8. Park Guide status update rejected with `403`.
-9. Admin/Park Ranger status update accepted.
-10. `/api/incidents` response without `/Users/...` paths.
-11. Admin Incident Detection page.
-12. Park Ranger Console page.
-13. User Portal role boundary card.
-14. Root hub Review Notes showing demo auth and optional controls.
+9. Park Ranger official status update rejected and recommendation post accepted.
+10. Admin official status update accepted.
+11. `/api/incidents` response without `/Users/...` paths.
+12. Admin Incident Detection page.
+13. Park Ranger Console page.
+14. User Portal role boundary card.
+15. Root hub Review Notes showing demo auth and optional controls.
 
 ## 10. Production Hardening Recommendations
 

@@ -14,7 +14,7 @@ This project demonstrates the three Project Scope areas:
 
 1. Interactive Digital Training Platform: seeded Park Guide web portal, Expo mobile preview, training modules, quizzes, progress, badges/certificates, notifications, files/resources, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
-3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger response console, evidence serving, and MySQL-backed monitoring incident persistence.
+3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger recommendation console, evidence serving, and MySQL-backed monitoring incident persistence.
 
 The Park Guide training platform remains frontend-seeded for the demo. MySQL persistence is the default for AI/IoT monitoring incidents only.
 
@@ -28,7 +28,7 @@ The demo uses a shared Citrus Energetic visual system:
 - Lime green for success/live/healthy states.
 - Warm charcoal for dashboard contrast and readable text.
 
-This consistency pass updated the Review Hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview without changing AI model logic, backend incident API behavior, or MySQL schema.
+This consistency pass updated the Review Hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview while preserving AI model logic and the MySQL monitoring schema.
 
 Image optimization status:
 
@@ -308,7 +308,7 @@ and serves it through:
 http://localhost:4000/evidence/iot/<filename>
 ```
 
-The browser posts this capture to `POST /api/incidents/iot-capture` with `X-Actor-Role: admin`, so the frontend does not expose `IOT_SENSOR_TOKEN`. The endpoint writes through the active memory/MySQL incident store. Admin and Park Ranger both read the same record from `GET /api/incidents`, render the same `/evidence/iot/<filename>` image, and update the same status through `PATCH /api/incidents/:id/status`.
+The browser posts this capture to `POST /api/incidents/iot-capture` with `X-Actor-Role: admin`, so the frontend does not expose `IOT_SENSOR_TOKEN`. The endpoint writes through the active memory/MySQL incident store. Admin and Park Ranger both read the same record from `GET /api/incidents` and render the same `/evidence/iot/<filename>` image. Admin makes official status decisions through `PATCH /api/incidents/:id/status`; Park Ranger submits field notes and recommended outcomes through `POST /api/incidents/:id/ranger-recommendation` without changing the official status.
 
 Duplicate handling: if browser MQTT and backend MQTT receive the same physical sensor trigger, the backend first matches by `public_id`. If no shared ID exists, it merges IoT triggers with the same source, event type, sensor ID, and timestamp within a 10-second window. Browser capture evidence attaches to the existing incident instead of creating a duplicate.
 
@@ -356,8 +356,9 @@ Security controls now available for demonstration:
 
 - `DEVICE_TOKEN_AUTH_ENABLED=false` keeps the current demo ingestion flow unchanged.
 - `DEVICE_TOKEN_AUTH_ENABLED=true` requires AI camera and IoT device tokens for `POST /api/incidents`.
-- `ROLE_CHECK_ENABLED=false` keeps current status update behavior unchanged.
-- `ROLE_CHECK_ENABLED=true` allows status updates only from `X-Actor-Role: admin` or `X-Actor-Role: park_ranger`.
+- `ROLE_CHECK_ENABLED=false` keeps demo endpoints open for local review.
+- `ROLE_CHECK_ENABLED=true` allows official status updates only from `X-Actor-Role: admin`.
+- `ROLE_CHECK_ENABLED=true` allows ranger field-note recommendations from `X-Actor-Role: park_ranger`.
 - `X-Actor-Role: park_guide` is rejected from incident status changes when role checks are enabled.
 
 AI camera token mode:
@@ -403,11 +404,12 @@ curl http://localhost:4000/api/incidents
 curl http://localhost:4000/api/incidents/summary
 ```
 
-Patch an incident status:
+Patch an official incident status as Admin:
 
 ```bash
 curl -X PATCH http://localhost:4000/api/incidents/<INCIDENT_ID>/status \
   -H "Content-Type: application/json" \
+  -H "X-Actor-Role: admin" \
   -d '{"status":"In Review"}'
 ```
 
@@ -415,6 +417,15 @@ Allowed statuses are:
 
 ```text
 New, Reviewed, Acknowledged, In Review, Resolved, False Alarm
+```
+
+Submit a Park Ranger field note and recommendation without changing official status:
+
+```bash
+curl -X POST http://localhost:4000/api/incidents/<INCIDENT_ID>/ranger-recommendation \
+  -H "Content-Type: application/json" \
+  -H "X-Actor-Role: park_ranger" \
+  -d '{"recommendation":"Recommend Resolved","note":"Ranger checked the evidence and recommends Admin review as resolved."}'
 ```
 
 ## Build And Syntax Checks
@@ -440,7 +451,8 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 - Evidence responses use `/evidence/ai/<filename>` or `/evidence/iot/<filename>` and do not expose `/Users/...` paths to the frontend.
 - Backend incident endpoints validate known incident source, event type, severity, status, and basic IoT fields.
 - Optional AI/IoT device-token validation protects incident ingestion during the cybersecurity demo.
-- Optional role checking protects incident status updates during the cybersecurity demo.
+- Optional role checking protects incident status updates during the cybersecurity demo; Admin is the only official status updater.
+- Park Ranger can view incidents, add field notes, and recommend outcomes. Recommendations do not change official incident status.
 - Role boundaries are visible: Park Guide, Park Ranger, and Admin have different permissions.
 - Login/Register/Forgot Password remains demo/partial. Existing backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded, but frontend route protection is not production-grade.
 - Production MQTT should use a private broker with authentication and TLS.
@@ -450,7 +462,7 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 ## Known Limitations
 
 - Login/register is a demo flow, not production authentication.
-- Frontend route guards are not enforced in production style; optional role checks protect the incident status API only.
+- Frontend route guards are not enforced in production style; optional role checks protect the official incident status API and ranger recommendation API.
 - Park Guide training content is frontend-seeded and local to the browser.
 - The AI model depends on local model files under `artifacts/` and `models/`.
 - MQTT public broker behavior depends on network availability.
@@ -468,8 +480,8 @@ Capture:
 3. User dashboard, modules, quiz, progress, certificates, notifications, files, profile, and help.
 4. Mobile preview at `http://localhost:8081`.
 5. Admin dashboard.
-6. Admin Incident Detection with AI and IoT rows, evidence image, metadata, filters, and status update.
-7. Park Ranger Console with urgent/new incidents and response actions.
+6. Admin Incident Detection with AI and IoT rows, evidence image, metadata, ranger recommendations, filters, and official status update.
+7. Park Ranger Console with urgent/new incidents, field notes, and recommendation actions.
 8. `/api/health`, `/api/incidents`, and `/api/incidents/summary`.
 9. `alerts/ai` and `alerts/iot` folders showing curated AI and IoT evidence.
 10. MySQL query showing monitoring incidents, if running MySQL mode.

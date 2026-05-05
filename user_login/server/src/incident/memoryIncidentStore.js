@@ -10,6 +10,27 @@ import {
 
 const IOT_DEDUPE_WINDOW_MS = 10000
 
+const buildActionId = () => `ACT-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
+
+const appendAction = (incident, action) => ({
+  ...incident,
+  actionHistory: [action, ...(incident.actionHistory || [])],
+  rangerRecommendations:
+    action.actorRole === 'park_ranger' && action.recommendation
+      ? [
+          {
+            id: action.id,
+            recommendation: action.recommendation,
+            note: action.comment || '',
+            actorRole: action.actorRole,
+            actorLabel: action.actorLabel,
+            createdAt: action.createdAt,
+          },
+          ...(incident.rangerRecommendations || []),
+        ]
+      : (incident.rangerRecommendations || []),
+})
+
 export const createMemoryIncidentStore = ({
   runtimeIncidentFile,
   maxRuntimeIncidents = 250,
@@ -82,6 +103,10 @@ export const createMemoryIncidentStore = ({
     },
     evidenceImage: incoming.evidenceImage || existing.evidenceImage,
     notes: incoming.evidenceImage ? incoming.notes : existing.notes || incoming.notes,
+    actionHistory: incoming.actionHistory?.length ? incoming.actionHistory : existing.actionHistory || [],
+    rangerRecommendations: incoming.rangerRecommendations?.length
+      ? incoming.rangerRecommendations
+      : existing.rangerRecommendations || [],
   })
 
   return {
@@ -125,14 +150,48 @@ export const createMemoryIncidentStore = ({
       return incident
     },
 
-    async updateIncidentStatus(id, status) {
+    async updateIncidentStatus(id, status, action = {}) {
       const incidentIndex = incidents.findIndex((item) => item.id === id)
       if (incidentIndex === -1) return null
 
-      incidents[incidentIndex] = {
-        ...incidents[incidentIndex],
-        status,
+      const currentIncident = incidents[incidentIndex]
+      const statusAction = {
+        id: buildActionId(),
+        type: 'status_changed',
+        fromStatus: currentIncident.status,
+        toStatus: status,
+        actorRole: action.actorRole || 'api',
+        actorLabel: action.actorLabel || 'Incident API',
+        recommendation: null,
+        comment: action.comment || '',
+        createdAt: new Date().toISOString(),
       }
+
+      incidents[incidentIndex] = appendAction({
+        ...currentIncident,
+        status,
+      }, statusAction)
+      await persistRuntimeIncidents()
+      return incidents[incidentIndex]
+    },
+
+    async addRangerRecommendation(id, recommendationInput = {}) {
+      const incidentIndex = incidents.findIndex((item) => item.id === id)
+      if (incidentIndex === -1) return null
+
+      const action = {
+        id: buildActionId(),
+        type: 'note_added',
+        fromStatus: incidents[incidentIndex].status,
+        toStatus: null,
+        actorRole: recommendationInput.actorRole || 'park_ranger',
+        actorLabel: recommendationInput.actorLabel || 'Park Ranger alert console',
+        recommendation: recommendationInput.recommendation,
+        comment: recommendationInput.note || '',
+        createdAt: new Date().toISOString(),
+      }
+
+      incidents[incidentIndex] = appendAction(incidents[incidentIndex], action)
       await persistRuntimeIncidents()
       return incidents[incidentIndex]
     },

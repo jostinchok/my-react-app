@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Paper,
@@ -9,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import {
@@ -26,12 +28,14 @@ const sourceLabel = {
   IOT_SENSOR: "IoT Sensor",
 };
 
-const rangerActions = [
-  { status: "Acknowledged", label: "Acknowledge" },
-  { status: "In Review", label: "In Review" },
-  { status: "Resolved", label: "Resolved" },
-  { status: "False Alarm", label: "False Alarm" },
+const rangerRecommendations = [
+  { recommendation: "Recommend Acknowledged", label: "Recommend Acknowledged" },
+  { recommendation: "Recommend In Review", label: "Recommend In Review" },
+  { recommendation: "Recommend Resolved", label: "Recommend Resolved" },
+  { recommendation: "Recommend False Alarm", label: "Recommend False Alarm" },
 ];
+
+const MAX_FIELD_NOTE_LENGTH = 1000;
 
 const responsePriority = {
   New: 1,
@@ -91,6 +95,8 @@ const ParkRangerConsole = () => {
   const [backendOnline, setBackendOnline] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [savingIncidentId, setSavingIncidentId] = useState(null);
+  const [fieldNotes, setFieldNotes] = useState({});
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -161,39 +167,74 @@ const ParkRangerConsole = () => {
     { label: "IoT Sensor", value: summary.iot, detail: "Distance-threshold proximity alerts" },
   ];
 
-  const applyLocalStatus = (incidentId, status) => {
+  const appendLocalRecommendation = (incidentId, recommendation, note) => {
+    const localRecommendation = {
+      id: `LOCAL-${Date.now()}`,
+      recommendation,
+      note,
+      actorRole: "park_ranger",
+      actorLabel: "Park Ranger alert console",
+      createdAt: new Date().toISOString(),
+    };
+
     setIncidents((current) =>
       current.map((incident) =>
-        incident.id === incidentId ? { ...incident, status } : incident
+        incident.id === incidentId
+          ? {
+              ...incident,
+              rangerRecommendations: [
+                localRecommendation,
+                ...(incident.rangerRecommendations || []),
+              ],
+            }
+          : incident
       )
     );
   };
 
-  const updateIncidentStatus = async (incidentId, status) => {
+  const updateFieldNote = (incidentId, note) => {
+    setFieldNotes((current) => ({
+      ...current,
+      [incidentId]: note.slice(0, MAX_FIELD_NOTE_LENGTH),
+    }));
+  };
+
+  const submitRangerRecommendation = async (incidentId, recommendation) => {
+    const note = String(fieldNotes[incidentId] || "").trim();
+    if (!note) {
+      setApiError("Add a field note before sending a recommendation.");
+      setSuccessMessage("");
+      return;
+    }
+
     setSavingIncidentId(incidentId);
     setApiError("");
+    setSuccessMessage("");
 
     if (!backendOnline) {
-      applyLocalStatus(incidentId, status);
+      appendLocalRecommendation(incidentId, recommendation, note);
+      setFieldNotes((current) => ({ ...current, [incidentId]: "" }));
+      setSuccessMessage("Recommendation saved locally for this demo; start the backend to send it to Admin.");
       setSavingIncidentId(null);
       return;
     }
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/status`,
+        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/ranger-recommendation`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Actor-Role": "park_ranger",
           },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({ recommendation, note }),
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Status update failed with ${response.status}`);
+        const errorPayload = await response.json().catch(() => null);
+        throw new Error(errorPayload?.message || `Recommendation failed with ${response.status}`);
       }
 
       const payload = await response.json();
@@ -207,10 +248,13 @@ const ParkRangerConsole = () => {
           incident.id === updatedIncident.id ? updatedIncident : incident
         )
       );
+      setFieldNotes((current) => ({ ...current, [incidentId]: "" }));
+      setSuccessMessage(payload.message || "Recommendation sent to Admin for review.");
     } catch (error) {
-      setBackendOnline(false);
       setApiError(error.message);
-      applyLocalStatus(incidentId, status);
+      if (error instanceof TypeError) {
+        setBackendOnline(false);
+      }
     } finally {
       setSavingIncidentId(null);
     }
@@ -225,8 +269,8 @@ const ParkRangerConsole = () => {
             Field Response Console
           </Typography>
           <Typography className="ranger-subtitle">
-            Response-only view for live AI camera and IoT proximity incidents. Park Rangers can acknowledge,
-            investigate, resolve, or mark false alarms, but cannot manage users, training, certificates, or settings.
+            Response-only view for live AI camera and IoT proximity incidents. Park Rangers can view
+            evidence, add field notes, and recommend outcomes for Admin review.
           </Typography>
         </Box>
         <Box className="ranger-live-card">
@@ -238,7 +282,7 @@ const ParkRangerConsole = () => {
 
       <Box className="ranger-boundary-card">
         <strong>Role boundary</strong>
-        <span>Park Ranger response scope only: no user management, training module editing, certificate approval, or system settings.</span>
+        <span>Park Ranger response scope only: recommendations do not change the official incident status.</span>
       </Box>
 
       <Box className="ranger-stat-grid">
@@ -333,14 +377,24 @@ const ParkRangerConsole = () => {
         <RangerIncidentDetail
           incident={selectedIncident}
           savingIncidentId={savingIncidentId}
-          onStatusChange={updateIncidentStatus}
+          fieldNote={fieldNotes[selectedIncident?.id] || ""}
+          successMessage={successMessage}
+          onFieldNoteChange={updateFieldNote}
+          onRecommendationSubmit={submitRangerRecommendation}
         />
       </Box>
     </Box>
   );
 };
 
-const RangerIncidentDetail = ({ incident, savingIncidentId, onStatusChange }) => {
+const RangerIncidentDetail = ({
+  incident,
+  savingIncidentId,
+  fieldNote,
+  successMessage,
+  onFieldNoteChange,
+  onRecommendationSubmit,
+}) => {
   if (!incident) {
     return (
       <Paper className="ranger-detail-panel">
@@ -354,6 +408,7 @@ const RangerIncidentDetail = ({ incident, savingIncidentId, onStatusChange }) =>
   const probabilities = incident.ai?.probabilities || {};
   const bbox = Array.isArray(incident.ai?.bbox) ? incident.ai.bbox : [];
   const isSaving = savingIncidentId === incident.id;
+  const recommendations = incident.rangerRecommendations || [];
 
   return (
     <Paper className="ranger-detail-panel">
@@ -361,7 +416,7 @@ const RangerIncidentDetail = ({ incident, savingIncidentId, onStatusChange }) =>
       <Typography component="h2">{incident.eventType}</Typography>
       <Typography className="incident-detail-id">{incident.id}</Typography>
       <Typography className="incident-detail-kicker">
-        Response package: location, severity, evidence, metadata, field note, and status actions.
+        Response package: location, severity, evidence, metadata, field note, and recommendation actions.
       </Typography>
 
       {evidenceImageUrl ? (
@@ -407,22 +462,57 @@ const RangerIncidentDetail = ({ incident, savingIncidentId, onStatusChange }) =>
       )}
 
       <Box className="incident-notes ranger-notes">
-        <Typography component="h3">Field notes</Typography>
+        <Typography component="h3">Incident notes</Typography>
         <Typography>{incident.notes || "No notes recorded for this incident."}</Typography>
       </Box>
 
-      <Box className="incident-status-actions ranger-status-actions">
-        <Typography component="h3">Response action</Typography>
-        {rangerActions.map((action) => (
-          <Button
-            key={action.status}
-            className={incident.status === action.status ? "active" : ""}
-            disabled={isSaving}
-            onClick={() => onStatusChange(incident.id, action.status)}
-          >
-            {action.label}
-          </Button>
-        ))}
+      {recommendations.length > 0 && (
+        <Box className="ranger-recommendation-history">
+          <Typography component="h3">Ranger recommendations</Typography>
+          {recommendations.slice(0, 3).map((item) => (
+            <Box className="ranger-recommendation-item" key={item.id || `${item.recommendation}-${item.createdAt}`}>
+              <strong>{item.recommendation}</strong>
+              <span>{formatDateTime(item.createdAt)}</span>
+              <p>{item.note || "No field note supplied."}</p>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      <Box className="ranger-recommendation-form">
+        <Typography component="h3">Field note</Typography>
+        <TextField
+          value={fieldNote}
+          onChange={(event) => onFieldNoteChange(incident.id, event.target.value)}
+          placeholder="Add what you observed in the field for Admin review."
+          multiline
+          minRows={3}
+          fullWidth
+          disabled={isSaving}
+          inputProps={{ maxLength: MAX_FIELD_NOTE_LENGTH }}
+        />
+        <Typography className="ranger-note-count">
+          {fieldNote.length}/{MAX_FIELD_NOTE_LENGTH}
+        </Typography>
+
+        <Box className="incident-status-actions ranger-status-actions">
+          <Typography component="h3">Recommendation</Typography>
+          {rangerRecommendations.map((action) => (
+            <Button
+              key={action.recommendation}
+              disabled={isSaving || !fieldNote.trim()}
+              onClick={() => onRecommendationSubmit(incident.id, action.recommendation)}
+            >
+              {action.label}
+            </Button>
+          ))}
+        </Box>
+
+        {successMessage && (
+          <Alert className="ranger-success-alert" severity="success">
+            {successMessage}
+          </Alert>
+        )}
       </Box>
     </Paper>
   );

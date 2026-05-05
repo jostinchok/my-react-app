@@ -19,6 +19,13 @@ export const VALID_SEVERITIES = new Set(['low', 'medium', 'high'])
 
 export const DEFAULT_MQTT_TOPIC = 'ctip/sensor/plant-zone-01/proximity'
 
+export const VALID_RANGER_RECOMMENDATIONS = new Set([
+  'Recommend Acknowledged',
+  'Recommend In Review',
+  'Recommend Resolved',
+  'Recommend False Alarm',
+])
+
 export const toNumber = (value, fallback = null) => {
   const number = Number(value)
   return Number.isFinite(number) ? number : fallback
@@ -141,6 +148,69 @@ export const normalizeIot = (value, topic = DEFAULT_MQTT_TOPIC) => {
   }
 }
 
+export const normalizeActionHistory = (value) => {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .map((action) => {
+      if (!action || typeof action !== 'object') return null
+
+      const rawContext = action.rawContext || action.raw_context || {}
+      const recommendation = action.recommendation || rawContext.recommendation || null
+      const comment = action.comment || action.note || ''
+
+      return {
+        id: action.id || action.actionId || action.action_id || null,
+        type: action.type || action.actionType || action.action_type || null,
+        fromStatus: action.fromStatus || action.from_status || null,
+        toStatus: action.toStatus || action.to_status || null,
+        actorRole: action.actorRole || action.actor_role || 'system',
+        actorLabel: action.actorLabel || action.actor_label || null,
+        recommendation,
+        comment,
+        createdAt: normalizeTimestamp(action.createdAt || action.created_at),
+      }
+    })
+    .filter(Boolean)
+}
+
+export const normalizeRangerRecommendations = (input = {}, actionHistory = []) => {
+  const explicitRecommendations = input.rangerRecommendations || input.ranger_recommendations
+  if (Array.isArray(explicitRecommendations) && explicitRecommendations.length) {
+    return explicitRecommendations
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null
+
+        const recommendation = item.recommendation || null
+        if (!VALID_RANGER_RECOMMENDATIONS.has(recommendation)) return null
+
+        return {
+          id: item.id || item.actionId || item.action_id || null,
+          recommendation,
+          note: item.note || item.comment || '',
+          actorRole: item.actorRole || item.actor_role || 'park_ranger',
+          actorLabel: item.actorLabel || item.actor_label || 'Park Ranger alert console',
+          createdAt: normalizeTimestamp(item.createdAt || item.created_at),
+        }
+      })
+      .filter(Boolean)
+  }
+
+  return actionHistory
+    .filter((action) =>
+      action.actorRole === 'park_ranger' &&
+      VALID_RANGER_RECOMMENDATIONS.has(action.recommendation)
+    )
+    .map((action) => ({
+      id: action.id,
+      recommendation: action.recommendation,
+      note: action.comment || '',
+      actorRole: action.actorRole,
+      actorLabel: action.actorLabel || 'Park Ranger alert console',
+      createdAt: action.createdAt,
+    }))
+}
+
 export const normalizeIncident = (input = {}, options = {}) => {
   const source = pickSource(input.source || options.source)
   if (!source) return null
@@ -164,7 +234,7 @@ export const normalizeIncident = (input = {}, options = {}) => {
     input.evidence?.image_path
   )
 
-  return {
+  const incident = {
     id: input.id || input.public_id || input.incident_id || null,
     source,
     eventType,
@@ -178,9 +248,19 @@ export const normalizeIncident = (input = {}, options = {}) => {
     notes: input.notes || (
       source === 'IOT_SENSOR'
         ? 'IoT proximity sensor detected an object inside the protected plant-zone threshold.'
-        : 'AI camera detected human interaction with protected plant or wildlife.'
+      : 'AI camera detected human interaction with protected plant or wildlife.'
     ),
+    actionHistory: [],
+    rangerRecommendations: [],
   }
+
+  const actionHistory = normalizeActionHistory(
+    input.actionHistory || input.action_history || input.actions || []
+  )
+  incident.actionHistory = actionHistory
+  incident.rangerRecommendations = normalizeRangerRecommendations(input, actionHistory)
+
+  return incident
 }
 
 export const sortIncidents = (incidents) =>

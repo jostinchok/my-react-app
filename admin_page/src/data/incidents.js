@@ -13,7 +13,12 @@ export const INCIDENT_STATUSES = [
   "False Alarm",
 ];
 
-export const RANGER_INCIDENT_STATUSES = ["Acknowledged", "In Review", "Resolved", "False Alarm"];
+export const RANGER_RECOMMENDATIONS = [
+  "Recommend Acknowledged",
+  "Recommend In Review",
+  "Recommend Resolved",
+  "Recommend False Alarm",
+];
 
 export const INCIDENT_FILTERS = [
   { id: "all", label: "All" },
@@ -31,6 +36,27 @@ export const normalizeIncidentRecord = (incident) => {
   if (!incident) return null;
 
   const probabilities = incident.ai?.probabilities || incident.ai?.probs || {};
+  const actionHistory = Array.isArray(incident.actionHistory || incident.action_history || incident.actions)
+    ? (incident.actionHistory || incident.action_history || incident.actions)
+    : [];
+  const explicitRecommendations = Array.isArray(incident.rangerRecommendations || incident.ranger_recommendations)
+    ? (incident.rangerRecommendations || incident.ranger_recommendations)
+    : [];
+  const rangerRecommendations = explicitRecommendations.length
+    ? explicitRecommendations
+    : actionHistory
+        .filter((action) =>
+          (action.actorRole || action.actor_role) === "park_ranger" &&
+          RANGER_RECOMMENDATIONS.includes(action.recommendation || action.rawContext?.recommendation || action.raw_context?.recommendation)
+        )
+        .map((action) => ({
+          id: action.id || action.actionId || action.action_id || null,
+          recommendation: action.recommendation || action.rawContext?.recommendation || action.raw_context?.recommendation,
+          note: action.note || action.comment || "",
+          actorRole: action.actorRole || action.actor_role || "park_ranger",
+          actorLabel: action.actorLabel || action.actor_label || "Park Ranger alert console",
+          createdAt: action.createdAt || action.created_at || new Date().toISOString(),
+        }));
 
   return {
     id: incident.id || incident.incident_id,
@@ -62,6 +88,8 @@ export const normalizeIncidentRecord = (incident) => {
         }
       : null,
     notes: incident.notes || "",
+    actionHistory,
+    rangerRecommendations,
   };
 };
 

@@ -217,14 +217,28 @@ const run = async () => {
       )
 
       await expectStatus(
-        'park_ranger accepted for status PATCH',
+        'park_ranger rejected for official status PATCH',
         `/api/incidents/${encodeURIComponent(incidentId)}/status`,
         {
           method: 'PATCH',
           headers: { 'X-Actor-Role': 'park_ranger' },
           body: JSON.stringify({ status: 'Acknowledged' }),
         },
-        200
+        403
+      )
+
+      await expectStatus(
+        'park_ranger accepted for recommendation POST',
+        `/api/incidents/${encodeURIComponent(incidentId)}/ranger-recommendation`,
+        {
+          method: 'POST',
+          headers: { 'X-Actor-Role': 'park_ranger' },
+          body: JSON.stringify({
+            recommendation: 'Recommend Acknowledged',
+            note: 'Security smoke test ranger note for admin review.',
+          }),
+        },
+        201
       )
 
       await expectStatus(

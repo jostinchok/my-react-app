@@ -778,6 +778,79 @@
   line-height: 1.55;
 }
 
+.incident-ranger-recommendations,
+.ranger-recommendation-history,
+.ranger-recommendation-form {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--incident-line, #d7e5dc);
+  border-radius: 8px;
+  background: #fffdf4;
+}
+
+.incident-ranger-recommendations h3,
+.ranger-recommendation-history h3,
+.ranger-recommendation-form h3 {
+  margin: 0 0 10px;
+  color: var(--incident-ink, #153326);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.incident-ranger-recommendation,
+.ranger-recommendation-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid #efe4c1;
+}
+
+.incident-ranger-recommendation:first-of-type,
+.ranger-recommendation-item:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.incident-ranger-recommendation strong,
+.ranger-recommendation-item strong {
+  color: #1f6b45;
+  font-weight: 900;
+}
+
+.incident-ranger-recommendation span,
+.ranger-recommendation-item span,
+.ranger-note-count {
+  color: #6b705f;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.incident-ranger-recommendation p,
+.ranger-recommendation-item p {
+  margin: 0;
+  color: var(--incident-muted, #5b6d63);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.ranger-recommendation-form .MuiTextField-root {
+  background: #ffffff;
+}
+
+.ranger-recommendation-form .MuiOutlinedInput-root {
+  border-radius: 8px;
+}
+
+.ranger-note-count {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+}
+
+.ranger-success-alert {
+  margin-top: 12px;
+}
+
 .incident-status-actions {
   display: flex;
   flex-wrap: wrap;

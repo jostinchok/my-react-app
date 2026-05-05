@@ -963,6 +963,7 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
   const isLocalCapture = evidenceImageUrl?.startsWith("blob:");
   const bbox = Array.isArray(incident.ai?.bbox) ? incident.ai.bbox : [];
   const isSaving = savingIncidentId === incident.id;
+  const recommendations = incident.rangerRecommendations || [];
 
   return (
     <Paper className="incident-detail-panel">
@@ -1025,8 +1026,21 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
         <Typography>{incident.notes || "No notes recorded for this incident."}</Typography>
       </Box>
 
+      {recommendations.length > 0 && (
+        <Box className="incident-ranger-recommendations">
+          <Typography component="h3">Park Ranger recommendations</Typography>
+          {recommendations.slice(0, 4).map((item) => (
+            <Box className="incident-ranger-recommendation" key={item.id || `${item.recommendation}-${item.createdAt}`}>
+              <strong>{item.recommendation}</strong>
+              <span>{formatDateTime(item.createdAt)}</span>
+              <p>{item.note || "No ranger field note supplied."}</p>
+            </Box>
+          ))}
+        </Box>
+      )}
+
       <Box className="incident-status-actions">
-        <Typography component="h3">Update incident status</Typography>
+        <Typography component="h3">Official incident status</Typography>
         {INCIDENT_STATUSES.map((status) => (
           <Button
             key={status}

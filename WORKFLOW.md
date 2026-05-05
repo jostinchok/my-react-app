@@ -120,7 +120,9 @@ Expected evidence:
 - Wrong AI/IoT tokens return `401`.
 - Correct AI/IoT tokens return `201`.
 - `park_guide` status patch returns `403`.
-- `park_ranger` and `admin` status patches return `200`.
+- `park_ranger` official status patches return `403`.
+- `park_ranger` recommendation posts return `201`.
+- `admin` status patches return `200`.
 
 ## Terminal 2: API And MySQL Checks
 
@@ -181,12 +183,22 @@ mysql -u root -p cos30049_assignment \
   -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
 ```
 
-Patch status:
+Patch official status as Admin:
 
 ```bash
 curl -X PATCH http://localhost:4000/api/incidents/<INCIDENT_ID>/status \
   -H "Content-Type: application/json" \
+  -H "X-Actor-Role: admin" \
   -d '{"status":"In Review"}'
+```
+
+Submit a Park Ranger field note and recommendation:
+
+```bash
+curl -X POST http://localhost:4000/api/incidents/<INCIDENT_ID>/ranger-recommendation \
+  -H "Content-Type: application/json" \
+  -H "X-Actor-Role: park_ranger" \
+  -d '{"recommendation":"Recommend False Alarm","note":"Ranger checked the area and recommends Admin review as false alarm."}'
 ```
 
 ## Terminal 3: AI Camera Monitor
@@ -300,7 +312,7 @@ In Admin Incident Detection:
 4. Confirm one compressed JPEG is captured at max 1280x720.
 5. Confirm the saved URL starts with `/evidence/iot/`.
 6. Confirm the same incident and image appear in Park Ranger.
-7. Change the status in either page and refresh the other page.
+7. Submit a Park Ranger recommendation, then update the official status from Admin Incident Detection and refresh both pages.
 
 Backend verification:
 
@@ -344,8 +356,8 @@ The demo should now read as one Citrus Energetic system:
 - Hub: rainforest launcher, forest/citrus hero, rounded service cards, live status pills.
 - User/Park Guide: warm citrus learning portal, cream cards, orange actions, lime progress states.
 - Admin Dashboard: command-center view with charcoal/forest structure and citrus monitoring cards.
-- Admin Incident Detection: consistent filters, table badges, evidence frame, metadata cards, and status actions.
-- Park Ranger Console: forest field-response identity, urgent queue, evidence panel, and citrus response actions.
+- Admin Incident Detection: consistent filters, table badges, evidence frame, metadata cards, ranger recommendations, and official status controls.
+- Park Ranger Console: forest field-response identity, urgent queue, evidence panel, field notes, and citrus recommendation actions.
 - Mobile Preview: simplified Park Guide palette with cream surfaces and citrus actions.
 
 Image rule for report/demo assets:
@@ -365,12 +377,12 @@ Image rule for report/demo assets:
 5. Open mobile preview at `http://localhost:8081`.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
 7. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
-8. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, and status update.
+8. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, ranger recommendations, and Admin official status update.
 9. Open Park Ranger Console at `http://localhost:5174/admin/ranger`.
-10. Show response-only role boundary, urgent/new incident queue, selected detail, evidence, field notes, and action buttons.
+10. Show response-only role boundary, urgent/new incident queue, selected detail, evidence, field notes, and recommendation buttons.
 11. Run AI camera or IoT simulation.
 12. Refresh Admin and Ranger pages and show the same backend incident data.
-13. Patch status from the UI or curl and show persistence in API/MySQL.
+13. Submit a Ranger recommendation, then patch official status from the Admin UI or curl and show persistence in API/MySQL.
 14. For cybersecurity check, show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generation, smoke test PASS output, and `/api/health` security state.
 15. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
 
@@ -390,7 +402,7 @@ Capture:
 9. Admin selected incident detail with AI evidence image.
 10. Admin IoT metadata card.
 11. Park Ranger response console.
-12. Park Ranger status action update.
+12. Park Ranger recommendation submission.
 13. /api/health.
 14. /api/incidents.
 15. /api/incidents/summary.

@@ -92,9 +92,9 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. |
 | Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence. Screens are simpler than the full web portal. |
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
-| Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, and status updates. Sends admin role header for optional role-check mode. |
-| Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Acknowledged/In Review/Resolved/False Alarm actions. Sends park_ranger role header for optional role-check mode. |
-| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, and `PATCH /api/incidents/:id/status` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. |
+| Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, ranger recommendations, and official status updates. Sends admin role header for optional role-check mode. |
+| Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Recommend Acknowledged/In Review/Resolved/False Alarm actions. Ranger recommendations do not change the official incident status. |
+| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, `PATCH /api/incidents/:id/status`, and `POST /api/incidents/:id/ranger-recommendation` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. Official status updates are Admin-only when role checks are enabled. |
 | AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, optional `--device-token`, automatic `AI_CAMERA_TOKEN` loading from `.env`, JPG/JSON evidence, backend POST, and safe shutdown. |
 | IoT simulation / physical sensor support | Partial / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant payloads to `ctip/sensor/plant-zone-01/proximity` and supports token mode. Physical sensor deployment is environment-dependent. |
 | MySQL incident persistence | Demo-ready | Default `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment`, `ctip_user`, and monitoring tables for AI/IoT incidents only. Memory mode remains an emergency/testing fallback only. |
@@ -154,7 +154,8 @@ IoT browser capture contract:
 - Database credentials are loaded from environment variables, not hardcoded source.
 - The backend validates allowed incident source, event type, severity, status, and basic IoT fields.
 - AI camera and IoT ingestion can require device tokens with `DEVICE_TOKEN_AUTH_ENABLED=true`.
-- Incident status changes can require Admin or Park Ranger role headers with `ROLE_CHECK_ENABLED=true`.
+- Official incident status changes require the Admin role header with `ROLE_CHECK_ENABLED=true`.
+- Park Ranger can view incidents, add field notes, and submit status-outcome recommendations for Admin review without changing `incident.status`.
 - Admin, Park Ranger, and Park Guide role boundaries are clearly shown in the demo.
 - Frontend route guards are intentionally not enforced in production style; this remains documented as a limitation for the tutor check.
 - Production MQTT should use a private broker with authentication and TLS.
@@ -166,7 +167,7 @@ IoT browser capture contract:
 - Localized runbook and notebook examples to `/Users/chiayuenkai/Desktop/GitHub/my-react-app`.
 - Updated the root hub with direct links for Login/Register, Park Guide, Admin, Admin Detection, Park Ranger, Mobile Preview, API Health, Incidents API, and Incidents Summary API.
 - Polished Admin Incident Detection for clearer summary cards, filters, table readability, selected detail panel, evidence preview, metadata, loading, empty, and offline fallback states.
-- Polished Park Ranger Console as a response-only field console with urgent incidents, field notes, status actions, and role boundaries.
+- Polished Park Ranger Console as a response-only field console with urgent incidents, field notes, recommendation actions, and role boundaries.
 - Added a demo-safe IoT test publisher fallback: MQTT remains the first path, but public-broker timeouts can fall back to the local incidents API with the same IOT_SENSOR payload.
 - Updated documentation for MySQL-first incident persistence, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
 - Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
@@ -174,7 +175,7 @@ IoT browser capture contract:
 - Fixed the Park Ranger route to render through the Admin shell/sidebar, keeping logo placement and navigation consistent for final demo screenshots.
 - Added one generated Sarawak rainforest hero image at `images/citrus-rainforest-hero.webp` and optimized it to 136 KB for the hub background.
 - Optimized frontend training images into WebP files under `user_page/public/training/`; each optimized training image is below 100 KB and the large unused PNG originals were removed from the public frontend folder.
-- Added demo-safe cybersecurity controls for the tutor check: optional AI/IoT device tokens, optional Admin/Park Ranger status-update role checks, generated token helper, security smoke test script, and `CYBERSECURITY_REVIEW.md`.
+- Added demo-safe cybersecurity controls for the tutor check: optional AI/IoT device tokens, Admin-only official status-update role checks, Park Ranger recommendation checks, generated token helper, security smoke test script, and `CYBERSECURITY_REVIEW.md`.
 - Completed IoT browser-camera evidence integration: `/api/incidents/iot-capture` saves compressed captures to `alerts/iot`, serves `/evidence/iot/<filename>`, writes through memory/MySQL incident storage, and deduplicates browser/backend MQTT triggers.
 - Updated run instructions so `/api/health` should show `persistence=mysql`, `requested=mysql`, `active=mysql`, and `fallback=none` for the lecturer demo.
 - Added local asset setup and verification scripts for teammates: `scripts/download_assets_gdrive.py` and `scripts/check_required_assets.py`.

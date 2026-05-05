@@ -71,6 +71,14 @@ const hydrateIncidentRows = async (connection, rows) => {
     incidentIds
   )
 
+  const [actionRows] = await connection.query(
+    `SELECT action_id, incident_id, action_type, from_status, to_status, actor_role, actor_label, comment, raw_context, created_at
+     FROM monitoring_incident_actions
+     WHERE incident_id IN (${placeholders})
+     ORDER BY created_at DESC, action_id DESC`,
+    incidentIds
+  )
+
   const aiByIncident = new Map(aiRows.map((row) => [
     row.incident_id,
     {
@@ -102,6 +110,27 @@ const hydrateIncidentRows = async (connection, rows) => {
     }
   }
 
+  const actionsByIncident = new Map()
+  for (const row of actionRows) {
+    if (!actionsByIncident.has(row.incident_id)) {
+      actionsByIncident.set(row.incident_id, [])
+    }
+
+    const rawContext = parseJsonColumn(row.raw_context, {})
+    actionsByIncident.get(row.incident_id).push({
+      id: row.action_id,
+      type: row.action_type,
+      fromStatus: row.from_status,
+      toStatus: row.to_status,
+      actorRole: row.actor_role,
+      actorLabel: row.actor_label,
+      recommendation: rawContext?.recommendation || null,
+      comment: row.comment,
+      rawContext,
+      createdAt: toIsoTimestamp(row.created_at),
+    })
+  }
+
   return rows.map((row) => normalizeIncident({
     id: row.public_id,
     source: row.source,
@@ -114,6 +143,7 @@ const hydrateIncidentRows = async (connection, rows) => {
     evidenceImage: evidenceByIncident.get(row.incident_id)?.browser_url || null,
     ai: aiByIncident.get(row.incident_id) || null,
     iot: iotByIncident.get(row.incident_id) || null,
+    actionHistory: actionsByIncident.get(row.incident_id) || [],
   })).filter(Boolean)
 }
 
@@ -482,6 +512,54 @@ export const createMysqlIncidentStore = ({ pool } = {}) => {
             action.actorLabel || 'Incident API',
             action.comment || null,
             jsonValue({ publicId }),
+          ]
+        )
+
+        await connection.commit()
+        return await fetchIncidentByPublicId(publicId, connection)
+      } catch (error) {
+        await connection.rollback()
+        throw error
+      } finally {
+        connection.release()
+      }
+    },
+
+    async addRangerRecommendation(publicId, recommendationInput = {}) {
+      const connection = await pool.getConnection()
+      try {
+        await connection.beginTransaction()
+
+        const [rows] = await connection.query(
+          `SELECT incident_id, status
+           FROM monitoring_incidents
+           WHERE public_id = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [publicId]
+        )
+
+        if (!rows.length) {
+          await connection.rollback()
+          return null
+        }
+
+        const incidentId = rows[0].incident_id
+
+        await connection.query(
+          `INSERT INTO monitoring_incident_actions
+             (incident_id, action_type, from_status, actor_role, actor_label, comment, raw_context)
+           VALUES (?, 'note_added', ?, ?, ?, ?, ?)`,
+          [
+            incidentId,
+            rows[0].status,
+            safeActorRole(recommendationInput.actorRole, 'park_ranger'),
+            recommendationInput.actorLabel || 'Park Ranger alert console',
+            recommendationInput.note,
+            jsonValue({
+              publicId,
+              recommendation: recommendationInput.recommendation,
+            }),
           ]
         )
 
