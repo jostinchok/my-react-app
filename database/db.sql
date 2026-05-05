@@ -235,6 +235,20 @@ CREATE TABLE IF NOT EXISTS schedule (
 );
 -- until here
 
+CREATE TABLE IF NOT EXISTS course_resources (
+    resource_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id VARCHAR(50) NOT NULL,
+    uploaded_by INT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(150) NULL,
+    size_bytes BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    INDEX idx_course_resources_course (course_id, created_at)
+);
+
 INSERT IGNORE INTO roles (role_id, role_name) VALUES (1, 'admin'), (2, 'guide');
 
 -- Test password for seeded users: 1234
@@ -264,13 +278,103 @@ VALUES (
 );
 
 -- Ensure compatibility for existing databases created before these columns existed.
-ALTER TABLE guide_profiles ADD COLUMN IF NOT EXISTS user_id INT NULL;
+SET @col_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'guide_profiles'
+      AND COLUMN_NAME = 'user_id'
+);
+SET @sql := IF(
+    @col_exists = 0,
+    'ALTER TABLE guide_profiles ADD COLUMN user_id INT NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 UPDATE guide_profiles SET user_id = guide_id WHERE user_id IS NULL;
-ALTER TABLE guide_profiles ADD COLUMN IF NOT EXISTS guide_code VARCHAR(50);
-ALTER TABLE guide_profiles ADD COLUMN IF NOT EXISTS birthday DATE;
-ALTER TABLE guide_profiles ADD COLUMN IF NOT EXISTS years_experience INT DEFAULT 0;
-ALTER TABLE guide_profiles ADD COLUMN IF NOT EXISTS address VARCHAR(255);
-ALTER TABLE guide_profiles ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255);
+
+SET @col_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'guide_profiles'
+      AND COLUMN_NAME = 'guide_code'
+);
+SET @sql := IF(
+    @col_exists = 0,
+    'ALTER TABLE guide_profiles ADD COLUMN guide_code VARCHAR(50)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'guide_profiles'
+      AND COLUMN_NAME = 'birthday'
+);
+SET @sql := IF(
+    @col_exists = 0,
+    'ALTER TABLE guide_profiles ADD COLUMN birthday DATE',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'guide_profiles'
+      AND COLUMN_NAME = 'years_experience'
+);
+SET @sql := IF(
+    @col_exists = 0,
+    'ALTER TABLE guide_profiles ADD COLUMN years_experience INT DEFAULT 0',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'guide_profiles'
+      AND COLUMN_NAME = 'address'
+);
+SET @sql := IF(
+    @col_exists = 0,
+    'ALTER TABLE guide_profiles ADD COLUMN address VARCHAR(255)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'guide_profiles'
+      AND COLUMN_NAME = 'avatar_url'
+);
+SET @sql := IF(
+    @col_exists = 0,
+    'ALTER TABLE guide_profiles ADD COLUMN avatar_url VARCHAR(255)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 UPDATE guide_profiles gp
 JOIN users u ON u.user_id = gp.guide_id

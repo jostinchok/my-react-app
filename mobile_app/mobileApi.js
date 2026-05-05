@@ -49,11 +49,11 @@ export const mobileContentApi = (authBaseUrl) => {
       const res = await fetch(`${base}/api/mobile/notifications/${encodeURIComponent(userId)}`);
       return toJson(res);
     },
-    markNotificationRead: async (id, read = true) => {
+    markNotificationRead: async (id, userId, read = true) => {
       const res = await fetch(`${base}/api/mobile/notifications/${encodeURIComponent(id)}/read`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ read }),
+        body: JSON.stringify({ userId, read }),
       });
       return toJson(res);
     },
@@ -83,8 +83,8 @@ export const mobileContentApi = (authBaseUrl) => {
       });
       return toJson(res);
     },
-    deleteSchedule: async (id) => {
-      const res = await fetch(`${base}/api/mobile/schedule/${encodeURIComponent(id)}`, {
+    deleteSchedule: async (id, userId) => {
+      const res = await fetch(`${base}/api/mobile/schedule/${encodeURIComponent(id)}?userId=${encodeURIComponent(userId)}`, {
         method: "DELETE",
       });
       return toJson(res);
@@ -101,6 +101,48 @@ export const mobileContentApi = (authBaseUrl) => {
       });
       return toJson(res);
     },
+    getCourseResources: async (courseId, userId) => {
+      const res = await fetch(
+        `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/resources?userId=${encodeURIComponent(userId)}`
+      );
+      return toJson(res);
+    },
+    uploadCourseResource: async (courseId, userId, file) => {
+      const formData = new FormData();
+      formData.append("userId", String(userId));
+
+      let attached = false;
+      if (file && typeof file === "object") {
+        // Expo web can provide a real File object under asset.file.
+        if (file.file instanceof File) {
+          formData.append("file", file.file, file.name || file.file.name || "upload");
+          attached = true;
+        } else if (typeof File !== "undefined" && file instanceof File) {
+          formData.append("file", file, file.name || "upload");
+          attached = true;
+        } else if (typeof file.uri === "string" && file.uri.length > 0) {
+          // Native expects { uri, name, type } payloads.
+          formData.append("file", {
+            uri: file.uri,
+            name: file.name || "upload",
+            type: file.mimeType || file.type || "application/octet-stream",
+          });
+          attached = true;
+        }
+      }
+
+      if (!attached) {
+        throw new Error("Selected file is invalid. Please choose the file again.");
+      }
+
+      const res = await fetch(
+        `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/resources`,
+        { method: "POST", body: formData }
+      );
+      return toJson(res);
+    },
+    getCourseResourceDownloadUrl: (courseId, resourceId, userId) =>
+      `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/resources/${encodeURIComponent(resourceId)}/download?userId=${encodeURIComponent(userId)}`,
   };
 };
 

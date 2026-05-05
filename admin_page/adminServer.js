@@ -14,7 +14,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const UPLOAD_ROOT = path.join(__dirname, 'uploads')
 const MODULE_MEDIA_DIR = path.join(UPLOAD_ROOT, 'module-media')
+const COURSE_RESOURCES_DIR = path.join(UPLOAD_ROOT, 'course-resources')
 fs.mkdirSync(MODULE_MEDIA_DIR, { recursive: true })
+fs.mkdirSync(COURSE_RESOURCES_DIR, { recursive: true })
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, MODULE_MEDIA_DIR),
   filename: (_req, file, cb) => {
@@ -24,6 +26,30 @@ const storage = multer.diskStorage({
   },
 })
 const upload = multer({ storage })
+
+const BLOCKED_RESOURCE_EXTENSIONS = new Set([
+  '.exe', '.bat', '.cmd', '.com', '.msi', '.scr', '.ps1', '.sh', '.app', '.jar',
+  '.cpl', '.vbs', '.vbe', '.js', '.wsf', '.wsh', '.dll', '.sys', '.reg',
+])
+
+const courseResourceStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, COURSE_RESOURCES_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase()
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext || ''}`)
+  },
+})
+const courseResourceUpload = multer({
+  storage: courseResourceStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB cap per file
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase()
+    if (BLOCKED_RESOURCE_EXTENSIONS.has(ext)) {
+      return cb(new Error('This file type is not allowed for course resources.'))
+    }
+    cb(null, true)
+  },
+})
 
 app.use(
   cors({
@@ -252,6 +278,23 @@ async function ensureAdminSchema(poolConn) {
       FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
     )`,
     'course_enrollments table'
+  )
+
+  await tryQ(
+    `CREATE TABLE IF NOT EXISTS course_resources (
+      resource_id INT AUTO_INCREMENT PRIMARY KEY,
+      course_id VARCHAR(50) NOT NULL,
+      uploaded_by INT NULL,
+      original_name VARCHAR(255) NOT NULL,
+      stored_name VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(150) NULL,
+      size_bytes BIGINT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+      FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE SET NULL,
+      INDEX idx_course_resources_course (course_id, created_at)
+    )`,
+    'course_resources table'
   )
 
   console.log('[admin schema] ready')
@@ -1126,6 +1169,293 @@ app.post('/api/modules/:moduleId/media', upload.single('file'), async (req, res)
   }
 })
 
+// ---------------------- Course Resources ----------------------
+const removeStoredResourceFile = (storedName) => {
+  if (!storedName) return
+  const filePath = path.join(COURSE_RESOURCES_DIR, storedName)
+  if (path.dirname(filePath) !== COURSE_RESOURCES_DIR) return
+  fs.unlink(filePath, () => {})
+}
+
+const ensureCourseExists = async (courseId) => {
+  const [rows] = await pool.query('SELECT course_id, course_name FROM courses WHERE course_id = ?', [courseId])
+  return rows.length ? rows[0] : null
+}
+
+const fetchCourseResource = async (courseId, resourceId) => {
+  const [rows] = await pool.query(
+    `SELECT cr.resource_id, cr.course_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes, cr.created_at,
+            cr.uploaded_by, c.course_name
+     FROM course_resources cr
+     INNER JOIN courses c ON c.course_id = cr.course_id
+     WHERE cr.resource_id = ? AND cr.course_id = ?`,
+    [resourceId, courseId]
+  )
+  return rows[0] || null
+}
+
+const formatResourceRow = (row, courseName) => ({
+  resource_id: row.resource_id,
+  course_id: row.course_id,
+  course_name: courseName ?? row.course_name ?? null,
+  original_name: row.original_name,
+  stored_name: row.stored_name,
+  mime_type: row.mime_type || 'application/octet-stream',
+  size_bytes: Number(row.size_bytes) || 0,
+  uploaded_by: row.uploaded_by || null,
+  uploaded_by_name: row.uploaded_by_name || null,
+  created_at: row.created_at,
+  download_url: `/api/courses/${encodeURIComponent(row.course_id)}/resources/${row.resource_id}/download`,
+})
+
+const userHasApprovedEnrollment = async (userId, courseId) => {
+  const [rows] = await pool.query(
+    `SELECT status FROM course_enrollments WHERE user_id = ? AND course_id = ? LIMIT 1`,
+    [userId, courseId]
+  )
+  return rows.length > 0 && rows[0].status === 'approved'
+}
+
+// Admin: list resources for a course
+app.get('/api/courses/:courseId/resources', async (req, res) => {
+  try {
+    const { courseId } = req.params
+    const course = await ensureCourseExists(courseId)
+    if (!course) return res.status(404).json({ message: 'Course not found.' })
+
+    const [rows] = await pool.query(
+      `SELECT cr.resource_id, cr.course_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
+              cr.uploaded_by, cr.created_at, u.name AS uploaded_by_name
+       FROM course_resources cr
+       LEFT JOIN users u ON u.user_id = cr.uploaded_by
+       WHERE cr.course_id = ?
+       ORDER BY cr.created_at DESC, cr.resource_id DESC`,
+      [courseId]
+    )
+
+    res.json({
+      course_id: courseId,
+      course_name: course.course_name,
+      resources: rows.map((r) => formatResourceRow(r, course.course_name)),
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load course resources.', error: error.message })
+  }
+})
+
+// Admin: upload a resource for a course
+app.post(
+  '/api/courses/:courseId/resources',
+  courseResourceUpload.single('file'),
+  async (req, res) => {
+    try {
+      const { courseId } = req.params
+      if (!req.file) return res.status(400).json({ message: 'No file uploaded.' })
+
+      const course = await ensureCourseExists(courseId)
+      if (!course) {
+        removeStoredResourceFile(req.file.filename)
+        return res.status(404).json({ message: 'Course not found.' })
+      }
+
+      const uploadedBy = req.body?.uploadedBy ? Number(req.body.uploadedBy) : null
+      const safeUploadedBy = Number.isInteger(uploadedBy) && uploadedBy > 0 ? uploadedBy : null
+
+      const [result] = await pool.query(
+        `INSERT INTO course_resources (course_id, uploaded_by, original_name, stored_name, mime_type, size_bytes)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          courseId,
+          safeUploadedBy,
+          req.file.originalname,
+          req.file.filename,
+          req.file.mimetype || null,
+          req.file.size,
+        ]
+      )
+
+      res.status(201).json({
+        resource: formatResourceRow(
+          {
+            resource_id: result.insertId,
+            course_id: courseId,
+            original_name: req.file.originalname,
+            stored_name: req.file.filename,
+            mime_type: req.file.mimetype,
+            size_bytes: req.file.size,
+            uploaded_by: safeUploadedBy,
+            created_at: new Date(),
+          },
+          course.course_name
+        ),
+      })
+    } catch (error) {
+      if (req.file?.filename) removeStoredResourceFile(req.file.filename)
+      res.status(500).json({ message: 'Unable to upload resource.', error: error.message })
+    }
+  }
+)
+
+// Shared download handler (admin or mobile after access guard)
+const sendResourceDownload = (res, resource) => {
+  const filePath = path.join(COURSE_RESOURCES_DIR, resource.stored_name)
+  if (path.dirname(filePath) !== COURSE_RESOURCES_DIR) {
+    return res.status(400).json({ message: 'Invalid resource path.' })
+  }
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: 'Resource file is missing on server.' })
+  }
+  res.download(filePath, resource.original_name, (err) => {
+    if (err && !res.headersSent) {
+      res.status(500).json({ message: 'Unable to download file.', error: err.message })
+    }
+  })
+}
+
+// Admin: download
+app.get('/api/courses/:courseId/resources/:resourceId/download', async (req, res) => {
+  try {
+    const { courseId, resourceId } = req.params
+    const resource = await fetchCourseResource(courseId, Number(resourceId))
+    if (!resource) return res.status(404).json({ message: 'Resource not found.' })
+    sendResourceDownload(res, resource)
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to download resource.', error: error.message })
+  }
+})
+
+// Admin: delete
+app.delete('/api/courses/:courseId/resources/:resourceId', async (req, res) => {
+  try {
+    const { courseId, resourceId } = req.params
+    const resource = await fetchCourseResource(courseId, Number(resourceId))
+    if (!resource) return res.status(404).json({ message: 'Resource not found.' })
+
+    await pool.query('DELETE FROM course_resources WHERE resource_id = ? AND course_id = ?', [
+      resource.resource_id,
+      courseId,
+    ])
+    removeStoredResourceFile(resource.stored_name)
+    res.json({ success: true, resource_id: resource.resource_id })
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to delete resource.', error: error.message })
+  }
+})
+
+// Mobile: list course resources (approved enrollment only)
+app.get('/api/mobile/courses/:courseId/resources', async (req, res) => {
+  try {
+    const { courseId } = req.params
+    const userId = requireUserId(res, req.query.userId)
+    if (!userId) return
+
+    const course = await ensureCourseExists(courseId)
+    if (!course) return res.status(404).json({ error: 'Course not found' })
+
+    if (!(await userHasApprovedEnrollment(userId, courseId))) {
+      return res.status(403).json({ error: 'You do not have access to this course.' })
+    }
+
+    const [rows] = await pool.query(
+      `SELECT cr.resource_id, cr.course_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
+              cr.uploaded_by, cr.created_at, u.name AS uploaded_by_name
+       FROM course_resources cr
+       LEFT JOIN users u ON u.user_id = cr.uploaded_by
+       WHERE cr.course_id = ?
+       ORDER BY cr.created_at DESC, cr.resource_id DESC`,
+      [courseId]
+    )
+
+    res.json({
+      course_id: courseId,
+      course_name: course.course_name,
+      resources: rows.map((r) => formatResourceRow(r, course.course_name)),
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Mobile: upload a course resource (approved enrollment only)
+app.post(
+  '/api/mobile/courses/:courseId/resources',
+  courseResourceUpload.single('file'),
+  async (req, res) => {
+    try {
+      const { courseId } = req.params
+      const userId = requireUserId(res, req.body?.userId)
+      if (!userId) {
+        if (req.file?.filename) removeStoredResourceFile(req.file.filename)
+        return
+      }
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded.' })
+
+      const course = await ensureCourseExists(courseId)
+      if (!course) {
+        removeStoredResourceFile(req.file.filename)
+        return res.status(404).json({ error: 'Course not found' })
+      }
+
+      if (!(await userHasApprovedEnrollment(userId, courseId))) {
+        removeStoredResourceFile(req.file.filename)
+        return res.status(403).json({ error: 'You do not have access to this course.' })
+      }
+
+      const [result] = await pool.query(
+        `INSERT INTO course_resources (course_id, uploaded_by, original_name, stored_name, mime_type, size_bytes)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          courseId,
+          userId,
+          req.file.originalname,
+          req.file.filename,
+          req.file.mimetype || null,
+          req.file.size,
+        ]
+      )
+
+      res.status(201).json({
+        resource: formatResourceRow(
+          {
+            resource_id: result.insertId,
+            course_id: courseId,
+            original_name: req.file.originalname,
+            stored_name: req.file.filename,
+            mime_type: req.file.mimetype,
+            size_bytes: req.file.size,
+            uploaded_by: userId,
+            created_at: new Date(),
+          },
+          course.course_name
+        ),
+      })
+    } catch (error) {
+      if (req.file?.filename) removeStoredResourceFile(req.file.filename)
+      res.status(500).json({ error: error.message })
+    }
+  }
+)
+
+// Mobile: download (approved enrollment only)
+app.get('/api/mobile/courses/:courseId/resources/:resourceId/download', async (req, res) => {
+  try {
+    const { courseId, resourceId } = req.params
+    const userId = requireUserId(res, req.query.userId)
+    if (!userId) return
+
+    if (!(await userHasApprovedEnrollment(userId, courseId))) {
+      return res.status(403).json({ error: 'You do not have access to this course.' })
+    }
+
+    const resource = await fetchCourseResource(courseId, Number(resourceId))
+    if (!resource) return res.status(404).json({ error: 'Resource not found' })
+
+    sendResourceDownload(res, resource)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 app.post("/api/admin/badges", async (req, res) => {
   const { title, level, description, criteria, park_id } = req.body;
   try {
@@ -1589,10 +1919,24 @@ app.put("/api/students/:id/module", async (req, res) => {
 });
 
 // ---------------------- Mobile app APIs (DB-backed content) ----------------------
+const parsePositiveUserId = (value) => {
+  const id = Number(value)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
+const requireUserId = (res, value) => {
+  const userId = parsePositiveUserId(value)
+  if (!userId) {
+    res.status(400).json({ error: 'Valid userId is required' })
+    return null
+  }
+  return userId
+}
+
 app.get('/api/mobile/courses', async (req, res) => {
   try {
-    const userId = Number(req.query.userId)
-    if (!userId) return res.status(400).json({ error: 'userId is required' })
+    const userId = requireUserId(res, req.query.userId)
+    if (!userId) return
 
     const [rows] = await pool.query(
       `SELECT
@@ -1643,8 +1987,8 @@ app.get('/api/mobile/courses', async (req, res) => {
 app.post('/api/mobile/courses/:courseId/register', async (req, res) => {
   try {
     const { courseId } = req.params
-    const userId = Number(req.body.userId)
-    if (!userId) return res.status(400).json({ error: 'userId is required' })
+    const userId = requireUserId(res, req.body.userId)
+    if (!userId) return
 
     const [courseRows] = await pool.query('SELECT course_id, course_name FROM courses WHERE course_id = ?', [courseId])
     if (!courseRows.length) return res.status(404).json({ error: 'Course not found' })
@@ -1674,8 +2018,8 @@ app.post('/api/mobile/courses/:courseId/register', async (req, res) => {
 
 app.get("/api/mobile/modules", async (req, res) => {
   try {
-    const userId = Number(req.query.userId);
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const userId = requireUserId(res, req.query.userId);
+    if (!userId) return;
 
     const [moduleRows] = await pool.query(
       `SELECT tm.module_id, tm.course_id, tm.title, tm.description, tm.category, tm.park, tm.level, tm.duration,
@@ -1846,7 +2190,7 @@ app.get("/api/mobile/modules", async (req, res) => {
 app.patch("/api/mobile/progress/:moduleId", async (req, res) => {
   try {
     const moduleId = Number(req.params.moduleId);
-    const userId = Number(req.body.userId);
+    const userId = requireUserId(res, req.body.userId);
     if (!moduleId || !userId) return res.status(400).json({ error: "userId and moduleId are required" });
 
     const progressPercent = Math.max(0, Math.min(100, Number(req.body.progressPercent) || 0));
@@ -1876,7 +2220,8 @@ app.patch("/api/mobile/progress/:moduleId", async (req, res) => {
 
 app.get("/api/mobile/certificates/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
+    const userId = requireUserId(res, req.params.userId);
+    if (!userId) return;
     const [rows] = await pool.query(
       `SELECT tm.module_id, tm.title, IFNULL(p.progress_percent, 0) AS progress_percent,
               c.cert_id, c.certificate_code, c.issue_date, c.expiry_date
@@ -1904,7 +2249,8 @@ app.get("/api/mobile/certificates/:userId", async (req, res) => {
 
 app.get("/api/mobile/notifications/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
+    const userId = requireUserId(res, req.params.userId);
+    if (!userId) return;
     const [rows] = await pool.query(
       `SELECT notification_id, title, type, message, is_read
        FROM notifications
@@ -1929,8 +2275,16 @@ app.get("/api/mobile/notifications/:userId", async (req, res) => {
 app.patch("/api/mobile/notifications/:id/read", async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = requireUserId(res, req.body.userId);
+    if (!userId) return;
     const read = req.body.read === undefined ? true : Boolean(req.body.read);
-    await pool.query("UPDATE notifications SET is_read = ? WHERE notification_id = ?", [read, id]);
+    const [result] = await pool.query(
+      "UPDATE notifications SET is_read = ? WHERE notification_id = ? AND user_id = ?",
+      [read, id, userId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Notification not found for this user" });
+    }
     res.json({ success: true, id, read });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1939,7 +2293,8 @@ app.patch("/api/mobile/notifications/:id/read", async (req, res) => {
 
 app.patch("/api/mobile/notifications/read-all/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
+    const userId = requireUserId(res, req.params.userId);
+    if (!userId) return;
     await pool.query("UPDATE notifications SET is_read = TRUE WHERE user_id = ?", [userId]);
     res.json({ success: true });
   } catch (err) {
@@ -1949,7 +2304,8 @@ app.patch("/api/mobile/notifications/read-all/:userId", async (req, res) => {
 
 app.get("/api/mobile/schedule/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
+    const userId = requireUserId(res, req.params.userId);
+    if (!userId) return;
     const [rows] = await pool.query(
       `SELECT schedule_id, date, title, location, type
        FROM schedule
@@ -1973,12 +2329,14 @@ app.get("/api/mobile/schedule/:userId", async (req, res) => {
 
 app.post("/api/mobile/schedule", async (req, res) => {
   try {
-    const { userId, moduleId, date, title, location, type } = req.body;
-    if (!userId || !date || !title) return res.status(400).json({ error: "userId, date and title are required" });
+    const userId = requireUserId(res, req.body.userId);
+    if (!userId) return;
+    const { moduleId, date, title, location, type } = req.body;
+    if (!date || !title) return res.status(400).json({ error: "userId, date and title are required" });
     const [ret] = await pool.query(
       `INSERT INTO schedule (user_id, module_id, date, title, location, type, status)
        VALUES (?, ?, ?, ?, ?, ?, 'Scheduled')`,
-      [Number(userId), moduleId ? Number(moduleId) : null, date, title, location || "Self-paced", type || "Reminder"]
+      [userId, moduleId ? Number(moduleId) : null, date, title, location || "Self-paced", type || "Reminder"]
     );
     res.status(201).json({ id: ret.insertId, date, title, location: location || "Self-paced", type: type || "Reminder" });
   } catch (err) {
@@ -1989,13 +2347,18 @@ app.post("/api/mobile/schedule", async (req, res) => {
 app.put("/api/mobile/schedule/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const userId = requireUserId(res, req.body.userId);
+    if (!userId) return;
     const { date, title, location, type } = req.body;
-    await pool.query(
+    const [result] = await pool.query(
       `UPDATE schedule
        SET date = ?, title = ?, location = ?, type = ?
-       WHERE schedule_id = ?`,
-      [date, title, location || "Self-paced", type || "Reminder", id]
+       WHERE schedule_id = ? AND user_id = ?`,
+      [date, title, location || "Self-paced", type || "Reminder", id, userId]
     );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Schedule item not found for this user" });
+    }
     res.json({ success: true, id, date, title, location: location || "Self-paced", type: type || "Reminder" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2005,7 +2368,12 @@ app.put("/api/mobile/schedule/:id", async (req, res) => {
 app.delete("/api/mobile/schedule/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    await pool.query("DELETE FROM schedule WHERE schedule_id = ?", [id]);
+    const userId = requireUserId(res, req.query.userId);
+    if (!userId) return;
+    const [result] = await pool.query("DELETE FROM schedule WHERE schedule_id = ? AND user_id = ?", [id, userId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Schedule item not found for this user" });
+    }
     res.json({ success: true, id });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2014,7 +2382,8 @@ app.delete("/api/mobile/schedule/:id", async (req, res) => {
 
 app.get("/api/mobile/profile/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
+    const userId = requireUserId(res, req.params.userId);
+    if (!userId) return;
     const [rows] = await pool.query(
       `SELECT u.user_id, u.name, u.email, p.park_name, gp.guide_id, gp.phone, gp.birthday, gp.address, ua.stored_name
        FROM users u
@@ -2045,7 +2414,8 @@ app.get("/api/mobile/profile/:userId", async (req, res) => {
 
 app.put("/api/mobile/profile/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
+    const userId = requireUserId(res, req.params.userId);
+    if (!userId) return;
     const { fullName, email, assignedPark, phoneNumber, birthday, address } = req.body;
 
     const [parkRows] = assignedPark

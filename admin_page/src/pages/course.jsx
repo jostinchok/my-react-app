@@ -37,6 +37,9 @@ import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import OndemandVideoOutlinedIcon from "@mui/icons-material/OndemandVideoOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import { ModuleEditor } from "./training_module.jsx";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4001";
@@ -54,6 +57,21 @@ const formatDuration = (start, end) => {
   if (!start && !end) return "—";
   if (start && end) return `${start} → ${end}`;
   return start || end;
+};
+
+const formatFileSize = (bytes) => {
+  const value = Number(bytes) || 0;
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  if (value < 1024 * 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  return `${(value / 1024 / 1024 / 1024).toFixed(2)} GB`;
+};
+
+const formatUploadedAt = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toLocaleString();
 };
 
 function countFeatures(blocks = []) {
@@ -95,6 +113,9 @@ const CourseManagement = () => {
   const [editCourseForm, setEditCourseForm] = useState(emptyForm);
   const [editCourseLoading, setEditCourseLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [resourcesByCourse, setResourcesByCourse] = useState({});
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [resourceUploading, setResourceUploading] = useState(false);
 
   const showMessage = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -123,6 +144,69 @@ const CourseManagement = () => {
     }
   }, []);
 
+  const loadResourcesForCourse = useCallback(async (courseId) => {
+    if (!courseId) return;
+    setResourcesLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/resources`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to load resources.");
+      setResourcesByCourse((prev) => ({
+        ...prev,
+        [courseId]: Array.isArray(data.resources) ? data.resources : [],
+      }));
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setResourcesLoading(false);
+    }
+  }, []);
+
+  const handleResourceUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !selectedCourse) return;
+    setResourceUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch(
+        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources`,
+        { method: "POST", body: formData }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to upload resource.");
+      await loadResourcesForCourse(selectedCourse.course_id);
+      showMessage("Resource uploaded.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setResourceUploading(false);
+    }
+  };
+
+  const handleResourceDelete = async (resource) => {
+    if (!selectedCourse || !resource) return;
+    if (!window.confirm(`Delete "${resource.original_name}"? This cannot be undone.`)) return;
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources/${encodeURIComponent(resource.resource_id)}`,
+        { method: "DELETE" }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Unable to delete resource.");
+      await loadResourcesForCourse(selectedCourse.course_id);
+      showMessage("Resource deleted.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  };
+
+  const buildResourceDownloadUrl = (resource) => {
+    if (!selectedCourse || !resource) return "#";
+    return `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources/${encodeURIComponent(resource.resource_id)}/download`;
+  };
+
   useEffect(() => {
     loadCourses();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
@@ -131,7 +215,8 @@ const CourseManagement = () => {
   useEffect(() => {
     if (!selectedCourse?.course_id) return;
     loadModulesForCourse(selectedCourse.course_id);
-  }, [selectedCourse?.course_id, loadModulesForCourse]);
+    loadResourcesForCourse(selectedCourse.course_id);
+  }, [selectedCourse?.course_id, loadModulesForCourse, loadResourcesForCourse]);
 
   const modulesForSelected = useMemo(() => {
     if (!selectedCourse) return [];
@@ -650,6 +735,7 @@ const CourseManagement = () => {
                 }}
               >
                 <Tab label="Overview" />
+                <Tab label="Resources" />
                 <Tab label="Forum" />
               </Tabs>
               <CardContent sx={{ p: 3 }}>
@@ -695,6 +781,110 @@ const CourseManagement = () => {
                   </Box>
                 )}
                 {mainTab === 1 && (
+                  <Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                        Course resources
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        component="label"
+                        color="primary"
+                        startIcon={<CloudUploadOutlinedIcon />}
+                        disabled={resourceUploading}
+                        sx={{ textTransform: "none", fontWeight: 700 }}
+                      >
+                        {resourceUploading ? "Uploading…" : "Upload file"}
+                        <input
+                          type="file"
+                          hidden
+                          onChange={handleResourceUpload}
+                        />
+                      </Button>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Upload PDFs, documents, slides, images, or videos. Approved guides can download these from the mobile app.
+                    </Typography>
+                    {(() => {
+                      const resourceList = resourcesByCourse[selectedCourse.course_id] || [];
+                      if (resourcesLoading && resourceList.length === 0) {
+                        return (
+                          <Typography variant="body2" color="text.secondary">Loading resources…</Typography>
+                        );
+                      }
+                      if (resourceList.length === 0) {
+                        return (
+                          <Box
+                            sx={{
+                              p: 4,
+                              borderRadius: 3,
+                              border: "1px dashed",
+                              borderColor: "divider",
+                              textAlign: "center",
+                              color: "text.secondary",
+                            }}
+                          >
+                            <Typography sx={{ fontWeight: 700 }}>No resources yet</Typography>
+                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                              Click "Upload file" to add the first resource.
+                            </Typography>
+                          </Box>
+                        );
+                      }
+                      return (
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                          {resourceList.map((res) => (
+                            <Box
+                              key={res.resource_id}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                p: 1.5,
+                                borderRadius: 2,
+                                border: "1px solid",
+                                borderColor: "divider",
+                                bgcolor: "background.paper",
+                              }}
+                            >
+                              <InsertDriveFileOutlinedIcon color="primary" />
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography sx={{ fontWeight: 700 }} noWrap title={res.original_name}>
+                                  {res.original_name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatFileSize(res.size_bytes)} • {selectedCourse.course_name} • {formatUploadedAt(res.created_at)}
+                                  {res.uploaded_by_name ? ` • by ${res.uploaded_by_name}` : ""}
+                                </Typography>
+                              </Box>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<DownloadOutlinedIcon />}
+                                href={buildResourceDownloadUrl(res)}
+                                target="_blank"
+                                rel="noopener"
+                                sx={{ textTransform: "none", fontWeight: 700 }}
+                              >
+                                Download
+                              </Button>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleResourceDelete(res)}
+                                aria-label="delete resource"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ))}
+                        </Box>
+                      );
+                    })()}
+                  </Box>
+                )}
+                {mainTab === 2 && (
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
                       Discussion forum

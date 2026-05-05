@@ -55,6 +55,12 @@ const initials = (name) =>
     .slice(0, 2)
     .toUpperCase()
 
+const withUserIdQuery = (url, userId) => {
+  if (!url || !userId) return url
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}userId=${encodeURIComponent(userId)}`
+}
+
 function App() {
   const [users, setUsers] = useState(readStoredUsers)
   const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
@@ -93,7 +99,13 @@ function App() {
   useEffect(() => {
     let ignore = false
 
-    loadDatabaseFrame(API_LINKS.modules, ['modules', 'trainingModules', 'courses'], normalizeModuleRow)
+    const moduleUrl = withUserIdQuery(API_LINKS.modules, currentUserId)
+    const profileUrl = withUserIdQuery(API_LINKS.profile, currentUserId)
+    const certificationsUrl = withUserIdQuery(API_LINKS.certifications, currentUserId)
+    const notificationsUrl = withUserIdQuery(API_LINKS.notifications, currentUserId)
+    const scheduleUrl = withUserIdQuery(API_LINKS.schedule, currentUserId)
+
+    loadDatabaseFrame(moduleUrl, ['modules', 'trainingModules', 'courses'], normalizeModuleRow)
       .then((modules) => {
         if (ignore) return
         setTrainingModules(modules)
@@ -115,7 +127,7 @@ function App() {
         })
       })
 
-    loadDatabaseFrame(API_LINKS.profile, ['profile', 'user', 'guideProfile'], normalizeProfileRow)
+    loadDatabaseFrame(profileUrl, ['profile', 'user', 'guideProfile'], normalizeProfileRow)
       .then((profiles) => {
         if (!ignore) setDatabaseProfile(profiles[0] || null)
       })
@@ -123,7 +135,7 @@ function App() {
         if (!ignore) setDatabaseProfile(null)
       })
 
-    loadDatabaseFrame(API_LINKS.certifications, ['certifications', 'certificates'], normalizeCertificateRow)
+    loadDatabaseFrame(certificationsUrl, ['certifications', 'certificates'], normalizeCertificateRow)
       .then((items) => {
         if (!ignore) setDatabaseCertificates(items)
       })
@@ -131,7 +143,7 @@ function App() {
         if (!ignore) setDatabaseCertificates([])
       })
 
-    loadDatabaseFrame(API_LINKS.notifications, ['notifications'], normalizeNotificationRow)
+    loadDatabaseFrame(notificationsUrl, ['notifications'], normalizeNotificationRow)
       .then((items) => {
         if (!ignore) setDatabaseNotifications(items)
       })
@@ -139,7 +151,7 @@ function App() {
         if (!ignore) setDatabaseNotifications([])
       })
 
-    loadDatabaseFrame(API_LINKS.schedule, ['schedule', 'schedules', 'trainingSchedule', 'progress'], normalizeScheduleRow)
+    loadDatabaseFrame(scheduleUrl, ['schedule', 'schedules', 'trainingSchedule', 'progress'], normalizeScheduleRow)
       .then((items) => {
         if (!ignore) setDatabaseSchedule(items)
       })
@@ -150,7 +162,7 @@ function App() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentUserId])
 
   const seededUser = users.find((user) => user.id === currentUserId) || users[0] || cloneSeedUsers()[0]
   const currentUser = databaseProfile ? { ...seededUser, ...databaseProfile } : seededUser

@@ -1,7 +1,8 @@
 import { StatusBar } from 'expo-status-bar'
 import * as ImagePicker from 'expo-image-picker'
+import * as DocumentPicker from 'expo-document-picker'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Animated, Image, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Animated, Image, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import AuthScreens from './AuthScreens'
 import { API_BASE_URL_STORAGE_KEY, getApiBaseUrl } from './apiConfig'
@@ -30,6 +31,7 @@ const sideMenuItems = [
   { id: 'module', label: 'Module Details', icon: 'I' },
   { id: 'progress', label: 'Progress', icon: 'P' },
   { id: 'certificates', label: 'Certificates', icon: 'C' },
+  { id: 'resources', label: 'Resources', icon: 'R' },
   { id: 'notifications', label: 'Notifications', icon: 'N' },
   { id: 'schedule', label: 'Schedule', icon: 'S' },
   { id: 'profile', label: 'Profile', icon: 'U' },
@@ -72,6 +74,10 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const [notifications, setNotifications] = useState([])
   const [scheduleItems, setScheduleItems] = useState([])
   const [courseActionLoading, setCourseActionLoading] = useState(null)
+  const [resourceCourseId, setResourceCourseId] = useState(null)
+  const [resources, setResources] = useState([])
+  const [resourcesLoading, setResourcesLoading] = useState(false)
+  const [resourceUploading, setResourceUploading] = useState(false)
   const [scheduleForm, setScheduleForm] = useState({ date: getTodayIsoDate(), title: '', location: '', type: 'Reminder' })
   const [editingScheduleId, setEditingScheduleId] = useState(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -494,6 +500,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     try {
       if (editingScheduleId) {
         await api.updateSchedule(editingScheduleId, {
+          userId: sessionUser?.user_id,
           date: scheduleForm.date,
           title: scheduleForm.title.trim(),
           location: scheduleForm.location.trim() || 'Self-paced',
@@ -543,7 +550,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const deleteReminder = (id) => {
     const performDelete = async () => {
       try {
-        await api.deleteSchedule(id)
+        await api.deleteSchedule(id, sessionUser?.user_id)
       } catch (e) {
         Alert.alert('Delete failed', e.message || 'Unable to delete reminder.')
         return
@@ -654,7 +661,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const markRead = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
     try {
-      await api.markNotificationRead(id, true)
+      await api.markNotificationRead(id, sessionUser?.user_id, true)
     } catch {}
   }
   const markAllRead = async () => {
@@ -664,6 +671,94 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     } catch {}
   }
   const removeNotification = (id) => setNotifications((prev) => prev.filter((n) => n.id !== id))
+
+  const approvedCourses = useMemo(
+    () => (coursesCatalog || []).filter((c) => c.enrollment_status === 'approved'),
+    [coursesCatalog]
+  )
+
+  const formatBytes = (bytes) => {
+    const value = Number(bytes) || 0
+    if (value < 1024) return `${value} B`
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
+    if (value < 1024 * 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`
+    return `${(value / 1024 / 1024 / 1024).toFixed(2)} GB`
+  }
+
+  const formatUploadDate = (value) => {
+    if (!value) return '-'
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10)
+    return d.toLocaleString()
+  }
+
+  useEffect(() => {
+    if (!resourceCourseId && approvedCourses.length > 0) {
+      setResourceCourseId(approvedCourses[0].course_id)
+    }
+    if (resourceCourseId && !approvedCourses.some((c) => c.course_id === resourceCourseId)) {
+      setResourceCourseId(approvedCourses[0]?.course_id || null)
+    }
+  }, [approvedCourses, resourceCourseId])
+
+  const loadResources = async (courseId) => {
+    if (!courseId || !sessionUser?.user_id) {
+      setResources([])
+      return
+    }
+    setResourcesLoading(true)
+    try {
+      const data = await api.getCourseResources(courseId, sessionUser.user_id)
+      setResources(Array.isArray(data.resources) ? data.resources : [])
+    } catch (e) {
+      setResources([])
+      Alert.alert('Resources', e.message || 'Unable to load resources.')
+    } finally {
+      setResourcesLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab !== 'resources') return
+    loadResources(resourceCourseId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, resourceCourseId, sessionUser?.user_id])
+
+  const handleResourceUpload = async () => {
+    if (!resourceCourseId || !sessionUser?.user_id) {
+      Alert.alert('Choose course', 'Please select an approved course first.')
+      return
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ multiple: false, copyToCacheDirectory: true })
+      if (result.canceled) return
+      const file = result.assets?.[0]
+      if (!file) return
+      setResourceUploading(true)
+      await api.uploadCourseResource(resourceCourseId, sessionUser.user_id, file)
+      await loadResources(resourceCourseId)
+      Alert.alert('Uploaded', `${file.name} was uploaded.`)
+    } catch (e) {
+      Alert.alert('Upload failed', e.message || 'Unable to upload file.')
+    } finally {
+      setResourceUploading(false)
+    }
+  }
+
+  const handleResourceDownload = async (resource) => {
+    if (!resourceCourseId || !sessionUser?.user_id || !resource) return
+    const url = api.getCourseResourceDownloadUrl(resourceCourseId, resource.resource_id, sessionUser.user_id)
+    try {
+      const supported = await Linking.canOpenURL(url)
+      if (!supported) {
+        Alert.alert('Cannot open file', 'No installed app can open this file URL.')
+        return
+      }
+      await Linking.openURL(url)
+    } catch (e) {
+      Alert.alert('Open failed', e.message || 'Unable to open the file.')
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -864,7 +959,9 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                       <Text style={styles.rowMeta}>{block.content}</Text>
                     )}
                     {block.type === 'image' && !!block.media_url && (
-                      <Image source={{ uri: mediaUrl(block.media_url) }} style={styles.lessonMediaImage} resizeMode="cover" />
+                      <View style={styles.lessonMediaFrame}>
+                        <Image source={{ uri: mediaUrl(block.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
+                      </View>
                     )}
                     {block.type === 'video' && !!block.media_url && (
                       Platform.OS === 'web' ? (
@@ -1096,6 +1193,69 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                   </Pressable>
                 )}
               </View>
+            </View>
+          </View>
+        )}
+
+        {activeTab === 'resources' && (
+          <View style={styles.stack}>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Course resources</Text>
+              <Text style={styles.rowMeta}>
+                Browse, upload, and download files for courses you are approved to access.
+              </Text>
+              {approvedCourses.length === 0 ? (
+                <Text style={styles.rowMeta}>
+                  No approved courses yet. Register and wait for admin approval to access resources.
+                </Text>
+              ) : (
+                <SelectLike
+                  title="Course"
+                  options={approvedCourses.map((c) => c.course_id)}
+                  value={resourceCourseId || ''}
+                  onPick={setResourceCourseId}
+                />
+              )}
+              {resourceCourseId && (
+                <Text style={styles.rowMeta}>
+                  {approvedCourses.find((c) => c.course_id === resourceCourseId)?.course_name || resourceCourseId}
+                </Text>
+              )}
+              <Pressable
+                style={[styles.primaryButton, (!resourceCourseId || resourceUploading) && styles.disabledButton]}
+                onPress={handleResourceUpload}
+                disabled={!resourceCourseId || resourceUploading}
+              >
+                <Text style={styles.primaryText}>{resourceUploading ? 'Uploading…' : 'Upload file'}</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Files</Text>
+              {resourcesLoading && resources.length === 0 ? (
+                <Text style={styles.rowMeta}>Loading resources…</Text>
+              ) : resources.length === 0 ? (
+                <Text style={styles.rowMeta}>No resources for this course yet.</Text>
+              ) : (
+                resources.map((res) => (
+                  <View key={res.resource_id} style={styles.scheduleCard}>
+                    <View style={styles.rowBody}>
+                      <Text style={styles.rowTitle} numberOfLines={2}>{res.original_name}</Text>
+                      <Text style={styles.rowMeta}>
+                        {formatBytes(res.size_bytes)} • {res.course_name || resourceCourseId}
+                      </Text>
+                      <Text style={styles.rowMeta}>
+                        Uploaded {formatUploadDate(res.created_at)}{res.uploaded_by_name ? ` by ${res.uploaded_by_name}` : ''}
+                      </Text>
+                    </View>
+                    <View style={styles.scheduleItemActions}>
+                      <Pressable style={styles.secondaryButton} onPress={() => handleResourceDownload(res)}>
+                        <Text style={styles.secondaryText}>Open</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
           </View>
         )}
@@ -1455,7 +1615,17 @@ const styles = StyleSheet.create({
   inputReadonly: { backgroundColor: '#f5f7f1', color: '#748274' },
   checkItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
   blockCard: { borderWidth: 1, borderColor: palette.line, borderRadius: 10, padding: 10, gap: 6, marginBottom: 8, backgroundColor: '#fffdf7' },
-  lessonMediaImage: { width: '100%', height: 190, borderRadius: 10, marginTop: 6 },
+  lessonMediaFrame: {
+    width: '100%',
+    borderRadius: 10,
+    marginTop: 6,
+    backgroundColor: '#f1f3ef',
+    borderWidth: 1,
+    borderColor: palette.line,
+    overflow: 'hidden',
+    minHeight: 190,
+  },
+  lessonMediaImage: { width: '100%', height: 260 },
   quizCorrect: { backgroundColor: '#ebf8e3', borderRadius: 8, paddingHorizontal: 6 },
   quizWrong: { backgroundColor: '#fde9e5', borderRadius: 8, paddingHorizontal: 6 },
   checkMark: { color: palette.citrus, fontWeight: '900' },
