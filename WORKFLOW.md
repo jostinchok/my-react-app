@@ -70,7 +70,7 @@ datasets/touching-plants/
 datasets/touching-wildlife/
 alerts/ai/
 alerts/iot/
-user_login/server/.env
+.env
 ```
 
 Do not commit downloaded assets, `.env`, `.venv`, `node_modules`, `dist`, `.asset-download-tmp`, or personal camera evidence. AI dataset improvement remains future work and is not part of this merge.
@@ -207,7 +207,7 @@ python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000
 ```
 
-When `DEVICE_TOKEN_AUTH_ENABLED=true`, the script reads `AI_CAMERA_TOKEN` from `user_login/server/.env` automatically. Use `--device-token` only to override it:
+When `DEVICE_TOKEN_AUTH_ENABLED=true`, the script reads `AI_CAMERA_TOKEN` from `.env` automatically. Use `--device-token` only to override it:
 
 ```bash
 python scripts/run_ai_camera_monitor.py \
@@ -433,7 +433,7 @@ lsof -nP -iTCP:5175 -sTCP:LISTEN
 lsof -nP -iTCP:8081 -sTCP:LISTEN
 ```
 
-If `/api/health` still shows `requested=memory` or `active=memory`, stop and restart the backend after confirming `user_login/server/.env` has `INCIDENT_STORAGE=mysql`.
+If `/api/health` still shows `requested=memory` or `active=memory`, stop and restart the backend after confirming `.env` has `INCIDENT_STORAGE=mysql`.
 
 Emergency memory mode is available only when MySQL is unavailable:
 

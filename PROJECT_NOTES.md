@@ -79,7 +79,7 @@ python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
 python3 scripts/check_required_assets.py
 ```
 
-`scripts/check_required_assets.py` verifies `artifacts/clip_2class_touching_species.pt`, `models/hand_landmarker.task`, both dataset folders, `alerts/ai`, `alerts/iot`, and `user_login/server/.env`. `scripts/download_assets_gdrive.py` downloads into `.asset-download-tmp/`, copies `artifacts/`, `models/`, and `datasets/` without replacing existing files, creates alert evidence folders, and runs the checker.
+`scripts/check_required_assets.py` verifies `artifacts/clip_2class_touching_species.pt`, `models/hand_landmarker.task`, both dataset folders, `alerts/ai`, `alerts/iot`, and `.env`. `scripts/download_assets_gdrive.py` downloads into `.asset-download-tmp/`, copies `artifacts/`, `models/`, and `datasets/` without replacing existing files, creates alert evidence folders, and runs the checker.
 
 Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`, `.venv`, `node_modules`, `dist`, and personal alert images must stay out of Git. AI dataset improvement remains future work and is not part of this merge.
 
@@ -95,7 +95,7 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, and status updates. Sends admin role header for optional role-check mode. |
 | Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Acknowledged/In Review/Resolved/False Alarm actions. Sends park_ranger role header for optional role-check mode. |
 | Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, and `PATCH /api/incidents/:id/status` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. |
-| AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, optional `--device-token`, automatic `AI_CAMERA_TOKEN` loading from `user_login/server/.env`, JPG/JSON evidence, backend POST, and safe shutdown. |
+| AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, optional `--device-token`, automatic `AI_CAMERA_TOKEN` loading from `.env`, JPG/JSON evidence, backend POST, and safe shutdown. |
 | IoT simulation / physical sensor support | Partial / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant payloads to `ctip/sensor/plant-zone-01/proximity` and supports token mode. Physical sensor deployment is environment-dependent. |
 | MySQL incident persistence | Demo-ready | Default `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment`, `ctip_user`, and monitoring tables for AI/IoT incidents only. Memory mode remains an emergency/testing fallback only. |
 | Cybersecurity controls | Partial / Demo-ready | `CYBERSECURITY_REVIEW.md`, `.env.example`, browser-safe evidence URLs, payload validation, optional device tokens, optional role checks, demo auth notes, smoke test script, and production hardening recommendations are available. |

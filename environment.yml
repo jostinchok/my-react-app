@@ -171,4 +171,3 @@ dependencies:
       - werkzeug==3.1.8
       - wheel==0.47.0
       - widgetsnbextension==4.0.15
-prefix: /opt/homebrew/Caskroom/miniconda/base/envs/cos30049

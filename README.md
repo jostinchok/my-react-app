@@ -82,7 +82,7 @@ Prepare backend environment values from the example file:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-cp user_login/server/.env.example user_login/server/.env
+cp .env.example .env
 ```
 
 Do not commit real `.env` files.
@@ -105,7 +105,7 @@ my-react-app/
 ├── alerts/
 │   ├── ai/
 │   └── iot/
-└── user_login/server/.env
+└── .env
 ```
 
 Install the Google Drive helper:
@@ -146,7 +146,7 @@ pip install -r requirements.txt
 python3 -m pip install gdown
 python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
 python3 scripts/check_required_assets.py
-cp user_login/server/.env.example user_login/server/.env
+cp .env.example .env
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 npm run dev
@@ -253,7 +253,7 @@ python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000
 ```
 
-When backend token auth is enabled, the script automatically reads `AI_CAMERA_TOKEN` from `user_login/server/.env` if `--device-token` is not provided.
+When backend token auth is enabled, the script automatically reads `AI_CAMERA_TOKEN` from `.env` if `--device-token` is not provided.
 
 Expected behavior:
 
@@ -370,7 +370,7 @@ python scripts/run_ai_camera_monitor.py \
   --device-token "<copy-generated-ai-token>"
 ```
 
-`--device-token` is only needed when overriding the token from `user_login/server/.env` or from the shell `AI_CAMERA_TOKEN` variable.
+`--device-token` is only needed when overriding the token from `.env` or from the shell `AI_CAMERA_TOKEN` variable.
 
 IoT token mode:
 

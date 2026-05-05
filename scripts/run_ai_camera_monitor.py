@@ -2,7 +2,7 @@
 """Standalone CTIP realtime AI camera monitor.
 
 This script mirrors the realtime camera section from
-CTIP_AI_Camera_Training_and_Incident_Detection.ipynb so the demo can run
+training-notebook.ipynb so the demo can run
 outside VS Code Jupyter.
 """
 
@@ -240,14 +240,18 @@ def resolve_device_token(args, project_dir: Path) -> tuple[str | None, str]:
     if env_token:
         return env_token, "AI_CAMERA_TOKEN environment variable"
 
-    backend_env_path = project_dir / "user_login" / "server" / ".env"
-    backend_env = load_env_file(backend_env_path)
-    file_token = backend_env.get("AI_CAMERA_TOKEN")
-    if file_token:
-        return file_token, str(backend_env_path)
+    candidate_env_paths = [
+        project_dir / ".env",
+        project_dir / "user_login" / "server" / ".env",
+    ]
+
+    for env_path in candidate_env_paths:
+        file_env = load_env_file(env_path)
+        file_token = file_env.get("AI_CAMERA_TOKEN")
+        if file_token:
+            return file_token, str(env_path)
 
     return None, "not found"
-
 
 def post_incident_to_backend(payload, incident_api_url, device_token=None):
     try:
@@ -269,7 +273,7 @@ def post_incident_to_backend(payload, incident_api_url, device_token=None):
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         print(f"[SYNC WARNING] Backend incident POST failed: {exc}. Local evidence saved.")
         if isinstance(exc, urllib.error.HTTPError) and exc.code == 401:
-            print("[SYNC WARNING] Backend token auth rejected this camera post. Pass --device-token or set AI_CAMERA_TOKEN in user_login/server/.env.")
+            print("[SYNC WARNING] Backend token auth rejected this camera post. Pass --device-token or set AI_CAMERA_TOKEN in .env.")
         return False
 
 
@@ -585,7 +589,7 @@ def run_monitor(args):
                     alert_dir=alert_dir,
                     incident_api_url=incident_api_url,
                     sync_backend=not args.no_backend_sync,
-                    device_token=args.device_token,
+                    device_token=device_token,
                     prefix="manual",
                 )
 

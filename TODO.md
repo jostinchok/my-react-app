@@ -39,7 +39,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 - [ ] Confirm `artifacts/clip_2class_touching_species.pt` exists locally.
 - [ ] Confirm `models/hand_landmarker.task` exists locally.
 - [ ] Confirm `datasets/touching-plants` and `datasets/touching-wildlife` exist locally.
-- [ ] Confirm `user_login/server/.env` exists locally and is not staged.
+- [ ] Confirm `.env` exists locally and is not staged.
 - [ ] Confirm `alerts/ai` contains a few clean demo JPG/JSON evidence pairs.
 - [ ] Confirm `alerts/iot` exists for browser-captured IoT evidence.
 - [ ] Run `npm --prefix user_page run build`.
