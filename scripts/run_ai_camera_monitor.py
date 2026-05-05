@@ -240,7 +240,7 @@ def resolve_device_token(args, project_dir: Path) -> tuple[str | None, str]:
     if env_token:
         return env_token, "AI_CAMERA_TOKEN environment variable"
 
-    backend_env_path = project_dir / ".env"
+    backend_env_path = project_dir / "user_login" / "server" / ".env"
     backend_env = load_env_file(backend_env_path)
     file_token = backend_env.get("AI_CAMERA_TOKEN")
     if file_token:
@@ -269,7 +269,7 @@ def post_incident_to_backend(payload, incident_api_url, device_token=None):
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         print(f"[SYNC WARNING] Backend incident POST failed: {exc}. Local evidence saved.")
         if isinstance(exc, urllib.error.HTTPError) and exc.code == 401:
-            print("[SYNC WARNING] Backend token auth rejected this camera post. Pass --device-token or set AI_CAMERA_TOKEN in .env.")
+            print("[SYNC WARNING] Backend token auth rejected this camera post. Pass --device-token or set AI_CAMERA_TOKEN in user_login/server/.env.")
         return False
 
 
