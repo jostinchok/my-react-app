@@ -1,6 +1,9 @@
 import dotenv from 'dotenv'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-dotenv.config()
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') })
 
 const apiBaseUrl = (process.env.SECURITY_SMOKE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
 const deviceTokenAuthEnabled = ['1', 'true', 'yes', 'on'].includes(String(process.env.DEVICE_TOKEN_AUTH_ENABLED || '').toLowerCase())

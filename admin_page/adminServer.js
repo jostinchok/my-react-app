@@ -2,8 +2,11 @@ import express from 'express'
 import cors from 'cors'
 import mysql from 'mysql2/promise'
 import dotenv from 'dotenv'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-dotenv.config()
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') })
 
 const app = express()
 
@@ -135,7 +138,7 @@ app.delete('/api/courses/:courseId', async (req, res) => {
   }
 })
 
-const port = Number(process.env.PORT) || 4002
+const port = Number(process.env.ADMIN_API_PORT || process.env.PORT) || 4002
 
 app.listen(port, () => {
   console.log(`Admin database server running on http://localhost:${port}`)

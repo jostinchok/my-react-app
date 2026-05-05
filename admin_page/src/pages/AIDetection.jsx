@@ -23,7 +23,7 @@ import {
 } from "../data/incidents";
 import "../Admin.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const API_BASE_URL = import.meta.env.VITE_MONITORING_API_BASE_URL || "http://localhost:4000";
 const backendBaseUrl = API_BASE_URL.replace(/\/$/, "");
 
 const MQTT_BROKER_URL = "wss://broker.hivemq.com:8884/mqtt";

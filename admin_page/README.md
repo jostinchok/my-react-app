@@ -21,4 +21,4 @@ incidents.storage.requested = mysql
 incidents.storage.active = mysql
 ```
 
-Do not commit real `.env` files. Use `../user_login/server/.env.example` as the safe template.
+Do not commit real `.env` files. Use `../.env.example` as the safe template.

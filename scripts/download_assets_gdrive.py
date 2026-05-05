@@ -123,10 +123,9 @@ def main() -> int:
     check_status = run_asset_check()
 
     print("\nNext steps:")
-    print("  cp user_login/server/.env.example user_login/server/.env")
-    print("  # Edit user_login/server/.env with local MySQL and token values.")
-    print("  mysql -u root -p -e \"CREATE DATABASE IF NOT EXISTS cos30049_assignment;\"")
-    print("  mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql")
+    print("  cp .env.example .env")
+    print("  # Edit .env with local MySQL and token values.")
+    print("  mysql -u root -p < database/db.sql")
     print("  python3 scripts/check_required_assets.py")
     print("  npm run dev")
 

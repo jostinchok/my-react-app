@@ -16,13 +16,14 @@ import {
   VALID_SEVERITIES,
   VALID_SOURCES,
   VALID_STATUSES,
+  normalizeIncident,
+  sortIncidents,
 } from './src/incident/incidentUtils.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-dotenv.config({ path: path.join(__dirname, '.env') })
-
 const repoRoot = path.resolve(__dirname, '../..')
+dotenv.config({ path: path.join(repoRoot, '.env') })
 const runtimeDataDir = path.join(__dirname, 'data')
 const runtimeIncidentFile = path.join(runtimeDataDir, 'incidents.runtime.json')
 const aiEvidenceDir = process.env.AI_EVIDENCE_DIR
@@ -100,6 +101,73 @@ const incidentStorageInfo = () => ({
 })
 
 const errorMessage = (error) => error?.message || error?.code || String(error)
+
+const readJsonFile = async (filePath) => {
+  try {
+    return JSON.parse(await fs.promises.readFile(filePath, 'utf8'))
+  } catch (error) {
+    console.warn(`[incidents] Skipped alert JSON ${filePath}: ${errorMessage(error)}`)
+    return null
+  }
+}
+
+const listAlertJsonFiles = async (folder) => {
+  try {
+    const entries = await fs.promises.readdir(folder, { withFileTypes: true })
+    return entries
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.json'))
+      .map((entry) => path.join(folder, entry.name))
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      console.warn(`[incidents] Unable to read alert folder ${folder}: ${errorMessage(error)}`)
+    }
+    return []
+  }
+}
+
+const loadAlertFolderIncidents = async () => {
+  const files = [
+    ...(await listAlertJsonFiles(aiEvidenceDir)),
+    ...(await listAlertJsonFiles(iotEvidenceDir)),
+  ]
+  const incidents = []
+
+  for (const filePath of files) {
+    const payload = await readJsonFile(filePath)
+    if (!payload) continue
+
+    const folder = path.dirname(filePath)
+    const fileBase = path.basename(filePath, path.extname(filePath))
+    const preferredImagePath = ['.jpg', '.jpeg', '.png', '.webp']
+      .map((extension) => path.join(folder, `${fileBase}${extension}`))
+      .find((candidate) => fs.existsSync(candidate))
+
+    const incident = normalizeIncident({
+      ...payload,
+      evidenceImage: preferredImagePath || payload.evidenceImage || payload.evidence?.image_path,
+      evidence: {
+        ...(payload.evidence || {}),
+        image_path: preferredImagePath || payload.evidence?.image_path,
+      },
+    })
+
+    if (incident) incidents.push(incident)
+  }
+
+  return sortIncidents(incidents)
+}
+
+const mergeIncidentLists = (primaryIncidents, alertIncidents) => {
+  const seen = new Set(primaryIncidents.map((incident) => incident.id).filter(Boolean))
+  const merged = [...primaryIncidents]
+
+  for (const incident of alertIncidents) {
+    if (incident.id && seen.has(incident.id)) continue
+    merged.push(incident)
+  }
+
+  return sortIncidents(merged)
+}
 
 const securityControlInfo = () => ({
   deviceTokenAuthEnabled: DEVICE_TOKEN_AUTH_ENABLED,
@@ -400,11 +468,14 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/incidents', async (req, res) => {
   try {
-    const incidents = await runIncidentStoreOperation((store) => store.listIncidents())
+    const storedIncidents = await runIncidentStoreOperation((store) => store.listIncidents())
+    const alertIncidents = await loadAlertFolderIncidents()
+    const incidents = mergeIncidentLists(storedIncidents, alertIncidents)
     res.json({
       incidents,
       count: incidents.length,
-      source: incidentStorageState.active === 'mysql' ? 'mysql' : 'runtime-memory',
+      source: alertIncidents.length ? 'database-and-alert-folders' : (incidentStorageState.active === 'mysql' ? 'mysql' : 'runtime-memory'),
+      alertFolderCount: alertIncidents.length,
       storage: incidentStorageInfo(),
     })
   } catch (error) {

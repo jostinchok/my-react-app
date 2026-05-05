@@ -1,7 +1,10 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-dotenv.config()
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') })
 
 const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
 const topic = process.env.MQTT_TOPIC || 'ctip/sensor/plant-zone-01/proximity'

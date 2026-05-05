@@ -1,30 +1,31 @@
 const DEFAULT_API_BASE_URL = ''
+const USER_API_BASE_URL = import.meta.env.VITE_USER_API_BASE_URL || DEFAULT_API_BASE_URL
 
 export const MYSQL_DATABASE_NAME = 'park_guide_database'
 
 export const API_LINKS = {
   modules:
     import.meta.env.VITE_MODULES_API_URL ||
-    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/training-modules`,
+    `${USER_API_BASE_URL}/api/training-modules`,
   profile:
     import.meta.env.VITE_PROFILE_API_URL ||
-    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/user-profile`,
+    `${USER_API_BASE_URL}/api/user-profile`,
   certifications:
     import.meta.env.VITE_CERTIFICATIONS_API_URL ||
-    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/certifications`,
+    `${USER_API_BASE_URL}/api/certifications`,
   notifications:
     import.meta.env.VITE_NOTIFICATIONS_API_URL ||
-    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/notifications`,
+    `${USER_API_BASE_URL}/api/notifications`,
   schedule:
     import.meta.env.VITE_SCHEDULE_API_URL ||
-    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/schedule`,
+    `${USER_API_BASE_URL}/api/schedule`,
   avatar:
     import.meta.env.VITE_AVATAR_API_URL ||
-    `${import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL}/api/user-profile/avatar`,
+    `${USER_API_BASE_URL}/api/user-profile/avatar`,
 }
 
 export const DB_SQL_SCHEMA = {
-  sourceFile: 'user_login/server/db.sql',
+  sourceFile: 'database/db.sql',
   database: MYSQL_DATABASE_NAME,
   tables: {
     roles: ['role_id', 'role_name'],
@@ -94,7 +95,7 @@ export const PROFILE_FIELD_RULES = {
   editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
     realName: 'users.name',
-    birthday: 'not included in user_login/server/db.sql',
+    birthday: 'not included in database/db.sql',
     phone: 'guide_profiles.phone',
     displayName: 'users.name',
     email: 'users.email',

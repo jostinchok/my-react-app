@@ -9,7 +9,7 @@ import mysql from 'mysql2/promise'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const appRoot = path.resolve(__dirname, '..')
-dotenv.config({ path: path.resolve(appRoot, '..', 'user_login', 'server', '.env') })
+dotenv.config({ path: path.resolve(appRoot, '..', '.env') })
 
 const avatarUploadDir = path.join(appRoot, 'public', 'uploads', 'avatars')
 
@@ -43,7 +43,7 @@ const asyncRoute = (handler) => async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({
-      message: 'Database request failed. Check that XAMPP MySQL is running and user_login/server/db.sql has been imported.',
+      message: 'Database request failed. Check that XAMPP MySQL is running and database/db.sql has been imported.',
       detail: process.env.NODE_ENV === 'production' ? undefined : error.message,
     })
   }
@@ -76,7 +76,7 @@ const resolveUserId = async (req) => {
   )
   if (firstGuide?.user_id) return firstGuide.user_id
 
-  throw new Error(`No guide user found. Import user_login/server/db.sql or create ${defaultUserEmail}.`)
+  throw new Error(`No guide user found. Import database/db.sql or create ${defaultUserEmail}.`)
 }
 
 const parseCompletedLessons = (value) => {

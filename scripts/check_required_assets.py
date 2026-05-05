@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = [
     Path("artifacts/clip_2class_touching_species.pt"),
     Path("models/hand_landmarker.task"),
-    Path("user_login/server/.env"),
+    Path(".env"),
 ]
 
 REQUIRED_DIRS = [
@@ -61,10 +61,10 @@ def print_fix_commands(missing: list[Path]) -> None:
     print('  python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"')
     print("  python3 scripts/check_required_assets.py")
 
-    if Path("user_login/server/.env") in missing:
+    if Path(".env") in missing:
         print("\nCreate local backend environment file:")
-        print("  cp user_login/server/.env.example user_login/server/.env")
-        print("  # Then edit user_login/server/.env with local MySQL/token values.")
+        print("  cp .env.example .env")
+        print("  # Then edit .env with local MySQL/token values.")
 
     print("\nManual fallback:")
     print("  Download artifacts/, models/, and datasets/ from Google Drive")
@@ -111,10 +111,10 @@ def main() -> int:
             print(f"[FAIL] Missing {relative(folder_path)}")
             missing.append(folder_path)
 
-    env_example = PROJECT_ROOT / "user_login/server/.env.example"
-    env_file = PROJECT_ROOT / "user_login/server/.env"
+    env_example = PROJECT_ROOT / ".env.example"
+    env_file = PROJECT_ROOT / ".env"
     if env_example.is_file() and not env_file.is_file():
-        print("\n[WARN] user_login/server/.env.example exists but user_login/server/.env is missing.")
+        print("\n[WARN] .env.example exists but .env is missing.")
 
     print_fix_commands(missing)
 
@@ -122,7 +122,7 @@ def main() -> int:
         print("\nAsset check failed. Missing local-only demo requirements are listed above.")
         return 1
 
-    print("\nAsset check passed. Local AI/CV assets and backend .env are ready.")
+    print("\nAsset check passed. Local AI/CV assets and root .env are ready.")
     return 0
 
 
