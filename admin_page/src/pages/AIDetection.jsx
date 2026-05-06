@@ -6,6 +6,7 @@ import {
   Button,
   Chip,
   Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -39,11 +40,34 @@ const CAPTURE_MAX_HEIGHT = 720;
 const CAPTURE_JPEG_QUALITY = 0.72;
 const CAPTURE_WARMUP_DELAY_MS = 2000;
 const MAX_LOCAL_CAPTURE_URLS = 5;
+const DELETED_INCIDENT_IDS_STORAGE_KEY = "sfc-admin-hidden-incident-ids";
 
 const sourceLabel = {
   AI_CAMERA: "AI Camera",
   IOT_SENSOR: "IoT Sensor",
 };
+
+const readDeletedIncidentIds = () => {
+  if (typeof window === "undefined") return new Set();
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(DELETED_INCIDENT_IDS_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.map((id) => String(id)).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+};
+
+const saveDeletedIncidentIds = (incidentIds) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    DELETED_INCIDENT_IDS_STORAGE_KEY,
+    JSON.stringify([...incidentIds].sort())
+  );
+};
+
+const withoutDeletedIncidents = (incidents, deletedIncidentIds) =>
+  incidents.filter((incident) => !deletedIncidentIds.has(String(incident.id || "")));
 
 const resolveEvidenceImageUrl = (evidenceImage) => {
   if (!evidenceImage || typeof evidenceImage !== "string") return null;
@@ -235,15 +259,23 @@ const AIDetection = () => {
   const cameraStreamRef = useRef(null);
   const localMqttIncidentsRef = useRef([]);
   const localCaptureUrlsRef = useRef([]);
+  const deletedIncidentIdsRef = useRef(readDeletedIncidentIds());
+  const initialIncidents = useMemo(
+    () => withoutDeletedIncidents(seededIncidents, deletedIncidentIdsRef.current),
+    []
+  );
+  const incidentsRef = useRef(initialIncidents);
 
-  const [incidents, setIncidents] = useState(seededIncidents);
+  const [incidents, setIncidents] = useState(initialIncidents);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [selectedIncidentId, setSelectedIncidentId] = useState(seededIncidents[0]?.id);
+  const [selectedIncidentId, setSelectedIncidentId] = useState(initialIncidents[0]?.id);
   const [backendOnline, setBackendOnline] = useState(false);
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [savingIncidentId, setSavingIncidentId] = useState(null);
+  const [deletingIncidentId, setDeletingIncidentId] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [mqttStatus, setMqttStatus] = useState("Connecting...");
   const [lastMqttMessage, setLastMqttMessage] = useState("No trigger received yet");
   const [cameraStatus, setCameraStatus] = useState("Off");
@@ -375,6 +407,7 @@ const AIDetection = () => {
 
   const addLocalMqttIncident = useCallback((incident) => {
     if (!incident) return;
+    if (deletedIncidentIdsRef.current.has(String(incident.id || ""))) return;
 
     const createdAt = Date.now();
     localMqttIncidentsRef.current = [
@@ -437,6 +470,7 @@ const AIDetection = () => {
     const responsePayload = await response.json();
     const savedIncident = normalizeIncidentRecord(responsePayload.incident);
     if (!savedIncident) return null;
+    if (deletedIncidentIdsRef.current.has(String(savedIncident.id || ""))) return savedIncident;
 
     if (localIncidentId && localIncidentId !== savedIncident.id) {
       localMqttIncidentsRef.current = localMqttIncidentsRef.current.filter(
@@ -494,10 +528,10 @@ const AIDetection = () => {
               !liveIncidentsWithLocalCaptures.some((incident) => incident.id === entry.incident.id)
           )
           .map((entry) => entry.incident);
-        const mergedIncidents = [
+        const mergedIncidents = withoutDeletedIncidents([
           ...pendingLocalIncidents,
           ...liveIncidentsWithLocalCaptures,
-        ];
+        ], deletedIncidentIdsRef.current);
 
         setBackendOnline(true);
         setApiError("");
@@ -512,11 +546,12 @@ const AIDetection = () => {
         if (cancelled) return;
         setBackendOnline(false);
         setApiError(error.message);
-        setIncidents(seededIncidents);
+        const visibleSeededIncidents = withoutDeletedIncidents(seededIncidents, deletedIncidentIdsRef.current);
+        setIncidents(visibleSeededIncidents);
         setSelectedIncidentId((currentId) =>
-          seededIncidents.some((incident) => incident.id === currentId)
+          visibleSeededIncidents.some((incident) => incident.id === currentId)
             ? currentId
-            : seededIncidents[0]?.id || null
+            : visibleSeededIncidents[0]?.id || null
         );
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -625,6 +660,31 @@ const AIDetection = () => {
   );
   const selectedIncident = incidents.find((incident) => incident.id === selectedIncidentId);
 
+  useEffect(() => {
+    incidentsRef.current = incidents;
+  }, [incidents]);
+
+  const showMessage = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const removeIncidentFromView = (incidentId) => {
+    const remainingIncidents = incidentsRef.current.filter((incident) => incident.id !== incidentId);
+    setIncidents((current) => current.filter((incident) => incident.id !== incidentId));
+    setSelectedIncidentId((currentId) =>
+      currentId === incidentId ? remainingIncidents[0]?.id || null : currentId
+    );
+    localMqttIncidentsRef.current = localMqttIncidentsRef.current.filter(
+      (entry) => entry.incident.id !== incidentId
+    );
+  };
+
+  const hideDeletedIncident = (incidentId) => {
+    deletedIncidentIdsRef.current.add(String(incidentId));
+    saveDeletedIncidentIds(deletedIncidentIdsRef.current);
+    removeIncidentFromView(incidentId);
+  };
+
   const updateIncidentStatus = async (incidentId, status) => {
     const applyLocalStatus = () => {
       setIncidents((current) =>
@@ -676,6 +736,63 @@ const AIDetection = () => {
       applyLocalStatus();
     } finally {
       setSavingIncidentId(null);
+    }
+  };
+
+  const deleteIncident = async (incidentId) => {
+    const incident = incidents.find((item) => item.id === incidentId);
+    const incidentLabel = incident?.id || incidentId;
+    const confirmed = window.confirm(
+      `Delete incident ${incidentLabel}? This removes the incident record from the Admin queue. Evidence files are not deleted.`
+    );
+    if (!confirmed) return;
+
+    if (!backendOnline) {
+      hideDeletedIncident(incidentId);
+      showMessage("Incident removed from the seeded fallback view.", "info");
+      return;
+    }
+
+    setDeletingIncidentId(incidentId);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "X-Actor-Role": "admin",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 405) {
+          hideDeletedIncident(incidentId);
+          showMessage(
+            "Incident removed from this Admin view. Restart the backend to enable permanent server delete.",
+            "info"
+          );
+          return;
+        }
+
+        let message = `Delete failed with ${response.status}`;
+        try {
+          const payload = await response.json();
+          message = payload?.message || message;
+        } catch {
+          // Keep the HTTP status message when the backend does not return JSON.
+        }
+        throw new Error(message);
+      }
+
+      hideDeletedIncident(incidentId);
+      showMessage("Incident deleted.");
+    } catch (error) {
+      setApiError(error.message);
+      showMessage(error.message || "Unable to delete incident.", "error");
+    } finally {
+      setDeletingIncidentId(null);
     }
   };
 
@@ -828,7 +945,8 @@ const AIDetection = () => {
             width: "100%",
             maxWidth: "500px",
             borderRadius: "12px",
-            backgroundColor: "#000",
+            backgroundColor: "#FFF9E8",
+            border: "1px solid #EADFBF",
           }}
         />
         <Box sx={{ mt: 1.5 }}>
@@ -941,15 +1059,27 @@ const AIDetection = () => {
                         </span>
                       </TableCell>
                       <TableCell align="right">
-                        <Button
-                          className="incident-detail-button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedIncidentId(incident.id);
-                          }}
-                        >
-                          Details
-                        </Button>
+                        <Box className="incident-row-actions">
+                          <Button
+                            className="incident-detail-button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSelectedIncidentId(incident.id);
+                            }}
+                          >
+                            Details
+                          </Button>
+                          <Button
+                            className="incident-delete-button"
+                            disabled={deletingIncidentId === incident.id}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteIncident(incident.id);
+                            }}
+                          >
+                            {deletingIncidentId === incident.id ? "Deleting..." : "Delete"}
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -962,14 +1092,33 @@ const AIDetection = () => {
         <IncidentDetailPanel
           incident={selectedIncident}
           savingIncidentId={savingIncidentId}
+          deletingIncidentId={deletingIncidentId}
           onStatusChange={updateIncidentStatus}
+          onDeleteIncident={deleteIncident}
         />
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3200}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
-const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => {
+const IncidentDetailPanel = ({
+  incident,
+  savingIncidentId,
+  deletingIncidentId,
+  onStatusChange,
+  onDeleteIncident,
+}) => {
   if (!incident) {
     return (
       <Paper className="incident-detail-panel">
@@ -984,6 +1133,7 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
   const isLocalCapture = evidenceImageUrl?.startsWith("blob:");
   const bbox = Array.isArray(incident.ai?.bbox) ? incident.ai.bbox : [];
   const isSaving = savingIncidentId === incident.id;
+  const isDeleting = deletingIncidentId === incident.id;
   const recommendations = incident.rangerRecommendations || [];
 
   return (
@@ -1077,6 +1227,20 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
             {status}
           </Button>
         ))}
+      </Box>
+
+      <Box className="incident-danger-actions">
+        <Typography component="h3">Incident record controls</Typography>
+        <Typography>
+          Delete removes this incident from the Admin queue. Evidence image files are kept for runtime safety.
+        </Typography>
+        <Button
+          className="incident-delete-button"
+          disabled={isDeleting}
+          onClick={() => onDeleteIncident(incident.id)}
+        >
+          {isDeleting ? "Deleting..." : "Delete incident"}
+        </Button>
       </Box>
     </Paper>
   );

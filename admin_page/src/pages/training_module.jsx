@@ -20,8 +20,8 @@ const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhos
 
 const panelSx = {
   borderRadius: "22px",
-  border: "1px solid rgba(234, 214, 167, 0.86)",
-  background: "linear-gradient(145deg, #fffdf4 0%, #fff8e6 100%)",
+  border: "1px solid #EADFBF",
+  background: "linear-gradient(145deg, #FFFFFF 0%, #FFFCF2 100%)",
   boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
 };
 
@@ -80,18 +80,18 @@ const TrainingModuleSetup = () => {
           mb: 3,
           p: { xs: 3, md: 4 },
           background:
-            "linear-gradient(135deg, #0b3b28 0%, #175f3e 58%, rgba(168,230,74,0.58) 100%)",
+            "radial-gradient(circle at 88% 0%, rgba(167,233,87,0.42), transparent 18rem), linear-gradient(135deg, #FF8A1D 0%, #FFD84D 48%, #F3FFD4 100%)",
         }}
       >
         <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
           <Box>
-            <Typography sx={{ color: "#ffd23f", fontWeight: 950, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.8rem" }}>
+            <Typography sx={{ color: "#8d4f12", fontWeight: 950, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.8rem" }}>
               Training library
             </Typography>
-            <Typography variant="h3" sx={{ color: "#fffdf4", fontWeight: 950, lineHeight: 1, mt: 1 }}>
+            <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1, mt: 1 }}>
               Live module overview
             </Typography>
-            <Typography sx={{ mt: 1.4, color: "#f2ffe6", fontWeight: 700, maxWidth: 760 }}>
+            <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 800, maxWidth: 760 }}>
               Modules shown here are loaded from the admin backend and shared with the Park Guide user portal.
             </Typography>
           </Box>
@@ -100,7 +100,7 @@ const TrainingModuleSetup = () => {
               variant="contained"
               startIcon={<RefreshIcon />}
               onClick={loadTrainingData}
-              sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900, bgcolor: "#ff7a1a" }}
+              sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
             >
               Refresh
             </Button>
@@ -112,8 +112,9 @@ const TrainingModuleSetup = () => {
                 borderRadius: "12px",
                 textTransform: "none",
                 fontWeight: 900,
-                borderColor: "#fff8e6",
-                color: "#fff8e6",
+                borderColor: "#EADFBF",
+                color: "#173126",
+                backgroundColor: "rgba(255, 253, 245, 0.72)",
               }}
             >
               Manage Courses
@@ -127,7 +128,7 @@ const TrainingModuleSetup = () => {
           <Card sx={panelSx}>
             <CardContent>
               <Typography className="admin-dashboard-kicker">Courses</Typography>
-              <Typography variant="h3" sx={{ color: "#0b3b28", fontWeight: 950 }}>{courses.length}</Typography>
+              <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950 }}>{courses.length}</Typography>
               <Typography sx={{ color: "#607166", fontWeight: 800 }}>Admin-created course records</Typography>
             </CardContent>
           </Card>
@@ -136,7 +137,7 @@ const TrainingModuleSetup = () => {
           <Card sx={panelSx}>
             <CardContent>
               <Typography className="admin-dashboard-kicker">Modules</Typography>
-              <Typography variant="h3" sx={{ color: "#0b3b28", fontWeight: 950 }}>{totalModules}</Typography>
+              <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950 }}>{totalModules}</Typography>
               <Typography sx={{ color: "#607166", fontWeight: 800 }}>Visible in the user training portal</Typography>
             </CardContent>
           </Card>
@@ -145,7 +146,7 @@ const TrainingModuleSetup = () => {
           <Card sx={panelSx}>
             <CardContent>
               <Typography className="admin-dashboard-kicker">Backend</Typography>
-              <Typography variant="h3" sx={{ color: "#0b3b28", fontWeight: 950 }}>4002</Typography>
+              <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950 }}>4002</Typography>
               <Typography sx={{ color: "#607166", fontWeight: 800 }}>Admin API course/module source</Typography>
             </CardContent>
           </Card>
@@ -161,11 +162,11 @@ const TrainingModuleSetup = () => {
             <Box key={course.course_id} sx={{ ...panelSx, p: { xs: 2.4, md: 3 } }}>
               <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
                 <Box>
-                  <Chip label={course.course_id} sx={{ bgcolor: "#fff3c4", color: "#0b3b28", fontWeight: 900, mb: 1 }} />
-                  <Typography variant="h5" sx={{ color: "#0b3b28", fontWeight: 950 }}>{course.course_name}</Typography>
+                  <Chip label={course.course_id} sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900, mb: 1 }} />
+                  <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>{course.course_name}</Typography>
                   <Typography sx={{ color: "#607166", fontWeight: 700 }}>{course.description || "No course description yet."}</Typography>
                 </Box>
-                <Chip label={`${modules.length} modules`} sx={{ alignSelf: { xs: "flex-start", md: "center" }, bgcolor: "#e8f8d9", color: "#0b3b28", fontWeight: 900 }} />
+                <Chip label={`${modules.length} modules`} sx={{ alignSelf: { xs: "flex-start", md: "center" }, bgcolor: "#e8f8d9", color: "#173126", fontWeight: 900 }} />
               </Stack>
 
               <Grid container spacing={1.6}>
@@ -174,9 +175,9 @@ const TrainingModuleSetup = () => {
                     <Box sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid rgba(234, 214, 167, 0.88)" }}>
                       <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
                         <Chip size="small" label={module.category || "Training"} sx={{ bgcolor: "#fff3c4", color: "#7a4710", fontWeight: 900 }} />
-                        <Chip size="small" label={module.level || "Beginner"} sx={{ bgcolor: "#e8f8d9", color: "#0b3b28", fontWeight: 900 }} />
+                        <Chip size="small" label={module.level || "Beginner"} sx={{ bgcolor: "#e8f8d9", color: "#173126", fontWeight: 900 }} />
                       </Stack>
-                      <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>{module.title}</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 950 }}>{module.title}</Typography>
                       <Typography sx={{ mt: 0.6, color: "#607166", fontWeight: 700 }}>{module.description || "No module description yet."}</Typography>
                     </Box>
                   </Grid>
@@ -185,7 +186,7 @@ const TrainingModuleSetup = () => {
 
               {modules.length === 0 && (
                 <Box sx={{ p: 2.5, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                  <Typography sx={{ color: "#0b3b28", fontWeight: 900 }}>No modules have been published for this course.</Typography>
+                  <Typography sx={{ color: "#173126", fontWeight: 900 }}>No modules have been published for this course.</Typography>
                 </Box>
               )}
             </Box>
@@ -195,7 +196,7 @@ const TrainingModuleSetup = () => {
 
       {courses.length === 0 && (
         <Box sx={{ ...panelSx, p: 4, textAlign: "center" }}>
-          <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>No backend courses yet</Typography>
+          <Typography sx={{ color: "#173126", fontWeight: 950 }}>No backend courses yet</Typography>
           <Typography sx={{ mt: 1, color: "#607166", fontWeight: 700 }}>
             Use Course and module control to create the first training course.
           </Typography>

@@ -18,6 +18,10 @@ import {
   seededIncidents,
   summarizeIncidents,
 } from "../data/incidents";
+import {
+  demoParkUserProfile,
+  parkRangerProfile,
+} from "../data/roleProfiles";
 import "../Admin.css";
 
 const API_BASE_URL = import.meta.env.VITE_MONITORING_API_BASE_URL || "http://localhost:4000";
@@ -189,6 +193,22 @@ const ParkRangerConsole = () => {
     ["New", "Acknowledged", "In Review"].includes(incident.status)
   ).length;
   const urgentCount = incidents.filter((incident) => incident.status === "New").length;
+  const rangerIdentityRows = [
+    ["Ranger ID", parkRangerProfile.rangerId],
+    ["Staff ID", parkRangerProfile.staffId],
+    ["Badge ID", parkRangerProfile.badgeId],
+    ["Station", parkRangerProfile.station],
+    ["Patrol zone", parkRangerProfile.patrolZone],
+    ["Shift", parkRangerProfile.shift],
+  ];
+  const parkUserIdentityRows = [
+    ["Guide ID", demoParkUserProfile.guideId],
+    ["Training ID", demoParkUserProfile.trainingId],
+    ["Email", demoParkUserProfile.email],
+    ["Assigned park", demoParkUserProfile.assignedPark],
+    ["Course track", demoParkUserProfile.courseTrack],
+    ["Certification", demoParkUserProfile.certificationStatus],
+  ];
 
   const statusCards = [
     { label: "Active Response", value: activeResponseCount, detail: "New, acknowledged, or in review" },
@@ -291,6 +311,21 @@ const ParkRangerConsole = () => {
   };
 
   return (
+    <Box className="ranger-standalone-shell">
+      <Box className="ranger-standalone-topbar">
+        <Box className="ranger-standalone-brand">
+          <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
+          <Box>
+            <strong>SFC Ranger Portal</strong>
+            <span>{parkRangerProfile.rangerId} / {parkRangerProfile.radioCallsign}</span>
+          </Box>
+        </Box>
+        <Box className="ranger-standalone-links">
+          <Button href="/admin/detection">Admin incident review</Button>
+          <Button href="/admin">Admin dashboard</Button>
+        </Box>
+      </Box>
+
     <Box className="ranger-console">
       <Box component="header" className="ranger-header">
         <Box>
@@ -306,6 +341,21 @@ const ParkRangerConsole = () => {
             Response-only view for live AI camera and IoT proximity incidents. Park Rangers can view
             evidence, add field notes, and recommend outcomes for Admin review.
           </Typography>
+
+          <Box className="ranger-identity-grid">
+            <RangerIdentityCard
+              title="Current Park Ranger"
+              name={parkRangerProfile.name}
+              role={parkRangerProfile.roleLabel}
+              rows={rangerIdentityRows}
+            />
+            <RangerIdentityCard
+              title="Park User Reference"
+              name={demoParkUserProfile.name}
+              role={demoParkUserProfile.roleLabel}
+              rows={parkUserIdentityRows}
+            />
+          </Box>
         </Box>
         <Box className="ranger-live-card">
           <span>{backendOnline ? "Live backend" : "Seeded fallback"}</span>
@@ -316,7 +366,7 @@ const ParkRangerConsole = () => {
 
       <Box className="ranger-boundary-card">
         <strong>Role boundary</strong>
-        <span>Park Ranger response scope only: recommendations do not change the official incident status.</span>
+        <span>Park Ranger response scope only: recommendations and field notes are sent for Admin review.</span>
       </Box>
 
       <Box className="ranger-stat-grid">
@@ -422,8 +472,25 @@ const ParkRangerConsole = () => {
         />
       </Box>
     </Box>
+    </Box>
   );
 };
+
+const RangerIdentityCard = ({ title, name, role, rows }) => (
+  <Box className="ranger-identity-card">
+    <span>{title}</span>
+    <strong>{name}</strong>
+    <small>{role}</small>
+    <Box className="ranger-identity-fields">
+      {rows.map(([label, value]) => (
+        <Box key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </Box>
+      ))}
+    </Box>
+  </Box>
+);
 
 const RangerIncidentDetail = ({
   incident,

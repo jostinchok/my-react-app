@@ -175,6 +175,15 @@ export const createMemoryIncidentStore = ({
       return incidents[incidentIndex]
     },
 
+    async deleteIncident(id) {
+      const incidentIndex = incidents.findIndex((item) => item.id === id)
+      if (incidentIndex === -1) return null
+
+      const [deletedIncident] = incidents.splice(incidentIndex, 1)
+      await persistRuntimeIncidents()
+      return deletedIncident
+    },
+
     async addRangerRecommendation(id, recommendationInput = {}) {
       const incidentIndex = incidents.findIndex((item) => item.id === id)
       if (incidentIndex === -1) return null

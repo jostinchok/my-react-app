@@ -525,6 +525,44 @@ export const createMysqlIncidentStore = ({ pool } = {}) => {
       }
     },
 
+    async deleteIncident(publicId) {
+      const connection = await pool.getConnection()
+      try {
+        await connection.beginTransaction()
+
+        const [rows] = await connection.query(
+          `SELECT incident_id
+           FROM monitoring_incidents
+           WHERE public_id = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [publicId]
+        )
+
+        if (!rows.length) {
+          await connection.rollback()
+          return null
+        }
+
+        const incidentId = rows[0].incident_id
+        const incident = await fetchIncidentByPublicId(publicId, connection)
+
+        await connection.query('DELETE FROM monitoring_incident_actions WHERE incident_id = ?', [incidentId])
+        await connection.query('DELETE FROM monitoring_incident_evidence_files WHERE incident_id = ?', [incidentId])
+        await connection.query('DELETE FROM monitoring_incident_ai_metadata WHERE incident_id = ?', [incidentId])
+        await connection.query('DELETE FROM monitoring_incident_iot_metadata WHERE incident_id = ?', [incidentId])
+        await connection.query('DELETE FROM monitoring_incidents WHERE incident_id = ?', [incidentId])
+
+        await connection.commit()
+        return incident
+      } catch (error) {
+        await connection.rollback()
+        throw error
+      } finally {
+        connection.release()
+      }
+    },
+
     async addRangerRecommendation(publicId, recommendationInput = {}) {
       const connection = await pool.getConnection()
       try {

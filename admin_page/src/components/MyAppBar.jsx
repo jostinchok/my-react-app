@@ -49,8 +49,9 @@ const NotificationButton = () => {
             width: 240,
             mt: 1.2,
             borderRadius: "18px",
-            border: "1px solid #e5e5e5",
-            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.12)",
+            border: "1px solid #EADFBF",
+            background: "#FFFDF5",
+            boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
           },
         }}
       >
@@ -67,12 +68,12 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
   const [userAnchor, setUserAnchor] = useState(null);
 
   const currentLabel = useMemo(() => {
+    if (location.pathname.startsWith("/admin/course-requests")) return "REQUESTS";
     if (location.pathname.startsWith("/admin/course")) return "COURSE";
     if (location.pathname.startsWith("/admin/training")) return "TRAINING";
-    if (location.pathname.startsWith("/admin/students")) return "STUDENTS";
+    if (location.pathname.startsWith("/admin/students")) return "GUIDES";
     if (location.pathname.startsWith("/admin/badge")) return "BADGE";
     if (location.pathname.startsWith("/admin/detection")) return "DETECTION";
-    if (location.pathname.startsWith("/admin/ranger")) return "RANGER";
     return "DASHBOARD";
   }, [location.pathname]);
 
@@ -82,10 +83,11 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
       elevation={0}
       sx={{
         height: "86px",
-        background: "linear-gradient(135deg, #ffffff 0%, #fff8e6 58%, #f4fbdf 100%)",
-        color: "var(--text-main)",
-        boxShadow: "0 10px 28px rgba(11, 59, 40, 0.08)",
-        borderBottom: "1px solid rgba(255, 210, 63, 0.38)",
+        background: "rgba(255, 253, 245, 0.96)",
+        color: "#173126",
+        boxShadow: "0 12px 28px rgba(255, 122, 26, 0.08)",
+        borderBottom: "1px solid #EADFBF",
+        backdropFilter: "blur(18px)",
         justifyContent: "center",
         ml: open ? `${sidebarWidth}px` : "0px",
         width: open ? `calc(100% - ${sidebarWidth}px)` : "100%",
@@ -108,9 +110,9 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
               width: "50px",
               height: "50px",
               borderRadius: "14px",
-              border: open ? "1px solid #cfe4c6" : "1px solid #f0c264",
-              background: open ? "#fff8e6" : "#ffffff",
-              color: "#0b3b28",
+              border: open ? "1px solid #D8EAC7" : "1px solid #EADFBF",
+              background: open ? "#F6FFE8" : "#FFFFFF",
+              color: "#173126",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -119,9 +121,9 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
               boxShadow: "none",
               "&:hover": {
                 transform: "translateY(-1px)",
-                background: "linear-gradient(135deg, #ff7a1a, #ffd23f)",
-                color: "#102419",
-                borderColor: "#ff7a1a",
+                background: "linear-gradient(135deg, #FF7A1A, #FFD84D)",
+                color: "#173126",
+                borderColor: "#FF9F1C",
               },
             }}
           >
@@ -160,9 +162,10 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
               sx: {
                 width: 220,
                 mt: 1.2,
-                border: "1px solid #e5e5e5",
+                border: "1px solid #EADFBF",
                 borderRadius: "18px",
-                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.12)",
+                background: "#FFFDF5",
+                boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
               },
             }}
           >

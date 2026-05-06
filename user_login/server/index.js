@@ -28,6 +28,7 @@ const repoRoot = path.resolve(__dirname, '../..')
 dotenv.config({ path: path.join(repoRoot, '.env') })
 const runtimeDataDir = path.join(__dirname, 'data')
 const runtimeIncidentFile = path.join(runtimeDataDir, 'incidents.runtime.json')
+const runtimeDeletedIncidentFile = path.join(runtimeDataDir, 'incidents.deleted.json')
 const aiEvidenceDir = process.env.AI_EVIDENCE_DIR
   ? path.resolve(process.env.AI_EVIDENCE_DIR)
   : path.join(repoRoot, 'alerts', 'ai')
@@ -59,7 +60,7 @@ const ROLE_CHECK_ENABLED = flagEnabled(process.env.ROLE_CHECK_ENABLED)
 const AI_CAMERA_TOKEN = process.env.AI_CAMERA_TOKEN || ''
 const IOT_SENSOR_TOKEN = process.env.IOT_SENSOR_TOKEN || ''
 const ALLOWED_STATUS_ACTOR_ROLES = new Set(['admin'])
-const ALLOWED_RANGER_RECOMMENDATION_ROLES = new Set(['ranger'])
+const ALLOWED_RANGER_RECOMMENDATION_ROLES = new Set(['ranger', 'park_ranger'])
 
 const mqttState = {
   enabled: MQTT_ENABLED,
@@ -114,6 +115,35 @@ const readJsonFile = async (filePath) => {
     return null
   }
 }
+
+const readDeletedIncidentIds = async () => {
+  try {
+    const parsed = JSON.parse(await fs.promises.readFile(runtimeDeletedIncidentFile, 'utf8'))
+    return new Set(Array.isArray(parsed) ? parsed.map((id) => String(id)).filter(Boolean) : [])
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      console.warn(`[incidents] Deleted incident list ignored: ${errorMessage(error)}`)
+    }
+    return new Set()
+  }
+}
+
+const rememberDeletedIncidentId = async (incidentId) => {
+  const id = String(incidentId || '').trim()
+  if (!id) return
+
+  const deletedIncidentIds = await readDeletedIncidentIds()
+  deletedIncidentIds.add(id)
+  await fs.promises.mkdir(path.dirname(runtimeDeletedIncidentFile), { recursive: true })
+  await fs.promises.writeFile(
+    runtimeDeletedIncidentFile,
+    JSON.stringify([...deletedIncidentIds].sort(), null, 2),
+    'utf8'
+  )
+}
+
+const withoutDeletedIncidents = (incidents, deletedIncidentIds) =>
+  incidents.filter((incident) => !deletedIncidentIds.has(String(incident.id || '')))
 
 const listAlertJsonFiles = async (folder) => {
   try {
@@ -178,7 +208,7 @@ const securityControlInfo = () => ({
   roleCheckEnabled: ROLE_CHECK_ENABLED,
   tokenSources: DEVICE_TOKEN_AUTH_ENABLED ? ['AI_CAMERA', 'IOT_SENSOR'] : [],
   statusUpdateRoles: ROLE_CHECK_ENABLED ? ['admin'] : ['demo-open'],
-  rangerRecommendationRoles: ROLE_CHECK_ENABLED ? ['ranger'] : ['demo-open'],
+  rangerRecommendationRoles: ROLE_CHECK_ENABLED ? ['ranger', 'park_ranger'] : ['demo-open'],
 })
 
 const safeTokenEqual = (provided, expected) => {
@@ -386,7 +416,7 @@ const rangerRecommendationActorFromRequest = (req) => {
     return {
       allowed: false,
       status: 403,
-      message: 'Ranger recommendations require X-Actor-Role ranger when ROLE_CHECK_ENABLED=true.',
+      message: 'Ranger recommendations require X-Actor-Role ranger or park_ranger when ROLE_CHECK_ENABLED=true.',
     }
   }
 
@@ -527,9 +557,13 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/incidents', async (req, res) => {
   try {
+    const deletedIncidentIds = await readDeletedIncidentIds()
     const storedIncidents = await runIncidentStoreOperation((store) => store.listIncidents())
     const alertIncidents = await loadAlertFolderIncidents()
-    const incidents = mergeIncidentLists(storedIncidents, alertIncidents)
+    const incidents = withoutDeletedIncidents(
+      mergeIncidentLists(storedIncidents, alertIncidents),
+      deletedIncidentIds
+    )
     res.json({
       incidents,
       count: incidents.length,
@@ -637,6 +671,32 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
     return res.json({ incident })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to update incident status.', error: error.message })
+  }
+})
+
+app.delete('/api/incidents/:id', async (req, res) => {
+  const actor = statusActorFromRequest(req)
+  if (!actor.allowed) {
+    return res.status(actor.status).json({ message: actor.message })
+  }
+
+  try {
+    let incident = await runIncidentStoreOperation((store) => store.deleteIncident(req.params.id))
+
+    if (!incident) {
+      const alertIncidents = await loadAlertFolderIncidents()
+      incident = alertIncidents.find((item) => item.id === req.params.id) || null
+    }
+
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found.' })
+    }
+
+    await rememberDeletedIncidentId(req.params.id)
+    console.log(`[incidents] Deleted ${req.params.id}`)
+    return res.json({ incident, message: 'Incident deleted successfully.' })
+  } catch (error) {
+    return res.status(500).json({ message: 'Unable to delete incident.', error: error.message })
   }
 })
 

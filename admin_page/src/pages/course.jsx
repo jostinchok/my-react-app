@@ -68,8 +68,8 @@ const courseDuration = (course) => {
 
 const panelSx = {
   borderRadius: "22px",
-  border: "1px solid rgba(234, 214, 167, 0.86)",
-  background: "linear-gradient(145deg, #fffdf4 0%, #fff8e6 100%)",
+  border: "1px solid #EADFBF",
+  background: "linear-gradient(145deg, #FFFFFF 0%, #FFFCF2 100%)",
   boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
 };
 
@@ -331,16 +331,16 @@ const CourseManagement = () => {
           mb: 3,
           p: { xs: 3, md: 4 },
           background:
-            "linear-gradient(135deg, rgba(255,122,26,0.96) 0%, rgba(255,210,63,0.92) 48%, rgba(255,248,230,0.96) 100%)",
+            "linear-gradient(135deg, #FF8A1D 0%, #FFD84D 48%, #F3FFD4 100%)",
         }}
       >
         <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
           <Box>
             <Typography className="admin-dashboard-kicker">Training platform</Typography>
-            <Typography variant="h3" sx={{ color: "#0b3b28", fontWeight: 950, lineHeight: 1 }}>
+            <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1 }}>
               Course and module control
             </Typography>
-            <Typography sx={{ mt: 1.4, color: "#274a35", fontWeight: 700, maxWidth: 760 }}>
+            <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 800, maxWidth: 760 }}>
               Create courses, publish modules, and upload resources that Park Guides can download from the user portal.
             </Typography>
           </Box>
@@ -351,11 +351,11 @@ const CourseManagement = () => {
             sx={{
               ...buttonSx,
               alignSelf: { xs: "stretch", md: "center" },
-              background: "#0b3b28",
-              color: "#fff8e6",
+              background: "linear-gradient(135deg, #FF7A1A, #FFD84D)",
+              color: "#173126",
               px: 3,
               py: 1.25,
-              "&:hover": { background: "#175f3e" },
+              "&:hover": { background: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
             }}
           >
             Create Course
@@ -384,7 +384,7 @@ const CourseManagement = () => {
             >
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
-                  <Chip label={course.course_id} sx={{ bgcolor: "#fff3c4", color: "#0b3b28", fontWeight: 900 }} />
+                  <Chip label={course.course_id} sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }} />
                   <Stack direction="row" gap={0.5}>
                     <IconButton
                       size="small"
@@ -407,16 +407,16 @@ const CourseManagement = () => {
                     </IconButton>
                   </Stack>
                 </Stack>
-                <Typography variant="h5" sx={{ mt: 2, color: "#0b3b28", fontWeight: 950 }}>
+                <Typography variant="h5" sx={{ mt: 2, color: "#173126", fontWeight: 950 }}>
                   {course.course_name}
                 </Typography>
                 <Typography sx={{ mt: 1, color: "#53685a", fontWeight: 700, minHeight: 48 }}>
                   {course.description || "No description yet."}
                 </Typography>
                 <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
-                  <Chip label={`${course.module_count} modules`} size="small" sx={{ bgcolor: "#e8f8d9", fontWeight: 900 }} />
-                  <Chip label={`${course.resource_count} resources`} size="small" sx={{ bgcolor: "#fff3c4", fontWeight: 900 }} />
-                  <Chip label={`${course.total_contact_hours || 0} hrs`} size="small" sx={{ bgcolor: "#ffe2cf", fontWeight: 900 }} />
+                  <Chip label={`${course.module_count} modules`} size="small" sx={{ bgcolor: "#e8f8d9", color: "#173126", fontWeight: 900 }} />
+                  <Chip label={`${course.resource_count} resources`} size="small" sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }} />
+                  <Chip label={`${course.total_contact_hours || 0} hrs`} size="small" sx={{ bgcolor: "#ffe2cf", color: "#173126", fontWeight: 900 }} />
                 </Stack>
                 <Typography sx={{ mt: 1.5, color: "#607166", fontWeight: 800 }}>{courseDuration(course)}</Typography>
               </CardContent>
@@ -427,7 +427,7 @@ const CourseManagement = () => {
 
       {courses.length === 0 && (
         <Box sx={{ ...panelSx, mt: 3, p: 4, textAlign: "center" }}>
-          <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>No courses yet</Typography>
+          <Typography sx={{ color: "#173126", fontWeight: 950 }}>No courses yet</Typography>
           <Typography sx={{ mt: 1, color: "#607166", fontWeight: 700 }}>
             Create a course to start linking admin training content to the user portal.
           </Typography>
@@ -441,11 +441,16 @@ const CourseManagement = () => {
               <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: 2 }}>
                 <Box>
                   <Typography className="admin-dashboard-kicker">Course modules</Typography>
-                  <Typography variant="h5" sx={{ color: "#0b3b28", fontWeight: 950 }}>
+                  <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
                     {selectedCourse.course_name}
                   </Typography>
                 </Box>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateModule} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={openCreateModule}
+                  sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
+                >
                   Add Module
                 </Button>
               </Stack>
@@ -464,11 +469,11 @@ const CourseManagement = () => {
                     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
                       <Box>
                         <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
-                          <Chip label={module.status || "Published"} size="small" sx={{ bgcolor: "#e8f8d9", color: "#0b3b28", fontWeight: 900 }} />
+                          <Chip label={module.status || "Published"} size="small" sx={{ bgcolor: "#e8f8d9", color: "#173126", fontWeight: 900 }} />
                           <Chip label={module.level || "Beginner"} size="small" sx={{ bgcolor: "#fff3c4", color: "#7a4710", fontWeight: 900 }} />
                           <Chip label={module.duration || "1 hour"} size="small" sx={{ bgcolor: "#edf4ff", color: "#1a4e8a", fontWeight: 900 }} />
                         </Stack>
-                        <Typography sx={{ color: "#0b3b28", fontWeight: 950, fontSize: "1.08rem" }}>{module.title}</Typography>
+                        <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.08rem" }}>{module.title}</Typography>
                         <Typography sx={{ mt: 0.5, color: "#607166", fontWeight: 700 }}>{module.description || "No module description yet."}</Typography>
                         {module.badge_name && (
                           <Typography sx={{ mt: 0.8, color: "#a75d10", fontWeight: 900 }}>
@@ -491,7 +496,7 @@ const CourseManagement = () => {
 
               {modules.length === 0 && (
                 <Box sx={{ mt: 2, p: 3, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                  <Typography sx={{ color: "#0b3b28", fontWeight: 900 }}>No modules in this course yet.</Typography>
+                  <Typography sx={{ color: "#173126", fontWeight: 900 }}>No modules in this course yet.</Typography>
                   <Typography sx={{ mt: 0.7, color: "#607166", fontWeight: 700 }}>Add a module to make it visible in the guide training portal.</Typography>
                 </Box>
               )}
@@ -501,7 +506,7 @@ const CourseManagement = () => {
           <Grid item xs={12} lg={5}>
             <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 } }}>
               <Typography className="admin-dashboard-kicker">Published resources</Typography>
-              <Typography variant="h5" sx={{ color: "#0b3b28", fontWeight: 950 }}>
+              <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
                 Course files
               </Typography>
               <Typography sx={{ mt: 0.6, color: "#607166", fontWeight: 700 }}>
@@ -535,7 +540,13 @@ const CourseManagement = () => {
                 variant="contained"
                 disabled={loading}
                 onClick={uploadResource}
-                sx={{ ...buttonSx, mt: 1.5, bgcolor: "#0b3b28", "&:hover": { bgcolor: "#175f3e" } }}
+                sx={{
+                  ...buttonSx,
+                  mt: 1.5,
+                  background: "linear-gradient(135deg, #FF7A1A, #FFD84D)",
+                  color: "#173126",
+                  "&:hover": { background: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
+                }}
               >
                 Upload Resource
               </Button>
@@ -553,7 +564,7 @@ const CourseManagement = () => {
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
                       <Box>
-                        <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>{resource.title}</Typography>
+                        <Typography sx={{ color: "#173126", fontWeight: 950 }}>{resource.title}</Typography>
                         <Typography sx={{ color: "#607166", fontWeight: 800, fontSize: "0.86rem" }}>
                           {resource.file_name} · {resource.size}
                         </Typography>
@@ -564,7 +575,7 @@ const CourseManagement = () => {
                           href={`${API_BASE_URL}${resource.download_url}`}
                           target="_blank"
                           rel="noreferrer"
-                          sx={{ color: "#0b3b28" }}
+                          sx={{ color: "#173126" }}
                         >
                           <FileDownloadIcon />
                         </IconButton>
@@ -579,7 +590,7 @@ const CourseManagement = () => {
 
               {resources.length === 0 && (
                 <Box sx={{ mt: 2, p: 2.5, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                  <Typography sx={{ color: "#0b3b28", fontWeight: 900 }}>No resources uploaded yet.</Typography>
+                  <Typography sx={{ color: "#173126", fontWeight: 900 }}>No resources uploaded yet.</Typography>
                 </Box>
               )}
             </Box>
@@ -590,7 +601,7 @@ const CourseManagement = () => {
       {loading && <LinearProgress sx={{ mt: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
 
       <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ color: "#0b3b28", fontWeight: 950 }}>
+        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>
           {editingCourseId ? "Edit Course" : "Create Course"}
         </DialogTitle>
         <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
@@ -603,14 +614,14 @@ const CourseManagement = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={() => setCourseDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveCourse} disabled={loading} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+          <Button variant="contained" onClick={saveCourse} disabled={loading} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
             {editingCourseId ? "Save Course" : "Create Course"}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ color: "#0b3b28", fontWeight: 950 }}>
+        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>
           {editingModuleId ? "Edit Module" : "Add Module"}
         </DialogTitle>
         <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
@@ -652,7 +663,7 @@ const CourseManagement = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={() => setModuleDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveModule} disabled={loading} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+          <Button variant="contained" onClick={saveModule} disabled={loading} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
             {editingModuleId ? "Save Module" : "Add Module"}
           </Button>
         </DialogActions>
