@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -6,23 +6,39 @@ import {
   Card,
   CardContent,
   Chip,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   IconButton,
   LinearProgress,
+  MenuItem,
+  Paper,
   Snackbar,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import ArticleIcon from "@mui/icons-material/Article";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import ImageIcon from "@mui/icons-material/Image";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import LinkIcon from "@mui/icons-material/Link";
+import QuizIcon from "@mui/icons-material/Quiz";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
 
@@ -41,7 +57,7 @@ const emptyModuleForm = {
   category: "Field Readiness",
   park: "All Parks",
   level: "Beginner",
-  duration: "1 hour",
+  duration: "45 minutes",
   format: "Blended",
   badge_name: "",
   objectivesText: "",
@@ -49,21 +65,30 @@ const emptyModuleForm = {
   sort_order: 0,
 };
 
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error("Unable to read file."));
-    reader.readAsDataURL(file);
-  });
+const emptyItemForm = {
+  item_type: "page",
+  title: "",
+  description: "",
+  content: "",
+  external_url: "",
+  status: "published",
+  sort_order: 0,
+  question: "",
+  choicesText: "",
+  correctAnswer: 0,
+  checklistText: "",
+  file: null,
+};
 
-const toObjectivesText = (objectives) =>
-  Array.isArray(objectives) ? objectives.join("\n") : String(objectives || "");
-
-const courseDuration = (course) => {
-  if (!course?.start_date && !course?.end_date) return "Date not set";
-  if (course.start_date && course.end_date) return `${course.start_date} to ${course.end_date}`;
-  return course.start_date || course.end_date;
+const itemTypeMap = {
+  page: { label: "Page", icon: <ArticleIcon />, helper: "Rich text learning page" },
+  text: { label: "Text", icon: <ArticleIcon />, helper: "Short text lesson" },
+  file: { label: "File", icon: <InsertDriveFileIcon />, helper: "PDF, document, slides, or resource" },
+  image: { label: "Image", icon: <ImageIcon />, helper: "Screenshot, diagram, or evidence image" },
+  video: { label: "Video", icon: <VideoLibraryIcon />, helper: "MP4 or training walkthrough" },
+  link: { label: "External Link", icon: <LinkIcon />, helper: "Website, Canvas page, or reference" },
+  quiz: { label: "Quiz", icon: <QuizIcon />, helper: "Scenario question with answer choices" },
+  checklist: { label: "Checklist", icon: <ChecklistIcon />, helper: "Step-by-step completion list" },
 };
 
 const panelSx = {
@@ -79,27 +104,72 @@ const buttonSx = {
   fontWeight: 900,
 };
 
+const toObjectivesText = (objectives) =>
+  Array.isArray(objectives) ? objectives.join("\n") : String(objectives || "");
+
+const toDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error("Unable to read file."));
+    reader.readAsDataURL(file);
+  });
+
+const splitLines = (value) =>
+  String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+const formatCourseDuration = (course) => {
+  if (!course?.start_date && !course?.end_date) return "Date not set";
+  if (course.start_date && course.end_date) return `${course.start_date} to ${course.end_date}`;
+  return course.start_date || course.end_date;
+};
+
+const normalizeItem = (item) => ({
+  ...item,
+  item_type: item.item_type || item.itemType || "page",
+  quiz: item.quiz || null,
+  checklist: item.checklist || [],
+});
+
 const CourseManagement = () => {
-  const resourceInputRef = useRef(null);
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [modules, setModules] = useState([]);
-  const [resources, setResources] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [expandedModules, setExpandedModules] = useState({});
+  const [selectedPreview, setSelectedPreview] = useState(null);
+
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
+  const [itemDialogOpen, setItemDialogOpen] = useState(false);
+
   const [editingCourseId, setEditingCourseId] = useState("");
   const [editingModuleId, setEditingModuleId] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [activeModule, setActiveModule] = useState(null);
+
   const [courseForm, setCourseForm] = useState(emptyCourseForm);
   const [moduleForm, setModuleForm] = useState(emptyModuleForm);
-  const [resourceTitle, setResourceTitle] = useState("");
-  const [resourceFile, setResourceFile] = useState(null);
+  const [itemForm, setItemForm] = useState(emptyItemForm);
+
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  const selectedCourse = useMemo(
-    () => courses.find((course) => course.course_id === selectedCourseId) || courses[0] || null,
-    [courses, selectedCourseId]
-  );
+  const modules = selectedCourse?.modules || [];
+  const totalItems = modules.reduce((sum, module) => sum + (module.items?.length || 0), 0);
+  const totalResources = selectedCourse?.resources?.length || 0;
+
+  const activePreviewItem = useMemo(() => {
+    if (selectedPreview?.item) return selectedPreview.item;
+    const firstModule = modules[0];
+    return firstModule?.items?.[0] || null;
+  }, [modules, selectedPreview]);
 
   const showMessage = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -114,32 +184,71 @@ const CourseManagement = () => {
 
   const loadCourses = async () => {
     const data = await requestJson(`${API_BASE_URL}/api/courses`);
-    setCourses(data.courses || []);
-    setSelectedCourseId((prev) => prev || data.courses?.[0]?.course_id || "");
+    const loadedCourses = data.courses || [];
+    setCourses(loadedCourses);
+    setSelectedCourseId((prev) => prev || loadedCourses[0]?.course_id || "");
+    return loadedCourses;
   };
 
-  const loadCourseDetails = async (courseId) => {
+  const loadCanvasCourse = async (courseId) => {
     if (!courseId) {
-      setModules([]);
-      setResources([]);
+      setSelectedCourse(null);
       return;
     }
+    const data = await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/canvas`);
+    const course = data.course || null;
+    if (course) {
+      course.modules = (course.modules || []).map((module) => ({
+        ...module,
+        items: (module.items || []).map(normalizeItem),
+      }));
+    }
+    setSelectedCourse(course);
+    setExpandedModules((prev) => {
+      if (Object.keys(prev).length) return prev;
+      const firstId = course?.modules?.[0]?.module_id;
+      return firstId ? { [firstId]: true } : {};
+    });
+    setSelectedPreview(null);
+  };
 
-    const [moduleData, resourceData] = await Promise.all([
-      requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/modules`),
-      requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/resources`),
-    ]);
-    setModules(moduleData.modules || []);
-    setResources(resourceData.resources || []);
+  const refreshAll = async () => {
+    setLoading(true);
+    try {
+      const loadedCourses = await loadCourses();
+      const courseId = selectedCourseId || loadedCourses[0]?.course_id || "";
+      await loadCanvasCourse(courseId);
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadCourses().catch((error) => showMessage(error.message, "error"));
+    refreshAll();
   }, []);
 
   useEffect(() => {
-    loadCourseDetails(selectedCourse?.course_id).catch((error) => showMessage(error.message, "error"));
-  }, [selectedCourse?.course_id]);
+    if (selectedCourseId) {
+      loadCanvasCourse(selectedCourseId).catch((error) => showMessage(error.message, "error"));
+    }
+  }, [selectedCourseId]);
+
+  const seedTemplates = async () => {
+    if (!window.confirm("Insert demo Canvas-style SFC course templates? Existing demo template IDs will be replaced.")) return;
+    setLoading(true);
+    try {
+      const data = await requestJson(`${API_BASE_URL}/api/demo/canvas-seed`, { method: "POST" });
+      showMessage(data.message || "Demo templates inserted.");
+      const loadedCourses = await loadCourses();
+      setSelectedCourseId(loadedCourses.find((course) => course.course_id === "SFC-FIELD-2026")?.course_id || loadedCourses[0]?.course_id || "");
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openCreateCourse = () => {
     setEditingCourseId("");
@@ -170,9 +279,7 @@ const CourseManagement = () => {
     try {
       const isEdit = Boolean(editingCourseId);
       await requestJson(
-        isEdit
-          ? `${API_BASE_URL}/api/courses/${encodeURIComponent(editingCourseId)}`
-          : `${API_BASE_URL}/api/courses`,
+        isEdit ? `${API_BASE_URL}/api/courses/${encodeURIComponent(editingCourseId)}` : `${API_BASE_URL}/api/courses`,
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -182,9 +289,10 @@ const CourseManagement = () => {
           }),
         }
       );
-      await loadCourses();
-      setSelectedCourseId(courseForm.course_id);
       setCourseDialogOpen(false);
+      setSelectedCourseId(courseForm.course_id);
+      await loadCourses();
+      await loadCanvasCourse(courseForm.course_id);
       showMessage(isEdit ? "Course updated." : "Course created.");
     } catch (error) {
       showMessage(error.message, "error");
@@ -194,14 +302,19 @@ const CourseManagement = () => {
   };
 
   const deleteCourse = async (courseId) => {
-    if (!window.confirm("Delete this course, modules, and resources?")) return;
+    if (!window.confirm("Delete this course, modules, items, and resources?")) return;
+    setLoading(true);
     try {
       await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}`, { method: "DELETE" });
-      setSelectedCourseId("");
-      await loadCourses();
+      const loadedCourses = await loadCourses();
+      const nextId = loadedCourses[0]?.course_id || "";
+      setSelectedCourseId(nextId);
+      await loadCanvasCourse(nextId);
       showMessage("Course deleted.");
     } catch (error) {
       showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -211,7 +324,7 @@ const CourseManagement = () => {
       return;
     }
     setEditingModuleId(null);
-    setModuleForm(emptyModuleForm);
+    setModuleForm({ ...emptyModuleForm, sort_order: modules.length + 1 });
     setModuleDialogOpen(true);
   };
 
@@ -223,7 +336,7 @@ const CourseManagement = () => {
       category: module.category || "Field Readiness",
       park: module.park || "All Parks",
       level: module.level || "Beginner",
-      duration: module.duration || "1 hour",
+      duration: module.duration || "45 minutes",
       format: module.format || "Blended",
       badge_name: module.badge_name || "",
       objectivesText: toObjectivesText(module.objectives),
@@ -246,6 +359,7 @@ const CourseManagement = () => {
         objectives: moduleForm.objectivesText,
         sort_order: Number(moduleForm.sort_order) || 0,
       };
+
       await requestJson(
         editingModuleId
           ? `${API_BASE_URL}/api/modules/${editingModuleId}`
@@ -256,8 +370,10 @@ const CourseManagement = () => {
           body: JSON.stringify(body),
         }
       );
-      await loadCourseDetails(selectedCourse.course_id);
+
       setModuleDialogOpen(false);
+      await loadCourses();
+      await loadCanvasCourse(selectedCourse.course_id);
       showMessage(editingModuleId ? "Module updated." : "Module added.");
     } catch (error) {
       showMessage(error.message, "error");
@@ -267,40 +383,13 @@ const CourseManagement = () => {
   };
 
   const deleteModule = async (moduleId) => {
-    if (!window.confirm("Delete this module and its lesson/quiz progress links?")) return;
-    try {
-      await requestJson(`${API_BASE_URL}/api/modules/${moduleId}`, { method: "DELETE" });
-      await loadCourseDetails(selectedCourse.course_id);
-      showMessage("Module deleted.");
-    } catch (error) {
-      showMessage(error.message, "error");
-    }
-  };
-
-  const uploadResource = async () => {
-    if (!selectedCourse || !resourceTitle || !resourceFile) {
-      showMessage("Choose a course, resource title, and file first.", "warning");
-      return;
-    }
-
+    if (!window.confirm("Delete this module and all Canvas-style items inside it?")) return;
     setLoading(true);
     try {
-      const dataUrl = await readFileAsDataUrl(resourceFile);
-      await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: resourceTitle,
-          fileName: resourceFile.name,
-          dataUrl,
-        }),
-      });
-      setResourceTitle("");
-      setResourceFile(null);
-      if (resourceInputRef.current) resourceInputRef.current.value = "";
-      await loadCourseDetails(selectedCourse.course_id);
+      await requestJson(`${API_BASE_URL}/api/modules/${moduleId}`, { method: "DELETE" });
       await loadCourses();
-      showMessage("Resource uploaded and published to the guide portal.");
+      await loadCanvasCourse(selectedCourse.course_id);
+      showMessage("Module deleted.");
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
@@ -308,303 +397,478 @@ const CourseManagement = () => {
     }
   };
 
-  const deleteResource = async (resourceId) => {
-    if (!selectedCourse || !window.confirm("Delete this course resource?")) return;
+  const openCreateItem = (module) => {
+    setActiveModule(module);
+    setEditingItem(null);
+    setItemForm({
+      ...emptyItemForm,
+      sort_order: (module.items?.length || 0) + 1,
+    });
+    setItemDialogOpen(true);
+  };
+
+  const openEditItem = (module, item) => {
+    const quiz = item.quiz || {};
+    setActiveModule(module);
+    setEditingItem(item);
+    setItemForm({
+      item_type: item.item_type || "page",
+      title: item.title || "",
+      description: item.description || "",
+      content: item.content || "",
+      external_url: item.external_url || "",
+      status: item.status || "published",
+      sort_order: item.sort_order || 0,
+      question: quiz.question || "",
+      choicesText: Array.isArray(quiz.choices) ? quiz.choices.join("\n") : "",
+      correctAnswer: Number(quiz.answer || 0),
+      checklistText: Array.isArray(item.checklist) ? item.checklist.join("\n") : "",
+      file: null,
+    });
+    setItemDialogOpen(true);
+  };
+
+  const saveItem = async () => {
+    if (!activeModule || !itemForm.title) {
+      showMessage("Item title is required.", "warning");
+      return;
+    }
+
+    setLoading(true);
     try {
+      const dataUrl = await toDataUrl(itemForm.file);
+      const choices = splitLines(itemForm.choicesText);
+      const checklist = splitLines(itemForm.checklistText);
+
+      const body = {
+        item_type: itemForm.item_type,
+        title: itemForm.title,
+        description: itemForm.description,
+        content: itemForm.content,
+        external_url: itemForm.external_url,
+        status: itemForm.status,
+        sort_order: Number(itemForm.sort_order) || 0,
+        quiz:
+          itemForm.item_type === "quiz"
+            ? {
+                question: itemForm.question,
+                choices,
+                answer: Number(itemForm.correctAnswer) || 0,
+              }
+            : null,
+        checklist: itemForm.item_type === "checklist" ? checklist : null,
+        fileName: itemForm.file?.name || "",
+        dataUrl,
+      };
+
       await requestJson(
-        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources/${resourceId}`,
-        { method: "DELETE" }
+        editingItem
+          ? `${API_BASE_URL}/api/modules/${activeModule.module_id}/items/${editingItem.item_id}`
+          : `${API_BASE_URL}/api/modules/${activeModule.module_id}/items`,
+        {
+          method: editingItem ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
       );
-      await loadCourseDetails(selectedCourse.course_id);
-      await loadCourses();
-      showMessage("Resource deleted.");
+
+      setItemDialogOpen(false);
+      await loadCanvasCourse(selectedCourse.course_id);
+      showMessage(editingItem ? "Module item updated." : "Module item added.");
     } catch (error) {
       showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const deleteItem = async (module, item) => {
+    if (!window.confirm(`Delete "${item.title}" from this module?`)) return;
+    setLoading(true);
+    try {
+      await requestJson(`${API_BASE_URL}/api/modules/${module.module_id}/items/${item.item_id}`, { method: "DELETE" });
+      await loadCanvasCourse(selectedCourse.course_id);
+      showMessage("Module item deleted.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleModule = (moduleId) => {
+    setExpandedModules((prev) => ({ ...prev, [moduleId]: !prev[moduleId] }));
+  };
+
+  const renderPreview = () => {
+    if (!activePreviewItem) {
+      return (
+        <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+          Select a module item to preview what Park Guides will see.
+        </Typography>
+      );
+    }
+
+    const type = activePreviewItem.item_type || "page";
+    const config = itemTypeMap[type] || itemTypeMap.page;
+
+    return (
+      <Stack gap={1.5}>
+        <Stack direction="row" alignItems="center" gap={1}>
+          <Box className="canvas-item-icon">{config.icon}</Box>
+          <Box>
+            <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.15rem" }}>
+              {activePreviewItem.title}
+            </Typography>
+            <Typography sx={{ color: "#607166", fontWeight: 800 }}>{config.label}</Typography>
+          </Box>
+        </Stack>
+
+        {activePreviewItem.description && (
+          <Typography sx={{ color: "#53685a", fontWeight: 800 }}>{activePreviewItem.description}</Typography>
+        )}
+
+        {(type === "page" || type === "text") && (
+          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+            <Typography sx={{ color: "#173126", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
+              {activePreviewItem.content || "No page content yet."}
+            </Typography>
+          </Paper>
+        )}
+
+        {type === "link" && (
+          <Button
+            component="a"
+            href={activePreviewItem.external_url}
+            target="_blank"
+            rel="noreferrer"
+            startIcon={<LinkIcon />}
+            sx={{ ...buttonSx, justifyContent: "flex-start", color: "#173126" }}
+          >
+            {activePreviewItem.external_url || "No URL provided"}
+          </Button>
+        )}
+
+        {["file", "image", "video"].includes(type) && (
+          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box>
+                <Typography sx={{ color: "#173126", fontWeight: 950 }}>
+                  {activePreviewItem.file_name || "No uploaded file yet"}
+                </Typography>
+                <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                  {activePreviewItem.mime_type || "File"} · {activePreviewItem.size || "0 B"}
+                </Typography>
+              </Box>
+              {activePreviewItem.download_url && (
+                <IconButton
+                  component="a"
+                  href={`${API_BASE_URL}${activePreviewItem.download_url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <FileDownloadIcon />
+                </IconButton>
+              )}
+            </Stack>
+          </Paper>
+        )}
+
+        {type === "quiz" && (
+          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+            <Typography sx={{ color: "#173126", fontWeight: 950 }}>
+              {activePreviewItem.quiz?.question || "No quiz question yet."}
+            </Typography>
+            <Stack gap={1} sx={{ mt: 1.4 }}>
+              {(activePreviewItem.quiz?.choices || []).map((choice, index) => (
+                <Box
+                  key={`${choice}-${index}`}
+                  sx={{
+                    p: 1.2,
+                    borderRadius: "12px",
+                    bgcolor: index === Number(activePreviewItem.quiz?.answer) ? "#dcf8c6" : "#ffffff",
+                    border: "1px solid #eadfbf",
+                    color: "#173126",
+                    fontWeight: 800,
+                  }}
+                >
+                  {index + 1}. {choice}
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {type === "checklist" && (
+          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+            <Stack gap={1}>
+              {(activePreviewItem.checklist || []).map((step, index) => (
+                <Stack key={`${step}-${index}`} direction="row" gap={1} alignItems="center">
+                  <Chip label={String(index + 1).padStart(2, "0")} size="small" sx={{ bgcolor: "#ffd84d", color: "#173126", fontWeight: 950 }} />
+                  <Typography sx={{ color: "#173126", fontWeight: 800 }}>{step}</Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+      </Stack>
+    );
+  };
+
   return (
-    <Box className="admin-linked-page">
+    <Box className="admin-linked-page canvas-builder-page">
       <Box
         sx={{
           ...panelSx,
           mb: 3,
           p: { xs: 3, md: 4 },
           background:
-            "linear-gradient(135deg, #FF8A1D 0%, #FFD84D 48%, #F3FFD4 100%)",
+            "radial-gradient(circle at 88% 0%, rgba(167,233,87,0.40), transparent 18rem), linear-gradient(135deg, #FF8A1D 0%, #FFD84D 48%, #F3FFD4 100%)",
         }}
       >
         <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
           <Box>
-            <Typography className="admin-dashboard-kicker">Training platform</Typography>
+            <Typography className="admin-dashboard-kicker">Canvas-style training builder</Typography>
             <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1 }}>
-              Course and module control
+              Course modules
             </Typography>
-            <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 800, maxWidth: 760 }}>
-              Create courses, publish modules, and upload resources that Park Guides can download from the user portal.
+            <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 850, maxWidth: 820 }}>
+              Build SFC training like Canvas: courses contain modules, and modules contain pages, files, images,
+              videos, links, quizzes, and checklists.
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openCreateCourse}
-            sx={{
-              ...buttonSx,
-              alignSelf: { xs: "stretch", md: "center" },
-              background: "linear-gradient(135deg, #FF7A1A, #FFD84D)",
-              color: "#173126",
-              px: 3,
-              py: 1.25,
-              "&:hover": { background: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
-            }}
-          >
-            Create Course
-          </Button>
+
+          <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", md: "center" }}>
+            <Button onClick={refreshAll} startIcon={<RefreshIcon />} sx={{ ...buttonSx, bgcolor: "#fffdf5", color: "#173126" }}>
+              Refresh
+            </Button>
+            <Button onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={{ ...buttonSx, bgcolor: "#dcf8c6", color: "#173126" }}>
+              Insert Templates
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={openCreateCourse}
+              sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
+            >
+              Create Course
+            </Button>
+          </Stack>
         </Stack>
       </Box>
 
       <Grid container spacing={2.4}>
-        {courses.map((course) => (
-          <Grid item xs={12} sm={6} lg={4} key={course.course_id}>
-            <Card
-              onClick={() => setSelectedCourseId(course.course_id)}
-              sx={{
-                ...panelSx,
-                cursor: "pointer",
-                minHeight: 230,
-                borderColor:
-                  selectedCourse?.course_id === course.course_id
-                    ? "rgba(255,122,26,0.92)"
-                    : "rgba(234, 214, 167, 0.86)",
-                boxShadow:
-                  selectedCourse?.course_id === course.course_id
-                    ? "0 18px 45px rgba(255, 122, 26, 0.18)"
-                    : panelSx.boxShadow,
-              }}
-            >
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
-                  <Chip label={course.course_id} sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }} />
-                  <Stack direction="row" gap={0.5}>
-                    <IconButton
-                      size="small"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openEditCourse(course);
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        deleteCourse(course.course_id);
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </Stack>
-                <Typography variant="h5" sx={{ mt: 2, color: "#173126", fontWeight: 950 }}>
-                  {course.course_name}
-                </Typography>
-                <Typography sx={{ mt: 1, color: "#53685a", fontWeight: 700, minHeight: 48 }}>
-                  {course.description || "No description yet."}
-                </Typography>
-                <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
-                  <Chip label={`${course.module_count} modules`} size="small" sx={{ bgcolor: "#e8f8d9", color: "#173126", fontWeight: 900 }} />
-                  <Chip label={`${course.resource_count} resources`} size="small" sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }} />
-                  <Chip label={`${course.total_contact_hours || 0} hrs`} size="small" sx={{ bgcolor: "#ffe2cf", color: "#173126", fontWeight: 900 }} />
-                </Stack>
-                <Typography sx={{ mt: 1.5, color: "#607166", fontWeight: 800 }}>{courseDuration(course)}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+        <Grid item xs={12} lg={3.2}>
+          <Box sx={{ ...panelSx, p: 2.2 }}>
+            <Typography className="admin-dashboard-kicker">Courses</Typography>
+            <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 2 }}>
+              Course list
+            </Typography>
 
-      {courses.length === 0 && (
-        <Box sx={{ ...panelSx, mt: 3, p: 4, textAlign: "center" }}>
-          <Typography sx={{ color: "#173126", fontWeight: 950 }}>No courses yet</Typography>
-          <Typography sx={{ mt: 1, color: "#607166", fontWeight: 700 }}>
-            Create a course to start linking admin training content to the user portal.
-          </Typography>
-        </Box>
-      )}
+            <Stack gap={1.2}>
+              {courses.map((course) => {
+                const active = selectedCourseId === course.course_id;
+                return (
+                  <Box
+                    key={course.course_id}
+                    onClick={() => setSelectedCourseId(course.course_id)}
+                    sx={{
+                      p: 1.6,
+                      borderRadius: "16px",
+                      cursor: "pointer",
+                      border: active ? "2px solid #ff7a1a" : "1px solid #eadfbf",
+                      bgcolor: active ? "#fff3c4" : "#fffaf0",
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" gap={1}>
+                      <Chip label={course.course_id} size="small" sx={{ bgcolor: "#f3ffd4", color: "#173126", fontWeight: 950 }} />
+                      <Stack direction="row">
+                        <IconButton size="small" onClick={(event) => { event.stopPropagation(); openEditCourse(course); }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={(event) => { event.stopPropagation(); deleteCourse(course.course_id); }}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                    <Typography sx={{ color: "#173126", fontWeight: 950, mt: 1 }}>{course.course_name}</Typography>
+                    <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.86rem", mt: 0.4 }}>
+                      {course.description || "No description yet."}
+                    </Typography>
+                  </Box>
+                );
+              })}
 
-      {selectedCourse && (
-        <Grid container spacing={2.4} sx={{ mt: 2.4 }}>
-          <Grid item xs={12} lg={7}>
-            <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 } }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: 2 }}>
-                <Box>
-                  <Typography className="admin-dashboard-kicker">Course modules</Typography>
-                  <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
-                    {selectedCourse.course_name}
+              {courses.length === 0 && (
+                <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                  No courses yet. Create one or insert the demo templates.
+                </Typography>
+              )}
+            </Stack>
+          </Box>
+        </Grid>
+
+        <Grid item xs={12} lg={5.8}>
+          <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+            <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={2}>
+              <Box>
+                <Typography className="admin-dashboard-kicker">Selected course</Typography>
+                <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>
+                  {selectedCourse?.course_name || "No course selected"}
+                </Typography>
+                {selectedCourse && (
+                  <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.5 }}>
+                    {formatCourseDuration(selectedCourse)}
+                  </Typography>
+                )}
+              </Box>
+
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={openCreateModule}
+                disabled={!selectedCourse}
+                sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
+              >
+                Add Module
+              </Button>
+            </Stack>
+
+            <Grid container spacing={1.4} sx={{ mt: 2 }}>
+              {[
+                ["Modules", modules.length],
+                ["Items", totalItems],
+                ["Resources", totalResources],
+                ["Hours", selectedCourse?.total_contact_hours || 0],
+              ].map(([label, value]) => (
+                <Grid item xs={6} md={3} key={label}>
+                  <Box sx={{ p: 1.4, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+                    <Typography className="admin-dashboard-kicker">{label}</Typography>
+                    <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.55rem" }}>{value}</Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+
+            {loading && <LinearProgress sx={{ my: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
+
+            <Stack gap={1.6} sx={{ mt: 2.4 }}>
+              {modules.map((module, moduleIndex) => {
+                const expanded = Boolean(expandedModules[module.module_id]);
+                return (
+                  <Box key={module.module_id} className="canvas-module-card">
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.4}>
+                      <Stack direction="row" alignItems="center" gap={1.4} sx={{ minWidth: 0 }}>
+                        <IconButton onClick={() => toggleModule(module.module_id)} className="canvas-module-toggle">
+                          {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.08rem" }}>
+                            Module {moduleIndex + 1}: {module.title}
+                          </Typography>
+                          <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mt: 0.8 }}>
+                            <Chip label={module.status || "Published"} size="small" sx={{ bgcolor: "#dcf8c6", color: "#173126", fontWeight: 950 }} />
+                            <Chip label={module.level || "Beginner"} size="small" sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }} />
+                            <Chip label={module.duration || "45 minutes"} size="small" sx={{ bgcolor: "#edf4ff", color: "#173126", fontWeight: 950 }} />
+                            <Chip label={`${module.items?.length || 0} items`} size="small" sx={{ bgcolor: "#ffe2cf", color: "#173126", fontWeight: 950 }} />
+                          </Stack>
+                        </Box>
+                      </Stack>
+
+                      <Stack direction="row" gap={0.6}>
+                        <Button size="small" startIcon={<AddIcon />} onClick={() => openCreateItem(module)} sx={{ ...buttonSx, bgcolor: "#ffcf45", color: "#173126" }}>
+                          Item
+                        </Button>
+                        <IconButton size="small" onClick={() => openEditModule(module)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={() => deleteModule(module.module_id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+
+                    <Collapse in={expanded}>
+                      <Divider sx={{ my: 1.4 }} />
+                      <Typography sx={{ color: "#607166", fontWeight: 800, mb: 1.3 }}>
+                        {module.description || "No module description yet."}
+                      </Typography>
+
+                      <Stack gap={1}>
+                        {(module.items || []).map((item) => {
+                          const type = item.item_type || "page";
+                          const config = itemTypeMap[type] || itemTypeMap.page;
+                          return (
+                            <Box
+                              key={item.item_id}
+                              className="canvas-item-row"
+                              onClick={() => setSelectedPreview({ module, item })}
+                            >
+                              <Stack direction="row" alignItems="center" gap={1.2} sx={{ minWidth: 0 }}>
+                                <Box className="canvas-item-icon">{config.icon}</Box>
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>{item.title}</Typography>
+                                  <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.86rem" }}>
+                                    {config.label} · {item.description || item.external_url || item.file_name || "No description"}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+
+                              <Stack direction="row" alignItems="center" gap={0.6}>
+                                <Chip label={item.status || "published"} size="small" sx={{ bgcolor: item.status === "draft" ? "#ffe2cf" : "#dcf8c6", color: "#173126", fontWeight: 900 }} />
+                                <IconButton size="small" onClick={(event) => { event.stopPropagation(); setSelectedPreview({ module, item }); }}>
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" onClick={(event) => { event.stopPropagation(); openEditItem(module, item); }}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" color="error" onClick={(event) => { event.stopPropagation(); deleteItem(module, item); }}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Stack>
+                            </Box>
+                          );
+                        })}
+
+                        {(module.items || []).length === 0 && (
+                          <Box sx={{ p: 2, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
+                            <Typography sx={{ color: "#607166", fontWeight: 850 }}>
+                              No module items yet. Add a page, file, video, link, quiz, or checklist.
+                            </Typography>
+                          </Box>
+                        )}
+                      </Stack>
+                    </Collapse>
+                  </Box>
+                );
+              })}
+
+              {selectedCourse && modules.length === 0 && (
+                <Box sx={{ p: 3, borderRadius: "18px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
+                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>This course has no modules yet.</Typography>
+                  <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.6 }}>
+                    Add a module first, then place learning items inside it like Canvas.
                   </Typography>
                 </Box>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={openCreateModule}
-                  sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
-                >
-                  Add Module
-                </Button>
-              </Stack>
-
-              <Stack gap={1.4}>
-                {modules.map((module) => (
-                  <Box
-                    key={module.module_id}
-                    sx={{
-                      border: "1px solid rgba(234, 214, 167, 0.88)",
-                      borderRadius: "16px",
-                      bgcolor: "#fffaf0",
-                      p: 2,
-                    }}
-                  >
-                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
-                      <Box>
-                        <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
-                          <Chip label={module.status || "Published"} size="small" sx={{ bgcolor: "#e8f8d9", color: "#173126", fontWeight: 900 }} />
-                          <Chip label={module.level || "Beginner"} size="small" sx={{ bgcolor: "#fff3c4", color: "#7a4710", fontWeight: 900 }} />
-                          <Chip label={module.duration || "1 hour"} size="small" sx={{ bgcolor: "#edf4ff", color: "#1a4e8a", fontWeight: 900 }} />
-                        </Stack>
-                        <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.08rem" }}>{module.title}</Typography>
-                        <Typography sx={{ mt: 0.5, color: "#607166", fontWeight: 700 }}>{module.description || "No module description yet."}</Typography>
-                        {module.badge_name && (
-                          <Typography sx={{ mt: 0.8, color: "#a75d10", fontWeight: 900 }}>
-                            Badge: {module.badge_name}
-                          </Typography>
-                        )}
-                      </Box>
-                      <Stack direction="row" gap={1} alignItems="center">
-                        <Button variant="outlined" startIcon={<EditIcon />} onClick={() => openEditModule(module)} sx={buttonSx}>
-                          Edit
-                        </Button>
-                        <IconButton color="error" onClick={() => deleteModule(module.module_id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Stack>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-
-              {modules.length === 0 && (
-                <Box sx={{ mt: 2, p: 3, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                  <Typography sx={{ color: "#173126", fontWeight: 900 }}>No modules in this course yet.</Typography>
-                  <Typography sx={{ mt: 0.7, color: "#607166", fontWeight: 700 }}>Add a module to make it visible in the guide training portal.</Typography>
-                </Box>
               )}
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} lg={5}>
-            <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 } }}>
-              <Typography className="admin-dashboard-kicker">Published resources</Typography>
-              <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
-                Course files
-              </Typography>
-              <Typography sx={{ mt: 0.6, color: "#607166", fontWeight: 700 }}>
-                Uploaded resources appear in the Park Guide file manager as admin resources.
-              </Typography>
-
-              <Stack direction={{ xs: "column", md: "row" }} gap={1.2} sx={{ mt: 2 }}>
-                <TextField
-                  label="Resource title"
-                  size="small"
-                  value={resourceTitle}
-                  onChange={(event) => setResourceTitle(event.target.value)}
-                  fullWidth
-                />
-                <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} sx={buttonSx}>
-                  File
-                  <input
-                    ref={resourceInputRef}
-                    hidden
-                    type="file"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,image/*,video/*"
-                    onChange={(event) => setResourceFile(event.target.files?.[0] || null)}
-                  />
-                </Button>
-              </Stack>
-              <Typography sx={{ mt: 1, color: "#607166", fontSize: "0.86rem", fontWeight: 800 }}>
-                {resourceFile ? resourceFile.name : "No file selected"}
-              </Typography>
-              <Button
-                fullWidth
-                variant="contained"
-                disabled={loading}
-                onClick={uploadResource}
-                sx={{
-                  ...buttonSx,
-                  mt: 1.5,
-                  background: "linear-gradient(135deg, #FF7A1A, #FFD84D)",
-                  color: "#173126",
-                  "&:hover": { background: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
-                }}
-              >
-                Upload Resource
-              </Button>
-
-              <Stack gap={1.2} sx={{ mt: 2.2 }}>
-                {resources.map((resource) => (
-                  <Box
-                    key={resource.resource_id}
-                    sx={{
-                      border: "1px solid rgba(234, 214, 167, 0.88)",
-                      borderRadius: "14px",
-                      bgcolor: "#fffaf0",
-                      p: 1.5,
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
-                      <Box>
-                        <Typography sx={{ color: "#173126", fontWeight: 950 }}>{resource.title}</Typography>
-                        <Typography sx={{ color: "#607166", fontWeight: 800, fontSize: "0.86rem" }}>
-                          {resource.file_name} · {resource.size}
-                        </Typography>
-                      </Box>
-                      <Stack direction="row" gap={0.5}>
-                        <IconButton
-                          component="a"
-                          href={`${API_BASE_URL}${resource.download_url}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          sx={{ color: "#173126" }}
-                        >
-                          <FileDownloadIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => deleteResource(resource.resource_id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Stack>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-
-              {resources.length === 0 && (
-                <Box sx={{ mt: 2, p: 2.5, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                  <Typography sx={{ color: "#173126", fontWeight: 900 }}>No resources uploaded yet.</Typography>
-                </Box>
-              )}
-            </Box>
-          </Grid>
+            </Stack>
+          </Box>
         </Grid>
-      )}
 
-      {loading && <LinearProgress sx={{ mt: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
+        <Grid item xs={12} lg={3}>
+          <Box sx={{ ...panelSx, p: 2.2, position: { lg: "sticky" }, top: 100 }}>
+            <Typography className="admin-dashboard-kicker">Park Guide Preview</Typography>
+            <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1.6 }}>
+              Preview
+            </Typography>
+            {renderPreview()}
+          </Box>
+        </Grid>
+      </Grid>
 
-      <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>
-          {editingCourseId ? "Edit Course" : "Create Course"}
-        </DialogTitle>
-        <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
+      <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} fullWidth maxWidth="sm" className="canvas-builder-dialog">
+        <DialogTitle>{editingCourseId ? "Edit Course" : "Create Course"}</DialogTitle>
+        <DialogContent className="canvas-dialog-grid">
           <TextField label="Course ID" value={courseForm.course_id} disabled={Boolean(editingCourseId)} onChange={(event) => setCourseForm((prev) => ({ ...prev, course_id: event.target.value }))} fullWidth />
           <TextField label="Course Name" value={courseForm.course_name} onChange={(event) => setCourseForm((prev) => ({ ...prev, course_name: event.target.value }))} fullWidth />
           <TextField label="Description" value={courseForm.description} onChange={(event) => setCourseForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={3} />
@@ -612,69 +876,111 @@ const CourseManagement = () => {
           <TextField label="End Date" type="date" value={courseForm.end_date} onChange={(event) => setCourseForm((prev) => ({ ...prev, end_date: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
           <TextField label="Total Contact Hours" type="number" value={courseForm.total_contact_hours} onChange={(event) => setCourseForm((prev) => ({ ...prev, total_contact_hours: event.target.value }))} fullWidth />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
+        <DialogActions>
           <Button onClick={() => setCourseDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveCourse} disabled={loading} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
-            {editingCourseId ? "Save Course" : "Create Course"}
+          <Button variant="contained" onClick={saveCourse} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
+            Save Course
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>
-          {editingModuleId ? "Edit Module" : "Add Module"}
-        </DialogTitle>
-        <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
+      <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} fullWidth maxWidth="md" className="canvas-builder-dialog">
+        <DialogTitle>{editingModuleId ? "Edit Module" : "Add Module"}</DialogTitle>
+        <DialogContent className="canvas-dialog-grid">
+          <TextField label="Module Title" value={moduleForm.title} onChange={(event) => setModuleForm((prev) => ({ ...prev, title: event.target.value }))} fullWidth />
+          <TextField label="Short Description" value={moduleForm.description} onChange={(event) => setModuleForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={3} />
           <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
-              <TextField label="Module Title" value={moduleForm.title} onChange={(event) => setModuleForm((prev) => ({ ...prev, title: event.target.value }))} fullWidth />
+            <Grid item xs={12} md={4}><TextField label="Category" value={moduleForm.category} onChange={(event) => setModuleForm((prev) => ({ ...prev, category: event.target.value }))} fullWidth /></Grid>
+            <Grid item xs={12} md={4}><TextField label="Park" value={moduleForm.park} onChange={(event) => setModuleForm((prev) => ({ ...prev, park: event.target.value }))} fullWidth /></Grid>
+            <Grid item xs={12} md={4}><TextField label="Level" value={moduleForm.level} onChange={(event) => setModuleForm((prev) => ({ ...prev, level: event.target.value }))} fullWidth /></Grid>
+            <Grid item xs={12} md={4}><TextField label="Duration" value={moduleForm.duration} onChange={(event) => setModuleForm((prev) => ({ ...prev, duration: event.target.value }))} fullWidth /></Grid>
+            <Grid item xs={12} md={4}><TextField label="Badge Name" value={moduleForm.badge_name} onChange={(event) => setModuleForm((prev) => ({ ...prev, badge_name: event.target.value }))} fullWidth /></Grid>
+            <Grid item xs={12} md={4}><TextField label="Sort Order" type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((prev) => ({ ...prev, sort_order: event.target.value }))} fullWidth /></Grid>
+          </Grid>
+          <TextField label="Learning objectives, one per line" value={moduleForm.objectivesText} onChange={(event) => setModuleForm((prev) => ({ ...prev, objectivesText: event.target.value }))} fullWidth multiline minRows={4} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModuleDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveModule} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
+            Save Module
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={itemDialogOpen} onClose={() => setItemDialogOpen(false)} fullWidth maxWidth="md" className="canvas-builder-dialog">
+        <DialogTitle>{editingItem ? "Edit Module Item" : "Add Module Item"}</DialogTitle>
+        <DialogContent className="canvas-dialog-grid">
+          <Grid container spacing={1.4}>
+            {Object.entries(itemTypeMap).map(([type, config]) => (
+              <Grid item xs={6} md={3} key={type}>
+                <Box
+                  onClick={() => setItemForm((prev) => ({ ...prev, item_type: type }))}
+                  className={`canvas-type-card ${itemForm.item_type === type ? "active" : ""}`}
+                >
+                  <Box className="canvas-item-icon">{config.icon}</Box>
+                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>{config.label}</Typography>
+                  <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.78rem" }}>{config.helper}</Typography>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+
+          <TextField label="Item Title" value={itemForm.title} onChange={(event) => setItemForm((prev) => ({ ...prev, title: event.target.value }))} fullWidth />
+          <TextField label="Description" value={itemForm.description} onChange={(event) => setItemForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={2} />
+
+          {(itemForm.item_type === "page" || itemForm.item_type === "text") && (
+            <TextField label="Page / text content" value={itemForm.content} onChange={(event) => setItemForm((prev) => ({ ...prev, content: event.target.value }))} fullWidth multiline minRows={8} />
+          )}
+
+          {itemForm.item_type === "link" && (
+            <TextField label="External URL" value={itemForm.external_url} onChange={(event) => setItemForm((prev) => ({ ...prev, external_url: event.target.value }))} fullWidth />
+          )}
+
+          {["file", "image", "video"].includes(itemForm.item_type) && (
+            <Box sx={{ p: 2, borderRadius: "16px", border: "1px dashed #e8c777", bgcolor: "#fffaf0" }}>
+              <Button component="label" startIcon={<UploadFileIcon />} sx={{ ...buttonSx, bgcolor: "#fff3c4", color: "#173126" }}>
+                Choose {itemTypeMap[itemForm.item_type].label}
+                <input hidden type="file" onChange={(event) => setItemForm((prev) => ({ ...prev, file: event.target.files?.[0] || null }))} />
+              </Button>
+              <Typography sx={{ mt: 1, color: "#607166", fontWeight: 800 }}>
+                {itemForm.file ? itemForm.file.name : editingItem?.file_name || "No file selected"}
+              </Typography>
+            </Box>
+          )}
+
+          {itemForm.item_type === "quiz" && (
+            <>
+              <TextField label="Question" value={itemForm.question} onChange={(event) => setItemForm((prev) => ({ ...prev, question: event.target.value }))} fullWidth multiline minRows={2} />
+              <TextField label="Choices, one per line" value={itemForm.choicesText} onChange={(event) => setItemForm((prev) => ({ ...prev, choicesText: event.target.value }))} fullWidth multiline minRows={4} />
+              <TextField label="Correct answer index, starting from 0" type="number" value={itemForm.correctAnswer} onChange={(event) => setItemForm((prev) => ({ ...prev, correctAnswer: event.target.value }))} fullWidth />
+            </>
+          )}
+
+          {itemForm.item_type === "checklist" && (
+            <TextField label="Checklist items, one per line" value={itemForm.checklistText} onChange={(event) => setItemForm((prev) => ({ ...prev, checklistText: event.target.value }))} fullWidth multiline minRows={6} />
+          )}
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField select label="Status" value={itemForm.status} onChange={(event) => setItemForm((prev) => ({ ...prev, status: event.target.value }))} fullWidth>
+                <MenuItem value="published">Published</MenuItem>
+                <MenuItem value="draft">Draft</MenuItem>
+              </TextField>
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Status" value={moduleForm.status} onChange={(event) => setModuleForm((prev) => ({ ...prev, status: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="Description" value={moduleForm.description} onChange={(event) => setModuleForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={3} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Category" value={moduleForm.category} onChange={(event) => setModuleForm((prev) => ({ ...prev, category: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Park" value={moduleForm.park} onChange={(event) => setModuleForm((prev) => ({ ...prev, park: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Level" value={moduleForm.level} onChange={(event) => setModuleForm((prev) => ({ ...prev, level: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Duration" value={moduleForm.duration} onChange={(event) => setModuleForm((prev) => ({ ...prev, duration: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Format" value={moduleForm.format} onChange={(event) => setModuleForm((prev) => ({ ...prev, format: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Sort Order" type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((prev) => ({ ...prev, sort_order: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="Badge Name" value={moduleForm.badge_name} onChange={(event) => setModuleForm((prev) => ({ ...prev, badge_name: event.target.value }))} fullWidth />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="Objectives, one per line" value={moduleForm.objectivesText} onChange={(event) => setModuleForm((prev) => ({ ...prev, objectivesText: event.target.value }))} fullWidth multiline minRows={3} />
+            <Grid item xs={12} md={6}>
+              <TextField label="Sort Order" type="number" value={itemForm.sort_order} onChange={(event) => setItemForm((prev) => ({ ...prev, sort_order: event.target.value }))} fullWidth />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setModuleDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveModule} disabled={loading} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
-            {editingModuleId ? "Save Module" : "Add Module"}
+        <DialogActions>
+          <Button onClick={() => setItemDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveItem} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
+            Save Item
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3200}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
+      <Snackbar open={snackbar.open} autoHideDuration={3200} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
         <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
           {snackbar.message}
         </Alert>

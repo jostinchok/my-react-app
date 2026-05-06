@@ -694,6 +694,566 @@ app.post('/api/modules/:moduleId/media', asyncRoute(async (req, res) => {
   })
 }))
 
+
+const ensureCanvasModuleItemsSchema = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course_module_items (
+      item_id INT AUTO_INCREMENT PRIMARY KEY,
+      module_id INT NOT NULL,
+      course_id VARCHAR(64) NOT NULL,
+      item_type ENUM('page','text','file','image','video','link','quiz','checklist') NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      description TEXT NULL,
+      content LONGTEXT NULL,
+      external_url VARCHAR(1000) NULL,
+      file_name VARCHAR(255) NULL,
+      stored_name VARCHAR(255) NULL,
+      mime_type VARCHAR(120) NULL,
+      size_bytes BIGINT DEFAULT 0,
+      file_url VARCHAR(1000) NULL,
+      quiz_json JSON NULL,
+      checklist_json JSON NULL,
+      status ENUM('published','draft') DEFAULT 'published',
+      sort_order INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_module_items_module_sort (module_id, sort_order, item_id),
+      INDEX idx_module_items_course (course_id),
+      CONSTRAINT fk_course_module_items_module_id
+        FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+        ON DELETE CASCADE
+    )
+  `)
+}
+
+const parseMaybeJson = (value, fallback) => {
+  if (value === null || value === undefined || value === '') return fallback
+  if (typeof value === 'object') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+const normalizeModuleItem = (item = {}) => ({
+  ...item,
+  id: item.item_id,
+  itemType: item.item_type,
+  quiz: parseMaybeJson(item.quiz_json, null),
+  checklist: parseMaybeJson(item.checklist_json, []),
+  size: formatBytes(item.size_bytes),
+  download_url: item.file_url ? `/api/module-items/${item.item_id}/download` : null,
+})
+
+const loadModuleItems = async (moduleId) => {
+  await ensureCanvasModuleItemsSchema()
+  const rows = await rowsOf(
+    `SELECT *
+     FROM course_module_items
+     WHERE module_id = ?
+     ORDER BY sort_order ASC, item_id ASC`,
+    [moduleId]
+  )
+  return rows.map(normalizeModuleItem)
+}
+
+const loadCanvasCourse = async (courseId) => {
+  await ensureCanvasModuleItemsSchema()
+  const course = await rowOf(
+    `SELECT
+       c.course_id,
+       c.course_name,
+       c.description,
+       DATE_FORMAT(c.start_date, '%Y-%m-%d') AS start_date,
+       DATE_FORMAT(c.end_date, '%Y-%m-%d') AS end_date,
+       c.total_contact_hours,
+       c.created_at,
+       COUNT(DISTINCT tm.module_id) AS module_count,
+       COUNT(DISTINCT cr.resource_id) AS resource_count
+     FROM courses c
+     LEFT JOIN training_modules tm ON tm.course_id = c.course_id
+     LEFT JOIN course_resources cr ON cr.course_id = c.course_id
+     WHERE c.course_id = ?
+     GROUP BY c.course_id, c.course_name, c.description, c.start_date, c.end_date, c.total_contact_hours, c.created_at
+     LIMIT 1`,
+    [courseId]
+  )
+
+  if (!course) return null
+
+  const modules = await loadModuleRows(courseId)
+  const modulesWithItems = await Promise.all(
+    modules.map(async (module) => ({
+      ...module,
+      items: await loadModuleItems(module.module_id),
+    }))
+  )
+  const resources = await loadResourceRows(courseId)
+
+  return {
+    ...normalizeCourse(course),
+    modules: modulesWithItems,
+    resources,
+  }
+}
+
+app.get('/api/courses/:courseId/canvas', asyncRoute(async (req, res) => {
+  const canvasCourse = await loadCanvasCourse(req.params.courseId)
+  if (!canvasCourse) {
+    res.status(404).json({ message: 'Course not found.' })
+    return
+  }
+  res.json({ course: canvasCourse })
+}))
+
+app.get('/api/modules/:moduleId/items', asyncRoute(async (req, res) => {
+  const moduleId = Number(req.params.moduleId)
+  if (!Number.isInteger(moduleId)) {
+    res.status(400).json({ message: 'A numeric module ID is required.' })
+    return
+  }
+  res.json({ items: await loadModuleItems(moduleId) })
+}))
+
+app.post('/api/modules/:moduleId/items', asyncRoute(async (req, res) => {
+  await ensureCanvasModuleItemsSchema()
+
+  const moduleId = Number(req.params.moduleId)
+  const {
+    item_type,
+    itemType,
+    title,
+    description = '',
+    content = '',
+    external_url = '',
+    externalUrl = '',
+    quiz_json = null,
+    quiz = null,
+    checklist_json = null,
+    checklist = null,
+    status = 'published',
+    sort_order = 0,
+    fileName = '',
+    dataUrl = '',
+  } = req.body || {}
+
+  const type = item_type || itemType
+
+  if (!Number.isInteger(moduleId) || !type || !title) {
+    res.status(400).json({ message: 'Module ID, item type, and title are required.' })
+    return
+  }
+
+  const module = await rowOf(
+    'SELECT module_id, course_id FROM training_modules WHERE module_id = ? LIMIT 1',
+    [moduleId]
+  )
+
+  if (!module) {
+    res.status(404).json({ message: 'Module not found.' })
+    return
+  }
+
+  let originalName = null
+  let storedName = null
+  let mimeType = null
+  let sizeBytes = 0
+  let fileUrl = null
+
+  if (dataUrl) {
+    const parsed = parseDataUrl(dataUrl)
+    if (!parsed) {
+      res.status(400).json({ message: 'Invalid upload dataUrl.' })
+      return
+    }
+
+    originalName = safeFileName(fileName || `${type}-item`)
+    if (blockedUploadExtensions.has(path.extname(originalName).toLowerCase())) {
+      res.status(400).json({ message: 'This file type is blocked for demo safety.' })
+      return
+    }
+
+    storedName = `module-item-${moduleId}-${Date.now()}-${originalName}`
+    fileUrl = `/uploads/module-media/${storedName}`
+    mimeType = parsed.mimeType
+    sizeBytes = parsed.buffer.length
+
+    await fs.mkdir(moduleMediaDir, { recursive: true })
+    await fs.writeFile(path.join(moduleMediaDir, storedName), parsed.buffer)
+  }
+
+  const [result] = await pool.query(
+    `INSERT INTO course_module_items
+       (module_id, course_id, item_type, title, description, content, external_url,
+        file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      moduleId,
+      module.course_id,
+      type,
+      title,
+      description,
+      content,
+      external_url || externalUrl,
+      originalName,
+      storedName,
+      mimeType,
+      sizeBytes,
+      fileUrl,
+      quiz_json || (quiz ? JSON.stringify(quiz) : null),
+      checklist_json || (checklist ? JSON.stringify(checklist) : null),
+      status === 'draft' ? 'draft' : 'published',
+      Number(sort_order) || 0,
+    ]
+  )
+
+  const item = await rowOf('SELECT * FROM course_module_items WHERE item_id = ?', [result.insertId])
+  res.status(201).json({ message: 'Module item created successfully.', item: normalizeModuleItem(item) })
+}))
+
+app.put('/api/modules/:moduleId/items/:itemId', asyncRoute(async (req, res) => {
+  await ensureCanvasModuleItemsSchema()
+
+  const moduleId = Number(req.params.moduleId)
+  const itemId = Number(req.params.itemId)
+  const existing = await rowOf(
+    'SELECT * FROM course_module_items WHERE module_id = ? AND item_id = ? LIMIT 1',
+    [moduleId, itemId]
+  )
+
+  if (!existing) {
+    res.status(404).json({ message: 'Module item not found.' })
+    return
+  }
+
+  const {
+    item_type,
+    itemType,
+    title,
+    description = '',
+    content = '',
+    external_url = '',
+    externalUrl = '',
+    quiz_json = null,
+    quiz = null,
+    checklist_json = null,
+    checklist = null,
+    status = 'published',
+    sort_order = 0,
+    fileName = '',
+    dataUrl = '',
+  } = req.body || {}
+
+  const type = item_type || itemType || existing.item_type
+
+  let originalName = existing.file_name
+  let storedName = existing.stored_name
+  let mimeType = existing.mime_type
+  let sizeBytes = existing.size_bytes
+  let fileUrl = existing.file_url
+
+  if (dataUrl) {
+    const parsed = parseDataUrl(dataUrl)
+    if (!parsed) {
+      res.status(400).json({ message: 'Invalid upload dataUrl.' })
+      return
+    }
+
+    if (storedName) {
+      await fs.unlink(path.join(moduleMediaDir, storedName)).catch((error) => {
+        if (error?.code !== 'ENOENT') throw error
+      })
+    }
+
+    originalName = safeFileName(fileName || `${type}-item`)
+    if (blockedUploadExtensions.has(path.extname(originalName).toLowerCase())) {
+      res.status(400).json({ message: 'This file type is blocked for demo safety.' })
+      return
+    }
+
+    storedName = `module-item-${moduleId}-${Date.now()}-${originalName}`
+    fileUrl = `/uploads/module-media/${storedName}`
+    mimeType = parsed.mimeType
+    sizeBytes = parsed.buffer.length
+
+    await fs.mkdir(moduleMediaDir, { recursive: true })
+    await fs.writeFile(path.join(moduleMediaDir, storedName), parsed.buffer)
+  }
+
+  await pool.query(
+    `UPDATE course_module_items
+     SET item_type = ?, title = ?, description = ?, content = ?, external_url = ?,
+         file_name = ?, stored_name = ?, mime_type = ?, size_bytes = ?, file_url = ?,
+         quiz_json = ?, checklist_json = ?, status = ?, sort_order = ?
+     WHERE module_id = ? AND item_id = ?`,
+    [
+      type,
+      title || existing.title,
+      description,
+      content,
+      external_url || externalUrl,
+      originalName,
+      storedName,
+      mimeType,
+      sizeBytes,
+      fileUrl,
+      quiz_json || (quiz ? JSON.stringify(quiz) : null),
+      checklist_json || (checklist ? JSON.stringify(checklist) : null),
+      status === 'draft' ? 'draft' : 'published',
+      Number(sort_order) || 0,
+      moduleId,
+      itemId,
+    ]
+  )
+
+  const item = await rowOf('SELECT * FROM course_module_items WHERE item_id = ?', [itemId])
+  res.json({ message: 'Module item updated successfully.', item: normalizeModuleItem(item) })
+}))
+
+app.delete('/api/modules/:moduleId/items/:itemId', asyncRoute(async (req, res) => {
+  await ensureCanvasModuleItemsSchema()
+
+  const moduleId = Number(req.params.moduleId)
+  const itemId = Number(req.params.itemId)
+
+  const existing = await rowOf(
+    'SELECT * FROM course_module_items WHERE module_id = ? AND item_id = ? LIMIT 1',
+    [moduleId, itemId]
+  )
+
+  if (!existing) {
+    res.status(404).json({ message: 'Module item not found.' })
+    return
+  }
+
+  await pool.query('DELETE FROM course_module_items WHERE item_id = ?', [itemId])
+
+  if (existing.stored_name) {
+    await fs.unlink(path.join(moduleMediaDir, existing.stored_name)).catch((error) => {
+      if (error?.code !== 'ENOENT') throw error
+    })
+  }
+
+  res.json({ message: 'Module item deleted successfully.' })
+}))
+
+app.get('/api/module-items/:itemId/download', asyncRoute(async (req, res) => {
+  await ensureCanvasModuleItemsSchema()
+
+  const itemId = Number(req.params.itemId)
+  const item = await rowOf('SELECT * FROM course_module_items WHERE item_id = ? LIMIT 1', [itemId])
+
+  if (!item || !item.stored_name) {
+    res.status(404).json({ message: 'Module item file not found.' })
+    return
+  }
+
+  res.download(path.join(moduleMediaDir, item.stored_name), item.file_name || item.stored_name)
+}))
+
+app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
+  await ensureCanvasModuleItemsSchema()
+
+  const demoCourses = [
+    {
+      id: 'SFC-FIELD-2026',
+      name: 'SFC Field Response Essentials',
+      description: 'Canvas-style training path for reviewing AI camera evidence, IoT proximity alerts, and Ranger recommendation workflows.',
+      start: '2026-05-01',
+      end: '2026-06-15',
+      hours: 12,
+      modules: [
+        {
+          title: 'AI and IoT Incident Evidence',
+          description: 'Teaches Park Guides and Rangers how to review AI camera and IoT sensor evidence before sending a recommendation to Admin.',
+          category: 'Incident Evidence',
+          park: 'Demo Camera Zone',
+          level: 'Intermediate',
+          duration: '1 hour',
+          badge: 'AI Evidence Reviewer',
+          objectives: [
+            'Identify AI camera incident evidence',
+            'Differentiate touching plants, plucking plants, and touching wildlife',
+            'Check timestamp, location, and metadata',
+            'Avoid treating weak evidence as confirmed behavior too early'
+          ],
+          items: [
+            { type: 'page', title: 'How AI camera evidence is reviewed', description: 'Step-by-step guide for reviewing camera evidence.', content: 'Start by checking the event type, timestamp, location, image clarity, and whether the image clearly shows prohibited visitor interaction. Do not mark a case as resolved from one weak image. Park Rangers should add field notes and recommendations only. Admin remains responsible for official status decisions.' },
+            { type: 'image', title: 'Example evidence photo checklist', description: 'Checklist for reviewing an evidence image.', content: 'Image item placeholder. Upload a real evidence screenshot during demo if available.' },
+            { type: 'video', title: 'Field evidence walkthrough', description: 'Short walkthrough video placeholder.', content: 'Video item placeholder. Admin can upload MP4 training clips here.' },
+            { type: 'link', title: 'SFC field reporting guideline', description: 'External guideline reference.', external_url: 'https://sarawakforestry.com/' },
+            { type: 'checklist', title: 'Evidence quality checklist', description: 'Things to verify before recommending action.', checklist: ['Image is visible and not blurred', 'Event type matches the evidence', 'Location and timestamp are recorded', 'Sensor metadata is available for IoT alerts', 'Recommendation is written clearly for Admin review'] },
+            { type: 'quiz', title: 'Is this incident ready for Admin review?', description: 'Quick scenario check.', quiz: { question: 'Who should officially change an incident status?', choices: ['Park Guide', 'Park Ranger', 'Admin', 'Visitor'], answer: 2 } }
+          ]
+        },
+        {
+          title: 'Park Ranger Recommendation Workflow',
+          description: 'Explains how Rangers add field notes and recommendations without changing official incident status.',
+          category: 'Ranger Workflow',
+          park: 'Bako National Park',
+          level: 'Intermediate',
+          duration: '45 minutes',
+          badge: 'Ranger Recommendation Ready',
+          objectives: [
+            'Understand Ranger recommendation-only boundaries',
+            'Write useful field notes',
+            'Recommend outcomes for Admin review'
+          ],
+          items: [
+            { type: 'page', title: 'Ranger recommendation role boundary', description: 'Clear explanation of what Rangers can and cannot do.', content: 'Park Rangers may view incidents, inspect field evidence, add notes, and recommend outcomes. They should not directly change official incident status. This keeps accountability with Admin while still using Ranger field expertise.' },
+            { type: 'checklist', title: 'Field note writing checklist', description: 'Checklist for useful Ranger notes.', checklist: ['Mention what was seen in the field', 'Mention whether evidence matches the location', 'Use neutral wording', 'Avoid guessing intent', 'Recommend next action clearly'] },
+            { type: 'quiz', title: 'Official status vs recommendation', description: 'Role boundary quiz.', quiz: { question: 'A Ranger believes an incident is solved. What should they do?', choices: ['Change status to resolved', 'Delete the incident', 'Recommend resolved with field notes', 'Ignore the incident'], answer: 2 } }
+          ]
+        },
+        {
+          title: 'Visitor Interaction and Conservation Rules',
+          description: 'Guides staff on explaining no-touch conservation rules to visitors.',
+          category: 'Visitor Safety',
+          park: 'All Parks',
+          level: 'Beginner',
+          duration: '40 minutes',
+          badge: 'Visitor Guidance Basics',
+          objectives: [
+            'Explain conservation rules politely',
+            'Reduce visitor contact with plants and wildlife',
+            'Escalate repeat violations'
+          ],
+          items: [
+            { type: 'page', title: 'Explaining rules to visitors', description: 'Simple script for visitor-facing communication.', content: 'Use friendly, direct language. Explain that protected plants and wildlife must not be touched, plucked, fed, or disturbed. Focus on safety, conservation, and visitor responsibility.' },
+            { type: 'link', title: 'Bako National Park visitor guide', description: 'Visitor reference link.', external_url: 'https://sarawakforestry.com/parks/bako-national-park/' },
+            { type: 'checklist', title: 'Visitor safety reminders', description: 'Before patrol checklist.', checklist: ['Brief visitors before trail entry', 'Remind them not to feed wildlife', 'Remind them not to pluck plants', 'Report suspicious behavior early'] }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'SFC-WILDLIFE-2026',
+      name: 'Sarawak Protected Wildlife Awareness',
+      description: 'Training modules for recognizing wildlife interaction risk, enforcing no-touch policy, and escalating evidence.',
+      start: '2026-05-01',
+      end: '2026-06-30',
+      hours: 10,
+      modules: [
+        {
+          title: 'Wildlife Interaction Basics',
+          description: 'Introduces common visitor-wildlife interaction risks in Sarawak protected parks.',
+          category: 'Wildlife',
+          park: 'All Parks',
+          level: 'Beginner',
+          duration: '1 hour',
+          badge: 'Wildlife Awareness',
+          objectives: ['Recognize unsafe wildlife interaction', 'Explain why feeding and touching wildlife is harmful', 'Record observation notes'],
+          items: [
+            { type: 'page', title: 'Why touching wildlife is dangerous', description: 'Basic conservation and safety explanation.', content: 'Touching wildlife can harm animals, create aggressive behavior, spread disease, and put visitors at risk. Staff should intervene early and record evidence when available.' },
+            { type: 'quiz', title: 'Wildlife safety check', description: 'Basic quiz.', quiz: { question: 'What should visitors do when they see wildlife?', choices: ['Feed it', 'Touch it gently', 'Observe from a safe distance', 'Chase it away'], answer: 2 } }
+          ]
+        },
+        {
+          title: 'No-touch Visitor Policy',
+          description: 'Policy explanation for plants, wildlife, and protected natural resources.',
+          category: 'Policy',
+          park: 'All Parks',
+          level: 'Beginner',
+          duration: '35 minutes',
+          badge: 'No-touch Policy Ready',
+          objectives: ['Explain no-touch rules', 'Handle visitor questions', 'Escalate repeat issues'],
+          items: [
+            { type: 'page', title: 'No-touch policy explanation', description: 'Plain-language policy script.', content: 'Visitors should not touch, pick, pluck, feed, chase, or disturb plants and wildlife. Staff should explain the policy calmly and record incidents when evidence exists.' },
+            { type: 'checklist', title: 'No-touch enforcement checklist', description: 'Quick enforcement steps.', checklist: ['Warn politely', 'Explain conservation reason', 'Record evidence if repeated', 'Escalate to Admin if needed'] }
+          ]
+        },
+        {
+          title: 'Evidence Escalation Guide',
+          description: 'Shows when and how to escalate wildlife-related evidence to Admin.',
+          category: 'Evidence',
+          park: 'All Parks',
+          level: 'Intermediate',
+          duration: '45 minutes',
+          badge: 'Evidence Escalation Ready',
+          objectives: ['Judge evidence quality', 'Prepare escalation notes', 'Avoid false claims'],
+          items: [
+            { type: 'page', title: 'When to escalate', description: 'Escalation decision guide.', content: 'Escalate when evidence shows repeated contact, high-risk behavior, visitor refusal, wildlife distress, or unclear incidents needing Admin review.' },
+            { type: 'link', title: 'Sarawak Forestry Corporation', description: 'Official reference site.', external_url: 'https://sarawakforestry.com/' }
+          ]
+        }
+      ]
+    }
+  ]
+
+  for (const course of demoCourses) {
+    const existingModules = await rowsOf('SELECT module_id FROM training_modules WHERE course_id = ?', [course.id])
+    const moduleIds = existingModules.map((module) => module.module_id)
+
+    if (moduleIds.length) {
+      await pool.query('DELETE FROM course_module_items WHERE module_id IN (?)', [moduleIds])
+      await deleteModuleContent(moduleIds)
+      await pool.query('DELETE FROM training_modules WHERE module_id IN (?)', [moduleIds])
+    }
+
+    await pool.query('DELETE FROM course_resources WHERE course_id = ?', [course.id])
+    await pool.query('DELETE FROM course_enrollments WHERE course_id = ?', [course.id])
+    await pool.query('DELETE FROM courses WHERE course_id = ?', [course.id])
+
+    await pool.query(
+      `INSERT INTO courses (course_id, course_name, description, start_date, end_date, total_contact_hours)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [course.id, course.name, course.description, course.start, course.end, course.hours]
+    )
+
+    for (const [moduleIndex, module] of course.modules.entries()) {
+      const [moduleResult] = await pool.query(
+        `INSERT INTO training_modules
+           (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'Blended', '', '#ff7a1a', ?, ?, 'Published', ?)`,
+        [
+          course.id,
+          module.title,
+          module.description,
+          module.category,
+          module.park,
+          module.level,
+          module.duration,
+          module.badge,
+          JSON.stringify(module.objectives),
+          moduleIndex + 1,
+        ]
+      )
+
+      const moduleId = moduleResult.insertId
+
+      await pool.query(
+        `INSERT INTO lessons (module_id, title, content, lesson_type, sort_order)
+         VALUES (?, 'Overview', ?, 'Text', 1)`,
+        [moduleId, module.description]
+      )
+
+      for (const [itemIndex, item] of module.items.entries()) {
+        await pool.query(
+          `INSERT INTO course_module_items
+             (module_id, course_id, item_type, title, description, content, external_url, quiz_json, checklist_json, status, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)`,
+          [
+            moduleId,
+            course.id,
+            item.type,
+            item.title,
+            item.description || '',
+            item.content || '',
+            item.external_url || '',
+            item.quiz ? JSON.stringify(item.quiz) : null,
+            item.checklist ? JSON.stringify(item.checklist) : null,
+            itemIndex + 1,
+          ]
+        )
+      }
+    }
+  }
+
+  res.json({ message: 'Canvas-style demo course templates inserted.', courses: demoCourses.map((course) => course.id) })
+}))
+
+
 app.get('/api/courses/:courseId/resources', asyncRoute(async (req, res) => {
   const resources = await loadResourceRows(req.params.courseId)
   res.json({ resources })
