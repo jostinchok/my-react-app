@@ -19,6 +19,18 @@ import { Dimensions } from 'react-native';
 import FilesPage from './components/FilesPage';
 
 const brandLogo = require('./assets/sfc-citrus-logo.png');
+const USER_API_BASE_URL = process.env.EXPO_PUBLIC_USER_API_BASE_URL || 'http://localhost:4001';
+
+const normalizeMobileModule = (row, index) => ({
+  id: row.id || row.module_id || `module-${index + 1}`,
+  title: row.title || row.module_title || 'Untitled module',
+  subtitle: row.subtitle || row.description || 'Training module loaded from backend.',
+  category: row.category || 'Training',
+  park: row.park || 'All Parks',
+  level: row.level || 'Beginner',
+  duration: row.duration || 'Self-paced',
+  accentColor: row.accentColor || row.accent_color || '#ff7a1a',
+});
 
 const copy = {
   en: {
@@ -278,6 +290,8 @@ export default function App() {
     location: ['online'],
   })
   const [notifications, setNotifications] = useState([])
+  const [mobileModules, setMobileModules] = useState([])
+  const [moduleStatus, setModuleStatus] = useState('Loading backend modules...')
   const [today] = useState(new Date())
   const [calendarYear, setCalendarYear] = useState(today.getFullYear())
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth())
@@ -319,6 +333,28 @@ const [profile, setProfile] = useState({ fullName: '', email: '', guideId: '', b
   }
 
   const getNoteForDate = (dateKey) => trainingNotes.find((n) => n.date === dateKey)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${USER_API_BASE_URL}/api/training-modules`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (cancelled) return
+        const modules = (data.modules || data.trainingModules || data.courses || []).map(normalizeMobileModule)
+        setMobileModules(modules)
+        setModuleStatus(
+          modules.length > 0
+            ? `${modules.length} backend module${modules.length === 1 ? '' : 's'} loaded`
+            : 'No backend modules yet'
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setModuleStatus('Backend module API unavailable')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const saveEvent = () => {
     if (!noteDate) return
@@ -526,14 +562,29 @@ const ProfileView = ({ profile, t }) => {
                   <Pressable onPress={() => setIsFilterOpen(true)} style={[styles.iconBtn, { backgroundColor: palette.panel, borderColor: palette.border }]}>
                     <Text style={{ color: palette.text }}>⚲</Text>
                   </Pressable>
+                  <Text style={{ color: palette.muted, fontWeight: '800' }}>{moduleStatus}</Text>
                 </View>
                 <View style={styles.courseGrid}>
-                  {Array.from({ length: 8 }).map((_, idx) => (
-                    <View key={idx} style={[styles.courseCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
-                      <View style={[styles.courseThumb, { backgroundColor: palette.primaryDark }]} />
+                  {(mobileModules.length > 0 ? mobileModules : Array.from({ length: 4 }).map((_, idx) => ({
+                    id: `empty-${idx}`,
+                    title: 'No backend module yet',
+                    subtitle: 'Create modules in the Admin Course page.',
+                    category: 'Waiting',
+                    park: 'SFC Portal',
+                    level: 'Pending',
+                    duration: 'Backend',
+                    accentColor: palette.primaryDark,
+                  }))).map((module) => (
+                    <View key={module.id} style={[styles.courseCard, { backgroundColor: palette.panel, borderColor: palette.border }]}>
+                      <View style={[styles.courseThumb, { backgroundColor: module.accentColor || palette.primaryDark }]}>
+                        <Text style={styles.courseThumbText}>{module.category}</Text>
+                      </View>
                       <View style={styles.courseBody}>
-                        <Text style={{ color: palette.text, fontWeight: '800' }}>—</Text>
-                        <Text style={{ color: palette.muted }}>Coming soon</Text>
+                        <Text style={{ color: palette.text, fontWeight: '900' }}>{module.title}</Text>
+                        <Text style={{ color: palette.muted, fontWeight: '700' }}>{module.subtitle}</Text>
+                        <Text style={{ color: palette.primary, fontWeight: '900', marginTop: 6 }}>
+                          {module.park} · {module.level} · {module.duration}
+                        </Text>
                       </View>
                     </View>
                   ))}
@@ -912,11 +963,12 @@ const styles = StyleSheet.create({
   statBig: { fontSize: 30, fontWeight: '900' },
   trainingSwitchRow: { flexDirection: 'row', gap: 8 },
   switchBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  courseToolbar: { flexDirection: 'row' },
+  courseToolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   iconBtn: { borderWidth: 1, borderRadius: 12, width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   courseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   courseCard: { width: '48%', borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
-  courseThumb: { height: 90 },
+  courseThumb: { height: 90, alignItems: 'flex-start', justifyContent: 'flex-end', padding: 10 },
+  courseThumbText: { color: '#fff8e6', fontWeight: '900', backgroundColor: 'rgba(11, 59, 40, 0.72)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   courseBody: { padding: 10, gap: 4 },
   calendarWrap: { flexDirection: 'row', gap: 8 },
   calendarMain: { flex: 1, borderWidth: 1, borderRadius: 12, padding: 8, gap: 8 },

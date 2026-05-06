@@ -1,381 +1,341 @@
-import React, { useState } from "react";
-import { Box, Typography, Paper, Button, Snackbar, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, ButtonGroup, Avatar
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  MenuItem,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import RefreshIcon from "@mui/icons-material/Refresh";
+
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
+
+const emptyStudentForm = {
+  id: "",
+  name: "",
+  phone: "",
+  email: "",
+  module: "None",
+  eligibility: "Approved",
+};
+
+const panelSx = {
+  borderRadius: "22px",
+  border: "1px solid rgba(234, 214, 167, 0.86)",
+  background: "linear-gradient(145deg, #fffdf4 0%, #fff8e6 100%)",
+  boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
+};
+
+const buttonSx = {
+  borderRadius: "12px",
+  textTransform: "none",
+  fontWeight: 900,
+};
 
 const StudentManagement = () => {
-    const [students, setStudents] = useState([
-      { id: 1, name: "Alice", phone: "", email: "alice@example.com", eligibility: "Pending", module: "None", cv: "Alice_CV.pdf", accountCreated: false },
-      { id: 2, name: "Bob", phone: "", email: "bob@example.com", eligibility: "Rejected", module: "None", cv: "Bob_CV.pdf", accountCreated: false },
-      { id: 3, name: "Charlie", phone: "0198765432", email: "charlie@example.com", eligibility: "Approved", module: "Specific", cv: "Charlie_CV.pdf", accountCreated: true },
-      { id: 4, name: "David", phone: "", email: "david@example.com", eligibility: "Pending", module: "None", cv: "David_CV.pdf", accountCreated: false },
-      { id: 5, name: "Eva", phone: "0123456789", email: "eva@example.com", eligibility: "Approved", module: "General", cv: "Eva_CV.pdf", accountCreated: true },
-      { id: 6, name: "Frank", phone: "", email: "frank@example.com", eligibility: "Approved", module: "Physical", cv: "Frank_CV.pdf", accountCreated: true},
-    ]);
+  const [students, setStudents] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [studentForm, setStudentForm] = useState(emptyStudentForm);
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-    const [snackbar, setSnackbar] = useState({ open: false, message: "" });
-    const [selectedStudent, setSelectedStudent] = useState(null);
-    const [filter, setFilter] = useState("all");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [editingStudent, setEditingStudent] = useState(null);
-    const [addDialogOpen, setAddDialogOpen] = useState(false);
-    const [newStudent, setNewStudent] = useState({ name: "", phone: "", email: "", module: "None", cv: "" });
+  const showMessage = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+  };
 
-    const handleDelete = (id) => {
-      setStudents(prev => prev.filter(s => s.id !== id));
-      setSnackbar({ open: true, message: "Student deleted successfully" });
-    };
+  const requestJson = async (url, options = {}) => {
+    const response = await fetch(url, options);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || "Request failed.");
+    return data;
+  };
 
-    const updateEligibility = (id, status) => {
-      setStudents(prev => prev.map(s => s.id === id ? { ...s, eligibility: status } : s));
-      setSnackbar({ open: true, message: `Eligibility updated to ${status}` });
-    };
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [studentData, courseData] = await Promise.all([
+        requestJson(`${API_BASE_URL}/api/students`),
+        requestJson(`${API_BASE_URL}/api/courses`),
+      ]);
+      setStudents(studentData.students || []);
+      setCourses(courseData.courses || []);
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const updateModule = (id, module) => {
-      setStudents(prev => prev.map(s => 
-        s.id === id 
-          ? { ...s, module, registered: true } 
-          : s
-      ));
-      const student = students.find(s => s.id === id);
-      setSnackbar({ open: true, message: `${student.name} registered for ${module} module` });
-    };
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    const handleFilter = (e) => setFilter(e.target.value);
+  const moduleOptions = useMemo(() => ["None", ...courses.map((course) => course.course_name)], [courses]);
 
-    const handleEditChange = (e) => {
-      const {name, value} = e.target;
-      setEditingStudent(prev => ({ ...prev, [name]: value}));
+  const filteredStudents = useMemo(
+    () =>
+      students.filter((student) => {
+        const matchesFilter = filter === "all" || student.module === filter || student.eligibility === filter;
+        const text = `${student.name || ""} ${student.email || ""} ${student.module || ""}`.toLowerCase();
+        return matchesFilter && text.includes(searchTerm.toLowerCase());
+      }),
+    [filter, searchTerm, students]
+  );
+
+  const openCreateDialog = () => {
+    setStudentForm(emptyStudentForm);
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (student) => {
+    setStudentForm({
+      id: student.id,
+      name: student.name || "",
+      phone: student.phone || "",
+      email: student.email || "",
+      module: student.module || "None",
+      eligibility: student.eligibility || "Approved",
+    });
+    setDialogOpen(true);
+  };
+
+  const saveStudent = async () => {
+    if (!studentForm.name || !studentForm.email) {
+      showMessage("Name and email are required.", "warning");
+      return;
     }
 
-    const handleSaveEdit = () => {
-      setStudents(prev => 
-        prev.map(s => s.id === editingStudent.id ? editingStudent : s)
-      )
-      setSnackbar({open: true, message: `Account updated for ${editingStudent.name}`});
-      setEditingStudent(null);
+    setLoading(true);
+    try {
+      const isEdit = Boolean(studentForm.id);
+      await requestJson(
+        isEdit
+          ? `${API_BASE_URL}/api/students/${studentForm.id}`
+          : `${API_BASE_URL}/api/students`,
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(studentForm),
+        }
+      );
+      setDialogOpen(false);
+      await loadData();
+      showMessage(isEdit ? "Guide account updated." : "Guide account created.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const handleAddChange = (e) => {
-      const { name, value } = e.target;
-      setNewStudent(prev => ({ ...prev, [name]: value }));
+  const deleteStudent = async (studentId) => {
+    if (!window.confirm("Delete this guide account?")) return;
+    try {
+      await requestJson(`${API_BASE_URL}/api/students/${studentId}`, { method: "DELETE" });
+      await loadData();
+      showMessage("Guide account deleted.");
+    } catch (error) {
+      showMessage(error.message, "error");
     }
+  };
 
-    const handleSaveNewStudent = () => {
-      const newId = students.length ? Math.max(...students.map(s => s.id)) + 1 : 1;
-      setStudents(prev => [...prev, { 
-        id: newId, 
-        ...newStudent, 
-        eligibility: "Approved", 
-        accountCreated: true 
-      }]);
-      setSnackbar({ open: true, message: `New student ${newStudent.name} added` });
-      setNewStudent({ name: "", phone: "", email: "", module: "None", cv: "" });
-      setAddDialogOpen(false);
+  const assignModule = async (student, moduleName) => {
+    try {
+      const course = courses.find((item) => item.course_name === moduleName);
+      await requestJson(`${API_BASE_URL}/api/students/${student.id}/module`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ module: moduleName, courseId: course?.course_id || null }),
+      });
+      await loadData();
+      showMessage(`${student.name} assigned to ${moduleName}.`);
+    } catch (error) {
+      showMessage(error.message, "error");
     }
+  };
 
-    const filteredStudents = students.filter(s =>
-      (filter === "all" || s.module === filter) &&
-      (searchTerm === "" || s.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
-          Account Management
-        </Typography>
-
-        {/* 搜索和筛选 */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <TextField
-            size="small"
-            label="Search accounts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Select size="small" value={filter} onChange={handleFilter}>
-            <MenuItem value="all">All Modules</MenuItem>
-            <MenuItem value="General">General</MenuItem>
-            <MenuItem value="Specific">Specific</MenuItem>
-            <MenuItem value="Physical">Physical</MenuItem>
-          </Select>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddDialogOpen(true)}>
-            Add Student
-          </Button>
-        </Box>
-
-        {/* 学员卡片网格 */}
-        {filteredStudents.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 5 }}>
-            <Typography variant="h6" color="text.secondary">No students found</Typography>
-            <Button variant="contained" startIcon={<AddIcon />} sx={{ mt: 2 }} onClick={() => setAddDialogOpen(true)}>
-              Add Student
-            </Button>
+  return (
+    <Box className="admin-linked-page">
+      <Box
+        sx={{
+          ...panelSx,
+          mb: 3,
+          p: { xs: 3, md: 4 },
+          background:
+            "linear-gradient(135deg, rgba(255,122,26,0.96) 0%, rgba(255,210,63,0.92) 48%, rgba(255,248,230,0.96) 100%)",
+        }}
+      >
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
+          <Box>
+            <Typography className="admin-dashboard-kicker">Guide management</Typography>
+            <Typography variant="h3" sx={{ color: "#0b3b28", fontWeight: 950, lineHeight: 1 }}>
+              Park Guide accounts
+            </Typography>
+            <Typography sx={{ mt: 1.4, color: "#274a35", fontWeight: 700, maxWidth: 760 }}>
+              Manage guide records, course assignments, and account readiness from the shared MySQL training database.
+            </Typography>
           </Box>
-        ) : (
-          <Box sx={{ mt: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)'}, gap: 3 }}>
-            {filteredStudents.map((student) => (
-              <Paper key={student.id} sx={{
-                p: 2,
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
-                borderLeft: 4,
-                borderColor:
-                  student.eligibility === 'Approved' ? 'success.main' :
-                  student.eligibility === 'Rejected' ? 'error.main' :
-                  'warning.main'
-              }}>
+          <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", md: "center" }}>
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadData} sx={{ ...buttonSx, borderColor: "#0b3b28", color: "#0b3b28" }}>
+              Refresh
+            </Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog} sx={{ ...buttonSx, bgcolor: "#0b3b28" }}>
+              Add Guide
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
 
-                {/* 顶部信息：头像 + 姓名 + 邮箱 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar 
-                    src={student.avatarUrl || "/default-avatar.png"} 
-                    alt={student.name} 
-                    sx={{ width: 48, height: 48, mr: 2 }}
-                  />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle1" fontWeight="bold">{student.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{student.email}</Typography>
-                  </Box>
-                  {student.eligibility === "Approved" && (
-                    <IconButton size="small" color="primary" onClick={() => setEditingStudent(student)}>
+      <Box sx={{ ...panelSx, p: 2, mb: 2.4 }}>
+        <Stack direction={{ xs: "column", md: "row" }} gap={1.5}>
+          <TextField
+            label="Search guides"
+            size="small"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Filter"
+            select
+            size="small"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            sx={{ minWidth: 220 }}
+          >
+            <MenuItem value="all">All records</MenuItem>
+            <MenuItem value="Approved">Approved</MenuItem>
+            <MenuItem value="Rejected">Rejected</MenuItem>
+            {moduleOptions.map((option) => (
+              <MenuItem key={option} value={option}>{option}</MenuItem>
+            ))}
+          </TextField>
+        </Stack>
+      </Box>
+
+      <Grid container spacing={2.4}>
+        {filteredStudents.map((student) => (
+          <Grid item xs={12} md={6} xl={4} key={student.id}>
+            <Card sx={panelSx}>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" gap={2} alignItems="flex-start">
+                  <Stack direction="row" gap={1.5} alignItems="center">
+                    <Avatar sx={{ bgcolor: "#0b3b28", color: "#fff8e6", fontWeight: 950 }}>
+                      {(student.name || "G").slice(0, 1).toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>{student.name}</Typography>
+                      <Typography sx={{ color: "#607166", fontWeight: 700 }}>{student.email}</Typography>
+                    </Box>
+                  </Stack>
+                  <Stack direction="row" gap={0.5}>
+                    <IconButton size="small" onClick={() => openEditDialog(student)}>
                       <EditIcon fontSize="small" />
                     </IconButton>
-                  )}
-                </Box>
+                    <IconButton size="small" color="error" onClick={() => deleteStudent(student.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </Stack>
 
-                {/* 状态 Chips */}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-                  <Chip label={student.eligibility} size="small"
-                    color={student.eligibility === 'Approved' ? 'success' : student.eligibility === 'Rejected' ? 'error' : 'warning'} sx={{ height: 20 }} />
-                  <Chip label={`Module: ${student.module}`} size="small" color="info" sx={{ height: 20 }} />
-                  {student.accountCreated && <Chip label="Account Created" size="small" color="primary" sx={{ height: 20 }} />}
-                  {student.registered && (
-                    <Chip 
-                      label={`Registered`} 
-                      size="small" 
-                      color="secondary" 
-                      sx={{ height: 20 }} 
-                    />
-                  )}
-                </Box>
-
-                {/* 操作按钮 */}
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                  {student.eligibility === "Pending" ? (
-                    <ButtonGroup size="small" sx={{ flexGrow: 1 }}>
-                      <Button variant="contained" color="success" onClick={() => updateEligibility(student.id, "Approved")}>
-                        Approve
-                      </Button>
-                      <Button color="error" onClick={() => updateEligibility(student.id, "Rejected")}>
-                        Reject
-                      </Button>
-                    </ButtonGroup>
-                  ) : student.eligibility === "Approved" ? (
-                    <>
-                      <Select
-                        size="small"
-                        value={student.module}
-                        onChange={(e) => updateModule(student.id, e.target.value)}
-                      >
-                        <MenuItem value="None">None</MenuItem>
-                        <MenuItem value="General">General</MenuItem>
-                        <MenuItem value="Specific">Specific</MenuItem>
-                        <MenuItem value="Physical">Physical</MenuItem>
-                      </Select>
-                      <Button size="small" variant="outlined" onClick={() => setSnackbar({ open: true, message: `Certificate issued for ${student.name}` })}>
-                        Issue Certificate
-                      </Button>
-                      <Button size="small" variant="outlined" color="primary" onClick={() => setSnackbar({ open: true, message: `Notification sent to ${student.name}` })}>
-                        Send Notification
-                      </Button>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(student.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </>
-                  ) : (
-                    <>
-                      <IconButton size="small" onClick={() => setSelectedStudent(student)}>
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(student.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </>
-                  )}
-                </Box>
-              </Paper>
-            ))}
-          </Box>
-        )}
-
-        {/* 编辑学员对话框 */}
-        <Dialog open={!!editingStudent} onClose={() => setEditingStudent(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>Edit Account: {editingStudent?.name}</DialogTitle>
-          <DialogContent sx={{ pt:2 }}>
-            {editingStudent && (
-              <Box sx={{display: 'flex', flexDirection: 'column', gap:2}}>
-                <TextField
-                  label="Name"
-                  name="name"
-                  value={editingStudent.name}
-                  onChange={handleEditChange}
-                  fullWidth
-                  size="small"
-                />
-                <TextField
-                  label="Phone"
-                  name="phone"
-                  value={editingStudent.phone || ""}
-                  onChange={handleEditChange}
-                  fullWidth
-                  size="small"
-                />
-                <TextField
-                  label="Email"
-                  name="email"
-                  value={editingStudent.email}
-                  onChange={handleEditChange}
-                  fullWidth
-                  size="small"
-                />
-
-                {editingStudent.cv && (
-                  <Typography variant="caption" color="text.secondary">
-                    Current CV: {editingStudent.cv}
-                  </Typography>
-                )}
-                <Button variant="outlined" component="label">
-                  Upload CV
-                  <input
-                    type="file"
-                    hidden
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => {
-                      if (e.target.files.length > 0) {
-                        const file = e.target.files[0];
-                        setEditingStudent(prev => ({ ...prev, cv: file.name }));
-                      }
+                <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
+                  <Chip
+                    label={student.eligibility}
+                    size="small"
+                    sx={{
+                      bgcolor: student.eligibility === "Rejected" ? "#ffe0d8" : "#e8f8d9",
+                      color: "#0b3b28",
+                      fontWeight: 900,
                     }}
                   />
-                </Button>
-                
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEditingStudent(null)}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveEdit}>Save Changes</Button>
-          </DialogActions>
-        </Dialog>
+                  <Chip label={`Progress ${student.progressPercent || 0}%`} size="small" sx={{ bgcolor: "#fff3c4", color: "#7a4710", fontWeight: 900 }} />
+                </Stack>
 
-        {/* 新增学员对话框 */}
-        <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Add New Student</DialogTitle>
-          <DialogContent sx={{ pt:2 }}>
-            <Box sx={{display: 'flex', flexDirection: 'column', gap:2}}>
-              <TextField
-                label="Name"
-                name="name"
-                value={newStudent.name}
-                onChange={handleAddChange}
-                fullWidth
-                size="small"
-              />
-              <TextField
-                label="Phone"
-                name="phone"
-                value={newStudent.phone}
-                onChange={handleAddChange}
-                fullWidth
-                size="small"
-              />
-              <TextField
-                label="Email"
-                name="email"
-                value={newStudent.email}
-                onChange={handleAddChange}
-                fullWidth
-                size="small"
-              />
-              <Select
-                name="module"
-                size="small"
-                value={newStudent.module}
-                onChange={handleAddChange}
-              >
-                <MenuItem value="None">None</MenuItem>
-                <MenuItem value="General">General</MenuItem>
-                <MenuItem value="Specific">Specific</MenuItem>
-                <MenuItem value="Physical">Physical</MenuItem>
-              </Select>
+                <TextField
+                  label="Assigned course"
+                  select
+                  size="small"
+                  value={student.module || "None"}
+                  onChange={(event) => assignModule(student, event.target.value)}
+                  fullWidth
+                  sx={{ mt: 2 }}
+                >
+                  {moduleOptions.map((option) => (
+                    <MenuItem key={option} value={option}>{option}</MenuItem>
+                  ))}
+                </TextField>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-              {/* 上传 CV */}
-              {newStudent.cv && (
-                <Typography variant="caption" color="text.secondary">
-                  Selected file: {newStudent.cv}
-                </Typography>
-              )}
+      {filteredStudents.length === 0 && (
+        <Box sx={{ ...panelSx, p: 4, textAlign: "center" }}>
+          <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>No guide accounts found</Typography>
+          <Typography sx={{ mt: 1, color: "#607166", fontWeight: 700 }}>
+            Add a guide account or clear the current filter.
+          </Typography>
+        </Box>
+      )}
 
-              <Button
-                variant="outlined"
-                component="label"
-              >
-                Upload CV
-                <input
-                  type="file"
-                  hidden
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => {
-                    if (e.target.files.length > 0) {
-                      const file = e.target.files[0];
-                      setNewStudent(prev => ({ ...prev, cv: file.name }));
-                    }
-                  }}
-                />
-              </Button>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveNewStudent}>Add Student</Button>
-          </DialogActions>
-        </Dialog>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ color: "#0b3b28", fontWeight: 950 }}>
+          {studentForm.id ? "Edit Guide Account" : "Add Guide Account"}
+        </DialogTitle>
+        <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
+          <TextField label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
+          <TextField label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
+          <TextField label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
+          <TextField label="Assigned Course" select value={studentForm.module} onChange={(event) => setStudentForm((prev) => ({ ...prev, module: event.target.value }))} fullWidth>
+            {moduleOptions.map((option) => (
+              <MenuItem key={option} value={option}>{option}</MenuItem>
+            ))}
+          </TextField>
+          <TextField label="Eligibility" select value={studentForm.eligibility} onChange={(event) => setStudentForm((prev) => ({ ...prev, eligibility: event.target.value }))} fullWidth>
+            <MenuItem value="Approved">Approved</MenuItem>
+            <MenuItem value="Rejected">Rejected</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveStudent} disabled={loading} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+            Save Account
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-        {/* CV 查看对话框 */}
-        <Dialog open={!!selectedStudent} onClose={() => setSelectedStudent(null)} maxWidth="md" fullWidth>
-          <DialogTitle>Student Application</DialogTitle>
-          <DialogContent>
-            {selectedStudent && (
-              <Box>
-                <Typography>Name: {selectedStudent.name}</Typography>
-                <Typography>Email: {selectedStudent.email}</Typography>
-                <Typography>Phone: {selectedStudent.phone || "Not provided"}</Typography>
-                <Typography>
-                  Resume: {selectedStudent.cv || "No CV uploaded"}
-                </Typography>
-                <Typography>
-                  Consultation: {selectedStudent.consultation || "No consultation info"}
-                </Typography>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSelectedStudent(null)}>Close</Button>
-          </DialogActions>
-        </Dialog>
-
-        <Snackbar 
-          open={snackbar.open} 
-          autoHideDuration={3000} 
-          onClose={() => setSnackbar({ open: false, message: "" })} 
-          message={snackbar.message} 
-        />
-      </Box>
-    );
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3200}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
 };
 
 export default StudentManagement;

@@ -129,6 +129,7 @@ alerts/iot/*.png
 alerts/iot/*.webp
 alerts/iot/*.json
 user_login/server/data/*.runtime.json
+admin_page/public/uploads/
 
 
 # =========================================================

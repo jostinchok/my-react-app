@@ -35,6 +35,8 @@ Expected services:
 
 ```text
 Backend API: http://localhost:4000
+Admin training API: http://localhost:4002
+Park Guide user API: http://localhost:4001
 Root hub: http://localhost:5173
 Admin app: http://localhost:5174/admin
 User app: http://localhost:5175/user
@@ -151,6 +153,15 @@ Apply migration:
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+Apply the training platform schema and migration for Admin course/module/resource linkage:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
+mysql -u root -p park_guide_database < database/db.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
 ```
 
 Check tables:
@@ -341,10 +352,19 @@ Camera contention note:
 http://localhost:5173
 http://localhost:5175/user
 http://localhost:5174/admin
+http://localhost:5174/admin/course
+http://localhost:5174/admin/training
+http://localhost:5174/admin/course-requests
+http://localhost:5174/admin/students
+http://localhost:5174/admin/badge
 http://localhost:5174/admin/detection
 http://localhost:5174/admin/ranger
 http://localhost:8081
 http://localhost:4000/api/health
+http://localhost:4001/api/health
+http://localhost:4001/api/training-modules
+http://localhost:4002/api/health
+http://localhost:4002/api/courses
 http://localhost:4000/api/incidents
 http://localhost:4000/api/incidents/summary
 ```
@@ -356,6 +376,7 @@ The demo should now read as one Citrus Energetic system:
 - Hub: rainforest launcher, forest/citrus hero, rounded service cards, live status pills.
 - User/Park Guide: warm citrus learning portal, cream cards, orange actions, lime progress states.
 - Admin Dashboard: command-center view with charcoal/forest structure and citrus monitoring cards.
+- Admin Training Pages: cream/citrus course manager, backend-linked module overview, guide accounts, enrollment requests, and badge issuing.
 - Admin Incident Detection: consistent filters, table badges, evidence frame, metadata cards, ranger recommendations, and official status controls.
 - Park Ranger Console: forest field-response identity, urgent queue, evidence panel, field notes, and citrus recommendation actions.
 - Mobile Preview: simplified Park Guide palette with cream surfaces and citrus actions.
@@ -373,18 +394,20 @@ Image rule for report/demo assets:
 1. Open `http://localhost:5173` and show the root hub cards and service links.
 2. Open Login/Register, then Park Guide/User Portal at `http://localhost:5175/user`.
 3. Switch User01/User02/User03.
-4. Show modules, module detail, quiz, progress, certificates/badges, notifications, schedule, resources/files, profile, and help/permission guide.
-5. Open mobile preview at `http://localhost:8081`.
+4. Show backend-linked modules, module detail, quiz, progress, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
+5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
-7. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
-8. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, ranger recommendations, and Admin official status update.
-9. Open Park Ranger Console at `http://localhost:5174/admin/ranger`.
-10. Show response-only role boundary, urgent/new incident queue, selected detail, evidence, field notes, and recommendation buttons.
-11. Run AI camera or IoT simulation.
-12. Refresh Admin and Ranger pages and show the same backend incident data.
-13. Submit a Ranger recommendation, then patch official status from the Admin UI or curl and show persistence in API/MySQL.
-14. For cybersecurity check, show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generation, smoke test PASS output, and `/api/health` security state.
-15. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
+7. Open Admin Course/Training pages and create or review a course, module, and course resource.
+8. Open Admin Course Requests, Students, and Badge pages to show linked guide account and certificate workflows.
+9. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
+10. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, ranger recommendations, and Admin official status update.
+11. Open Park Ranger Console at `http://localhost:5174/admin/ranger`.
+12. Show response-only role boundary, urgent/new incident queue, selected detail, evidence, field notes, and recommendation buttons.
+13. Run AI camera or IoT simulation.
+14. Refresh Admin and Ranger pages and show the same backend incident data.
+15. Submit a Ranger recommendation, then patch official status from the Admin UI or curl and show persistence in API/MySQL.
+16. For cybersecurity check, show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generation, smoke test PASS output, and `/api/health` security state.
+17. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
 
 ## Screenshot Checklist
 
@@ -424,6 +447,8 @@ python3 scripts/check_required_assets.py
 npm --prefix user_page run build
 npm --prefix admin_page run build
 node --check user_login/server/index.js
+node --check user_page/server/index.js
+node --check admin_page/adminServer.js
 node --check scripts/dev-all.mjs
 node --check scripts/hub-server.mjs
 node --check user_login/server/scripts/publish-test-iot.js

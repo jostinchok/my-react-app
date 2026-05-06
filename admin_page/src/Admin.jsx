@@ -9,6 +9,7 @@ import "./Admin.css";
 import MyLayout from "./components/MyLayout";
 import CourseManagement from "./pages/course.jsx"
 import TrainingModuleSetup from "./pages/training_module.jsx"
+import CourseRequestsPage from "./pages/course_requests.jsx";
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
@@ -488,6 +489,7 @@ function AdminPage() {
     <Admin dataProvider={dataProvider} dashboard={Dashboard} layout={MyLayout}>
       <Resource name="course" list={CourseManagement} />
       <Resource name="training" list={TrainingModuleSetup} />
+      <Resource name="course-requests" list={CourseRequestsPage} />
       <Resource name="students" list={StudentManagement} />
       <Resource name="badge" list={BadgeManagement} />
       <Resource name="detection" list={AIDetection} />

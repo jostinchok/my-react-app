@@ -19,6 +19,7 @@ const port = Number(process.env.API_PORT || 4001)
 const host = process.env.API_HOST || '127.0.0.1'
 const defaultUserEmail = process.env.DEFAULT_USER_EMAIL || 'guide@test.com'
 const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
+const adminApiPublicUrl = process.env.ADMIN_API_PUBLIC_URL || 'http://localhost:4002'
 const corsOrigin = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
   ? true
   : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
@@ -60,6 +61,52 @@ const rowOf = async (sql, values = []) => {
   return rows[0] || null
 }
 
+const tableExists = async (tableName) => {
+  const row = await rowOf(
+    `SELECT TABLE_NAME
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+     LIMIT 1`,
+    [databaseName, tableName]
+  )
+  return Boolean(row)
+}
+
+const columnExists = async (tableName, columnName) => {
+  const row = await rowOf(
+    `SELECT COLUMN_NAME
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [databaseName, tableName, columnName]
+  )
+  return Boolean(row)
+}
+
+const ensureRole = async (roleName) => {
+  await pool.query('INSERT IGNORE INTO roles (role_name) VALUES (?)', [roleName])
+  const role = await rowOf('SELECT role_id FROM roles WHERE role_name = ? LIMIT 1', [roleName])
+  return role?.role_id || null
+}
+
+const ensureDemoUser = async (userId) => {
+  const existing = await rowOf('SELECT user_id FROM users WHERE user_id = ? LIMIT 1', [userId])
+  if (existing) return
+
+  const roleId = await ensureRole('guide')
+  await pool.query(
+    `INSERT INTO users (user_id, role_id, name, email, password_hash)
+     VALUES (?, ?, ?, ?, ?)`,
+    [userId, roleId, `Demo Guide ${userId}`, `guide${userId}@demo.local`, 'demo-account-pending']
+  )
+  await pool.query(
+    `INSERT INTO guide_profiles (guide_id, organization, status)
+     VALUES (?, 'SFC Demo', 'active')
+     ON DUPLICATE KEY UPDATE organization = VALUES(organization), status = VALUES(status)`,
+    [userId]
+  )
+}
+
 const resolveUserId = async (req) => {
   const requestedUserId = Number(req.query.userId || req.body?.userId || req.body?.user_id || process.env.DEFAULT_USER_ID)
   if (Number.isInteger(requestedUserId) && requestedUserId > 0) return requestedUserId
@@ -78,6 +125,15 @@ const resolveUserId = async (req) => {
   if (firstGuide?.user_id) return firstGuide.user_id
 
   throw new Error(`No guide user found. Import database/db.sql or create ${defaultUserEmail}.`)
+}
+
+const resolveUserIdForTraining = async (req) => {
+  try {
+    return await resolveUserId(req)
+  } catch (error) {
+    if (String(error.message || '').startsWith('No guide user found')) return 0
+    throw error
+  }
 }
 
 const parseCompletedLessons = (value) => {
@@ -163,10 +219,27 @@ const normalizeCourseFile = (row = {}) => ({
   url: row.file_url,
 })
 
+const normalizeCourseResource = (row = {}) => ({
+  id: `resource-${row.resource_id}`,
+  source: 'admin_resource',
+  readOnly: true,
+  courseId: row.course_id,
+  course: row.course_name || row.course_id || 'Admin Resources',
+  name: row.title || row.file_name,
+  mimeType: row.mime_type || 'application/octet-stream',
+  sizeBytes: Number(row.size_bytes || 0),
+  size: formatBytes(row.size_bytes),
+  uploaded: formatDateOnly(row.uploaded_at),
+  uploadedAt: row.uploaded_at,
+  url: `${adminApiPublicUrl}/api/courses/${encodeURIComponent(row.course_id)}/resources/${row.resource_id}/download`,
+})
+
 const buildModules = async (userId) => {
+  const hasCourseId = await columnExists('training_modules', 'course_id')
   const modules = await rowsOf(
     `SELECT
        tm.module_id,
+       ${hasCourseId ? 'tm.course_id' : 'NULL AS course_id'},
        tm.title,
        tm.description,
        tm.category,
@@ -277,7 +350,7 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
 }))
 
 app.get('/api/training-modules', asyncRoute(async (req, res) => {
-  const userId = await resolveUserId(req)
+  const userId = await resolveUserIdForTraining(req)
   const modules = await buildModules(userId)
   res.json({ modules })
 }))
@@ -433,7 +506,7 @@ app.get('/api/schedule', asyncRoute(async (req, res) => {
 app.get('/api/course-files', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   await ensureCourseFilesTable()
-  const files = await rowsOf(
+  const userFiles = await rowsOf(
     `SELECT cf.*, tm.title AS module_title
      FROM course_files cf
      LEFT JOIN training_modules tm ON tm.module_id = cf.module_id
@@ -441,7 +514,22 @@ app.get('/api/course-files', asyncRoute(async (req, res) => {
      ORDER BY cf.uploaded_at DESC, cf.file_id DESC`,
     [userId]
   )
-  res.json({ files: files.map(normalizeCourseFile) })
+
+  const adminResources = await tableExists('course_resources')
+    ? await rowsOf(
+      `SELECT cr.*, c.course_name
+       FROM course_resources cr
+       LEFT JOIN courses c ON c.course_id = cr.course_id
+       ORDER BY cr.uploaded_at DESC, cr.resource_id DESC`
+    )
+    : []
+
+  res.json({
+    files: [
+      ...adminResources.map(normalizeCourseResource),
+      ...userFiles.map(normalizeCourseFile),
+    ],
+  })
 }))
 
 app.post('/api/course-files', asyncRoute(async (req, res) => {
@@ -498,6 +586,42 @@ app.post('/api/course-files', asyncRoute(async (req, res) => {
     [result.insertId]
   )
   res.status(201).json({ file: normalizeCourseFile(savedFile) })
+}))
+
+app.post('/api/enrollments/requests', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const { courseId = null, course_id = null, moduleId = null, module_id = null } = req.body || {}
+  let resolvedCourseId = courseId || course_id
+
+  if (!resolvedCourseId && (moduleId || module_id) && await columnExists('training_modules', 'course_id')) {
+    const module = await rowOf(
+      'SELECT course_id FROM training_modules WHERE module_id = ? LIMIT 1',
+      [Number(moduleId || module_id)]
+    )
+    resolvedCourseId = module?.course_id || null
+  }
+
+  if (!resolvedCourseId) {
+    res.status(202).json({ ok: true, message: 'Module enrollment saved locally. No linked admin course was found.' })
+    return
+  }
+
+  const courseResourcesReady = await tableExists('course_enrollments')
+  if (!courseResourcesReady) {
+    res.status(202).json({ ok: true, message: 'Module enrollment saved locally. Admin enrollment table has not been migrated yet.' })
+    return
+  }
+
+  await ensureDemoUser(userId)
+
+  await pool.query(
+    `INSERT INTO course_enrollments (user_id, course_id, status)
+     VALUES (?, ?, 'pending')
+     ON DUPLICATE KEY UPDATE status = IF(status = 'rejected', 'pending', status), requested_at = CURRENT_TIMESTAMP`,
+    [userId, resolvedCourseId]
+  )
+
+  res.status(201).json({ ok: true, message: 'Course enrollment request sent to Admin.', courseId: resolvedCourseId })
 }))
 
 app.delete('/api/course-files/:fileId', asyncRoute(async (req, res) => {

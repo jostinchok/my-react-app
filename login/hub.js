@@ -5,6 +5,8 @@ const checks = [
   { key: 'user', url: '/user' },
   { key: 'admin', url: '/admin' },
   { key: 'ranger', url: '/admin/ranger' },
+  { key: 'adminApi', url: 'http://localhost:4002/api/health' },
+  { key: 'userApi', url: 'http://localhost:4001/api/health' },
   { key: 'mobile', url: 'http://localhost:8081' },
 ]
 

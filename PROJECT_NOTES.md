@@ -13,15 +13,18 @@ This is the active team repository. The completed lecturer-demo work was synced 
 - Root hub: `http://localhost:5173`
 - Park Guide web portal: `user_page`, Vite, `http://localhost:5175/user`
 - Admin portal: `admin_page`, Vite, `http://localhost:5174/admin`
+- Admin training API: `admin_page/adminServer.js`, Express, `http://localhost:4002`
+- Park Guide user API: `user_page/server/index.js`, Express, `http://localhost:4001`
 - Admin Incident Detection: `http://localhost:5174/admin/detection`
 - Park Ranger Alert Console: `http://localhost:5174/admin/ranger`
 - Mobile preview: `mobile_app`, Expo web, `http://localhost:8081`
 - Backend API: `user_login/server`, Express, `http://localhost:4000`
 - AI camera script: `scripts/run_ai_camera_monitor.py`
 - Evidence folders: `alerts/ai` for AI camera evidence and `alerts/iot` for browser-captured IoT evidence.
-- MySQL database for monitoring incidents only: `cos30049_assignment`
+- MySQL database for monitoring incidents: `cos30049_assignment`
+- MySQL database for training platform demo data: `park_guide_database`
 
-The training platform is seeded frontend demo data. The backend and MySQL integration are scoped to AI/IoT monitoring incidents only.
+The training platform now has a demo MySQL integration for Admin-created courses, modules, course resources, guide accounts, enrollment requests, and badges. AI/IoT monitoring incidents still use the separate monitoring incident API and must keep the Admin-only official status workflow.
 
 ## Citrus Energetic UI System
 
@@ -89,9 +92,10 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | --- | --- | --- |
 | Review Hub | Demo-ready | Links all demo surfaces, API endpoints, role notes, and optional security-control notes. |
 | Login/Register/Forgot Password | Partial / Demo-ready | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Production route/session auth is deferred. |
-| Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. |
-| Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence. Screens are simpler than the full web portal. |
+| Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. Admin-created modules and course resources can load from the user API. |
+| Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence and reads the user training module API when available. Screens are simpler than the full web portal. |
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
+| Admin Course / Training / Guide / Badge Pages | Demo-ready | Admin can create/edit/delete courses and modules, upload/download/delete course resources, review enrollment requests, manage guide accounts, and issue badges through the admin API. |
 | Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, ranger recommendations, and official status updates. Sends admin role header for optional role-check mode. |
 | Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Recommend Acknowledged/In Review/Resolved/False Alarm actions. Ranger recommendations do not change the official incident status. |
 | Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, `PATCH /api/incidents/:id/status`, and `POST /api/incidents/:id/ranger-recommendation` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. Official status updates are Admin-only when role checks are enabled. |
@@ -171,6 +175,7 @@ IoT browser capture contract:
 - Added a demo-safe IoT test publisher fallback: MQTT remains the first path, but public-broker timeouts can fall back to the local incidents API with the same IOT_SENSOR payload.
 - Updated documentation for MySQL-first incident persistence, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
 - Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
+- Selectively integrated the useful training-platform features from `origin/New_version` without merging its incident role regression or generated files: Admin course/module/resource management, guide management, badge issuing, enrollment requests, user resource visibility, and mobile module visibility now share backend data.
 - Generated and applied a shared Citrus logo mark across the hub, login surfaces, User Portal, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview. Optimized copies are 17 KB WebP for browser UI and 80 KB PNG for favicon/mobile usage.
 - Fixed the Park Ranger route to render through the Admin shell/sidebar, keeping logo placement and navigation consistent for final demo screenshots.
 - Added one generated Sarawak rainforest hero image at `images/citrus-rainforest-hero.webp` and optimized it to 136 KB for the hub background.

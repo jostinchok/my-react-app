@@ -14,9 +14,10 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 | --- | --- | --- |
 | Review Hub | Demo-ready | Open `http://localhost:5173`; show all direct links, role notes, and optional cybersecurity-control notes. |
 | Login/Register/Forgot Password | Partial / Demo-ready | Show demo users/roles and localStorage demo logout. Explain production JWT/session auth is deferred. |
-| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, modules, quiz, progress, certificates, notifications, schedule, resources, profile, and help. |
-| Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces. |
+| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, backend-linked modules, quiz, progress, certificates, notifications, schedule, admin resources, profile, and help. |
+| Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces and backend-loaded modules when the user API is running. |
 | Admin Dashboard | Demo-ready | Open `http://localhost:5174/admin`; confirm admin landing page loads. |
+| Admin Course / Training / Guide / Badge Pages | Demo-ready | Open `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/students`, and `/admin/badge`; confirm courses/modules/resources/guides/badges use the admin API. |
 | Admin Incident Detection | Demo-ready | Open `http://localhost:5174/admin/detection`; show AI and IoT rows, summary cards, filters, evidence, metadata, ranger recommendations, fallback/live states, and Admin official status update. |
 | Park Ranger Console | Demo-ready | Open `http://localhost:5174/admin/ranger`; show response-only role, urgent incidents, field notes, and recommendation buttons. Ranger recommendations do not change official incident status. |
 | Backend API | Demo-ready | `curl http://localhost:4000/api/health`; confirm `persistence=mysql`, `requested=mysql`, and `active=mysql`. |
@@ -57,6 +58,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 - [ ] Run backend API checks in MySQL mode and confirm `/api/health` does not show `active=memory`.
 - [ ] Confirm `/api/health` shows `roleCheckEnabled=true` and `statusUpdateRoles` does not include `park_ranger` when role checks are enabled.
 - [ ] Create `cos30049_assignment`, apply migration, create/reset `ctip_user`, and run MySQL mode.
+- [ ] Create/import `park_guide_database` with `database/db.sql`, then apply `user_login/server/migrations/002_training_platform_tables.sql` for Admin/User training linkage.
 - [ ] In Admin Detection, trigger IoT once and confirm the 2-second delayed 720p browser capture appears in both Admin and Park Ranger.
 - [ ] In Park Ranger Console, submit a recommendation with a field note and confirm the visible official status remains unchanged until Admin updates it.
 - [ ] Confirm browser MQTT and backend MQTT do not duplicate the same IoT trigger; same `public_id` or same source/event/sensor within 10 seconds should merge.
@@ -66,7 +68,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 
 ## Intentionally Deferred
 
-- Full training platform persistence in MySQL.
+- Production-grade training enrollment approvals, certificate templates, and audit trails beyond the current demo CRUD/API linkage.
 - Production-grade authentication and password reset.
 - Production-grade JWT/session route protection.
 - Private MQTT broker with TLS/authentication.

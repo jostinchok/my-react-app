@@ -12,11 +12,11 @@ This is the active team repository. The completed demo was synced from the local
 
 This project demonstrates the three Project Scope areas:
 
-1. Interactive Digital Training Platform: seeded Park Guide web portal, Expo mobile preview, training modules, quizzes, progress, badges/certificates, notifications, files/resources, profile, and role boundaries.
+1. Interactive Digital Training Platform: backend-linked Admin course/module/resource management, Park Guide web portal, Expo mobile preview, training modules, quizzes, progress, badges/certificates, notifications, files/resources, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
 3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger recommendation console, evidence serving, and MySQL-backed monitoring incident persistence.
 
-The Park Guide training platform remains frontend-seeded for the demo. MySQL persistence is the default for AI/IoT monitoring incidents only.
+The Park Guide training platform now has demo MySQL-backed Admin-to-User linkage for courses, modules, resources, guide accounts, enrollment requests, and badges. MySQL persistence remains the default for AI/IoT monitoring incidents through the separate monitoring incident API.
 
 ## UI And Asset Status
 
@@ -149,6 +149,8 @@ python3 scripts/check_required_assets.py
 cp .env.example .env
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+mysql -u root -p park_guide_database < database/db.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
 npm run dev
 ```
 
@@ -207,6 +209,44 @@ Apply the monitoring migration:
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+```
+
+## Training Platform Persistence
+
+The Admin training API runs on `http://localhost:4002` and the Park Guide user API runs on `http://localhost:4001`. They share the training database tables for:
+
+- courses and modules
+- course resources
+- guide accounts and course assignments
+- enrollment requests
+- badges and issued certifications
+
+Apply the base training schema and the selective training-platform migration:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
+mysql -u root -p park_guide_database < database/db.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
+```
+
+Admin demo routes:
+
+```text
+http://localhost:5174/admin/course
+http://localhost:5174/admin/training
+http://localhost:5174/admin/course-requests
+http://localhost:5174/admin/students
+http://localhost:5174/admin/badge
+```
+
+Park Guide and mobile surfaces read the same module/resource data when the APIs are running:
+
+```text
+http://localhost:5175/user
+http://localhost:8081
+http://localhost:4001/api/training-modules
+http://localhost:4002/api/courses
 ```
 
 Check stored incidents:

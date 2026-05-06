@@ -383,6 +383,19 @@ function App() {
     setSelectedModuleId(module.id)
     setActiveTab('module')
     addNotification('Module enrolled', `${module.title} is now in your learning path.`, 'training')
+    if (module.courseId) {
+      fetch(API_LINKS.enrollmentRequests, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          moduleId: module.id,
+          courseId: module.courseId,
+        }),
+      }).catch((error) => {
+        console.warn('Unable to send admin enrollment request:', error)
+      })
+    }
   }
 
   const toggleLesson = (module, lessonIndex) => {

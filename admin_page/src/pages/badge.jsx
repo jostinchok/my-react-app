@@ -1,274 +1,297 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box, Paper, Typography, Card, CardContent, CardActions, Chip, LinearProgress,
-  Button, ButtonGroup, Accordion, AccordionSummary, AccordionDetails, IconButton, Snackbar,
-  Dialog, DialogTitle, DialogContent, Grid, Tooltip, TextField, Checkbox, FormControlLabel
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  MenuItem,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
-import SchoolIcon from "@mui/icons-material/School";
-import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
+import RefreshIcon from "@mui/icons-material/Refresh";
+
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
+
+const emptyBadgeForm = {
+  name: "",
+  type: "General",
+  requireQuiz: true,
+  requirePhysical: false,
+};
+
+const panelSx = {
+  borderRadius: "22px",
+  border: "1px solid rgba(234, 214, 167, 0.86)",
+  background: "linear-gradient(145deg, #fffdf4 0%, #fff8e6 100%)",
+  boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
+};
+
+const buttonSx = {
+  borderRadius: "12px",
+  textTransform: "none",
+  fontWeight: 900,
+};
 
 const BadgeManagement = () => {
-  const [badges, setBadges] = useState([
-    { id: 1, name: "General Training", type: "General", requireQuiz: true, requirePhysical: false, eligibleStudents: [
-      { id: 1, name: "Alice", progressPercent: 80, physicalCompleted: false, badgeIssued: false },
-      { id: 3, name: "Charlie", progressPercent: 100, physicalCompleted: true, badgeIssued: false }
-    ]},
-    { id: 2, name: "Bako Park Guide", type: "Specific", requireQuiz: true, requirePhysical: true, eligibleStudents: [
-      { id: 3, name: "Charlie", progressPercent: 100, physicalCompleted: true, badgeIssued: false }
-    ]},
-    { id: 3, name: "Gunung Gania Training", type: "Specific", requireQuiz: false, requirePhysical: true, eligibleStudents: [
-      { id: 4, name: "David", progressPercent: 100, physicalCompleted: false, badgeIssued: false }
-    ]}
-  ]);
-
-  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const [badges, setBadges] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+  const [badgeForm, setBadgeForm] = useState(emptyBadgeForm);
   const [selectedBadge, setSelectedBadge] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  // 新增徽章相关状态
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newBadge, setNewBadge] = useState({ name: "", type: "", requireQuiz: false, requirePhysical: false });
+  const eligibleStudents = useMemo(
+    () => students.filter((student) => student.eligibility !== "Rejected"),
+    [students]
+  );
 
-  const handleDelete = (id) => {
-    setBadges(prev => prev.filter(b => b.id !== id));
-    setSnackbar({ open: true, message: "Badge deleted successfully" });
+  const showMessage = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  const markPhysicalCompleted = (studentId, badgeId) => {
-    setBadges(prev => prev.map(b =>
-      b.id === badgeId
-        ? { ...b, eligibleStudents: b.eligibleStudents.map(st =>
-            st.id === studentId ? { ...st, physicalCompleted: true } : st
-          )}
-        : b
-    ));
-    const student = badges.find(b => b.id === badgeId)?.eligibleStudents.find(s => s.id === studentId);
-    setSnackbar({ open: true, message: `${student?.name} marked Physical Training completed` });
+  const requestJson = async (url, options = {}) => {
+    const response = await fetch(url, options);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || "Request failed.");
+    return data;
   };
 
-  const issueBadge = (studentId, badgeId) => {
-    const badge = badges.find(b => b.id === badgeId);
-    const student = badge.eligibleStudents.find(s => s.id === studentId);
+  const loadData = async () => {
+    try {
+      const [badgeData, studentData] = await Promise.all([
+        requestJson(`${API_BASE_URL}/api/admin/badges`),
+        requestJson(`${API_BASE_URL}/api/students`),
+      ]);
+      setBadges(badgeData.badges || []);
+      setStudents(studentData.students || []);
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  };
 
-    if (badge.requirePhysical && !student.physicalCompleted) {
-      setSnackbar({ open: true, message: `${student.name} has not completed physical training` });
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const createBadge = async () => {
+    if (!badgeForm.name) {
+      showMessage("Badge name is required.", "warning");
       return;
     }
-    if (student.progressPercent < 100) {
-      setSnackbar({ open: true, message: `${student.name} has not completed training progress` });
+
+    try {
+      await requestJson(`${API_BASE_URL}/api/admin/badges`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(badgeForm),
+      });
+      setBadgeDialogOpen(false);
+      setBadgeForm(emptyBadgeForm);
+      await loadData();
+      showMessage("Badge created.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  };
+
+  const deleteBadge = async (badge) => {
+    if (badge.source === "module") {
+      showMessage("Module-derived badges are managed from the Course module badge field.", "info");
+      return;
+    }
+    if (!window.confirm("Delete this badge?")) return;
+
+    try {
+      await requestJson(`${API_BASE_URL}/api/admin/badges/${badge.id}`, { method: "DELETE" });
+      await loadData();
+      showMessage("Badge deleted.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  };
+
+  const openIssueDialog = (badge) => {
+    setSelectedBadge(badge);
+    setSelectedStudentId(eligibleStudents[0]?.id || "");
+    setIssueDialogOpen(true);
+  };
+
+  const issueBadge = async () => {
+    if (!selectedBadge || !selectedStudentId) {
+      showMessage("Select a badge and guide first.", "warning");
       return;
     }
 
-    setBadges(prev => prev.map(b =>
-      b.id === badgeId
-        ? { ...b, eligibleStudents: b.eligibleStudents.map(st =>
-            st.id === studentId ? { ...st, badgeIssued: true } : st
-          )}
-        : b
-    ));
-
-    setSnackbar({ open: true, message: `Issued "${badge.name}" to ${student.name}` });
-    setSelectedBadge(null);
-  };
-
-  const handleAddBadge = () => {
-    const id = badges.length + 1;
-    setBadges([...badges, { ...newBadge, id, eligibleStudents: [] }]);
-    setSnackbar({ open: true, message: `Badge "${newBadge.name}" added successfully` });
-    setAddDialogOpen(false);
-    setNewBadge({ name: "", type: "General", requireQuiz: false, requirePhysical: false });
+    try {
+      await requestJson(`${API_BASE_URL}/api/admin/issue-badge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedStudentId,
+          moduleId: selectedBadge.source === "module" ? selectedBadge.id : null,
+          title: selectedBadge.name,
+        }),
+      });
+      setIssueDialogOpen(false);
+      showMessage("Badge certificate issued.");
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
   };
 
   return (
-    <Box sx={{ p:3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3}}>
-        <Typography variant="h4" sx={{ mb:3, fontWeight:"bold" }}>Badge Management</Typography>
-        <Button 
-        variant="contained" 
-        color="primary" 
-        startIcon={<AddIcon />}
-        onClick={() => setAddDialogOpen(true)}>
-          Add Badge
-        </Button>
+    <Box className="admin-linked-page">
+      <Box
+        sx={{
+          ...panelSx,
+          mb: 3,
+          p: { xs: 3, md: 4 },
+          background:
+            "linear-gradient(135deg, #0b3b28 0%, #175f3e 54%, rgba(168,230,74,0.52) 100%)",
+        }}
+      >
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
+          <Box>
+            <Typography sx={{ color: "#ffd23f", fontWeight: 950, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.8rem" }}>
+              Certification
+            </Typography>
+            <Typography variant="h3" sx={{ color: "#fffdf4", fontWeight: 950, lineHeight: 1, mt: 1 }}>
+              Badge management
+            </Typography>
+            <Typography sx={{ mt: 1.4, color: "#f2ffe6", fontWeight: 700, maxWidth: 760 }}>
+              Create admin badges, review module-derived badges, and issue certificates to eligible Park Guides.
+            </Typography>
+          </Box>
+          <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", md: "center" }}>
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadData} sx={{ ...buttonSx, borderColor: "#fff8e6", color: "#fff8e6" }}>
+              Refresh
+            </Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setBadgeDialogOpen(true)} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+              Add Badge
+            </Button>
+          </Stack>
+        </Stack>
       </Box>
-      <Grid container spacing={2}>
-        {badges.map(badge => (
-          <Grid item xs={12} md={6} lg={4} key={badge.id}>
-            <Card sx={{ height: 360, borderRadius:3, boxShadow:4, display: "flex", flexDirection:"column"}}>
-              <CardContent sx={{ flex:1 , overflowY: "auto"}}>
-                <Box sx={{ display:"flex", justifyContent:"space-between", alignItems:"center", mb:1 }}>
-                  <Box sx={{ borderLeft: `6px solid ${badge.type === "General" ? "#1976d2" : "#ff9800"}`, pl:2 }}>
-                    <Typography variant="h6">{badge.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">Type: {badge.type}</Typography>
-                  </Box>
+
+      <Grid container spacing={2.4}>
+        {badges.map((badge) => (
+          <Grid item xs={12} md={6} xl={4} key={`${badge.source || "admin"}-${badge.id}`}>
+            <Card sx={panelSx}>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" gap={2} alignItems="flex-start">
                   <Box>
-                    <Tooltip title="Issue Badge">
-                      <IconButton color="success" onClick={() => setSelectedBadge(badge)}>
-                        <MilitaryTechIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Badge">
-                      <IconButton color="error" onClick={() => handleDelete(badge.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+                    <Chip
+                      label={badge.source === "module" ? "Module badge" : "Admin badge"}
+                      size="small"
+                      sx={{ bgcolor: badge.source === "module" ? "#e8f8d9" : "#fff3c4", color: "#0b3b28", fontWeight: 900, mb: 1 }}
+                    />
+                    <Typography variant="h5" sx={{ color: "#0b3b28", fontWeight: 950 }}>{badge.name}</Typography>
+                    <Typography sx={{ color: "#607166", fontWeight: 800 }}>Type: {badge.type || "General"}</Typography>
                   </Box>
-                </Box>
+                  <Stack direction="row" gap={0.5}>
+                    <IconButton color="success" onClick={() => openIssueDialog(badge)}>
+                      <MilitaryTechIcon />
+                    </IconButton>
+                    <IconButton color="error" onClick={() => deleteBadge(badge)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
+                </Stack>
 
-                <Box sx={{ mt:1 }}>
-                  {badge.requireQuiz && <Chip icon={<SchoolIcon />} label="Quiz" color="primary" variant="outlined" size="small" sx={{ mr:1 }} />}
-                  {badge.requirePhysical && <Chip icon={<FitnessCenterIcon />} label="Physical" color="secondary" variant="outlined" size="small" />}
-                </Box>
+                <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
+                  <Chip label={badge.requireQuiz ? "Quiz required" : "No quiz gate"} size="small" sx={{ bgcolor: "#fff3c4", color: "#7a4710", fontWeight: 900 }} />
+                  <Chip label={badge.requirePhysical ? "Physical required" : "No physical gate"} size="small" sx={{ bgcolor: "#e8f8d9", color: "#0b3b28", fontWeight: 900 }} />
+                </Stack>
 
-                <Typography variant="body2" sx={{ mt:1 }}>
-                  {badge.eligibleStudents.length} students, {badge.eligibleStudents.filter(s => s.progressPercent === 100).length} completed
+                <Typography sx={{ mt: 2, color: "#607166", fontWeight: 700 }}>
+                  {eligibleStudents.length} active guide account{eligibleStudents.length === 1 ? "" : "s"} available for issue.
                 </Typography>
               </CardContent>
-
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>Eligible Students</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {badge.eligibleStudents.length > 0 ? (
-                    badge.eligibleStudents.map(s => (
-                      <Box key={s.id} sx={{ mb:2 }}>
-                        <Typography>{s.name}</Typography>
-                        <Box sx={{ display:"flex", alignItems:"center", gap:1 }}>
-                          <LinearProgress variant="determinate" value={s.progressPercent} sx={{ flex:1, height:6, borderRadius:3, "& .MuiLinearProgress-bar": { backgroundColor: s.progressPercent === 100 ? "green" : "orange" }}} />
-                          {s.progressPercent === 100 ? <CheckCircleIcon color="success" /> : <HourglassBottomIcon color="warning" />}
-                        </Box>
-                        <Typography variant="caption">{s.progressPercent}%</Typography>
-
-                        {badge.requirePhysical && (
-                          s.physicalCompleted ? 
-                            <Chip label="Physical Confirmed" color="success" size="small" sx={{ mt:1 }} /> : 
-                            <Button size="small" variant="outlined" color="secondary" sx={{ mt:1 }} onClick={() => markPhysicalCompleted(s.id, badge.id)}>
-                              Mark Physical Completed
-                            </Button>
-                        )}
-                        
-                        {s.badgeIssued && (
-                        <Box sx={{ mt:1, display:"flex", gap:1 }}>
-                          <Chip label="Badge Issued" color="primary" size="small" />
-                          <Button 
-                            variant="outlined" 
-                            size="small" 
-                            onClick={() => setSnackbar({ open: true, message: `Certificate generated for ${s.name}` })}
-                          >
-                            Generate Certificate
-                          </Button>
-                        </Box>
-                        )}
-                      </Box>
-                    ))
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">No eligible students</Typography>
-                  )}
-                </AccordionDetails>
-              </Accordion>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      {/* 弹窗：发放徽章 */}
-      <Dialog open={Boolean(selectedBadge)} onClose={() => setSelectedBadge(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Issue Badge - {selectedBadge?.name}</DialogTitle>
-        <DialogContent dividers>
-          {selectedBadge?.eligibleStudents.length > 0 ? (
-            selectedBadge.eligibleStudents.map(s => (
-              <Paper key={s.id} sx={{ p:2, mb:2, borderRadius:2, boxShadow:1 }}>
-                <Typography variant="subtitle1" fontWeight="bold">{s.name}</Typography>
+      {badges.length === 0 && (
+        <Box sx={{ ...panelSx, p: 4, textAlign: "center" }}>
+          <Typography sx={{ color: "#0b3b28", fontWeight: 950 }}>No badges yet</Typography>
+          <Typography sx={{ mt: 1, color: "#607166", fontWeight: 700 }}>
+            Create a badge or add a badge name to a training module.
+          </Typography>
+        </Box>
+      )}
 
-                <Box sx={{ display:"flex", alignItems:"center", gap:1, mt:1 }}>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={s.progressPercent} 
-                    sx={{ flex:1, height:6, borderRadius:3 }} 
-                  />
-                  <Typography variant="caption">{s.progressPercent}%</Typography>
-                </Box>
-
-                {selectedBadge.requirePhysical && (
-                  s.physicalCompleted ? 
-                    <Chip label="Physical Confirmed" color="success" size="small" sx={{ mt:1 }} /> : 
-                    <Chip label="Physical Pending" color="warning" size="small" sx={{ mt:1 }} />
-                )}
-                
-                <ButtonGroup variant="contained" size="small" sx={{ mt:2 }}>
-                  <Button onClick={() => issueBadge(s.id, selectedBadge.id)}>
-                    Issue Badge
-                  </Button>
-                  <Button 
-                    color="secondary" 
-                    onClick={() => setSnackbar({ open: true, message: `Notification sent to ${s.name}` })}
-                  >
-                    Send Notification
-                  </Button>
-                </ButtonGroup>
-              </Paper>
-            ))
-          ) : (
-            <Typography variant="body2" color="text.secondary">No eligible students</Typography>
-          )}
+      <Dialog open={badgeDialogOpen} onClose={() => setBadgeDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ color: "#0b3b28", fontWeight: 950 }}>Add Badge</DialogTitle>
+        <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
+          <TextField label="Badge Name" value={badgeForm.name} onChange={(event) => setBadgeForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
+          <TextField label="Type" value={badgeForm.type} onChange={(event) => setBadgeForm((prev) => ({ ...prev, type: event.target.value }))} fullWidth />
+          <FormControlLabel
+            control={<Checkbox checked={badgeForm.requireQuiz} onChange={(event) => setBadgeForm((prev) => ({ ...prev, requireQuiz: event.target.checked }))} />}
+            label="Require quiz completion"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={badgeForm.requirePhysical} onChange={(event) => setBadgeForm((prev) => ({ ...prev, requirePhysical: event.target.checked }))} />}
+            label="Require physical assessment"
+          />
         </DialogContent>
-      </Dialog>
-
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)}>
-        <DialogTitle>Add New Badge</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Badge Name"
-            fullWidth
-            margin="dense"
-            value={newBadge.name}
-            onChange={(e) => setNewBadge({ ...newBadge, name: e.target.value })}
-          />
-          <TextField
-            label="Type"
-            fullWidth
-            margin="dense"
-            value={newBadge.type}
-            onChange={(e) => setNewBadge({ ...newBadge, type: e.target.value })}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={newBadge.requireQuiz}
-                onChange={(e) => setNewBadge({ ...newBadge, requireQuiz: e.target.checked })}
-              />
-            }
-            label="Require Quiz"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={newBadge.requirePhysical}
-                onChange={(e) => setNewBadge({ ...newBadge, requirePhysical: e.target.checked })}
-              />
-            }
-            label="Require Physical"
-          />
-          <Button variant="contained" sx={{ mt:2 }} onClick={handleAddBadge}>
-            Save
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setBadgeDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={createBadge} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+            Save Badge
           </Button>
-        </DialogContent>
+        </DialogActions>
       </Dialog>
 
-        {/* Snackbar 提示 */}
-        <Snackbar 
-          open={snackbar.open} 
-          autoHideDuration={3000} 
-          onClose={() => setSnackbar({ open:false, message:"" })} 
-          message={snackbar.message} 
-        />
+      <Dialog open={issueDialogOpen} onClose={() => setIssueDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ color: "#0b3b28", fontWeight: 950 }}>Issue Badge</DialogTitle>
+        <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
+          <Typography sx={{ color: "#0b3b28", fontWeight: 900 }}>
+            {selectedBadge?.name || "Selected badge"}
+          </Typography>
+          <TextField label="Guide" select value={selectedStudentId} onChange={(event) => setSelectedStudentId(event.target.value)} fullWidth>
+            {eligibleStudents.map((student) => (
+              <MenuItem key={student.id} value={student.id}>
+                {student.name} · {student.email}
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setIssueDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={issueBadge} sx={{ ...buttonSx, bgcolor: "#ff7a1a" }}>
+            Issue Certificate
+          </Button>
+        </DialogActions>
+      </Dialog>
 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3200}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

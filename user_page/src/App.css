@@ -1533,6 +1533,16 @@ button {
   color: var(--white);
 }
 
+.resource-pill {
+  border: 1px solid rgba(255, 122, 26, 0.32);
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: var(--sun-soft);
+  color: var(--forest);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .danger-button {
   background: var(--danger);
   color: var(--white);

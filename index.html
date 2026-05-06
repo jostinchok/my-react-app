@@ -26,12 +26,18 @@
           <code>cd /Users/chiayuenkai/Desktop/GitHub/my-react-app && npm run dev</code>
         </div>
         <nav class="hub-actions" aria-label="Demo navigation">
-          <a href="/login" target="_blank" rel="noreferrer">Login / Register</a>
-          <a href="/user" target="_blank" rel="noreferrer">Login / Register</a>
+          <a href="http://localhost:5176/login/" target="_blank" rel="noreferrer">Login / Register</a>
           <a href="/user" target="_blank" rel="noreferrer">Park Guide / User Portal</a>
           <a href="/admin" target="_blank" rel="noreferrer">Admin Dashboard</a>
+          <a href="/admin/course" target="_blank" rel="noreferrer">Admin Courses</a>
+          <a href="/admin/training" target="_blank" rel="noreferrer">Admin Training Modules</a>
+          <a href="/admin/course-requests" target="_blank" rel="noreferrer">Course Requests</a>
+          <a href="/admin/students" target="_blank" rel="noreferrer">Guide Management</a>
+          <a href="/admin/badge" target="_blank" rel="noreferrer">Badges / Certificates</a>
           <a href="/admin/detection" target="_blank" rel="noreferrer">Admin Incident Detection</a>
           <a href="/admin/ranger" target="_blank" rel="noreferrer">Park Ranger Alert Console</a>
+          <a href="http://localhost:4002/api/health" target="_blank" rel="noreferrer">Admin API Health</a>
+          <a href="http://localhost:4001/api/health" target="_blank" rel="noreferrer">User API Health</a>
           <a href="http://localhost:8081" target="_blank" rel="noreferrer">Mobile Preview</a>
           <a href="/api/health" target="_blank" rel="noreferrer">Backend API Health</a>
           <a href="/api/incidents" target="_blank" rel="noreferrer">Incidents API</a>
@@ -59,10 +65,12 @@
             <span class="status-pill" data-status-for="admin">checking</span>
           </div>
           <h2>Admin Portal</h2>
-          <p>Admin dashboard for training modules, guide progress, certificates, and detection review.</p>
+          <p>Admin dashboard for course/module management, guide progress, certificates, requests, and detection review.</p>
           <div class="link-row">
             <a href="/admin" target="_blank" rel="noreferrer">Open proxied</a>
             <a href="http://localhost:5174/admin" target="_blank" rel="noreferrer">Direct</a>
+            <a href="/admin/course" target="_blank" rel="noreferrer">Courses</a>
+            <a href="/admin/course-requests" target="_blank" rel="noreferrer">Requests</a>
             <a href="/admin/detection" target="_blank" rel="noreferrer">Incidents</a>
           </div>
         </article>
@@ -109,6 +117,20 @@
 
         <article class="service-card">
           <div class="service-top">
+            <span class="service-icon">T</span>
+            <span class="status-pill" data-status-for="adminApi">checking</span>
+          </div>
+          <h2>Training APIs</h2>
+          <p>Admin course/resource API and user training API share the MySQL training data for the demo.</p>
+          <div class="link-row">
+            <a href="http://localhost:4002/api/health" target="_blank" rel="noreferrer">Admin API</a>
+            <a href="http://localhost:4002/api/courses" target="_blank" rel="noreferrer">Courses JSON</a>
+            <a href="http://localhost:4001/api/training-modules" target="_blank" rel="noreferrer">User modules JSON</a>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-top">
             <span class="service-icon">S</span>
             <span class="status-pill" data-status-for="summary">checking</span>
           </div>
@@ -126,7 +148,8 @@
         <ul>
           <li>Use this hub for one-session review; the source apps remain separated by responsibility.</li>
           <li>Demo access roles: Park Guide, Admin, and Park Ranger are shown for tutor review. Current route access is demo-open; API role checks can be enabled with <code>ROLE_CHECK_ENABLED=true</code>.</li>
-          <li>The training platform is a seeded front-end demo; only AI/IoT monitoring incidents use the backend storage layer.</li>
+          <li>Training courses, modules, resources, guide accounts, enrollment requests, and badges are linked through the MySQL-backed admin/user APIs.</li>
+          <li>Admin-created modules appear in the Park Guide user portal and Expo mobile preview; admin resources appear as download-only guide files.</li>
           <li>AI camera and IoT incident ingestion can require device tokens with <code>DEVICE_TOKEN_AUTH_ENABLED=true</code>.</li>
           <li>Incident storage can run in memory mode for quick demos or MySQL mode using <code>cos30049_assignment</code>.</li>
           <li>Direct links are useful if a dev server websocket does not work through the hub proxy.</li>

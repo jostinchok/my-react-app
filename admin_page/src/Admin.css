@@ -1,6 +1,7 @@
 .admin-dashboard-shell,
 .incident-dashboard,
-.ranger-console {
+.ranger-console,
+.admin-linked-page {
   --ce-forest: #0b3b28;
   --ce-forest-2: #175f3e;
   --ce-citrus: #ff7a1a;
@@ -12,6 +13,20 @@
   --ce-line: #dce7d7;
   --ce-muted: #607166;
   --ce-shadow: 0 20px 52px rgba(23, 95, 62, 0.12);
+}
+
+.admin-linked-page {
+  min-height: 100vh;
+  padding: 24px;
+  color: var(--ce-charcoal);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 210, 63, 0.30), transparent 24rem),
+    radial-gradient(circle at 94% 10%, rgba(168, 230, 74, 0.22), transparent 20rem),
+    linear-gradient(135deg, #fffaf0 0%, #eef7e8 54%, #fff0d6 100%);
+}
+
+.admin-linked-page .admin-dashboard-kicker {
+  color: #8d4f12;
 }
 
 .admin-dashboard-shell {

@@ -22,6 +22,9 @@ export const API_LINKS = {
   files:
     import.meta.env.VITE_COURSE_FILES_API_URL ||
     `${USER_API_BASE_URL}/api/course-files`,
+  enrollmentRequests:
+    import.meta.env.VITE_ENROLLMENT_REQUESTS_API_URL ||
+    `${USER_API_BASE_URL}/api/enrollments/requests`,
   avatar:
     import.meta.env.VITE_AVATAR_API_URL ||
     `${USER_API_BASE_URL}/api/user-profile/avatar`,
@@ -37,6 +40,7 @@ export const DB_SQL_SCHEMA = {
     guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
     training_modules: [
       'module_id',
+      'course_id',
       'title',
       'description',
       'category',
@@ -70,6 +74,7 @@ export const DATABASE_TABLE_TEMPLATE = {
   guide_profiles: ['guide_id', 'phone', 'organization', 'years_experience', 'address', 'avatar_url', 'status'],
   training_modules: [
     'module_id',
+    'course_id',
     'title',
     'description',
     'category',
@@ -253,6 +258,7 @@ export const normalizeModuleRow = (row, index = 0) => {
 
   return {
     id,
+    courseId: asText(row.course_id, ''),
     title,
     subtitle: asText(firstValue(row.subtitle, row.description), 'Module description will appear here after database data is loaded.'),
     category: asText(firstValue(row.category, row.type), 'Database Module'),

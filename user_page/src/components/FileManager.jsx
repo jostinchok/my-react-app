@@ -121,7 +121,7 @@ const FileManager = ({
         </div>
 
         <div className="files-section">
-          <h3>Your files ({files.length})</h3>
+          <h3>Training resources ({files.length})</h3>
           {files.length === 0 ? (
             <div className="empty-frame">
               <strong>No files yet</strong>
@@ -147,14 +147,18 @@ const FileManager = ({
                   </dl>
                   <div className="file-card-actions">
                     <a href={resolveDownloadUrl(file.url)} download={file.name}>Download</a>
-                    <button
-                      type="button"
-                      className="danger-button"
-                      disabled={deletingFileId === file.id}
-                      onClick={() => handleDelete(file.id)}
-                    >
-                      Delete
-                    </button>
+                    {file.readOnly ? (
+                      <span className="resource-pill">Admin resource</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="danger-button"
+                        disabled={deletingFileId === file.id}
+                        onClick={() => handleDelete(file.id)}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </article>
               ))}
