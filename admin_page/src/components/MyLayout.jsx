@@ -11,10 +11,11 @@ const MyLayout = (props) => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const isIncidentSurface =
-    location.pathname.startsWith("/admin/detection") ||
-    location.pathname.startsWith("/admin/ranger");
+    location.pathname.startsWith("/admin/detection");
   const incidentBackground =
-    "radial-gradient(circle at 12% 6%, rgba(255, 210, 63, 0.32), transparent 28rem), radial-gradient(circle at 86% 14%, rgba(168, 230, 74, 0.26), transparent 30rem), radial-gradient(circle at 48% 100%, rgba(255, 122, 26, 0.12), transparent 34rem), linear-gradient(135deg, #fff8e6 0%, #f4fbdf 18%, #dff0ca 34%, #2b6946 66%, #0b3b28 100%)";
+    "radial-gradient(circle at 10% 6%, rgba(255, 216, 77, 0.32), transparent 28rem), radial-gradient(circle at 88% 14%, rgba(167, 233, 87, 0.25), transparent 30rem), radial-gradient(circle at 48% 100%, rgba(255, 122, 26, 0.10), transparent 34rem), linear-gradient(135deg, #fffdf5 0%, #fff9e8 42%, #f6ffe8 100%)";
+  const shellBackground =
+    "radial-gradient(circle at 8% 0%, rgba(255, 216, 77, 0.22), transparent 24rem), radial-gradient(circle at 94% 10%, rgba(167, 233, 87, 0.18), transparent 20rem), linear-gradient(135deg, #fffdf5 0%, #fff9e8 48%, #f6ffe8 100%)";
 
   return (
     <Layout
@@ -28,30 +29,24 @@ const MyLayout = (props) => {
         />
       )}
       sx={{
-        backgroundColor: isIncidentSurface ? "#1e2a22" : "var(--bg-light)",
+        background: shellBackground,
 
         "& .RaLayout-appFrame": {
           marginTop: "86px",
           minHeight: "calc(100vh - 86px)",
-          backgroundColor: isIncidentSurface ? "#1e2a22" : "var(--bg-light)",
+          background: shellBackground,
         },
 
         "& .RaLayout-content": {
-          "--incident-shell-max-width": isIncidentSurface
-            ? open
-              ? "1500px"
-              : "1640px"
-            : undefined,
-          background: isIncidentSurface ? incidentBackground : "var(--bg-light)",
+          "--incident-shell-max-width": isIncidentSurface ? "1440px" : undefined,
+          background: isIncidentSurface ? incidentBackground : shellBackground,
           minHeight: "calc(100vh - 86px)",
-          marginLeft: isIncidentSurface ? 0 : open ? `100px` : "-198px",
-          padding: isIncidentSurface
-            ? {
-                xs: "18px 12px",
-                md: "24px 20px",
-                lg: open ? "28px 22px" : "30px 28px",
-              }
-            : "44px 42px",
+          marginLeft: open ? "100px" : "-198px",
+          padding: {
+            xs: "22px 16px",
+            md: "32px 28px",
+            lg: "44px 42px",
+          },
           overflowX: "hidden",
           transition: "padding 0.25s ease, margin-left 0.35s ease",
         },
@@ -75,7 +70,7 @@ const MyLayout = (props) => {
               paddingTop: 0,
               boxShadow: "none",
               overflowX: "hidden",
-              zIndex: 1200, 
+              zIndex: 1200,
             },
           }}
         >

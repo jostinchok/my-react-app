@@ -2190,3 +2190,784 @@
     grid-template-columns: minmax(0, 1fr) minmax(390px, 440px);
   }
 }
+
+/* Citrus Energetic 2.0: light Apple-like admin shell and review surfaces. */
+:root {
+  --primary-dark: #173126;
+  --primary-mid: #3fae5a;
+  --accent-green: #3fae5a;
+  --sidebar-green: #fff3b8;
+  --sidebar-active: #ffffff;
+  --progress-green: #3fae5a;
+  --progress-bg: #ddfbd2;
+  --bg-light: #fffdf5;
+  --text-main: #173126;
+  --ce-ink: #173126;
+  --ce-muted-2: #56685d;
+  --ce-muted-3: #6f7f73;
+  --ce-page: #fffdf5;
+  --ce-page-warm: #fff9e8;
+  --ce-secondary: #f6ffe8;
+  --ce-card: #ffffff;
+  --ce-card-warm: #fffcf2;
+  --ce-orange-2: #ff7a1a;
+  --ce-tangerine: #ff9f1c;
+  --ce-lemon-2: #ffd84d;
+  --ce-lime-2: #a7e957;
+  --ce-mint: #ddfbd2;
+  --ce-fresh: #3fae5a;
+  --ce-border-warm: #eadfbf;
+  --ce-border-green: #d8eac7;
+  --ce-shadow-soft: 0 18px 45px rgba(255, 122, 26, 0.10);
+  --ce-shadow-green-soft: 0 16px 36px rgba(63, 174, 90, 0.10);
+}
+
+body {
+  background: #fffdf5;
+  color: var(--ce-ink);
+}
+
+.admin-dashboard-shell,
+.incident-dashboard,
+.ranger-console,
+.admin-linked-page {
+  --ce-forest: #173126;
+  --ce-forest-2: #3fae5a;
+  --ce-citrus: #ff7a1a;
+  --ce-sun: #ffd84d;
+  --ce-lime: #a7e957;
+  --ce-cream: #fffdf5;
+  --ce-mist: #f6ffe8;
+  --ce-charcoal: #173126;
+  --ce-line: #eadfbf;
+  --ce-muted: #56685d;
+  --ce-shadow: var(--ce-shadow-soft);
+  color: var(--ce-ink);
+}
+
+.admin-linked-page,
+.admin-dashboard-shell {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 216, 77, 0.24), transparent 24rem),
+    radial-gradient(circle at 94% 10%, rgba(167, 233, 87, 0.18), transparent 20rem),
+    linear-gradient(135deg, #fffdf5 0%, #fff9e8 48%, #f6ffe8 100%);
+}
+
+.admin-sidebar {
+  background: linear-gradient(180deg, #fff3b8 0%, #ffd66b 42%, #ff9f1c 100%) !important;
+  color: #173126 !important;
+  box-shadow: 18px 0 45px rgba(255, 122, 26, 0.12) !important;
+}
+
+.admin-sidebar-header {
+  border-bottom: 1px solid rgba(234, 223, 191, 0.72) !important;
+}
+
+.admin-sidebar-badge {
+  background: #fffdf5 !important;
+  color: #173126 !important;
+  box-shadow: 0 12px 26px rgba(255, 122, 26, 0.18) !important;
+}
+
+.admin-sidebar-title {
+  color: #173126 !important;
+  text-shadow: none !important;
+}
+
+.admin-sidebar-footer {
+  border-top: 1px solid rgba(234, 223, 191, 0.7) !important;
+}
+
+.admin-sidebar-version {
+  color: #56685d !important;
+  font-weight: 850;
+}
+
+.nav-item {
+  border: 1px solid transparent !important;
+  color: #173126 !important;
+  font-weight: 850;
+}
+
+.nav-item .nav-label,
+.nav-item .nav-icon {
+  color: inherit !important;
+}
+
+.nav-item:hover {
+  background: rgba(255, 253, 245, 0.70) !important;
+  border-color: rgba(216, 234, 199, 0.88) !important;
+  color: #173126 !important;
+}
+
+.nav-item.active {
+  background: rgba(255, 253, 245, 0.94) !important;
+  border-color: #eadfbf !important;
+  color: #173126 !important;
+  box-shadow: inset 5px 0 0 #a7e957, 0 12px 24px rgba(255, 122, 26, 0.14) !important;
+  font-weight: 950;
+}
+
+.admin-top-icon-btn {
+  border-color: #eadfbf !important;
+  background: #fffdf5 !important;
+  color: #ff7a1a !important;
+}
+
+.admin-top-icon-btn:hover {
+  background: #f6ffe8 !important;
+  border-color: #d8eac7 !important;
+}
+
+.admin-top-user-btn {
+  border: 1px solid #eadfbf !important;
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d) !important;
+  color: #173126 !important;
+  box-shadow: 0 10px 22px rgba(255, 122, 26, 0.16) !important;
+}
+
+.admin-top-brand-logo {
+  border-color: #eadfbf !important;
+  background: #fffdf5 !important;
+}
+
+.admin-top-brand-copy span {
+  color: #173126 !important;
+}
+
+.admin-top-brand-copy strong,
+.admin-linked-page .admin-dashboard-kicker,
+.admin-dashboard-kicker {
+  color: #c65d00 !important;
+}
+
+.admin-hero-banner {
+  background:
+    radial-gradient(circle at 88% 10%, rgba(167, 233, 87, 0.46), transparent 16rem),
+    linear-gradient(135deg, #ff8a1d 0%, #ffd84d 48%, #f3ffd4 100%) !important;
+  color: #173126 !important;
+  border: 1px solid #eadfbf !important;
+  box-shadow: var(--ce-shadow-soft) !important;
+}
+
+.admin-hero-title,
+.admin-hero-subtitle {
+  color: #173126 !important;
+}
+
+.admin-hero-chip-row span {
+  border-color: rgba(234, 223, 191, 0.92) !important;
+  background: rgba(255, 253, 245, 0.72) !important;
+  color: #173126 !important;
+}
+
+.admin-dashboard-card,
+.admin-dashboard-shell .MuiCard-root,
+.incident-stat-card,
+.ranger-stat-card,
+.incident-table-panel,
+.ranger-table-panel,
+.incident-detail-panel,
+.ranger-detail-panel {
+  border-color: #eadfbf !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  box-shadow: var(--ce-shadow-soft) !important;
+}
+
+.admin-dashboard-card-top span {
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d) !important;
+  color: #173126 !important;
+}
+
+.admin-dashboard-card.tone-lime .admin-dashboard-card-top span,
+.admin-dashboard-card.tone-healthy .admin-dashboard-card-top span,
+.admin-dashboard-card.tone-green .admin-dashboard-card-top span {
+  background: linear-gradient(135deg, #ddfbd2, #a7e957) !important;
+  color: #173126 !important;
+}
+
+.admin-dashboard-card strong,
+.admin-dashboard-section > h2 {
+  color: #173126 !important;
+}
+
+.admin-dashboard-card p,
+.admin-dashboard-card-top p {
+  color: #56685d !important;
+}
+
+.admin-progress-fill,
+.admin-linear-progress .MuiLinearProgress-bar {
+  background: linear-gradient(90deg, #3fae5a, #a7e957) !important;
+}
+
+.admin-linked-page .MuiOutlinedInput-root {
+  border-radius: 14px;
+  background: #ffffff;
+  color: #173126;
+}
+
+.admin-linked-page .MuiOutlinedInput-root fieldset {
+  border-color: #d8eac7;
+}
+
+.admin-linked-page .MuiOutlinedInput-root:hover fieldset {
+  border-color: #a7e957;
+}
+
+.admin-linked-page .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: #ff9f1c;
+  border-width: 2px;
+}
+
+.admin-linked-page .MuiInputLabel-root,
+.admin-linked-page .MuiInputBase-input {
+  color: #173126;
+}
+
+.admin-linked-page .MuiInputLabel-root.Mui-focused {
+  color: #c65d00;
+}
+
+.admin-linked-page .MuiInputBase-input::placeholder {
+  color: #6f7f73;
+  opacity: 1;
+}
+
+.incident-dashboard,
+.ranger-console {
+  --incident-ink: #173126;
+  --incident-muted: #56685d;
+  --incident-border: #eadfbf;
+  --incident-panel: rgba(255, 255, 255, 0.96);
+  --incident-soft: #fff9e8;
+  --incident-green: #3fae5a;
+  --incident-lime: #a7e957;
+  --incident-amber: #ff9f1c;
+  --incident-red: #d7553f;
+  --ranger-ink: #173126;
+  --ranger-muted: #56685d;
+  --ranger-green: #3fae5a;
+  --ranger-mint: #ddfbd2;
+  --ranger-amber: #ff9f1c;
+  --ranger-cream: #fffdf5;
+  --ranger-line: #eadfbf;
+}
+
+.incident-hero,
+.ranger-header {
+  border: 1px solid #eadfbf !important;
+  background:
+    radial-gradient(circle at 84% 14%, rgba(167, 233, 87, 0.48), transparent 16rem),
+    linear-gradient(135deg, #ff8a1d 0%, #ffd84d 48%, #f3ffd4 100%) !important;
+  color: #173126 !important;
+  box-shadow: var(--ce-shadow-soft) !important;
+}
+
+.ranger-header .incident-eyebrow,
+.ranger-header .ranger-title,
+.ranger-header .ranger-subtitle,
+.incident-title,
+.incident-subtitle {
+  color: #173126 !important;
+}
+
+.incident-page-brand,
+.incident-contract-card,
+.ranger-live-card,
+.incident-telemetry-card,
+.incident-camera-card,
+.incident-state-banner,
+.ranger-boundary-card,
+.incident-filter-row {
+  border-color: #eadfbf !important;
+  background: rgba(255, 253, 245, 0.88) !important;
+  color: #173126 !important;
+  box-shadow: var(--ce-shadow-soft) !important;
+}
+
+.incident-contract-card span,
+.ranger-live-card span,
+.incident-stat-card span,
+.ranger-stat-card span,
+.incident-eyebrow {
+  color: #c65d00 !important;
+}
+
+.incident-contract-card strong,
+.ranger-live-card strong,
+.incident-stat-card strong,
+.ranger-stat-card strong,
+.incident-section-head h2,
+.incident-detail-panel h2,
+.ranger-detail-panel h2 {
+  color: #173126 !important;
+}
+
+.incident-contract-card small,
+.ranger-live-card small,
+.incident-state-banner span,
+.ranger-boundary-card span,
+.incident-stat-card p,
+.ranger-stat-card p {
+  color: #56685d !important;
+}
+
+.incident-section-head {
+  background:
+    radial-gradient(circle at 92% 20%, rgba(255, 216, 77, 0.28), transparent 11rem),
+    linear-gradient(135deg, #ffffff, #fff9e8 78%) !important;
+  border-bottom-color: #eadfbf !important;
+}
+
+.incident-filter-row .MuiButton-root,
+.incident-status-actions .MuiButton-root,
+.ranger-recommendation-actions .MuiButton-root,
+.admin-official-status .MuiButton-root {
+  border-color: #eadfbf !important;
+  background: #ffffff !important;
+  color: #173126 !important;
+}
+
+.incident-filter-row .MuiButton-root.active,
+.incident-detail-button,
+.incident-status-actions .MuiButton-root.active,
+.admin-official-status .MuiButton-root.active {
+  border-color: #ff9f1c !important;
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d) !important;
+  color: #173126 !important;
+}
+
+.ranger-recommendation-actions .MuiButton-root:hover,
+.incident-detail-button:hover {
+  border-color: #ff9f1c !important;
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d) !important;
+  color: #173126 !important;
+}
+
+.incident-evidence-frame,
+.incident-no-image {
+  border-color: #eadfbf !important;
+  background: #fff9e8 !important;
+}
+
+.incident-detail-item,
+.incident-metadata-card,
+.incident-notes,
+.ranger-notes,
+.ranger-recommendation-form,
+.incident-ranger-recommendations,
+.ranger-recommendation-history {
+  border-color: #eadfbf !important;
+  background: #fffcf2 !important;
+}
+
+.incident-ranger-recommendations,
+.ranger-recommendation-history,
+.admin-official-status {
+  box-shadow: inset 4px 0 0 #a7e957, var(--ce-shadow-green-soft) !important;
+}
+
+/* Small readability pass: shared chip text, admin content rhythm, and incident controls. */
+.admin-linked-page,
+.admin-dashboard-shell,
+.incident-dashboard,
+.ranger-console {
+  width: min(100%, 1440px) !important;
+  max-width: 1440px !important;
+  margin-inline: auto !important;
+  box-sizing: border-box;
+}
+
+.incident-dashboard,
+.ranger-console {
+  padding: 24px 24px 28px !important;
+}
+
+.admin-linked-page .MuiChip-root,
+.admin-dashboard-shell .MuiChip-root,
+.incident-dashboard .MuiChip-root,
+.ranger-console .MuiChip-root {
+  color: #173126 !important;
+  border-color: #d8eac7 !important;
+}
+
+.admin-linked-page .MuiChip-label,
+.admin-dashboard-shell .MuiChip-label,
+.incident-dashboard .MuiChip-label,
+.ranger-console .MuiChip-label {
+  color: #173126 !important;
+  font-weight: 900 !important;
+}
+
+.admin-linked-page .MuiChip-icon,
+.admin-dashboard-shell .MuiChip-icon,
+.incident-dashboard .MuiChip-icon,
+.ranger-console .MuiChip-icon {
+  color: #173126 !important;
+}
+
+.incident-telemetry-card .MuiButton-root,
+.incident-camera-card .MuiButton-root,
+.incident-filter-row .MuiButton-root,
+.ranger-recommendation-actions .MuiButton-root,
+.incident-detail-button {
+  min-height: 38px;
+  border: 1px solid #eadfbf !important;
+  background: #ffffff !important;
+  color: #173126 !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+}
+
+.incident-telemetry-card .MuiButton-root:hover,
+.incident-camera-card .MuiButton-root:hover,
+.incident-filter-row .MuiButton-root:hover,
+.ranger-recommendation-actions .MuiButton-root:hover,
+.incident-detail-button:hover {
+  border-color: #ff9f1c !important;
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d) !important;
+  color: #173126 !important;
+}
+
+.incident-dashboard .MuiButton-root.Mui-disabled,
+.ranger-console .MuiButton-root.Mui-disabled,
+.incident-dashboard .MuiChip-root.Mui-disabled,
+.ranger-console .MuiChip-root.Mui-disabled {
+  border-color: #d8eac7 !important;
+  background: #fffcf2 !important;
+  color: #56685d !important;
+  opacity: 1 !important;
+}
+
+.incident-dashboard .MuiButton-root.Mui-disabled *,
+.ranger-console .MuiButton-root.Mui-disabled *,
+.incident-dashboard .MuiChip-root.Mui-disabled *,
+.ranger-console .MuiChip-root.Mui-disabled * {
+  color: #56685d !important;
+}
+
+.incident-dashboard .MuiFormLabel-root,
+.ranger-console .MuiFormLabel-root,
+.incident-dashboard .MuiInputBase-input,
+.ranger-console .MuiInputBase-input,
+.incident-dashboard .MuiTypography-root,
+.ranger-console .MuiTypography-root {
+  color: #173126;
+}
+
+.incident-dashboard .MuiTypography-colorTextSecondary,
+.ranger-console .MuiTypography-colorTextSecondary,
+.incident-dashboard .MuiTypography-body2,
+.ranger-console .MuiTypography-body2,
+.incident-detail-id,
+.incident-detail-kicker,
+.ranger-note-count {
+  color: #56685d !important;
+}
+
+.incident-table .MuiTableHead-root .MuiTableCell-root,
+.incident-table .MuiTableBody-root .MuiTableCell-root,
+.incident-detail-item span,
+.incident-detail-item strong,
+.incident-metadata-card h3,
+.incident-notes h3,
+.ranger-recommendation-form h3,
+.ranger-recommendation-history h3 {
+  color: #173126 !important;
+}
+
+@media (max-width: 760px) {
+  .incident-dashboard,
+  .ranger-console {
+    padding: 16px !important;
+  }
+}
+
+/* Dashboard readability fix: force MUI and Recharts labels onto dark Citrus ink. */
+.admin-dashboard-shell,
+.admin-dashboard-shell .MuiCard-root,
+.admin-dashboard-shell .MuiCardContent-root,
+.admin-dashboard-shell .MuiTypography-root {
+  color: #173126 !important;
+}
+
+.admin-dashboard-shell .MuiTypography-colorTextSecondary,
+.admin-dashboard-shell .MuiTypography-body2,
+.admin-dashboard-shell .MuiTypography-caption {
+  color: #56685d !important;
+}
+
+.admin-dashboard-shell .admin-hero-title,
+.admin-dashboard-shell .admin-hero-subtitle,
+.admin-dashboard-shell .admin-dashboard-section > h2,
+.admin-dashboard-shell h1,
+.admin-dashboard-shell h2,
+.admin-dashboard-shell h3,
+.admin-dashboard-shell h4,
+.admin-dashboard-shell h5,
+.admin-dashboard-shell h6 {
+  color: #173126 !important;
+}
+
+.admin-dashboard-shell .recharts-text,
+.admin-dashboard-shell .recharts-cartesian-axis-tick-value {
+  fill: #56685d !important;
+  font-weight: 800 !important;
+}
+
+.admin-dashboard-shell .recharts-legend-item-text,
+.admin-dashboard-shell .recharts-default-legend,
+.admin-dashboard-shell .recharts-legend-wrapper {
+  color: #173126 !important;
+  font-weight: 850 !important;
+}
+
+.admin-dashboard-shell .recharts-default-tooltip,
+.admin-dashboard-shell .recharts-tooltip-wrapper {
+  color: #173126 !important;
+}
+
+.incident-row-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 172px;
+}
+
+.incident-delete-button {
+  min-height: 38px !important;
+  border: 1px solid rgba(215, 85, 63, 0.42) !important;
+  border-radius: 12px !important;
+  background: #fff8f4 !important;
+  color: #9f2418 !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+}
+
+.incident-delete-button:hover {
+  border-color: #d7553f !important;
+  background: #ffe6dd !important;
+  color: #7f1d13 !important;
+}
+
+.incident-delete-button.Mui-disabled {
+  border-color: #eadfbf !important;
+  background: #fffcf2 !important;
+  color: #6f7f73 !important;
+  opacity: 1 !important;
+}
+
+.incident-danger-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(215, 85, 63, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff8f4, #ffffff);
+  box-shadow: inset 4px 0 0 #d7553f;
+}
+
+.incident-danger-actions h3 {
+  margin: 0;
+  color: #9f2418 !important;
+  font-size: 0.9rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.incident-danger-actions p {
+  margin: 0;
+  color: #56685d !important;
+  line-height: 1.45;
+}
+
+.incident-danger-actions .incident-delete-button {
+  width: fit-content;
+}
+
+.ranger-standalone-shell {
+  min-height: 100vh;
+  padding: 24px;
+  color: #173126;
+  background:
+    radial-gradient(circle at 10% 6%, rgba(255, 216, 77, 0.32), transparent 28rem),
+    radial-gradient(circle at 88% 14%, rgba(167, 233, 87, 0.25), transparent 30rem),
+    linear-gradient(135deg, #fffdf5 0%, #fff9e8 42%, #f6ffe8 100%);
+  box-sizing: border-box;
+}
+
+.ranger-standalone-topbar {
+  width: min(100%, 1440px);
+  min-height: 74px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 18px;
+  border: 1px solid #eadfbf;
+  border-radius: 22px;
+  background: rgba(255, 253, 245, 0.94);
+  box-shadow: 0 18px 45px rgba(255, 122, 26, 0.10);
+  backdrop-filter: blur(18px);
+  box-sizing: border-box;
+}
+
+.ranger-standalone-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ranger-standalone-brand img {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid #eadfbf;
+  background: #fffdf5;
+  object-fit: cover;
+}
+
+.ranger-standalone-brand strong,
+.ranger-standalone-brand span {
+  display: block;
+}
+
+.ranger-standalone-brand strong {
+  color: #173126;
+  font-size: 1.02rem;
+  font-weight: 950;
+}
+
+.ranger-standalone-brand span {
+  color: #56685d;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.ranger-standalone-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ranger-standalone-links .MuiButton-root {
+  border: 1px solid #eadfbf;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #173126;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.ranger-standalone-links .MuiButton-root:hover {
+  border-color: #ff9f1c;
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d);
+  color: #173126;
+}
+
+.ranger-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+  max-width: 980px;
+}
+
+.ranger-identity-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(234, 223, 191, 0.88);
+  border-radius: 18px;
+  background: rgba(255, 253, 245, 0.78);
+  box-shadow: inset 4px 0 0 #a7e957, 0 14px 28px rgba(255, 122, 26, 0.08);
+}
+
+.ranger-identity-card > span {
+  color: #c65d00;
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.ranger-identity-card > strong {
+  color: #173126;
+  font-size: 1.1rem;
+  font-weight: 950;
+}
+
+.ranger-identity-card > small {
+  color: #56685d;
+  font-weight: 850;
+}
+
+.ranger-identity-fields,
+.guide-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ranger-identity-fields div,
+.guide-identity-grid div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #eadfbf;
+  border-radius: 12px;
+  background: #fffcf2;
+}
+
+.ranger-identity-fields span,
+.guide-identity-grid span {
+  display: block;
+  color: #6f7f73;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.ranger-identity-fields strong,
+.guide-identity-grid strong {
+  display: block;
+  margin-top: 3px;
+  color: #173126;
+  font-size: 0.82rem;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.guide-identity-grid {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 860px) {
+  .ranger-standalone-shell {
+    padding: 14px;
+  }
+
+  .ranger-standalone-topbar,
+  .ranger-identity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ranger-standalone-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ranger-standalone-links {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .ranger-identity-fields,
+  .guide-identity-grid {
+    grid-template-columns: 1fr;
+  }
+}

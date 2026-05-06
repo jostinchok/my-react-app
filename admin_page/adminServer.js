@@ -791,13 +791,20 @@ app.get('/api/students', asyncRoute(async (_req, res) => {
   `)
 
   res.json({
-    students: students.map((student) => ({
-      ...student,
-      eligibility: student.status === 'inactive' ? 'Rejected' : 'Approved',
-      module: student.module || 'None',
-      progressPercent: Number(student.progressPercent || 0),
-      accountCreated: true,
-    })),
+    students: students.map((student) => {
+      const identityNumber = String(student.id).padStart(4, '0')
+      return {
+        ...student,
+        guideId: `GUIDE-SFC-${identityNumber}`,
+        trainingId: `TRN-SFC-${identityNumber}`,
+        studentId: `TRN-SFC-${identityNumber}`,
+        roleLabel: student.role_name === 'user' ? 'Park User' : 'Park Guide',
+        eligibility: student.status === 'inactive' ? 'Rejected' : 'Approved',
+        module: student.module || 'None',
+        progressPercent: Number(student.progressPercent || 0),
+        accountCreated: true,
+      }
+    }),
   })
 }))
 

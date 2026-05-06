@@ -1,6 +1,5 @@
 import React from "react";
-import { Admin, Resource, ListGuesser, Layout, useGetList, CustomRoutes } from "react-admin";
-import { Route } from "react-router-dom";
+import { Admin, Resource } from "react-admin";
 import { Paper, Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress, Chip
 } from "@mui/material";
 import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
@@ -13,7 +12,6 @@ import CourseRequestsPage from "./pages/course_requests.jsx";
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
-import ParkRangerConsole from "./pages/ParkRangerConsole.jsx";
 import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
 
 import { People, CheckCircle, School } from '@mui/icons-material';
@@ -23,6 +21,16 @@ import BookIcon from "@mui/icons-material/Book";
 
 
 const dataProvider = simpleRestProvider("https://jsonplaceholder.typicode.com");
+
+const chartTick = { fill: "#56685d", fontSize: 12, fontWeight: 800 };
+const chartAxisLine = { stroke: "#b7c8bc" };
+const chartLegendStyle = { color: "#173126", fontWeight: 850 };
+const chartTooltipStyle = {
+  border: "1px solid #eadfbf",
+  borderRadius: 12,
+  color: "#173126",
+  boxShadow: "0 12px 28px rgba(255, 122, 26, 0.12)",
+};
 
 function Dashboard() {
   const incidentSummary = summarizeIncidents(seededIncidents);
@@ -148,7 +156,7 @@ function Dashboard() {
 
       <Box className="admin-chart-grid">
         <Box sx={{ flex: 1 }}>
-          <StudentProgressOverview />
+          <GuideProgressOverview />
         </Box>
         <Box sx={{ flex: 1 }}>
           <MonitoringPieOnly />
@@ -166,7 +174,7 @@ function Dashboard() {
   );
 }
 
-function StudentProgressOverview() {
+function GuideProgressOverview() {
   const students = [
     { id: 1, name: "Alice", module: "General", progressPercent: 80, badges: ["General Training"] },
     { id: 2, name: "Bob", module: "Specific", progressPercent: 100, badges: ["Bako Park Guide"] },
@@ -182,17 +190,16 @@ function StudentProgressOverview() {
       flexShrink: 0,
       borderRadius: 5,
       backgroundColor: "#fff",
-      boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+      boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
       }}>
       <Typography variant="h5" sx={{ 
         textAlign: "center", 
         mb: 3, 
-        background: "linear-gradient(90deg, #0b3b28, #ff7a1a)",
-        WebkitBackgroundClip: "text", 
-        webKitTextFillColor: "transparent",
+        color: "#173126",
+        fontWeight: 900,
         letterSpacing: 1,
       }}>
-        Student Progress Overview
+        Guide Progress Overview
       </Typography>
 
       {/* 内部列表：垂直排列三个学生卡片 */}
@@ -201,7 +208,7 @@ function StudentProgressOverview() {
           <Grid item xs={12} key={s.id}>
             <Card sx={{ 
               borderRadius: 5, 
-              boxShadow: "0 2px 10px rgba(0,0,0,0.05)", // 稍微调淡了阴影，看起来更高级
+              boxShadow: "0 14px 30px rgba(255, 122, 26, 0.08)", // 稍微调淡了阴影，看起来更高级
               p: 2,
               height: "100%",
               border: "1px solid #e0e0e0", 
@@ -213,7 +220,7 @@ function StudentProgressOverview() {
                 </Typography>
                 
                 {/* 模块信息 */}
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                <Typography variant="body2" sx={{ mb: 2, display: 'block', color: '#56685d', fontWeight: 800 }}>
                   Module: {s.module}
                 </Typography>
 
@@ -224,7 +231,7 @@ function StudentProgressOverview() {
                     value={s.progressPercent}
                     sx={{ height: 10, borderRadius: 5, backgroundColor: '#edf3e8', '& .MuiLinearProgress-bar': { background: 'linear-gradient(90deg, #8ac926, #ff7a1a)' } }}
                   />
-                  <Typography variant="caption" sx={{ mt: 0.5, display: 'block', textAlign: 'right', fontWeight: 'bold' }}>
+                  <Typography variant="caption" sx={{ mt: 0.5, display: 'block', textAlign: 'right', fontWeight: 900, color: '#173126' }}>
                     {s.progressPercent}% Completed
                   </Typography>
                 </Box>
@@ -272,7 +279,7 @@ function MonitoringPieOnly() {
     { name: "Suspicious Object", value: monitoringData.object },
   ]
 
-  const COLORS = ["#1f6f44", "#ff7a1a", "#b6d94c", "#f3b23a"];
+  const COLORS = ["#3fae5a", "#ff7a1a", "#a7e957", "#ff9f1c"];
 
   return (
     <Card sx={{ 
@@ -281,11 +288,11 @@ function MonitoringPieOnly() {
       height: "100%",
       display: "flex",
       flexDirection: "column", 
-      boxShadow: "0 2px 10px rgba(0,0,0,0.05)", 
+      boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
       backgroundColor: "#fff" 
     }}>
       <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <Typography variant="h6" sx={{ mb:1, textAlign: "center", color:"text.primary" }}>
+        <Typography variant="h6" sx={{ mb:1, textAlign: "center", color:"#173126", fontWeight: 900 }}>
           Abnormal Activity Distribution
         </Typography>
 
@@ -305,7 +312,7 @@ function MonitoringPieOnly() {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip contentStyle={chartTooltipStyle} labelStyle={{ color: "#173126", fontWeight: 900 }} itemStyle={{ color: "#173126", fontWeight: 800 }} />
             </PieChart>
           </ResponsiveContainer>
         </Box>
@@ -314,12 +321,12 @@ function MonitoringPieOnly() {
           {pieData.map((entry, index) => (
             <Box key={entry.name} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box sx={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: COLORS[index] }} />
-              <Typography variant="body2">{entry.name}</Typography>
+              <Typography variant="body2" sx={{ color: "#173126", fontWeight: 850 }}>{entry.name}</Typography>
             </Box>
           ))}
         </Box>
 
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center", mt: 1 }}>
+        <Typography variant="caption" sx={{ textAlign: "center", mt: 1, color: "#56685d", fontWeight: 800 }}>
           Current Distribution
         </Typography>
       </CardContent>
@@ -329,19 +336,19 @@ function MonitoringPieOnly() {
 
 function MonitoringTrendOnly() {
   return (
-    <Card sx={{ borderRadius: 5, boxShadow: "0 2px 10px rgba(0,0,0,0.05)", ml:2, }}>
+    <Card sx={{ borderRadius: 5, boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)", ml:2, }}>
       <CardContent>
-        <Typography variant="h6" sx={{ mb:2}}>
+        <Typography variant="h6" sx={{ mb:2, color: "#173126", fontWeight: 900 }}>
           Abnormal Activity Trend (Last 7 Days)
         </Typography>
         <ResponsiveContainer width="100%" height={365} mt={2}>
           <BarChart data={monitoringData.trend}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{marginLeft: 30}}/>
-            <Bar dataKey="plant" stackId="a" fill="#1f6f44" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e6eddc" />
+            <XAxis dataKey="day" tick={chartTick} axisLine={chartAxisLine} tickLine={chartAxisLine} />
+            <YAxis tick={chartTick} axisLine={chartAxisLine} tickLine={chartAxisLine} />
+            <Tooltip contentStyle={chartTooltipStyle} labelStyle={{ color: "#173126", fontWeight: 900 }} itemStyle={{ color: "#173126", fontWeight: 800 }} />
+            <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ marginLeft: 30, ...chartLegendStyle }}/>
+            <Bar dataKey="plant" stackId="a" fill="#3fae5a" />
             <Bar dataKey="wildlife" stackId="a" fill="#ff7a1a" />
             <Bar dataKey="trail" stackId="a" fill="#d7553f" />
             <Bar dataKey="object" stackId="a" fill="#f3b23a" />
@@ -367,7 +374,7 @@ function GuideProgress() {
   };
 
   const stats = [
-    { label: "Total Guides", value: 12, total: 20, color: "#1f6f44", icon: <People /> },
+    { label: "Total Guides", value: 12, total: 20, color: "#3fae5a", icon: <People /> },
     { label: "Certified", value: 8, total: 12, color: "#8ac926", icon: <CheckCircle /> },
     { label: "In Training", value: 4, total: 12, color: "#ff7a1a", icon: <School /> },
   ];
@@ -383,15 +390,11 @@ function GuideProgress() {
             sx={{ 
               mb: 3.5, 
               fontWeight: 800, 
-              color: '#1e2a22',
+              color: '#173126',
               pb: 1, // 底部内边距，留出下划线空间
               borderBottom: '3px solid',
               borderColor: '#ff7a1a',
               display: 'inline-block',
-              background: 'linear-gradient(120deg, #000000 0%, #252727a7 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
             }}
           >
           Park Guide Learning Progress
@@ -402,12 +405,12 @@ function GuideProgress() {
               <Grid item xs={12} key={i}>
                 <Card sx={{ 
                   borderRadius: 3, 
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)", // 1. 阴影更柔和
+                  boxShadow: "0 14px 30px rgba(255, 122, 26, 0.08)", // 1. 阴影更柔和
                   p: 2.5, // 稍微增加一点内边距，显得不那么挤
                   height: '100%',
                   border: '1px solid #dce7d7',
                   transition: 'transform 0.2s', // 3. 加个鼠标悬停的小动画
-                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 18px 34px rgba(255,122,26,0.14)' }
                 }}>
                   <CardContent sx={{ p: 0 }}> {/* 移除 CardContent 默认 padding，用 Card 的 padding 控制 */}
                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
@@ -415,12 +418,12 @@ function GuideProgress() {
                       <Box sx={{ color: s.color, display: 'flex' }}>
                         {s.icon}
                       </Box>
-                      <Typography variant="subtitle2" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.75rem', fontWeight: 'bold' }}>
+                      <Typography variant="subtitle2" sx={{ color: '#173126', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.75rem', fontWeight: 900 }}>
                         {s.label}
                       </Typography>
                     </Box>
                     
-                    <Typography variant="h5" sx={{ fontWeight: "800", color: '#1e2a22', mb: 2 }}>
+                    <Typography variant="h5" sx={{ fontWeight: "800", color: '#173126', mb: 2 }}>
                       {s.value} <Typography component="span" variant="body2" sx={{ color: '#607166', fontWeight: 'normal' }}>/ {s.total}</Typography>
                     </Typography>
                     
@@ -451,7 +454,7 @@ function GuideProgress() {
         <Grid item xs={12} md={10} sx={{ display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0}}>
           <Card sx={{ 
             borderRadius: 5, 
-            boxShadow: "0 2px 10px rgba(0,0,0,0.05)", 
+            boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
             p: 2, 
             flexGrow: 1,
             height: "95%",
@@ -459,19 +462,19 @@ function GuideProgress() {
             }}>
 
             <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2, color: "#173126", fontWeight: 900 }}>
                 Training Progress Trend (Last 4 Weeks)
               </Typography>
               {/* 关键：ResponsiveContainer 撑满父容器 */}
               <Box sx={{ flexGrow: 1, width: '100%', minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={guideData.trend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend layout="vertical" align="right" verticalAlign="middle" />
-                    <Line type="monotone" dataKey="completed" stroke="#1f6f44" strokeWidth={3} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e6eddc" />
+                    <XAxis dataKey="week" tick={chartTick} axisLine={chartAxisLine} tickLine={chartAxisLine} />
+                    <YAxis tick={chartTick} axisLine={chartAxisLine} tickLine={chartAxisLine} />
+                    <Tooltip contentStyle={chartTooltipStyle} labelStyle={{ color: "#173126", fontWeight: 900 }} itemStyle={{ color: "#173126", fontWeight: 800 }} />
+                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={chartLegendStyle} />
+                    <Line type="monotone" dataKey="completed" stroke="#3fae5a" strokeWidth={3} />
                     <Line type="monotone" dataKey="certified" stroke="#ff7a1a" strokeWidth={3} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -490,12 +493,9 @@ function AdminPage() {
       <Resource name="course" list={CourseManagement} />
       <Resource name="training" list={TrainingModuleSetup} />
       <Resource name="course-requests" list={CourseRequestsPage} />
-      <Resource name="students" list={StudentManagement} />
+      <Resource name="students" list={StudentManagement} options={{ label: "Guides" }} />
       <Resource name="badge" list={BadgeManagement} />
       <Resource name="detection" list={AIDetection} />
-      <CustomRoutes>
-        <Route path="/ranger" element={<ParkRangerConsole />} />
-      </CustomRoutes>
     </Admin>
   );
 }
