@@ -163,6 +163,7 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
 mysql -u root -p park_guide_database < database/db.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/004_canvas_learning_progress.sql
 ```
 
 Check tables:
@@ -233,9 +234,9 @@ Supported Canvas item preview checks:
 - Quiz: answer the quiz interaction and confirm the local result changes the module item state.
 - Checklist: tick checklist rows and confirm the checklist renders clearly.
 
-Pending production-ready check:
+Persistent progress check:
 
-- Canvas item completion and quiz results currently use local User Portal state. Persistent server-side progress is still pending; after the progress API is implemented, refresh the User Portal and verify completion/quiz state remains, then verify Admin can view each guide's progress summary.
+- Canvas item completion and quiz results save through the User API when MySQL is running and `004_canvas_learning_progress.sql` has been applied. Mark an item complete, submit a quiz, refresh the User Portal, and verify completion/quiz state remains. If the API/database is unavailable, the Portal shows a local fallback progress message.
 
 ## Terminal 3: AI Camera Monitor
 
@@ -419,7 +420,7 @@ Image rule for report/demo assets:
 1. Open `http://localhost:5173` and show the root hub cards and service links.
 2. Open Login/Register/Forgot Password, then Park Guide/User Portal at `http://localhost:5175/user`.
 3. Switch User01/User02/User03.
-4. Show API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, local completion state, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
+4. Show API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, persisted completion state with local fallback, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
 5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
 7. Open Admin Course/Training pages and create or review a Canvas course, module, and module item. Confirm page, text, file, image, video, external link, quiz, and checklist item previews as time allows.

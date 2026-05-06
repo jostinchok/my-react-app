@@ -28,6 +28,9 @@ export const API_LINKS = {
   avatar:
     import.meta.env.VITE_AVATAR_API_URL ||
     `${USER_API_BASE_URL}/api/user-profile/avatar`,
+  canvasProgress:
+    import.meta.env.VITE_CANVAS_PROGRESS_API_URL ||
+    `${USER_API_BASE_URL}/api/canvas-progress`,
 }
 
 export const DB_SQL_SCHEMA = {
@@ -66,6 +69,8 @@ export const DB_SQL_SCHEMA = {
     notifications: ['notification_id', 'user_id', 'title', 'type', 'message', 'is_read', 'created_at'],
     schedule: ['schedule_id', 'user_id', 'module_id', 'title', 'date', 'location', 'type', 'status', 'created_at'],
     course_files: ['file_id', 'user_id', 'module_id', 'course_key', 'original_name', 'stored_name', 'mime_type', 'size_bytes', 'file_url', 'uploaded_at'],
+    canvas_item_progress: ['progress_id', 'user_id', 'course_id', 'module_id', 'item_id', 'item_type', 'status', 'completed_at', 'last_viewed_at', 'created_at', 'updated_at'],
+    canvas_quiz_attempts: ['attempt_id', 'user_id', 'course_id', 'module_id', 'item_id', 'selected_answer', 'correct_answer', 'is_correct', 'score_percent', 'attempted_at', 'created_at'],
   },
 }
 
@@ -98,6 +103,8 @@ export const DATABASE_TABLE_TEMPLATE = {
   notifications: ['notification_id', 'user_id', 'title', 'type', 'message', 'is_read', 'created_at'],
   schedule: ['schedule_id', 'user_id', 'module_id', 'title', 'date', 'location', 'type', 'status', 'created_at'],
   course_files: ['file_id', 'user_id', 'module_id', 'course_key', 'original_name', 'stored_name', 'mime_type', 'size_bytes', 'file_url', 'uploaded_at'],
+  canvas_item_progress: ['progress_id', 'user_id', 'course_id', 'module_id', 'item_id', 'item_type', 'status', 'completed_at', 'last_viewed_at', 'created_at', 'updated_at'],
+  canvas_quiz_attempts: ['attempt_id', 'user_id', 'course_id', 'module_id', 'item_id', 'selected_answer', 'correct_answer', 'is_correct', 'score_percent', 'attempted_at', 'created_at'],
 }
 
 export const PROFILE_FIELD_RULES = {
@@ -337,6 +344,61 @@ export const normalizeScheduleRow = (row = {}) => ({
   status: asText(row.status, 'Scheduled'),
 })
 
+export const normalizeCanvasProgressRow = (row = {}) => ({
+  id: asText(firstValue(row.id, row.progressId, row.progress_id)),
+  progressId: asText(firstValue(row.progressId, row.progress_id, row.id)),
+  userId: asText(firstValue(row.userId, row.user_id, row.guideId, row.guide_id)),
+  guideId: asText(firstValue(row.guideId, row.guide_id, row.userId, row.user_id)),
+  courseId: asText(firstValue(row.courseId, row.course_id)),
+  moduleId: asText(firstValue(row.moduleId, row.module_id)),
+  itemId: asText(firstValue(row.itemId, row.item_id)),
+  itemType: asText(firstValue(row.itemType, row.item_type), 'page'),
+  status: asText(row.status, 'not_started'),
+  completed: Boolean(firstValue(row.completed, row.status === 'completed', false)),
+  completedAt: asText(firstValue(row.completedAt, row.completed_at)),
+  lastViewedAt: asText(firstValue(row.lastViewedAt, row.last_viewed_at)),
+  updatedAt: asText(firstValue(row.updatedAt, row.updated_at)),
+})
+
+export const normalizeCanvasQuizAttemptRow = (row = {}) => ({
+  id: asText(firstValue(row.id, row.attemptId, row.attempt_id)),
+  attemptId: asText(firstValue(row.attemptId, row.attempt_id, row.id)),
+  userId: asText(firstValue(row.userId, row.user_id, row.guideId, row.guide_id)),
+  guideId: asText(firstValue(row.guideId, row.guide_id, row.userId, row.user_id)),
+  courseId: asText(firstValue(row.courseId, row.course_id)),
+  moduleId: asText(firstValue(row.moduleId, row.module_id)),
+  itemId: asText(firstValue(row.itemId, row.item_id)),
+  selectedAnswer: asText(firstValue(row.selectedAnswer, row.selected_answer)),
+  correctAnswer: asText(firstValue(row.correctAnswer, row.correct_answer)),
+  isCorrect: Boolean(firstValue(row.isCorrect, row.is_correct, false)),
+  scorePercent: Number(firstValue(row.scorePercent, row.score_percent, 0)) || 0,
+  attemptedAt: asText(firstValue(row.attemptedAt, row.attempted_at)),
+  createdAt: asText(firstValue(row.createdAt, row.created_at)),
+})
+
+export const normalizeCanvasProgressPayload = (payload = {}) => {
+  const itemProgress = normalizeCollection(payload, ['itemProgress', 'item_progress', 'progress'], normalizeCanvasProgressRow)
+  const quizAttempts = normalizeCollection(payload, ['quizAttempts', 'quiz_attempts', 'attempts'], normalizeCanvasQuizAttemptRow)
+  const completedItemIds = Array.isArray(payload.completedItemIds)
+    ? payload.completedItemIds
+    : Array.isArray(payload.completed_item_ids)
+      ? payload.completed_item_ids
+      : itemProgress
+        .filter((item) => item.status === 'completed')
+        .map((item) => item.itemId)
+
+  return {
+    ok: Boolean(payload.ok ?? true),
+    persistence: asText(payload.persistence, 'unknown'),
+    userId: asText(firstValue(payload.userId, payload.user_id, payload.guideId, payload.guide_id)),
+    guideId: asText(firstValue(payload.guideId, payload.guide_id, payload.userId, payload.user_id)),
+    completedItemIds: completedItemIds.map((item) => asText(item)).filter(Boolean),
+    itemProgress,
+    quizAttempts,
+    summary: payload.summary || {},
+  }
+}
+
 export const normalizeCollection = (payload, keys, normalizer) => {
   const keyedSource = keys.map((key) => payload?.[key]).find((value) => value)
   const source = Array.isArray(keyedSource)
@@ -479,4 +541,71 @@ export const deleteCourseFile = async ({ userId, fileId }) => {
   }
 
   return payload
+}
+
+export const loadCanvasProgress = async (userId) => {
+  const response = await fetch(withUserId(API_LINKS.canvasProgress, userId), { cache: 'no-store' })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    const detail = payload.detail ? ` Detail: ${payload.detail}` : ''
+    throw new Error(`${payload.message || 'Unable to load Canvas progress.'}${detail}`)
+  }
+
+  return normalizeCanvasProgressPayload(payload)
+}
+
+export const saveCanvasItemProgress = async ({ userId, courseId, moduleId, itemId, itemType, status }) => {
+  const response = await fetch(withUserId(`${API_LINKS.canvasProgress}/item`, userId), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      courseId,
+      moduleId,
+      itemId,
+      itemType,
+      status,
+    }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to save Canvas item progress.')
+  }
+
+  return normalizeCanvasProgressPayload(payload)
+}
+
+export const saveCanvasQuizAttempt = async ({
+  userId,
+  courseId,
+  moduleId,
+  itemId,
+  selectedAnswer,
+  correctAnswer,
+  isCorrect,
+  scorePercent,
+}) => {
+  const response = await fetch(withUserId(`${API_LINKS.canvasProgress}/quiz`, userId), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      courseId,
+      moduleId,
+      itemId,
+      selectedAnswer,
+      correctAnswer,
+      isCorrect,
+      scorePercent,
+    }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to save Canvas quiz attempt.')
+  }
+
+  return normalizeCanvasProgressPayload(payload)
 }
