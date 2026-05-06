@@ -45,7 +45,7 @@ const Register = ({ onBack }) => {
 
       const data = await response.json();
       if (!response.ok) {
-        setMessage({ text: data.message || 'Registration failed. Please try again.', type: 'error' });
+        setMessage({ text: data.error ? `${data.message}: ${data.error}` : (data.message || 'Registration failed. Please try again.'), type: 'error' });
         return;
       }
 

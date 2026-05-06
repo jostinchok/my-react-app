@@ -54,17 +54,48 @@ const formatDate = (dateValue) => {
   })
 }
 
-const initials = (name) =>
-  name
+const cleanText = (...values) => {
+  for (const value of values) {
+    if (value === undefined || value === null) continue
+    const textValue = String(value).trim()
+    if (!textValue || textValue.toLowerCase() === 'undefined' || textValue.toLowerCase() === 'null') continue
+    return textValue
+  }
+  return ''
+}
+
+const validImageSrc = (value) => Boolean(cleanText(value))
+
+const initials = (name = 'User') =>
+  cleanText(name, 'User')
     .split(' ')
     .map((part) => part[0])
     .join('')
     .slice(0, 2)
     .toUpperCase()
 
+const readLoginSession = () => {
+  try {
+    const raw = localStorage.getItem('sfc_session')
+    const session = raw ? JSON.parse(raw) : null
+    if (!session?.user_id) return null
+    return {
+      id: session.user_id,
+      user_id: session.user_id,
+      displayName: cleanText(session.name, 'Park Guide'),
+      username: cleanText(session.name, 'Park Guide'),
+      email: cleanText(session.email, ''),
+      role: cleanText(session.role, 'guide'),
+    }
+  } catch {
+    return null
+  }
+}
+
 function App() {
   const [users, setUsers] = useState(readStoredUsers)
-  const [currentUserId, setCurrentUserId] = useState(users[0]?.id || demoUsers[0].id)
+  const [loginSession] = useState(readLoginSession)
+  const [currentUserId, setCurrentUserId] = useState(loginSession?.user_id || users[0]?.id || demoUsers[0].id)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [trainingModules, setTrainingModules] = useState([])
   const [moduleFrame, setModuleFrame] = useState({
@@ -197,26 +228,72 @@ function App() {
     }
   }, [currentUserId])
 
-  const seededUser = users.find((user) => user.id === currentUserId) || users[0] || cloneSeedUsers()[0]
-  const currentUser = databaseProfile ? { ...seededUser, ...databaseProfile } : seededUser
-  const profileUser = databaseProfile
-    ? currentUser
-    : {
-        ...currentUser,
-        displayName: currentUser.displayName || 'Guide',
-        email: currentUser.email || '-',
-        birthday: currentUser.birthday || '-',
-        phone: currentUser.phone || '-',
-        assignedPark: currentUser.assignedPark || '-',
-        position: currentUser.position || '-',
-        yearsExperience: currentUser.yearsExperience || '-',
-        address: currentUser.address || '-',
-        guideId: currentUser.guideId || '-',
-        role: currentUser.role || 'guide',
-        status: 'Waiting for database profile',
-        avatar: currentUser.avatar || null,
-        avatarColor: currentUser.avatarColor,
+  const fallbackSessionUser = loginSession
+    ? {
+        id: loginSession.user_id,
+        username: loginSession.username,
+        displayName: loginSession.displayName,
+        email: loginSession.email,
+        role: loginSession.role,
+        assignedPark: 'Sarawak Forestry Training Portal',
+        position: loginSession.role,
+        enrolledModuleIds: [],
+        completedLessons: {},
+        quizResults: {},
+        savedResources: [],
+        personalFiles: [],
+        notifications: [],
+        schedule: [],
+        avatar: null,
+        avatarColor: '#ff7a1a',
       }
+    : null
+
+  const seededUser =
+    users.find((user) => String(user.id) === String(currentUserId)) ||
+    fallbackSessionUser ||
+    users[0] ||
+    cloneSeedUsers()[0]
+
+  const currentUser = databaseProfile
+    ? {
+        ...seededUser,
+        ...databaseProfile,
+        id: cleanText(databaseProfile.id, seededUser.id, currentUserId),
+        username: cleanText(databaseProfile.displayName, seededUser.username, 'Park Guide'),
+        displayName: cleanText(databaseProfile.displayName, seededUser.displayName, 'Park Guide'),
+        email: cleanText(databaseProfile.email, seededUser.email, '-'),
+        birthday: cleanText(databaseProfile.birthday, seededUser.birthday, '-'),
+        phone: cleanText(databaseProfile.phone, seededUser.phone, '-'),
+        assignedPark: cleanText(databaseProfile.assignedPark, seededUser.assignedPark, 'Sarawak Forestry Training Portal'),
+        position: cleanText(databaseProfile.position, seededUser.position, databaseProfile.role, 'Park Guide'),
+        yearsExperience: cleanText(databaseProfile.yearsExperience, seededUser.yearsExperience, '0'),
+        address: cleanText(databaseProfile.address, seededUser.address, '-'),
+        guideId: cleanText(databaseProfile.guideId, seededUser.guideId, currentUserId),
+        role: cleanText(databaseProfile.role, seededUser.role, 'guide'),
+        status: cleanText(databaseProfile.status, seededUser.status, 'active'),
+        avatar: cleanText(databaseProfile.avatar, seededUser.avatar),
+        avatarColor: cleanText(seededUser.avatarColor, '#ff7a1a'),
+      }
+    : {
+        ...seededUser,
+        username: cleanText(seededUser.username, seededUser.displayName, 'Park Guide'),
+        displayName: cleanText(seededUser.displayName, seededUser.username, 'Park Guide'),
+        email: cleanText(seededUser.email, '-'),
+        birthday: cleanText(seededUser.birthday, '-'),
+        phone: cleanText(seededUser.phone, '-'),
+        assignedPark: cleanText(seededUser.assignedPark, 'Sarawak Forestry Training Portal'),
+        position: cleanText(seededUser.position, seededUser.role, 'Park Guide'),
+        yearsExperience: cleanText(seededUser.yearsExperience, '0'),
+        address: cleanText(seededUser.address, '-'),
+        guideId: cleanText(seededUser.guideId, currentUserId, '-'),
+        role: cleanText(seededUser.role, 'guide'),
+        status: cleanText(seededUser.status, 'Waiting for database profile'),
+        avatar: cleanText(seededUser.avatar),
+        avatarColor: cleanText(seededUser.avatarColor, '#ff7a1a'),
+      }
+
+  const profileUser = currentUser
   const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || null
 
   const moduleMap = useMemo(
@@ -688,14 +765,14 @@ function App() {
           <img className="topbar-logo" src={logoSrc} alt="SFC Digital Portal logo" />
           <div className="topbar-brand-copy">
             <span className="kicker">SFC / {activeTab.replace('-', ' ').toUpperCase()}</span>
-            <h1>{currentUser.assignedPark}</h1>
+            <h1>{cleanText(currentUser.assignedPark, currentUser.displayName, 'SFC Guide Center')}</h1>
           </div>
           <div className="topbar-actions">
             <button type="button" className="logout-button" onClick={handleLogout}>
               Logout
             </button>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
-              {currentUser.avatar ? (
+              {validImageSrc(currentUser.avatar) ? (
                 <img src={currentUser.avatar} alt="User avatar" />
               ) : (
                 <span style={{ background: currentUser.avatarColor }}>{initials(currentUser.displayName)}</span>
