@@ -265,7 +265,12 @@ const buildModules = async (userId) => {
   if (modules.length === 0) return []
 
   const moduleIds = modules.map((module) => module.module_id)
-  const [lessons, quizRows] = await Promise.all([
+  const courseIds = hasCourseId
+    ? [...new Set(modules.map((module) => module.course_id).filter(Boolean))]
+    : []
+  const hasCourseResources = courseIds.length > 0 && await tableExists('course_resources')
+
+  const [lessons, quizRows, courseResources] = await Promise.all([
     rowsOf(
       `SELECT lesson_id, module_id, title, content, media_url
        FROM lessons
@@ -290,6 +295,15 @@ const buildModules = async (userId) => {
        ORDER BY q.quiz_id ASC, qs.question_id ASC, o.option_id ASC`,
       [moduleIds]
     ),
+    hasCourseResources
+      ? rowsOf(
+        `SELECT resource_id, course_id, title, file_name, mime_type, size_bytes, uploaded_at
+         FROM course_resources
+         WHERE course_id IN (?)
+         ORDER BY uploaded_at DESC, resource_id DESC`,
+        [courseIds]
+      )
+      : Promise.resolve([]),
   ])
 
   const lessonsByModule = new Map()
@@ -314,6 +328,23 @@ const buildModules = async (userId) => {
     quizByModule.set(row.module_id, quiz)
   }
 
+  const resourcesByCourse = new Map()
+  for (const resource of courseResources) {
+    const list = resourcesByCourse.get(resource.course_id) || []
+    list.push({
+      id: `resource-${resource.resource_id}`,
+      source: 'admin_resource',
+      readOnly: true,
+      title: resource.title || resource.file_name || 'Course resource',
+      name: resource.title || resource.file_name || 'Course resource',
+      type: resource.mime_type || 'Admin resource',
+      size: formatBytes(resource.size_bytes),
+      uploaded: formatDateOnly(resource.uploaded_at),
+      url: `${adminApiPublicUrl}/api/courses/${encodeURIComponent(resource.course_id)}/resources/${resource.resource_id}/download`,
+    })
+    resourcesByCourse.set(resource.course_id, list)
+  }
+
   return modules.map((module) => {
     const moduleLessons = lessonsByModule.get(module.module_id) || []
     return {
@@ -325,13 +356,16 @@ const buildModules = async (userId) => {
       subtitle: module.description,
       objectives: parseObjectives(module.objectives),
       lessons: moduleLessons.map((lesson) => lesson.title || lesson.content),
-      resources: moduleLessons
-        .filter((lesson) => lesson.media_url)
-        .map((lesson) => ({
-          id: `lesson-${lesson.lesson_id}`,
-          title: lesson.title || 'Lesson media',
-          type: 'Media',
-        })),
+      resources: [
+        ...moduleLessons
+          .filter((lesson) => lesson.media_url)
+          .map((lesson) => ({
+            id: `lesson-${lesson.lesson_id}`,
+            title: lesson.title || 'Lesson media',
+            type: 'Media',
+          })),
+        ...(resourcesByCourse.get(module.course_id) || []),
+      ],
       quiz: quizByModule.get(module.module_id) || {
         question: 'Assessment question will appear here.',
         options: [],
