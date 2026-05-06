@@ -2971,3 +2971,21 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.ranger-table .MuiTableCell-root {
+  white-space: nowrap;
+}
+
+.ranger-location-cell {
+  min-width: 110px;
+  max-width: 140px;
+}
+
+.ranger-time-cell {
+  min-width: 110px;
+}
+
+.ranger-table .MuiTableHead-root .MuiTableCell-root {
+  padding-left: 14px;
+  padding-right: 14px;
+}

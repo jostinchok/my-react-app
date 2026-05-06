@@ -306,36 +306,67 @@ const CourseRequestsPage = () => {
                   </Box>
 
                   <Stack direction={{ xs: "column", sm: "row" }} gap={1} alignItems={{ xs: "stretch", lg: "center" }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<CheckCircleIcon />}
-                      disabled={normalizedStatus === "approved"}
-                      onClick={() => updateRequest(request.id, "approved")}
-                      sx={{
-                        ...buttonSx,
-                        bgcolor: "#DDFBD2",
-                        color: "#173126",
-                        border: "1px solid #A7E957",
-                        "&:hover": { bgcolor: "#A7E957" },
-                      }}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<CancelIcon />}
-                      disabled={normalizedStatus === "rejected"}
-                      onClick={() => updateRequest(request.id, "rejected")}
-                      sx={{
-                        ...buttonSx,
-                        color: "#9d2c19",
-                        borderColor: "#ff9b7e",
-                        bgcolor: "#fff7ef",
-                        "&:hover": { borderColor: "#ff7a1a", bgcolor: "#ffe8df" },
-                      }}
-                    >
-                      Reject
-                    </Button>
+                    {normalizedStatus === "approved" ? (
+                      <Chip
+                        icon={<CheckCircleIcon />}
+                        label="Approved"
+                        sx={{
+                          minHeight: 38,
+                          borderRadius: "12px",
+                          bgcolor: "#DDFBD2",
+                          color: "#173126",
+                          border: "1px solid #A7E957",
+                          fontWeight: 950,
+                          "& .MuiChip-icon": { color: "#173126" },
+                        }}
+                      />
+                    ) : (
+                      <Button
+                        variant="contained"
+                        startIcon={<CheckCircleIcon />}
+                        onClick={() => updateRequest(request.id, "approved")}
+                        sx={{
+                          ...buttonSx,
+                          bgcolor: "#DDFBD2",
+                          color: "#173126",
+                          border: "1px solid #A7E957",
+                          "&:hover": { bgcolor: "#A7E957" },
+                        }}
+                      >
+                        Approve
+                      </Button>
+                    )}
+
+                    {normalizedStatus === "rejected" ? (
+                      <Chip
+                        icon={<CancelIcon />}
+                        label="Rejected"
+                        sx={{
+                          minHeight: 38,
+                          borderRadius: "12px",
+                          bgcolor: "#ffe5dc",
+                          color: "#9d2c19",
+                          border: "1px solid #ff9b7e",
+                          fontWeight: 950,
+                          "& .MuiChip-icon": { color: "#9d2c19" },
+                        }}
+                      />
+                    ) : (
+                      <Button
+                        variant="outlined"
+                        startIcon={<CancelIcon />}
+                        onClick={() => updateRequest(request.id, "rejected")}
+                        sx={{
+                          ...buttonSx,
+                          color: "#9d2c19",
+                          borderColor: "#ff9b7e",
+                          bgcolor: "#fff7ef",
+                          "&:hover": { borderColor: "#ff7a1a", bgcolor: "#ffe8df" },
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    )}
                   </Stack>
                 </Stack>
 
