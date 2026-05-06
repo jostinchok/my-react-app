@@ -16,6 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  displayEventType,
   INCIDENT_FILTERS,
   INCIDENT_STATUSES,
   normalizeIncidentRecord,
@@ -696,6 +697,10 @@ const AIDetection = () => {
 
     if (!backendOnline) {
       applyLocalStatus();
+      showMessage(
+        `Backend offline; ${status} is shown locally only and is not an official saved status.`,
+        "warning"
+      );
       return;
     }
 
@@ -722,6 +727,10 @@ const AIDetection = () => {
       const updatedIncident = normalizeIncidentRecord(payload.incident);
       if (!updatedIncident) {
         applyLocalStatus();
+        showMessage(
+          `Status response was unreadable; ${status} is shown locally only.`,
+          "warning"
+        );
         return;
       }
 
@@ -730,10 +739,15 @@ const AIDetection = () => {
           incident.id === updatedIncident.id ? updatedIncident : incident
         )
       );
+      showMessage(`Official incident status saved as ${status}.`);
     } catch (error) {
       setBackendOnline(false);
       setApiError(error.message);
       applyLocalStatus();
+      showMessage(
+        `Status was not saved to the backend. Showing ${status} locally only: ${error.message}`,
+        "error"
+      );
     } finally {
       setSavingIncidentId(null);
     }
@@ -1171,13 +1185,13 @@ const IncidentDetailPanel = ({
       {incident.source === "AI_CAMERA" && incident.ai ? (
         <Box className="incident-metadata-card">
           <Typography component="h3">AI evidence metadata</Typography>
-          <DetailItem label="Predicted Class" value={incident.ai.predictedClass} />
+          <DetailItem label="Predicted Class" value={displayEventType(incident.ai.predictedClass)} />
           <DetailItem label="Confidence" value={formatPercent(incident.ai.confidence)} />
           <DetailItem label="Margin" value={formatDecimal(incident.ai.margin)} />
           <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
-            value={`Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
+            value={`Plucking Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       ) : incident.source === "AI_CAMERA" ? (

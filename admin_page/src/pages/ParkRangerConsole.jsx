@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  displayEventType,
   normalizeIncidentRecord,
   seededIncidents,
   summarizeIncidents,
@@ -131,6 +132,7 @@ const ParkRangerConsole = () => {
   const [savingIncidentId, setSavingIncidentId] = useState(null);
   const [fieldNotes, setFieldNotes] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
+  const [recommendationError, setRecommendationError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -252,18 +254,20 @@ const ParkRangerConsole = () => {
   const submitRangerRecommendation = async (incidentId, recommendation) => {
     const note = String(fieldNotes[incidentId] || "").trim();
     if (!note) {
-      setApiError("Add a field note before sending a recommendation.");
+      setRecommendationError("Add a field note before sending a recommendation.");
       setSuccessMessage("");
       return;
     }
 
     setSavingIncidentId(incidentId);
     setApiError("");
+    setRecommendationError("");
     setSuccessMessage("");
 
     if (!backendOnline) {
       appendLocalRecommendation(incidentId, recommendation, note);
       setFieldNotes((current) => ({ ...current, [incidentId]: "" }));
+      setRecommendationError("");
       setSuccessMessage("Recommendation saved locally for this demo; start the backend to send it to Admin.");
       setSavingIncidentId(null);
       return;
@@ -302,6 +306,7 @@ const ParkRangerConsole = () => {
       setSuccessMessage(payload.message || "Recommendation sent to Admin for review.");
     } catch (error) {
       setApiError(error.message);
+      setRecommendationError(`Recommendation was not saved to Admin: ${error.message}`);
       if (error instanceof TypeError) {
         setBackendOnline(false);
       }
@@ -467,6 +472,7 @@ const ParkRangerConsole = () => {
           savingIncidentId={savingIncidentId}
           fieldNote={fieldNotes[selectedIncident?.id] || ""}
           successMessage={successMessage}
+          errorMessage={recommendationError}
           onFieldNoteChange={updateFieldNote}
           onRecommendationSubmit={submitRangerRecommendation}
         />
@@ -497,6 +503,7 @@ const RangerIncidentDetail = ({
   savingIncidentId,
   fieldNote,
   successMessage,
+  errorMessage,
   onFieldNoteChange,
   onRecommendationSubmit,
 }) => {
@@ -544,13 +551,13 @@ const RangerIncidentDetail = ({
       {incident.source === "AI_CAMERA" && incident.ai ? (
         <Box className="incident-metadata-card">
           <Typography component="h3">AI metadata</Typography>
-          <DetailItem label="Predicted Class" value={incident.ai.predictedClass} />
+          <DetailItem label="Predicted Class" value={displayEventType(incident.ai.predictedClass)} />
           <DetailItem label="Confidence" value={formatPercent(incident.ai.confidence)} />
           <DetailItem label="Margin" value={formatDecimal(incident.ai.margin)} />
-        <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
+          <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
-            value={`Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
+            value={`Plucking Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       ) : incident.source === "AI_CAMERA" ? (
@@ -620,6 +627,11 @@ const RangerIncidentDetail = ({
         {successMessage && (
           <Alert className="ranger-success-alert" severity="success">
             {successMessage}
+          </Alert>
+        )}
+        {errorMessage && (
+          <Alert severity="error">
+            {errorMessage}
           </Alert>
         )}
       </Box>
