@@ -88,7 +88,7 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | Component | Classification | Notes |
 | --- | --- | --- |
 | Review Hub | Demo-ready | Links all demo surfaces, API endpoints, role notes, and optional security-control notes. |
-| Login/Register/Forgot Password | Partial / Demo-ready | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Production route/session auth is deferred. |
+| Login/Register/Forgot Password | Production-ready | Real DB auth with bcrypt. Forgot Password sends a 6-digit OTP via Gmail SMTP (nodemailer). OTP is stored as SHA-256 hash, expires in 5 minutes, single-use. Show/hide password toggle on all password fields. Requires EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_FROM in .env. |
 | Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. |
 | Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence. Screens are simpler than the full web portal. |
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |

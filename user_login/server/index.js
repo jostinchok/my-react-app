@@ -8,6 +8,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import mqtt from 'mqtt'
+import { sendPasswordResetEmail } from './src/email/emailService.js'
 import { createMemoryIncidentStore } from './src/incident/memoryIncidentStore.js'
 import { createMysqlIncidentStore } from './src/incident/mysqlIncidentStore.js'
 import {
@@ -58,7 +59,7 @@ const ROLE_CHECK_ENABLED = flagEnabled(process.env.ROLE_CHECK_ENABLED)
 const AI_CAMERA_TOKEN = process.env.AI_CAMERA_TOKEN || ''
 const IOT_SENSOR_TOKEN = process.env.IOT_SENSOR_TOKEN || ''
 const ALLOWED_STATUS_ACTOR_ROLES = new Set(['admin'])
-const ALLOWED_RANGER_RECOMMENDATION_ROLES = new Set(['park_ranger'])
+const ALLOWED_RANGER_RECOMMENDATION_ROLES = new Set(['ranger'])
 
 const mqttState = {
   enabled: MQTT_ENABLED,
@@ -177,7 +178,7 @@ const securityControlInfo = () => ({
   roleCheckEnabled: ROLE_CHECK_ENABLED,
   tokenSources: DEVICE_TOKEN_AUTH_ENABLED ? ['AI_CAMERA', 'IOT_SENSOR'] : [],
   statusUpdateRoles: ROLE_CHECK_ENABLED ? ['admin'] : ['demo-open'],
-  rangerRecommendationRoles: ROLE_CHECK_ENABLED ? ['park_ranger'] : ['demo-open'],
+  rangerRecommendationRoles: ROLE_CHECK_ENABLED ? ['ranger'] : ['demo-open'],
 })
 
 const safeTokenEqual = (provided, expected) => {
@@ -385,7 +386,7 @@ const rangerRecommendationActorFromRequest = (req) => {
     return {
       allowed: false,
       status: 403,
-      message: 'Ranger recommendations require X-Actor-Role park_ranger when ROLE_CHECK_ENABLED=true.',
+      message: 'Ranger recommendations require X-Actor-Role ranger when ROLE_CHECK_ENABLED=true.',
     }
   }
 
@@ -767,25 +768,34 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       return res.status(400).json({ message: 'Email is required.' })
     }
 
-    const [users] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
-    let resetToken
+    const [users] = await pool.query(
+      'SELECT user_id, name FROM users WHERE email = ?',
+      [email]
+    )
 
+    // Always return the same response to prevent email enumeration
     if (users.length > 0) {
       const user = users[0]
-      resetToken = crypto.randomBytes(32).toString('hex')
+      const resetToken = String(crypto.randomInt(100000, 999999))
       const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex')
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
 
       await pool.query('DELETE FROM password_reset_tokens WHERE user_id = ?', [user.user_id])
       await pool.query(
         'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
         [user.user_id, tokenHash, expiresAt]
       )
+
+      try {
+        await sendPasswordResetEmail(email, user.name || 'User', resetToken)
+      } catch (emailError) {
+        console.error('[auth] Failed to send password reset email:', emailError.message)
+        // Don't expose email errors to the client
+      }
     }
 
     return res.json({
-      message: 'If the email exists, a reset token has been generated.',
-      resetToken: resetToken || null,
+      message: 'If that email is registered, a 6-digit OTP has been sent to your inbox.',
     })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to process forgot password request.', error: error.message })

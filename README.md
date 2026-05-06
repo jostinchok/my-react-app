@@ -428,6 +428,43 @@ curl -X POST http://localhost:4000/api/incidents/<INCIDENT_ID>/ranger-recommenda
   -d '{"recommendation":"Recommend Resolved","note":"Ranger checked the evidence and recommends Admin review as resolved."}'
 ```
 
+## Forgot Password / OTP Email Setup
+
+The Forgot Password flow sends a **6-digit OTP** via Gmail SMTP. The OTP is stored as a SHA-256 hash in `password_reset_tokens` and expires in **5 minutes**.
+
+### 1. Create a Gmail App Password
+
+1. Go to your Google Account → **Security** → **2-Step Verification** → **App Passwords**.
+2. Create an app password for "Mail".
+3. Copy the 16-character password.
+
+### 2. Set email variables in `.env`
+
+```env
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-16-char-app-password
+EMAIL_FROM="SFC Digital Park Guide <your-email@gmail.com>"
+APP_BASE_URL=http://localhost:5176/login
+VITE_LOGIN_URL=http://localhost:5173/login/
+VITE_USER_URL=http://localhost:5175/user
+VITE_ADMIN_URL=http://localhost:5174/admin
+```
+
+### 3. How it works
+
+1. User clicks **Forgot Password?** on the login page.
+2. User enters their registered email and clicks **Send OTP**.
+3. Server generates a 6-digit OTP, stores its SHA-256 hash with a 5-minute expiry in `password_reset_tokens`, and emails the code.
+4. User enters the OTP and new password on step 2 of the form.
+5. Server verifies the hash, checks expiry and single-use status, updates `password_hash`, and marks the token used.
+
+### 4. Test the flow
+
+Start the backend server, then open the login page at `http://localhost:5173/login/` and click **Forgot Password?**.
+
 ## Build And Syntax Checks
 
 ```bash
@@ -454,7 +491,7 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 - Optional role checking protects incident status updates during the cybersecurity demo; Admin is the only official status updater.
 - Park Ranger can view incidents, add field notes, and recommend outcomes. Recommendations do not change official incident status.
 - Role boundaries are visible: Park Guide, Park Ranger, and Admin have different permissions.
-- Login/Register/Forgot Password remains demo/partial. Existing backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded, but frontend route protection is not production-grade.
+- Login/Register/Forgot Password is production-ready for auth and password reset. Forgot Password sends a 6-digit OTP via Gmail SMTP (nodemailer); the OTP is SHA-256 hashed in the database and expires in 5 minutes. All password fields have a show/hide toggle. Frontend route protection (JWT/session guards) remains future work.
 - Production MQTT should use a private broker with authentication and TLS.
 - Production camera/IoT ingestion should use HTTPS and device token authentication.
 - MySQL stores AI/IoT incident records server-side; full training-platform MySQL integration is intentionally deferred.
