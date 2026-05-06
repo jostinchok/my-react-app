@@ -53,19 +53,19 @@ const expectStatus = async (name, path, options, expectedStatus) => {
 const aiIncidentPayload = (suffix) => ({
   id: `SEC-AI-${Date.now()}-${suffix}`,
   source: 'AI_CAMERA',
-  eventType: 'TouchingPlants',
+  eventType: 'PluckingPlants',
   severity: 'medium',
   status: 'New',
   timestamp: new Date().toISOString(),
   location: 'Security Smoke Test Zone',
   evidenceImage: '/evidence/ai/security-smoke-test.jpg',
   ai: {
-    predictedClass: 'TouchingPlants',
+    predictedClass: 'PluckingPlants',
     confidence: 0.91,
     margin: 0.31,
     bbox: [20, 30, 180, 210],
     probabilities: {
-      TouchingPlants: 0.91,
+      PluckingPlants: 0.91,
       TouchingWildlife: 0.09,
     },
   },
@@ -116,7 +116,7 @@ const run = async () => {
       method: 'POST',
       body: JSON.stringify({
         source: 'BAD_SOURCE',
-        eventType: 'TouchingPlants',
+        eventType: 'PluckingPlants',
       }),
     },
     400

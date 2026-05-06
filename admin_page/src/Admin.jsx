@@ -47,7 +47,7 @@ function Dashboard() {
     {
       label: "AI Camera Alerts",
       value: incidentSummary.ai,
-      detail: "TouchingPlants / TouchingWildlife",
+      detail: "Plucking Plants / Touching Wildlife",
       icon: <BookIcon />,
       progress: Math.min(100, incidentSummary.ai * 18),
       tone: "green",

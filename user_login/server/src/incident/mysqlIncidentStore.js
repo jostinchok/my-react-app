@@ -87,6 +87,7 @@ const hydrateIncidentRows = async (connection, rows) => {
       margin: toNumber(row.margin, 0),
       bbox: parseJsonColumn(row.bbox_json, []),
       probabilities: parseJsonColumn(row.probabilities_json, {
+        PluckingPlants: 0,
         TouchingPlants: 0,
         TouchingWildlife: 0,
       }),

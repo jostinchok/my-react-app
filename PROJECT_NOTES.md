@@ -126,7 +126,7 @@ IOT_SENSOR
 Supported event types:
 
 ```text
-TouchingPlants
+PluckingPlants
 TouchingWildlife
 ObjectCloseToPlant
 ```

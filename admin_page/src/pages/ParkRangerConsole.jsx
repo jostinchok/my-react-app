@@ -550,7 +550,7 @@ const RangerIncidentDetail = ({
         <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
-            value={`Plants ${formatPercent(probabilities.TouchingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
+            value={`Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       ) : incident.source === "AI_CAMERA" ? (

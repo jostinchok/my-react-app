@@ -4,6 +4,16 @@ const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
 
 const publicAsset = (path) => `${adminBasePath}${path}`;
 
+export const EVENT_TYPE_LABELS = {
+  PluckingPlants: "Plucking Plants",
+  TouchingPlants: "Plucking Plants",
+  TouchingWildlife: "Touching Wildlife",
+  ObjectCloseToPlant: "Object Close to Plant",
+};
+
+export const displayEventType = (eventType = "") =>
+  EVENT_TYPE_LABELS[eventType] || String(eventType || "Unknown event").replace(/([a-z])([A-Z])/g, "$1 $2");
+
 export const INCIDENT_STATUSES = [
   "New",
   "Reviewed",
@@ -61,7 +71,8 @@ export const normalizeIncidentRecord = (incident) => {
   return {
     id: incident.id || incident.incident_id,
     source: incident.source,
-    eventType: incident.eventType || incident.event_type,
+    rawEventType: incident.eventType || incident.event_type,
+    eventType: displayEventType(incident.eventType || incident.event_type),
     severity: incident.severity || "medium",
     timestamp: incident.timestamp,
     location: incident.location || "Unknown location",
@@ -74,7 +85,8 @@ export const normalizeIncidentRecord = (incident) => {
           margin: Number(incident.ai.margin || 0),
           bbox: Array.isArray(incident.ai.bbox) ? incident.ai.bbox : [],
           probabilities: {
-            TouchingPlants: Number(probabilities.TouchingPlants || 0),
+            PluckingPlants: Number(probabilities.PluckingPlants ?? probabilities.TouchingPlants ?? 0),
+            TouchingPlants: Number(probabilities.TouchingPlants ?? probabilities.PluckingPlants ?? 0),
             TouchingWildlife: Number(probabilities.TouchingWildlife || 0),
           },
         }
@@ -95,30 +107,31 @@ export const normalizeIncidentRecord = (incident) => {
 
 const seededIncidentRecords = [
   {
-    incident_id: "AI-2026-04-27_10-30-00-alert-TouchingPlants",
+    incident_id: "AI-2026-04-27_10-30-00-alert-PluckingPlants",
     source: "AI_CAMERA",
-    event_type: "TouchingPlants",
+    event_type: "PluckingPlants",
     severity: "medium",
     timestamp: "2026-04-27T10:30:00+08:00",
     location: "Demo Camera Zone - Plant Walkway",
     status: "New",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-plants.jpg"),
-      json_path: "alerts/ai/2026-04-27_10-30-00_alert_TouchingPlants.json",
+      json_path: "alerts/ai/2026-04-27_10-30-00_alert_PluckingPlants.json",
     },
     ai: {
-      predicted_class: "TouchingPlants",
+      predicted_class: "PluckingPlants",
       confidence: 0.81,
       margin: 0.62,
       bbox: [120, 80, 420, 360],
       probs: {
+        PluckingPlants: 0.81,
         TouchingPlants: 0.81,
         TouchingWildlife: 0.19,
       },
     },
     iot: null,
     notes:
-      "AI camera detected human interaction with protected plant material. Review the image and metadata before assigning enforcement action.",
+      "AI camera detected possible plucking or removal of protected plant material. Review the image and metadata before assigning enforcement action.",
   },
   {
     incident_id: "AI-2026-04-27_11-12-44-alert-TouchingWildlife",
@@ -138,6 +151,7 @@ const seededIncidentRecords = [
       margin: 0.71,
       bbox: [96, 64, 384, 330],
       probs: {
+        PluckingPlants: 0.12,
         TouchingPlants: 0.12,
         TouchingWildlife: 0.88,
       },
@@ -169,30 +183,31 @@ const seededIncidentRecords = [
       "Ultrasonic proximity sensor detected an object inside the configured plant-zone threshold. This alert has no image evidence and should be reviewed using distance metadata.",
   },
   {
-    incident_id: "AI-2026-04-27_12-05-33-alert-TouchingPlants",
+    incident_id: "AI-2026-04-27_12-05-33-alert-PluckingPlants",
     source: "AI_CAMERA",
-    event_type: "TouchingPlants",
+    event_type: "PluckingPlants",
     severity: "medium",
     timestamp: "2026-04-27T12:05:33+08:00",
     location: "Gunung Gading - Sensitive Viewing Platform",
     status: "False Alarm",
     evidence: {
       image_path: publicAsset("incidents/ai-touching-plants.jpg"),
-      json_path: "alerts/ai/2026-04-27_12-05-33_alert_TouchingPlants.json",
+      json_path: "alerts/ai/2026-04-27_12-05-33_alert_PluckingPlants.json",
     },
     ai: {
-      predicted_class: "TouchingPlants",
+      predicted_class: "PluckingPlants",
       confidence: 0.64,
       margin: 0.21,
       bbox: [180, 112, 438, 362],
       probs: {
+        PluckingPlants: 0.64,
         TouchingPlants: 0.64,
         TouchingWildlife: 0.36,
       },
     },
     iot: null,
     notes:
-      "Low-margin plant alert retained as an example of the False Alarm workflow. Admins should keep the status editable while model thresholds are tuned.",
+      "Low-margin plant-plucking alert retained as an example of the False Alarm workflow. Admins should keep the status editable while model thresholds are tuned.",
   },
   {
     incident_id: "IOT-plant-zone-01-2026-04-27T12:44:18+08:00",

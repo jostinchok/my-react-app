@@ -828,7 +828,7 @@ const AIDetection = () => {
   const statusMode = backendOnline ? "Live backend" : "Seeded fallback";
   const statusCards = [
     { label: "Total", value: summary.total, detail: backendOnline ? "Backend incidents" : "Demo incidents" },
-    { label: "AI Camera", value: summary.ai, detail: "TouchingPlants / TouchingWildlife" },
+    { label: "AI Camera", value: summary.ai, detail: "Plucking Plants / Touching Wildlife" },
     { label: "IoT Sensor", value: summary.iot, detail: "ObjectCloseToPlant readings" },
     { label: "New", value: summary.new, detail: "Needs review" },
     { label: "In Review", value: summary.inReview, detail: "Being investigated" },
@@ -1177,7 +1177,7 @@ const IncidentDetailPanel = ({
           <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
-            value={`Plants ${formatPercent(probabilities.TouchingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
+            value={`Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       ) : incident.source === "AI_CAMERA" ? (

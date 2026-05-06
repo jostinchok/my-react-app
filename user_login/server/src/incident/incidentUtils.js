@@ -1,7 +1,8 @@
 export const VALID_SOURCES = new Set(['AI_CAMERA', 'IOT_SENSOR'])
 
 export const VALID_EVENT_TYPES = new Set([
-  'TouchingPlants',
+  'PluckingPlants',
+  'TouchingPlants', // Backward-compatible alias until the AI model is retrained.
   'TouchingWildlife',
   'ObjectCloseToPlant',
 ])
@@ -127,10 +128,12 @@ export const normalizeAi = (value) => {
     bbox: Array.isArray(value.bbox) ? value.bbox.map((item) => toNumber(item, 0)) : [],
     probabilities: probabilities && typeof probabilities === 'object'
       ? {
-          TouchingPlants: toNumber(probabilities.TouchingPlants, 0),
+          PluckingPlants: toNumber(probabilities.PluckingPlants ?? probabilities.TouchingPlants, 0),
+          TouchingPlants: toNumber(probabilities.TouchingPlants ?? probabilities.PluckingPlants, 0),
           TouchingWildlife: toNumber(probabilities.TouchingWildlife, 0),
         }
       : {
+          PluckingPlants: 0,
           TouchingPlants: 0,
           TouchingWildlife: 0,
         },
@@ -248,7 +251,7 @@ export const normalizeIncident = (input = {}, options = {}) => {
     notes: input.notes || (
       source === 'IOT_SENSOR'
         ? 'IoT proximity sensor detected an object inside the protected plant-zone threshold.'
-      : 'AI camera detected human interaction with protected plant or wildlife.'
+      : 'AI camera detected possible plant plucking or wildlife contact.'
     ),
     actionHistory: [],
     rangerRecommendations: [],

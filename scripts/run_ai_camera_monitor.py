@@ -29,7 +29,7 @@ from transformers import AutoProcessor, CLIPVisionModelWithProjection
 MODEL_NAME = "openai/clip-vit-base-patch32"
 CLASS_NAMES = ["TouchingPlants", "TouchingWildlife"]
 FRIENDLY_LABELS = {
-    "TouchingPlants": "Touching Plants",
+    "TouchingPlants": "Plucking Plants",
     "TouchingWildlife": "Touching Wildlife",
     "Unknown": "Unknown / No Alert",
 }
@@ -111,7 +111,7 @@ def get_bbox_from_landmarks(landmarks, frame_w, frame_h, padding=30):
 
 
 def get_box_color(pred_class: str):
-    if pred_class == "TouchingPlants":
+    if pred_class in ("TouchingPlants", "PluckingPlants"):
         return (0, 165, 255)
     if pred_class == "TouchingWildlife":
         return (0, 0, 255)
@@ -524,7 +524,7 @@ def run_monitor(args):
                 cv2.putText(display_frame, f"Margin: {margin:.2f}", (x1, y_text + 44), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
                 cv2.putText(
                     display_frame,
-                    f"TP:{probs_dict['TouchingPlants']:.2f}  TW:{probs_dict['TouchingWildlife']:.2f}",
+                    f"PP:{probs_dict['TouchingPlants']:.2f}  TW:{probs_dict['TouchingWildlife']:.2f}",
                     (x1, y_text + 66),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.50,
