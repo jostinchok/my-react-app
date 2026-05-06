@@ -99,7 +99,7 @@ const ForgotPassword = ({ onBack }) => {
   return (
     <div className="login-container">
       <img
-        src="/images/sfc-citrus-logo.webp"
+        src={`${import.meta.env.BASE_URL}images/sfc-citrus-logo.webp`}
         alt="SFC Digital Guide logo"
         className="logo"
       />

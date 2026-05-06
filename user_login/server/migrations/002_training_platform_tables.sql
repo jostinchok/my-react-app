@@ -1,5 +1,3 @@
-USE park_guide_database;
-
 DELIMITER $$
 
 CREATE PROCEDURE add_column_if_missing(
