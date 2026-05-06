@@ -91,7 +91,7 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | Component | Classification | Notes |
 | --- | --- | --- |
 | Review Hub | Demo-ready | Links all demo surfaces, API endpoints, role notes, and optional security-control notes. |
-| Login/Register/Forgot Password | Partial / Demo-ready | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Production route/session auth is deferred. |
+| Login/Register/Forgot Password | Demo-ready / Auth-enhanced | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Frontend route/session hardening remains deferred. |
 | Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. Admin-created modules and course resources can load from the user API. |
 | Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence and reads the user training module API when available. Screens are simpler than the full web portal. |
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |

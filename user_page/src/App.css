@@ -414,6 +414,24 @@ button {
   border: 1px solid #f2d77f;
 }
 
+.logout-button {
+  padding: 0 16px;
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid #e74c3c;
+  background: transparent;
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.logout-button:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
 .avatar-button {
   width: 46px;
   height: 46px;

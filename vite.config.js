@@ -7,6 +7,11 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
+      '/login': {
+        target: 'http://localhost:5176',
+        changeOrigin: true,
+        ws: true,
+      },
       '/admin': {
         target: 'http://localhost:5174',
         changeOrigin: true,

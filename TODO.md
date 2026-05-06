@@ -13,7 +13,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 | Component | Classification | Demo check |
 | --- | --- | --- |
 | Review Hub | Demo-ready | Open `http://localhost:5173`; show all direct links, role notes, and optional cybersecurity-control notes. |
-| Login/Register/Forgot Password | Partial / Demo-ready | Show demo users/roles and localStorage demo logout. Explain production JWT/session auth is deferred. |
+| Login/Register/Forgot Password | Demo-ready / Auth-enhanced | Show database-backed login/register/forgot-password OTP flow. Explain production JWT/session route protection is deferred. |
 | User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, backend-linked modules, quiz, progress, certificates, notifications, schedule, admin resources, profile, and help. |
 | Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces and backend-loaded modules when the user API is running. |
 | Admin Dashboard | Demo-ready | Open `http://localhost:5174/admin`; confirm admin landing page loads. |

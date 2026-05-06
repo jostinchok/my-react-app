@@ -623,6 +623,12 @@ function App() {
     event.target.value = ''
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('sfc_session')
+    const loginUrl = import.meta.env.VITE_LOGIN_URL || 'http://localhost:5176'
+    window.location.href = loginUrl
+  }
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'D' },
     { id: 'modules', label: 'My Modules', icon: 'M' },
@@ -685,6 +691,9 @@ function App() {
             <h1>{currentUser.assignedPark}</h1>
           </div>
           <div className="topbar-actions">
+            <button type="button" className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
             <button type="button" className="avatar-button" onClick={() => setActiveTab('profile')}>
               {currentUser.avatar ? (
                 <img src={currentUser.avatar} alt="User avatar" />

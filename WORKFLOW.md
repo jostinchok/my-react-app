@@ -392,7 +392,7 @@ Image rule for report/demo assets:
 ## Manual Demo Order
 
 1. Open `http://localhost:5173` and show the root hub cards and service links.
-2. Open Login/Register, then Park Guide/User Portal at `http://localhost:5175/user`.
+2. Open Login/Register/Forgot Password, then Park Guide/User Portal at `http://localhost:5175/user`.
 3. Switch User01/User02/User03.
 4. Show backend-linked modules, module detail, quiz, progress, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
 5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
