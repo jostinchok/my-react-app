@@ -274,6 +274,244 @@ const normalizeCanvasCourseItem = (row = {}) => {
   }
 }
 
+const canvasItemTypes = new Set(['page', 'text', 'file', 'image', 'video', 'link', 'quiz', 'checklist'])
+const canvasProgressStatuses = new Set(['not_started', 'in_progress', 'completed'])
+
+const ensureCanvasLearningProgressTables = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS canvas_item_progress (
+      progress_id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      course_id VARCHAR(64) NOT NULL,
+      module_id INT NOT NULL,
+      item_id INT NOT NULL,
+      item_type ENUM('page','text','file','image','video','link','quiz','checklist') NOT NULL,
+      status ENUM('not_started','in_progress','completed') NOT NULL DEFAULT 'not_started',
+      completed_at DATETIME NULL,
+      last_viewed_at DATETIME NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_canvas_progress_user_course_module_item (user_id, course_id, module_id, item_id),
+      INDEX idx_canvas_progress_user_module (user_id, module_id),
+      INDEX idx_canvas_progress_item (item_id),
+      CONSTRAINT fk_canvas_progress_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_canvas_progress_module
+        FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_canvas_progress_item
+        FOREIGN KEY (item_id) REFERENCES course_module_items(item_id)
+        ON DELETE CASCADE
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS canvas_quiz_attempts (
+      attempt_id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      course_id VARCHAR(64) NOT NULL,
+      module_id INT NOT NULL,
+      item_id INT NOT NULL,
+      selected_answer TEXT NULL,
+      correct_answer TEXT NULL,
+      is_correct BOOLEAN NOT NULL DEFAULT FALSE,
+      score_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+      attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_canvas_quiz_user_item_attempted (user_id, item_id, attempted_at),
+      INDEX idx_canvas_quiz_user_module (user_id, module_id),
+      CONSTRAINT fk_canvas_quiz_attempt_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_canvas_quiz_attempt_module
+        FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_canvas_quiz_attempt_item
+        FOREIGN KEY (item_id) REFERENCES course_module_items(item_id)
+        ON DELETE CASCADE
+    )
+  `)
+}
+
+const positiveInt = (value) => {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 ? number : null
+}
+
+const booleanValue = (value) => value === true || value === 1 || String(value).toLowerCase() === 'true'
+
+const normalizeCanvasProgressStatus = (value) => {
+  const status = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  return canvasProgressStatuses.has(status) ? status : 'completed'
+}
+
+const normalizeCanvasItemType = (value) => {
+  const type = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  return canvasItemTypes.has(type) ? type : 'page'
+}
+
+const dateToIso = (value) => {
+  if (!value) return null
+  if (value instanceof Date) return value.toISOString()
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString()
+}
+
+const normalizeCanvasProgressRow = (row = {}) => ({
+  progressId: row.progress_id,
+  progress_id: row.progress_id,
+  userId: row.user_id,
+  user_id: row.user_id,
+  guideId: row.user_id,
+  guide_id: row.user_id,
+  courseId: row.course_id,
+  course_id: row.course_id,
+  moduleId: row.module_id,
+  module_id: row.module_id,
+  itemId: row.item_id,
+  item_id: row.item_id,
+  itemType: row.item_type,
+  item_type: row.item_type,
+  status: row.status,
+  completed: row.status === 'completed',
+  completedAt: dateToIso(row.completed_at),
+  completed_at: dateToIso(row.completed_at),
+  lastViewedAt: dateToIso(row.last_viewed_at),
+  last_viewed_at: dateToIso(row.last_viewed_at),
+  updatedAt: dateToIso(row.updated_at),
+  updated_at: dateToIso(row.updated_at),
+})
+
+const normalizeCanvasQuizAttemptRow = (row = {}) => ({
+  attemptId: row.attempt_id,
+  attempt_id: row.attempt_id,
+  userId: row.user_id,
+  user_id: row.user_id,
+  guideId: row.user_id,
+  guide_id: row.user_id,
+  courseId: row.course_id,
+  course_id: row.course_id,
+  moduleId: row.module_id,
+  module_id: row.module_id,
+  itemId: row.item_id,
+  item_id: row.item_id,
+  selectedAnswer: row.selected_answer || '',
+  selected_answer: row.selected_answer || '',
+  correctAnswer: row.correct_answer || '',
+  correct_answer: row.correct_answer || '',
+  isCorrect: Boolean(row.is_correct),
+  is_correct: Boolean(row.is_correct),
+  scorePercent: Number(row.score_percent || 0),
+  score_percent: Number(row.score_percent || 0),
+  attemptedAt: dateToIso(row.attempted_at),
+  attempted_at: dateToIso(row.attempted_at),
+  createdAt: dateToIso(row.created_at),
+  created_at: dateToIso(row.created_at),
+})
+
+const loadCanvasProgressPayload = async (userId) => {
+  await ensureCanvasLearningProgressTables()
+
+  const [progressRows, quizRows, moduleSummaryRows] = await Promise.all([
+    rowsOf(
+      `SELECT progress_id, user_id, course_id, module_id, item_id, item_type, status,
+              completed_at, last_viewed_at, created_at, updated_at
+       FROM canvas_item_progress
+       WHERE user_id = ?
+       ORDER BY updated_at DESC, progress_id DESC`,
+      [userId]
+    ),
+    rowsOf(
+      `SELECT attempt_id, user_id, course_id, module_id, item_id, selected_answer, correct_answer,
+              is_correct, score_percent, attempted_at, created_at
+       FROM canvas_quiz_attempts
+       WHERE user_id = ?
+       ORDER BY attempted_at DESC, attempt_id DESC`,
+      [userId]
+    ),
+    rowsOf(
+      `SELECT
+         cmi.course_id,
+         cmi.module_id,
+         tm.title AS module_title,
+         COUNT(cmi.item_id) AS total_items,
+         SUM(CASE WHEN cip.status = 'completed' THEN 1 ELSE 0 END) AS completed_items,
+         MAX(cip.updated_at) AS last_updated_at
+       FROM course_module_items cmi
+       LEFT JOIN training_modules tm ON tm.module_id = cmi.module_id
+       LEFT JOIN canvas_item_progress cip
+         ON cip.user_id = ?
+        AND cip.course_id = cmi.course_id
+        AND cip.module_id = cmi.module_id
+        AND cip.item_id = cmi.item_id
+       GROUP BY cmi.course_id, cmi.module_id, tm.title
+       ORDER BY tm.title ASC, cmi.module_id ASC`,
+      [userId]
+    ),
+  ])
+
+  const itemProgress = progressRows.map(normalizeCanvasProgressRow)
+  const quizAttempts = quizRows.map(normalizeCanvasQuizAttemptRow)
+  const completedItemIds = itemProgress
+    .filter((item) => item.status === 'completed')
+    .map((item) => String(item.itemId))
+
+  const modules = moduleSummaryRows.map((row) => {
+    const totalItems = Number(row.total_items || 0)
+    const completedItems = Number(row.completed_items || 0)
+    return {
+      courseId: row.course_id,
+      course_id: row.course_id,
+      moduleId: row.module_id,
+      module_id: row.module_id,
+      moduleTitle: row.module_title || '',
+      module_title: row.module_title || '',
+      totalItems,
+      total_items: totalItems,
+      completedItems,
+      completed_items: completedItems,
+      progressPercent: totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0,
+      progress_percent: totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0,
+      lastUpdatedAt: dateToIso(row.last_updated_at),
+      last_updated_at: dateToIso(row.last_updated_at),
+    }
+  })
+
+  const totalItems = modules.reduce((sum, module) => sum + module.totalItems, 0)
+  const completedCount = completedItemIds.length
+
+  return {
+    ok: true,
+    persistence: 'mysql',
+    userId,
+    user_id: userId,
+    guideId: userId,
+    guide_id: userId,
+    completedItemIds,
+    completed_item_ids: completedItemIds,
+    itemProgress,
+    item_progress: itemProgress,
+    quizAttempts,
+    quiz_attempts: quizAttempts,
+    summary: {
+      userId,
+      user_id: userId,
+      guideId: userId,
+      guide_id: userId,
+      totalItems,
+      total_items: totalItems,
+      completedCount,
+      completed_count: completedCount,
+      quizAttemptCount: quizAttempts.length,
+      quiz_attempt_count: quizAttempts.length,
+      progressPercent: totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0,
+      progress_percent: totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0,
+      modules,
+    },
+  }
+}
+
 const normalizeCourseResource = (row = {}) => ({
   id: `resource-${row.resource_id}`,
   source: 'admin_resource',
@@ -481,6 +719,140 @@ app.get('/api/training-modules', asyncRoute(async (req, res) => {
   const userId = await resolveUserIdForTraining(req)
   const modules = await buildModules(userId)
   res.json({ modules })
+}))
+
+app.get('/api/canvas-progress', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const payload = await loadCanvasProgressPayload(userId)
+  res.json(payload)
+}))
+
+app.get('/api/canvas-progress/summary', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const payload = await loadCanvasProgressPayload(userId)
+  res.json({ ok: true, persistence: payload.persistence, summary: payload.summary })
+}))
+
+app.post('/api/canvas-progress/item', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const {
+    courseId = null,
+    course_id = null,
+    moduleId = null,
+    module_id = null,
+    itemId = null,
+    item_id = null,
+    itemType = null,
+    item_type = null,
+    status = 'completed',
+  } = req.body || {}
+
+  const courseIdValue = String(courseId || course_id || '').trim()
+  const moduleIdValue = positiveInt(moduleId || module_id)
+  const itemIdValue = positiveInt(itemId || item_id)
+  const itemTypeValue = normalizeCanvasItemType(itemType || item_type)
+  const statusValue = normalizeCanvasProgressStatus(status)
+
+  if (!courseIdValue || !moduleIdValue || !itemIdValue) {
+    res.status(400).json({ message: 'course_id, module_id, and numeric item_id are required for Canvas progress.' })
+    return
+  }
+
+  await ensureDemoUser(userId)
+  await ensureCanvasLearningProgressTables()
+  await pool.query(
+    `INSERT INTO canvas_item_progress
+       (user_id, course_id, module_id, item_id, item_type, status, completed_at, last_viewed_at)
+     VALUES (?, ?, ?, ?, ?, ?, IF(? = 'completed', CURRENT_TIMESTAMP, NULL), CURRENT_TIMESTAMP)
+     ON DUPLICATE KEY UPDATE
+       item_type = VALUES(item_type),
+       status = VALUES(status),
+       completed_at = CASE
+         WHEN VALUES(status) = 'completed' THEN COALESCE(completed_at, CURRENT_TIMESTAMP)
+         ELSE NULL
+       END,
+       last_viewed_at = CURRENT_TIMESTAMP`,
+    [userId, courseIdValue, moduleIdValue, itemIdValue, itemTypeValue, statusValue, statusValue]
+  )
+
+  const payload = await loadCanvasProgressPayload(userId)
+  res.json(payload)
+}))
+
+app.post('/api/canvas-progress/quiz', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const {
+    courseId = null,
+    course_id = null,
+    moduleId = null,
+    module_id = null,
+    itemId = null,
+    item_id = null,
+    selectedAnswer = null,
+    selected_answer = null,
+    correctAnswer = null,
+    correct_answer = null,
+    isCorrect = null,
+    is_correct = null,
+    scorePercent = null,
+    score_percent = null,
+  } = req.body || {}
+
+  const courseIdValue = String(courseId || course_id || '').trim()
+  const moduleIdValue = positiveInt(moduleId || module_id)
+  const itemIdValue = positiveInt(itemId || item_id)
+  const isCorrectValue = booleanValue(isCorrect ?? is_correct)
+  const scorePercentValue = Number.isFinite(Number(scorePercent ?? score_percent))
+    ? Math.max(0, Math.min(100, Number(scorePercent ?? score_percent)))
+    : isCorrectValue ? 100 : 0
+
+  if (!courseIdValue || !moduleIdValue || !itemIdValue) {
+    res.status(400).json({ message: 'course_id, module_id, and numeric item_id are required for Canvas quiz progress.' })
+    return
+  }
+
+  await ensureDemoUser(userId)
+  await ensureCanvasLearningProgressTables()
+
+  const connection = await pool.getConnection()
+  try {
+    await connection.beginTransaction()
+    await connection.query(
+      `INSERT INTO canvas_quiz_attempts
+         (user_id, course_id, module_id, item_id, selected_answer, correct_answer, is_correct, score_percent, attempted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [
+        userId,
+        courseIdValue,
+        moduleIdValue,
+        itemIdValue,
+        selectedAnswer ?? selected_answer ?? null,
+        correctAnswer ?? correct_answer ?? null,
+        isCorrectValue,
+        scorePercentValue,
+      ]
+    )
+    await connection.query(
+      `INSERT INTO canvas_item_progress
+         (user_id, course_id, module_id, item_id, item_type, status, completed_at, last_viewed_at)
+       VALUES (?, ?, ?, ?, 'quiz', 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON DUPLICATE KEY UPDATE
+         item_type = 'quiz',
+         status = 'completed',
+         completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+         last_viewed_at = CURRENT_TIMESTAMP`,
+      [userId, courseIdValue, moduleIdValue, itemIdValue]
+    )
+    await connection.commit()
+  } catch (error) {
+    await connection.rollback()
+    throw error
+  } finally {
+    connection.release()
+  }
+
+  const payload = await loadCanvasProgressPayload(userId)
+  res.status(201).json(payload)
 }))
 
 app.get('/api/user-profile', asyncRoute(async (req, res) => {

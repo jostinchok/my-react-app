@@ -17,7 +17,10 @@ import {
   normalizeScheduleRow,
   loadCourseFiles,
   deleteScheduleItem,
+  loadCanvasProgress,
   saveAvatarUpload,
+  saveCanvasItemProgress,
+  saveCanvasQuizAttempt,
   saveProfileField,
   saveScheduleItem,
   updateScheduleItem,
@@ -305,6 +308,15 @@ const isResourceLikeItem = (item) => ['file', 'image', 'video', 'link'].includes
 
 const moduleImageSrc = (module) => cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
 
+const persistableId = (value) => {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 ? number : null
+}
+
+const getPersistableCanvasItemId = (item) => persistableId(item?.item_id ?? item?.itemId ?? item?.id)
+
+const getCanvasQuizKey = (module, item) => `${module?.id || 'module'}:${item?.id || 'quiz'}`
+
 const readLoginSession = () => {
   try {
     const raw = localStorage.getItem('sfc_session')
@@ -333,6 +345,12 @@ function App() {
     status: 'loading',
     message: 'Waiting for module records from database.',
   })
+  const [canvasProgressFrame, setCanvasProgressFrame] = useState({
+    status: 'loading',
+    message: 'Loading saved Canvas progress.',
+  })
+  const [canvasProgressRecords, setCanvasProgressRecords] = useState([])
+  const [canvasQuizAttempts, setCanvasQuizAttempts] = useState([])
   const [profileFrame, setProfileFrame] = useState({
     status: 'loading',
     message: 'Waiting for profile record from database.',
@@ -373,6 +391,31 @@ function App() {
     let ignore = false
 
     const userQuery = currentUserId ? `?userId=${encodeURIComponent(currentUserId)}` : ''
+
+    setCanvasProgressFrame({
+      status: 'loading',
+      message: 'Loading saved Canvas progress.',
+    })
+    loadCanvasProgress(currentUserId)
+      .then((payload) => {
+        if (ignore) return
+        setCanvasProgressRecords(payload.itemProgress)
+        setCanvasQuizAttempts(payload.quizAttempts)
+        const completedCount = payload.summary?.completedCount ?? payload.completedItemIds.length
+        setCanvasProgressFrame({
+          status: 'ready',
+          message: `${completedCount} saved Canvas completion${completedCount === 1 ? '' : 's'} loaded from MySQL.`,
+        })
+      })
+      .catch((error) => {
+        if (ignore) return
+        setCanvasProgressRecords([])
+        setCanvasQuizAttempts([])
+        setCanvasProgressFrame({
+          status: 'fallback',
+          message: `Canvas progress is using local fallback. ${error.message}`,
+        })
+      })
 
     loadDatabaseFrame(`${API_LINKS.modules}${userQuery}`, ['modules', 'trainingModules', 'courses'], normalizeModuleRow)
       .then((modules) => {
@@ -534,6 +577,21 @@ function App() {
     selectedModuleItems.find((item) => item.type === 'quiz'),
     selectedModule
   )
+  const latestQuizAttemptByItem = useMemo(() => {
+    const attempts = new Map()
+    for (const attempt of canvasQuizAttempts) {
+      const itemId = String(attempt.itemId)
+      if (!itemId || attempts.has(itemId)) continue
+      attempts.set(itemId, {
+        passed: attempt.isCorrect,
+        selected: attempt.selectedAnswer,
+        score: attempt.scorePercent,
+        completedAt: attempt.attemptedAt,
+        saved: true,
+      })
+    }
+    return attempts
+  }, [canvasQuizAttempts])
 
   useEffect(() => {
     if (!selectedModule) {
@@ -586,9 +644,16 @@ function App() {
   )
 
   const updateCurrentUser = (updater) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((user) => (user.id === currentUserId ? updater({ ...user }) : user))
-    )
+    setUsers((prevUsers) => {
+      let found = false
+      const nextUsers = prevUsers.map((user) => {
+        if (String(user.id) !== String(currentUserId)) return user
+        found = true
+        return updater({ ...user })
+      })
+      if (found) return nextUsers
+      return [...nextUsers, updater({ ...currentUser, id: currentUserId })]
+    })
   }
 
   const addNotification = (title, body, type = 'training') => {
@@ -608,14 +673,30 @@ function App() {
     }))
   }
 
-  const isEnrolled = (module, user = currentUser) => !!module && user.enrolledModuleIds?.includes(module.id)
+  const isEnrolled = (module, user = currentUser) =>
+    !!module &&
+    (user.enrolledModuleIds?.includes(module.id) ||
+      canvasProgressRecords.some((record) => String(record.moduleId) === String(module.id)))
 
-  const completedItemIdsFor = (module, user = currentUser) =>
-    new Set((user.completedLessons?.[module?.id] || []).map((item) => String(item)))
+  const completedItemIdsFor = (module, user = currentUser) => {
+    const localCompleted = (user.completedLessons?.[module?.id] || []).map((item) => String(item))
+    const savedCompleted = canvasProgressRecords
+      .filter((record) => record.status === 'completed' && String(record.moduleId) === String(module?.id))
+      .map((record) => String(record.itemId))
+    return new Set([...localCompleted, ...savedCompleted])
+  }
+
+  const getQuizResultForItem = (module, item, user = currentUser) => {
+    if (!module || !item) return null
+    const itemId = getPersistableCanvasItemId(item)
+    if (itemId && latestQuizAttemptByItem.has(String(itemId))) return latestQuizAttemptByItem.get(String(itemId))
+    const quizKey = getCanvasQuizKey(module, item)
+    return user.quizResults?.[quizKey] || user.quizResults?.[module.id] || null
+  }
 
   const isCanvasItemDone = (module, item, user = currentUser) => {
     if (!module || !item) return false
-    if (item.type === 'quiz') return !!user.quizResults?.[module.id]?.passed
+    if (item.type === 'quiz' && getQuizResultForItem(module, item, user)) return true
     return completedItemIdsFor(module, user).has(String(item.id))
   }
 
@@ -630,19 +711,28 @@ function App() {
 
   const enrolledModules = useMemo(
     () => trainingModules.filter((module) => isEnrolled(module)),
-    [currentUser, trainingModules]
+    [currentUser, trainingModules, canvasProgressRecords]
   )
 
   const completedModules = useMemo(
     () => trainingModules.filter((module) => getProgress(module) === 100),
-    [currentUser, trainingModules]
+    [currentUser, trainingModules, canvasProgressRecords, canvasQuizAttempts]
   )
 
   const overallProgress = useMemo(() => {
     if (enrolledModules.length === 0) return 0
     const total = enrolledModules.reduce((sum, module) => sum + getProgress(module), 0)
     return Math.round(total / enrolledModules.length)
-  }, [currentUser, enrolledModules, trainingModules])
+  }, [currentUser, enrolledModules, trainingModules, canvasProgressRecords, canvasQuizAttempts])
+
+  const completedCanvasItemCount = useMemo(
+    () =>
+      enrolledModules.reduce(
+        (sum, module) => sum + getCanvasItems(module).filter((item) => isCanvasItemDone(module, item)).length,
+        0
+      ),
+    [currentUser, enrolledModules, trainingModules, canvasProgressRecords, canvasQuizAttempts]
+  )
 
   const userNotifications = databaseNotifications.length > 0 ? databaseNotifications : []
   const userSchedule = databaseSchedule.length > 0 ? databaseSchedule : currentUser.schedule || []
@@ -672,7 +762,7 @@ function App() {
   const nextModule = useMemo(() => {
     const active = enrolledModules.find((module) => getProgress(module) < 100)
     return active || trainingModules.find((module) => !isEnrolled(module)) || null
-  }, [currentUser, enrolledModules, trainingModules])
+  }, [currentUser, enrolledModules, trainingModules, canvasProgressRecords, canvasQuizAttempts])
 
   const categories = useMemo(
     () => ['all', ...new Set(trainingModules.map((module) => module.category))],
@@ -694,7 +784,7 @@ function App() {
       const matchesCategory = moduleCategory === 'all' || moduleCategory === module.category
       return matchesSearch && matchesStatus && matchesCategory
     })
-  }, [currentUser, moduleSearch, moduleStatus, moduleCategory, trainingModules])
+  }, [currentUser, moduleSearch, moduleStatus, moduleCategory, trainingModules, canvasProgressRecords, canvasQuizAttempts])
 
   const categoryProgress = useMemo(() => {
     return [...new Set(trainingModules.map((module) => module.category))].map((category) => {
@@ -704,7 +794,7 @@ function App() {
       )
       return { category, average }
     })
-  }, [currentUser, trainingModules])
+  }, [currentUser, trainingModules, canvasProgressRecords, canvasQuizAttempts])
 
   const savedResourceIds = new Set(currentUser.savedResources || [])
   const savedResources = [
@@ -776,17 +866,69 @@ function App() {
     })
   }
 
+  const canvasPersistencePayload = (module, item) => {
+    const itemId = getPersistableCanvasItemId(item)
+    const moduleId = persistableId(item?.module_id ?? item?.moduleId ?? module?.id)
+    const courseId = cleanText(item?.course_id, item?.courseId, module?.course_id, module?.courseId)
+    if (!itemId || !moduleId || !courseId) return null
+    return {
+      userId: currentUser.id,
+      courseId,
+      moduleId,
+      itemId,
+      itemType: normalizeItemType(item.type),
+    }
+  }
+
+  const applyCanvasProgressPayload = (payload, message = 'Canvas progress saved to MySQL.') => {
+    setCanvasProgressRecords(payload.itemProgress || [])
+    setCanvasQuizAttempts(payload.quizAttempts || [])
+    setCanvasProgressFrame({
+      status: 'ready',
+      message,
+    })
+  }
+
+  const upsertOptimisticProgressRecord = (module, item, status) => {
+    const payload = canvasPersistencePayload(module, item)
+    if (!payload) return
+    setCanvasProgressRecords((records) => {
+      const nextRecords = records.filter((record) => String(record.itemId) !== String(payload.itemId))
+      return [
+        {
+          id: `${payload.userId}-${payload.itemId}`,
+          progressId: '',
+          userId: String(payload.userId),
+          guideId: String(payload.userId),
+          courseId: payload.courseId,
+          moduleId: String(payload.moduleId),
+          itemId: String(payload.itemId),
+          itemType: payload.itemType,
+          status,
+          completed: status === 'completed',
+          completedAt: status === 'completed' ? new Date().toISOString() : '',
+          lastViewedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        ...nextRecords,
+      ]
+    })
+  }
+
   const toggleCanvasItem = (module, item) => {
     if (!module || !item) return
     if (!isEnrolled(module)) return
     if (item.type === 'quiz') return
 
+    const willComplete = !isCanvasItemDone(module, item)
+    const nextStatus = willComplete ? 'completed' : 'not_started'
+    upsertOptimisticProgressRecord(module, item, nextStatus)
     updateCurrentUser((user) => {
       const existing = (user.completedLessons?.[module.id] || []).map((value) => String(value))
       const itemId = String(item.id)
-      const next = existing.includes(itemId)
-        ? existing.filter((value) => value !== itemId)
-        : [...existing, itemId]
+      const next = willComplete
+        ? [...new Set([...existing, itemId])]
+        : existing.filter((value) => value !== itemId)
       return {
         ...user,
         completedLessons: {
@@ -795,26 +937,100 @@ function App() {
         },
       }
     })
+
+    const payload = canvasPersistencePayload(module, item)
+    if (!payload) {
+      setCanvasProgressFrame({
+        status: 'fallback',
+        message: 'Canvas progress is using local fallback for this generated item.',
+      })
+      return
+    }
+
+    setCanvasProgressFrame({
+      status: 'saving',
+      message: 'Saving Canvas progress to MySQL...',
+    })
+    saveCanvasItemProgress({
+      ...payload,
+      status: nextStatus,
+    })
+      .then((savedPayload) => applyCanvasProgressPayload(savedPayload, 'Canvas item progress saved to MySQL.'))
+      .catch((error) => {
+        setCanvasProgressFrame({
+          status: 'fallback',
+          message: `Canvas progress kept locally. ${error.message}`,
+        })
+      })
   }
 
-  const submitQuiz = (module, quizDefinition = getQuizFromItem(null, module)) => {
+  const submitQuiz = (module, item, quizDefinition = getQuizFromItem(item, module)) => {
     if (!module || !quizDefinition) return
     if (!isEnrolled(module)) return
-    const selected = Number(quizDraft[module.id])
+    const quizKey = getCanvasQuizKey(module, item)
+    const selected = Number(quizDraft[quizKey] ?? quizDraft[module.id])
     if (Number.isNaN(selected)) return
-    const passed = selected === Number(quizDefinition.answer ?? 0)
-    updateCurrentUser((user) => ({
-      ...user,
-      quizResults: {
-        ...(user.quizResults || {}),
-        [module.id]: {
-          passed,
-          selected,
-          score: passed ? 100 : 0,
-          completedAt: new Date().toISOString().slice(0, 10),
+    const correctIndex = Number(quizDefinition.answer ?? 0)
+    const passed = selected === correctIndex
+    const score = passed ? 100 : 0
+    const options = toList(quizDefinition.options).map(toPlainText)
+    const selectedAnswer = cleanText(options[selected], String(selected))
+    const correctAnswer = cleanText(options[correctIndex], String(correctIndex))
+    const quizResult = {
+      passed,
+      selected,
+      selectedAnswer,
+      correctAnswer,
+      score,
+      completedAt: new Date().toISOString().slice(0, 10),
+    }
+    const itemId = String(item?.id || `${module.id}-quiz`)
+
+    upsertOptimisticProgressRecord(module, item, 'completed')
+    updateCurrentUser((user) => {
+      const existing = (user.completedLessons?.[module.id] || []).map((value) => String(value))
+      const nextCompleted = [...new Set([...existing, itemId])]
+      return {
+        ...user,
+        completedLessons: {
+          ...(user.completedLessons || {}),
+          [module.id]: nextCompleted,
         },
-      },
-    }))
+        quizResults: {
+          ...(user.quizResults || {}),
+          [module.id]: quizResult,
+          [quizKey]: quizResult,
+        },
+      }
+    })
+
+    const payload = canvasPersistencePayload(module, item)
+    if (!payload) {
+      setCanvasProgressFrame({
+        status: 'fallback',
+        message: 'Canvas quiz attempt is using local fallback for this generated item.',
+      })
+    } else {
+      setCanvasProgressFrame({
+        status: 'saving',
+        message: 'Saving Canvas quiz attempt to MySQL...',
+      })
+      saveCanvasQuizAttempt({
+        ...payload,
+        selectedAnswer,
+        correctAnswer,
+        isCorrect: passed,
+        scorePercent: score,
+      })
+        .then((savedPayload) => applyCanvasProgressPayload(savedPayload, 'Canvas quiz attempt saved to MySQL.'))
+        .catch((error) => {
+          setCanvasProgressFrame({
+            status: 'fallback',
+            message: `Canvas quiz result kept locally. ${error.message}`,
+          })
+        })
+    }
+
     addNotification(
       passed ? 'Quiz passed' : 'Quiz needs review',
       passed
@@ -1288,6 +1504,9 @@ function App() {
                   <div className="module-source-banner ready">
                     This module is rendered from the Admin Canvas-style builder. Open each item, review the preview, then mark it complete.
                   </div>
+                  <div className={`module-source-banner ${canvasProgressFrame.status}`}>
+                    {canvasProgressFrame.message}
+                  </div>
 
                   {!isEnrolled(selectedModule) && (
                     <EmptyFrame title="Enroll first" body="Park Guides must enroll before completing Canvas items and quiz attempts." />
@@ -1343,7 +1562,7 @@ function App() {
                     quizDraft={quizDraft}
                     setQuizDraft={setQuizDraft}
                     submitQuiz={submitQuiz}
-                    quizResult={currentUser.quizResults?.[selectedModule.id]}
+                    quizResult={getQuizResultForItem(selectedModule, selectedCanvasItem)}
                     saved={selectedCanvasItem ? savedResourceIds.has(selectedCanvasItem.id) : false}
                     onSaveResource={() => selectedCanvasItem && toggleResource(selectedCanvasItem.id)}
                   />
@@ -1423,7 +1642,7 @@ function App() {
 
               <div className="stat-grid progress-stat-grid">
                 <StatCard label="Overall" value={`${overallProgress}%`} detail="Average across enrolled modules" />
-                <StatCard label="Lessons done" value={String(enrolledModules.reduce((sum, module) => sum + (currentUser.completedLessons?.[module.id]?.length || 0), 0))} detail="Checklist items completed" />
+                <StatCard label="Items done" value={String(completedCanvasItemCount)} detail="Canvas items completed" />
               </div>
 
               <div className="content-grid">
@@ -1835,6 +2054,7 @@ function CanvasItemPreview({
   }
 
   const meta = itemTypeMeta(item.type)
+  const quizKey = getCanvasQuizKey(module, item)
   const checklistItems = toList(item.checklist || item.checklistItems || item.checklist_items || item.content)
     .map(toPlainText)
     .filter(Boolean)
@@ -1915,12 +2135,12 @@ function CanvasItemPreview({
                     type="radio"
                     name={`quiz-${module.id}`}
                     value={index}
-                    checked={Number(quizDraft[module.id]) === index}
+                    checked={Number(quizDraft[quizKey] ?? quizDraft[module.id]) === index}
                     disabled={!enrolled}
                     onChange={(event) =>
                       setQuizDraft((prev) => ({
                         ...prev,
-                        [module.id]: event.target.value,
+                        [quizKey]: event.target.value,
                       }))
                     }
                   />
@@ -1934,8 +2154,8 @@ function CanvasItemPreview({
           <button
             type="button"
             className="full-button"
-            disabled={!enrolled || !quizDefinition?.options?.length || quizDraft[module.id] === undefined}
-            onClick={() => submitQuiz(module, quizDefinition)}
+            disabled={!enrolled || !quizDefinition?.options?.length || quizDraft[quizKey] === undefined}
+            onClick={() => submitQuiz(module, item, quizDefinition)}
           >
             Submit quiz
           </button>

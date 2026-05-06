@@ -31,8 +31,8 @@ The training platform now has a demo MySQL integration for Admin-created courses
 - `main` includes the Canvas-style Admin Course builder. Admin can create courses, modules, and module items from `/admin/course`.
 - Supported Canvas module item types are `page`, `text`, `file`, `image`, `video`, `link`, `quiz`, and `checklist`.
 - Canvas module items are stored in `course_module_items` through `user_login/server/migrations/003_canvas_module_items.sql`; the Admin training API also ensures the table before Canvas item operations.
-- The Park Guide User Portal reads Canvas-style module items from the user API and renders them as learning items. It supports item preview, media/resource display, quiz interaction, checklist rendering, and local completion state.
-- Persistent Canvas learning progress is the next production-ready priority. The pending work is server-side item completion storage, quiz attempt storage, refresh-safe progress, and an Admin guide progress summary after the progress API is implemented.
+- The Park Guide User Portal reads Canvas-style module items from the user API and renders them as learning items. It supports item preview, media/resource display, quiz interaction, checklist rendering, persisted completion state, and local fallback when the progress API is unavailable.
+- Persistent Canvas learning progress now has a User API and MySQL migration for item completion and quiz attempts. The remaining follow-up is an Admin-facing guide progress summary UI.
 - AI/IoT monitoring incidents remain separate from training content. Admin remains responsible for official incident status changes; Park Ranger can add field notes and recommendations only.
 
 ## Citrus Energetic UI System
@@ -101,7 +101,7 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | --- | --- | --- |
 | Review Hub | Demo-ready | Links all demo surfaces, API endpoints, role notes, and optional security-control notes. |
 | Login/Register/Forgot Password | Demo-ready / Auth-enhanced | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Frontend route/session hardening remains deferred. |
-| Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress view, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. Admin-created Canvas courses/modules/items and course resources can load from the user API. Canvas item completion and quiz attempts are still local browser state until persistent progress is implemented. |
+| Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress view, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. Admin-created Canvas courses/modules/items and course resources can load from the user API. Canvas item completion and quiz attempts persist through the User API when `004_canvas_learning_progress.sql` is applied, with local fallback if the API/database is unavailable. |
 | Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence and reads the user training module API when available. Screens are simpler than the full web portal. |
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
 | Admin Course / Training / Guide / Badge Pages | Demo-ready | Admin can create/edit/delete Canvas-style courses, modules, and module items; supported item types are page, text, file, image, video, external link, quiz, and checklist. Admin can also upload/download/delete course resources, review enrollment requests, manage guide accounts, and issue badges through the admin API. |
@@ -169,7 +169,7 @@ IoT browser capture contract:
 - AI camera and IoT ingestion can require device tokens with `DEVICE_TOKEN_AUTH_ENABLED=true`.
 - Official incident status changes require the Admin role header with `ROLE_CHECK_ENABLED=true`.
 - Park Ranger can view incidents, add field notes, and submit status-outcome recommendations for Admin review without changing `incident.status`.
-- Canvas training content is connected between Admin and the Park Guide User Portal, but item-level learning progress and quiz-result persistence still need a server-side progress API before they are production-ready.
+- Canvas training content is connected between Admin and the Park Guide User Portal. Item-level completion and quiz attempts now have User API persistence; Admin-facing progress reporting remains a follow-up.
 - Admin, Park Ranger, and Park Guide role boundaries are clearly shown in the demo.
 - Frontend route guards are intentionally not enforced in production style; this remains documented as a limitation for the tutor check.
 - Production MQTT should use a private broker with authentication and TLS.
