@@ -219,6 +219,61 @@ const normalizeCourseFile = (row = {}) => ({
   url: row.file_url,
 })
 
+const parseMaybeJson = (value, fallback) => {
+  if (value === null || value === undefined || value === '') return fallback
+  if (typeof value === 'object') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+const normalizeCanvasCourseItem = (row = {}) => {
+  const quiz = parseMaybeJson(row.quiz_json, null)
+  const checklist = parseMaybeJson(row.checklist_json, [])
+  const directFileUrl = row.file_url ? `${adminApiPublicUrl}${row.file_url}` : ''
+
+  return {
+    id: row.item_id,
+    item_id: row.item_id,
+    itemId: row.item_id,
+    moduleId: row.module_id,
+    module_id: row.module_id,
+    courseId: row.course_id,
+    course_id: row.course_id,
+    type: row.item_type,
+    item_type: row.item_type,
+    itemType: row.item_type,
+    title: row.title || 'Untitled item',
+    description: row.description || '',
+    content: row.content || '',
+    external_url: row.external_url || '',
+    externalUrl: row.external_url || '',
+    url: row.external_url || directFileUrl,
+    href: row.external_url || directFileUrl,
+    file_name: row.file_name || '',
+    fileName: row.file_name || '',
+    file_url: directFileUrl,
+    fileUrl: directFileUrl,
+    media_url: directFileUrl,
+    mediaUrl: directFileUrl,
+    mime_type: row.mime_type || '',
+    mimeType: row.mime_type || '',
+    size_bytes: Number(row.size_bytes || 0),
+    sizeBytes: Number(row.size_bytes || 0),
+    status: row.status || 'published',
+    sort_order: Number(row.sort_order || 0),
+    sortOrder: Number(row.sort_order || 0),
+    quiz,
+    question: quiz?.question || '',
+    options: quiz?.choices || quiz?.options || [],
+    choices: quiz?.choices || quiz?.options || [],
+    answer: Number(quiz?.answer ?? quiz?.correctAnswer ?? 0),
+    checklist: Array.isArray(checklist) ? checklist : [],
+  }
+}
+
 const normalizeCourseResource = (row = {}) => ({
   id: `resource-${row.resource_id}`,
   source: 'admin_resource',
@@ -270,38 +325,68 @@ const buildModules = async (userId) => {
     : []
   const hasCourseResources = courseIds.length > 0 && await tableExists('course_resources')
 
-  const [lessons, quizRows, courseResources] = await Promise.all([
+  const hasCanvasItems = await tableExists('course_module_items')
+
+  const [lessons, quizRows, courseResources, canvasItemRows] = await Promise.all([
     rowsOf(
       `SELECT lesson_id, module_id, title, content, media_url
-       FROM lessons
-       WHERE module_id IN (?)
-       ORDER BY lesson_id ASC`,
+      FROM lessons
+      WHERE module_id IN (?)
+      ORDER BY lesson_id ASC`,
       [moduleIds]
     ),
     rowsOf(
       `SELECT
-         q.quiz_id,
-         q.module_id,
-         q.title AS quiz_title,
-         qs.question_id,
-         qs.question_text,
-         o.option_id,
-         o.option_text,
-         o.is_correct
-       FROM quizzes q
-       LEFT JOIN questions qs ON qs.quiz_id = q.quiz_id
-       LEFT JOIN \`options\` o ON o.question_id = qs.question_id
-       WHERE q.module_id IN (?)
-       ORDER BY q.quiz_id ASC, qs.question_id ASC, o.option_id ASC`,
+        q.quiz_id,
+        q.module_id,
+        q.title AS quiz_title,
+        qs.question_id,
+        qs.question_text,
+        o.option_id,
+        o.option_text,
+        o.is_correct
+      FROM quizzes q
+      LEFT JOIN questions qs ON qs.quiz_id = q.quiz_id
+      LEFT JOIN \`options\` o ON o.question_id = qs.question_id
+      WHERE q.module_id IN (?)
+      ORDER BY q.quiz_id ASC, qs.question_id ASC, o.option_id ASC`,
       [moduleIds]
     ),
     hasCourseResources
       ? rowsOf(
         `SELECT resource_id, course_id, title, file_name, mime_type, size_bytes, uploaded_at
-         FROM course_resources
-         WHERE course_id IN (?)
-         ORDER BY uploaded_at DESC, resource_id DESC`,
+        FROM course_resources
+        WHERE course_id IN (?)
+        ORDER BY uploaded_at DESC, resource_id DESC`,
         [courseIds]
+      )
+      : Promise.resolve([]),
+    hasCanvasItems
+      ? rowsOf(
+        `SELECT
+          item_id,
+          module_id,
+          course_id,
+          item_type,
+          title,
+          description,
+          content,
+          external_url,
+          file_name,
+          stored_name,
+          mime_type,
+          size_bytes,
+          file_url,
+          quiz_json,
+          checklist_json,
+          status,
+          sort_order,
+          created_at,
+          updated_at
+        FROM course_module_items
+        WHERE module_id IN (?)
+        ORDER BY module_id ASC, sort_order ASC, item_id ASC`,
+        [moduleIds]
       )
       : Promise.resolve([]),
   ])
@@ -345,6 +430,14 @@ const buildModules = async (userId) => {
     resourcesByCourse.set(resource.course_id, list)
   }
 
+  const itemsByModule = new Map()
+
+  for (const item of canvasItemRows) {
+    const list = itemsByModule.get(item.module_id) || []
+    list.push(normalizeCanvasCourseItem(item))
+    itemsByModule.set(item.module_id, list)
+  }
+
   return modules.map((module) => {
     const moduleLessons = lessonsByModule.get(module.module_id) || []
     return {
@@ -356,6 +449,7 @@ const buildModules = async (userId) => {
       subtitle: module.description,
       objectives: parseObjectives(module.objectives),
       lessons: moduleLessons.map((lesson) => lesson.title || lesson.content),
+      items: itemsByModule.get(module.module_id) || [],
       resources: [
         ...moduleLessons
           .filter((lesson) => lesson.media_url)

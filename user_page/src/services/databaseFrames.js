@@ -254,8 +254,8 @@ export const normalizeModuleRow = (row, index = 0) => {
     title: asText(firstValue(resource.title, resource.name, resource.file_name), `Resource ${resourceIndex + 1}`),
     type: asText(firstValue(resource.type, resource.file_type), 'File'),
   }))
-  const quizOptions = normalizeOptions(firstValue(row.quiz?.options, row.quiz_options))
-
+  const canvasItems = parseList(firstValue(row.items, row.module_items, row.canvas_items, row.learning_items))
+  const quizOptions = normalizeOptions(firstValue(row.quiz?.options, row.quiz?.choices, row.quiz_options))
   return {
     id,
     courseId: asText(row.course_id, ''),
@@ -272,10 +272,11 @@ export const normalizeModuleRow = (row, index = 0) => {
     objectives: parseList(row.objectives),
     lessons,
     resources,
+    items: canvasItems,
     quiz: {
       question: asText(firstValue(row.quiz?.question, row.quiz_question), 'Assessment question will appear here.'),
       options: quizOptions,
-      answer: Number.isInteger(row.quiz?.answer) ? row.quiz.answer : 0,
+      answer: Number(firstValue(row.quiz?.answer, row.quiz?.correctAnswer, row.quiz?.correct_answer, 0)) || 0,
     },
   }
 }

@@ -254,16 +254,50 @@ const getModuleObjectives = (module) => {
 
 const getQuizFromItem = (item, module) => {
   if (!item && module?.quiz?.question) return module.quiz
-  if (!item || normalizeItemType(item.type) !== 'quiz') return module?.quiz || null
 
-  const optionList = toList(item.options || item.choices || item.answers || item.quizOptions || item.quiz_options)
+  const itemType = normalizeItemType(item?.type || item?.item_type || item?.itemType)
+  if (!item || itemType !== 'quiz') return module?.quiz || null
+
+  const nestedQuiz = item.quiz && typeof item.quiz === 'object' ? item.quiz : {}
+
+  const optionList = toList(
+    nestedQuiz.options ||
+    nestedQuiz.choices ||
+    item.options ||
+    item.choices ||
+    item.answers ||
+    item.quizOptions ||
+    item.quiz_options
+  )
+    .map(toPlainText)
+    .filter(Boolean)
+
+  const moduleOptions = toList(module?.quiz?.options)
     .map(toPlainText)
     .filter(Boolean)
 
   return {
-    question: cleanText(item.question, item.content, item.description, module?.quiz?.question, 'Scenario assessment question will appear here.'),
-    options: optionList.length > 0 ? optionList : module?.quiz?.options || [],
-    answer: Number(item.answer ?? item.correctAnswer ?? item.correct_answer ?? item.correctIndex ?? item.correct_index ?? module?.quiz?.answer ?? 0),
+    question: cleanText(
+      nestedQuiz.question,
+      item.question,
+      item.content,
+      item.description,
+      module?.quiz?.question,
+      'Scenario assessment question will appear here.'
+    ),
+    options: optionList.length > 0 ? optionList : moduleOptions,
+    answer: Number(
+      nestedQuiz.answer ??
+      nestedQuiz.correctAnswer ??
+      nestedQuiz.correct_answer ??
+      item.answer ??
+      item.correctAnswer ??
+      item.correct_answer ??
+      item.correctIndex ??
+      item.correct_index ??
+      module?.quiz?.answer ??
+      0
+    ),
   }
 }
 
