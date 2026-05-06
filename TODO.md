@@ -8,16 +8,26 @@ Working folder:
 
 Git is available in this team repo branch for the final checkpoint. Do not stage real `.env`, `.venv`, `node_modules`, `datasets`, `artifacts`, `models`, `dist`, or `.DS_Store`.
 
+## Top Priority: Persistent Canvas Learning Progress
+
+The Canvas-style course/module/item builder is now connected from Admin to the Park Guide User Portal. The next production-ready priority is persistence for Canvas item progress and quiz outcomes.
+
+- [ ] Add server-side persistence for a user completing a Canvas module item.
+- [ ] Add server-side persistence for a user submitting a Canvas quiz item and its result.
+- [ ] After persistence is implemented, refresh the User Portal and confirm completed items and quiz state are preserved.
+- [ ] After a progress API is implemented, confirm Admin can view each guide's Canvas progress summary.
+- [ ] Keep AI/IoT incident records separate from training progress and keep Admin as the only official incident status updater.
+
 ## Project Scope Checklist
 
 | Component | Classification | Demo check |
 | --- | --- | --- |
 | Review Hub | Demo-ready | Open `http://localhost:5173`; show all direct links, role notes, and optional cybersecurity-control notes. |
 | Login/Register/Forgot Password | Demo-ready / Auth-enhanced | Show database-backed login/register/forgot-password OTP flow. Explain production JWT/session route protection is deferred. |
-| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, backend-linked modules, quiz, progress, certificates, notifications, schedule, admin resources, profile, and help. |
+| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, media/resources, local completion state, certificates, notifications, schedule, profile, and help. |
 | Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces and backend-loaded modules when the user API is running. |
 | Admin Dashboard | Demo-ready | Open `http://localhost:5174/admin`; confirm admin landing page loads. |
-| Admin Course / Training / Guide / Badge Pages | Demo-ready | Open `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/students`, and `/admin/badge`; confirm courses/modules/resources/guides/badges use the admin API. |
+| Admin Course / Training / Guide / Badge Pages | Demo-ready | Open `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/students`, and `/admin/badge`; confirm Canvas courses/modules/items, resources, guides, enrollment requests, and badges use the admin API. |
 | Admin Incident Detection | Demo-ready | Open `http://localhost:5174/admin/detection`; show AI and IoT rows, summary cards, filters, evidence, metadata, ranger recommendations, fallback/live states, and Admin official status update. |
 | Park Ranger Console | Demo-ready | Open `http://localhost:5174/admin/ranger`; show response-only role, urgent incidents, field notes, and recommendation buttons. Ranger recommendations do not change official incident status. |
 | Backend API | Demo-ready | `curl http://localhost:4000/api/health`; confirm `persistence=mysql`, `requested=mysql`, and `active=mysql`. |
@@ -59,6 +69,8 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 - [ ] Confirm `/api/health` shows `roleCheckEnabled=true` and `statusUpdateRoles` does not include `park_ranger` when role checks are enabled.
 - [ ] Create `cos30049_assignment`, apply migration, create/reset `ctip_user`, and run MySQL mode.
 - [ ] Create/import `park_guide_database` with `database/db.sql`, then apply `user_login/server/migrations/002_training_platform_tables.sql` for Admin/User training linkage.
+- [ ] Apply `user_login/server/migrations/003_canvas_module_items.sql` for Canvas-style module item storage if the table is not already present.
+- [ ] In Admin Course, create or review one Canvas course, module, and item, then open the User Portal and confirm the item renders from the user API.
 - [ ] In Admin Detection, trigger IoT once and confirm the 2-second delayed 720p browser capture appears in both Admin and Park Ranger.
 - [ ] In Park Ranger Console, submit a recommendation with a field note and confirm the visible official status remains unchanged until Admin updates it.
 - [ ] Confirm browser MQTT and backend MQTT do not duplicate the same IoT trigger; same `public_id` or same source/event/sensor within 10 seconds should merge.
@@ -68,6 +80,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 
 ## Intentionally Deferred
 
+- Persistent Canvas item completion, quiz-attempt storage, and Admin guide progress summaries until the progress API is implemented.
 - Production-grade training enrollment approvals, certificate templates, and audit trails beyond the current demo CRUD/API linkage.
 - Production-grade authentication and password reset.
 - Production-grade JWT/session route protection.

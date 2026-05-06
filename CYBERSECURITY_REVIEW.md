@@ -15,6 +15,7 @@ Cybersecurity coverage is tied to the real demo components:
 - Review Hub
 - Login/Register/Forgot Password demo flow
 - Park Guide/User Portal
+- Canvas-style training content database/API linkage
 - Admin portal and Admin Incident Detection
 - Park Ranger Alert Console
 - Express backend API
@@ -24,14 +25,14 @@ Cybersecurity coverage is tied to the real demo components:
 - Evidence image/JSON storage in `alerts/ai` and `alerts/iot`
 - Repository hygiene for secrets and large local files
 
-The full training platform remains frontend-seeded. MySQL persistence currently covers AI/IoT monitoring incidents only.
+Canvas-style training content is now connected from Admin to the Park Guide User Portal through the training APIs and `course_module_items` table. Canvas item completion and quiz results are still local/demo state and need server persistence before they are production-ready. MySQL persistence currently remains strongest for AI/IoT monitoring incidents, which stay separate from training content.
 
 ## 2. Protected Assets
 
 | Asset | Why it matters | Current protection |
 | --- | --- | --- |
-| Guide profiles | Personal and training identity data | Demo seeded frontend data; production recommendation is server-side auth and encrypted database storage. |
-| Training records and quiz results | Assessment and certification evidence | Demo local browser state; production recommendation is MySQL persistence with access control. |
+| Guide profiles | Personal and training identity data | Demo guide/account data can be managed through the Admin training API; production recommendation is server-side auth, least-privilege access, and encrypted database storage. |
+| Canvas training records and quiz results | Assessment and certification evidence | Canvas content is API/database linked, but item completion and quiz results are local browser state; production recommendation is MySQL persistence with access control. |
 | Admin incident records | Operational monitoring data | Memory/MySQL incident store with validation and browser-safe evidence URLs. |
 | AI/IoT evidence images/JSON | Review/report/training evidence | Stored in `alerts/ai` and `alerts/iot`; frontend receives `/evidence/ai/<filename>` or `/evidence/iot/<filename>`, not `/Users/...`. |
 | IoT sensor payloads | Conservation enforcement signals | Optional device token validation for API/MQTT ingestion. |
@@ -57,6 +58,8 @@ The full training platform remains frontend-seeded. MySQL persistence currently 
 - `.env.example` exists with placeholders; real `.env` is not intended for Git.
 - Passwords are hashed with `bcryptjs` in the existing MySQL auth endpoints when the legacy auth schema is loaded.
 - Forgot-password backend stores only SHA-256 reset token hashes and expiry timestamps when the legacy auth schema is loaded.
+- Admin-created Canvas courses, modules, and module items are connected to the Park Guide User Portal through the training APIs.
+- Canvas module item completion and quiz-attempt results are local/demo state until a server-side progress API is implemented.
 - Admin and Park Ranger pages use different UI scopes: Admin makes official status decisions, while Park Ranger submits field notes and recommendations.
 - MySQL monitoring tables store AI/IoT incident records, metadata, actions, and evidence references.
 - Runtime `.DS_Store`, dependency folders, model artifacts, datasets, and real environment files are excluded from the intended repository state.
@@ -94,13 +97,14 @@ Do not commit the generated token values. Do not commit downloaded Google Drive 
 | Component | Status | Cybersecurity coverage |
 | --- | --- | --- |
 | Login/Auth | Partial / Demo-ready | Demo role accounts are visible. Backend auth endpoints hash passwords if the legacy auth schema is loaded. Frontend route protection is not production-grade. |
-| Park Guide/User Portal | Demo-ready | Role boundary is shown. User data is seeded/local; production persistence and route protection are deferred. |
+| Park Guide/User Portal | Demo-ready | Role boundary is shown. Canvas course/module/item content can load from the user API. Item completion, quiz attempts, production persistence, and route protection are still deferred. |
 | Admin Portal | Demo-ready | Admin dashboard and status updates use admin role header when optional role check is enabled. |
 | Park Ranger Console | Demo-ready | Response-only scope. Sends `park_ranger` role header for field-note recommendation posts, not official status updates. |
 | AI Camera Ingestion | Demo-ready | Supports optional `--device-token` and `X-Device-Token` backend validation. |
 | IoT Sensor/MQTT Ingestion | Demo-ready / Prototype | MQTT/API publisher supports `IOT_SENSOR_TOKEN`; public HiveMQ remains prototype-only. |
 | Backend API | Demo-ready | Validates incident payloads, optional token auth, optional role checks, and safe evidence URLs. |
-| MySQL Incident Database | Demo-ready | Stores monitoring incidents/actions/evidence only. Full training records are deferred. |
+| MySQL Incident Database | Demo-ready | Stores monitoring incidents/actions/evidence only. AI/IoT incident workflow remains separate from training content. |
+| Training Content Database | Partial / Demo-ready | Stores Admin-created Canvas courses/modules/items and related training demo data. Canvas progress and quiz-result persistence still need a dedicated server-side progress API and access-control review. |
 | Evidence Storage | Demo-ready | Repo-local `alerts/ai` and `alerts/iot`, served through `/evidence/ai` and `/evidence/iot`; frontend hides absolute filesystem paths. |
 | GitHub Hygiene | Demo-ready | Real secrets and large local runtime/model/dependency folders should remain untracked. |
 
@@ -114,7 +118,7 @@ Do not commit the generated token values. Do not commit downloaded Google Drive 
 | Public MQTT broker spoofing | IoT bridge | Topic can receive public messages | Optional `device_token` in payload when token mode is enabled | Public HiveMQ has no broker-level auth | Explain production private MQTT with TLS/auth. |
 | Absolute path exposure | API/frontends | Local user path leakage | Evidence normalization returns `/evidence/ai/<filename>` or `/evidence/iot/<filename>` | Raw local evidence files still exist on demo machine | Smoke test checks no `/Users/` in `/api/incidents`. |
 | Real secrets in Git | Repo | Credential leakage | `.env.example` placeholders and Git ignore rules | Manual review required before commits | Show `.env.example` and safety grep. |
-| Training data only local | User portal | Data not centrally protected | Clearly marked frontend-seeded demo | Production MySQL persistence deferred | Show Project Scope audit table. |
+| Canvas progress and quiz results only local | User portal | Completion evidence can be lost on refresh/device change and is not centrally protected | Canvas content is API/database linked and local progress is clearly marked as demo state | Persistent progress API, access control, and Admin guide progress summary are pending | Show Project Scope audit table and TODO priority section. |
 | Password reset token exposure in demo | Auth endpoint | Demo endpoint returns token for local testing | Token hash stored in DB; response is demo-only | Production email delivery flow deferred | Explain limitation in tutor review. |
 
 ## 8. Tutor Demo Commands
@@ -193,7 +197,7 @@ Capture:
 - Replace demo-open frontend routes with JWT or server-session authentication.
 - Enforce server-side route protection for Admin and Park Ranger pages.
 - Add formal role-based access control across all APIs.
-- Store guide profiles, training records, assessments, and certificates in MySQL with authorization checks.
+- Persist Canvas item completions, quiz attempts, guide progress summaries, assessments, and certificates in MySQL with authorization checks.
 - Use a private MQTT broker with username/password and TLS.
 - Add device token rotation, expiry, and revocation records.
 - Use device identity per camera/sensor instead of shared demo tokens.

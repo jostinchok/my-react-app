@@ -12,11 +12,11 @@ This is the active team repository. The completed demo was synced from the local
 
 This project demonstrates the three Project Scope areas:
 
-1. Interactive Digital Training Platform: backend-linked Admin course/module/resource management, Park Guide web portal, Expo mobile preview, training modules, quizzes, progress, badges/certificates, notifications, files/resources, profile, and role boundaries.
+1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, local completion state, badges/certificates, notifications, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
 3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger recommendation console, evidence serving, and MySQL-backed monitoring incident persistence.
 
-The Park Guide training platform now has demo MySQL-backed Admin-to-User linkage for courses, modules, resources, guide accounts, enrollment requests, and badges. MySQL persistence remains the default for AI/IoT monitoring incidents through the separate monitoring incident API.
+The Park Guide training platform now has demo MySQL-backed Admin-to-User linkage for Canvas-style courses, modules, module items, resources, guide accounts, enrollment requests, and badges. The next production-ready priority is persistent Canvas learning progress for item completion and quiz attempts. MySQL persistence remains the default for AI/IoT monitoring incidents through the separate monitoring incident API.
 
 ## UI And Asset Status
 
@@ -151,6 +151,7 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 mysql -u root -p park_guide_database < database/db.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
 npm run dev
 ```
 
@@ -216,18 +217,26 @@ mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_m
 The Admin training API runs on `http://localhost:4002` and the Park Guide user API runs on `http://localhost:4001`. They share the training database tables for:
 
 - courses and modules
+- Canvas-style module items in `course_module_items`
 - course resources
 - guide accounts and course assignments
 - enrollment requests
 - badges and issued certifications
 
-Apply the base training schema and the selective training-platform migration:
+Supported Canvas module item types are:
+
+```text
+page, text, file, image, video, link, quiz, checklist
+```
+
+Apply the base training schema, the selective training-platform migration, and the Canvas module item migration:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
 mysql -u root -p park_guide_database < database/db.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
 ```
 
 Admin demo routes:
@@ -247,6 +256,7 @@ http://localhost:5175/user
 http://localhost:8081
 http://localhost:4001/api/training-modules
 http://localhost:4002/api/courses
+http://localhost:4002/api/courses/<COURSE_ID>/canvas
 ```
 
 Check stored incidents:
@@ -273,7 +283,7 @@ mysql -u root -p cos30049_assignment \
   -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
 ```
 
-AI/IoT monitoring incidents use the monitoring MySQL database. The training platform also has demo MySQL-backed linkage for Admin-created courses, modules, resources, guide accounts, enrollment requests, and badges.
+AI/IoT monitoring incidents use the monitoring MySQL database and remain separate from training content. The training platform has demo MySQL-backed linkage for Admin-created Canvas courses, modules, module items, resources, guide accounts, enrollment requests, and badges. Canvas item completion and quiz-result persistence are not production-ready yet; they are the next training-platform priority.
 
 ## AI Camera Runtime
 
@@ -531,16 +541,16 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 - Optional role checking protects incident status updates during the cybersecurity demo; Admin is the only official status updater.
 - Park Ranger can view incidents, add field notes, and recommend outcomes. Recommendations do not change official incident status.
 - Role boundaries are visible: Park Guide, Park Ranger, and Admin have different permissions.
-- Login/Register/Forgot Password is production-ready for auth and password reset. Forgot Password sends a 6-digit OTP via Gmail SMTP (nodemailer); the OTP is SHA-256 hashed in the database and expires in 5 minutes. All password fields have a show/hide toggle. Frontend route protection (JWT/session guards) remains future work.
+- Login/Register/Forgot Password is demo-ready for the coursework flow. Forgot Password sends a 6-digit OTP via Gmail SMTP (nodemailer); the OTP is SHA-256 hashed in the database and expires in 5 minutes. All password fields have a show/hide toggle. Production JWT/session route protection remains future work.
 - Production MQTT should use a private broker with authentication and TLS.
 - Production camera/IoT ingestion should use HTTPS and device token authentication.
-- MySQL stores AI/IoT incident records server-side; full training-platform MySQL integration is intentionally deferred.
+- MySQL stores AI/IoT incident records server-side. Training content has demo MySQL-backed Canvas course/module/item linkage, while item-level learning progress and quiz-result persistence still need a server-side progress API.
 
 ## Known Limitations
 
 - Login/register is a demo flow, not production authentication.
 - Frontend route guards are not enforced in production style; optional role checks protect the official incident status API and ranger recommendation API.
-- Park Guide training content is frontend-seeded and local to the browser.
+- Admin-created Canvas training content is API/database linked into the Park Guide portal, but Canvas item completion and quiz results are still local/demo state until persistent learning progress is implemented.
 - The AI model depends on local model files under `artifacts/` and `models/`.
 - MQTT public broker behavior depends on network availability.
 - The IoT test publisher includes a local API fallback for lecturer-demo reliability when the public MQTT broker times out.
@@ -554,7 +564,7 @@ Capture:
 
 1. Root hub at `http://localhost:5173`.
 2. Login/Register and Park Guide portal.
-3. User dashboard, modules, quiz, progress, certificates, notifications, files, profile, and help.
+3. User dashboard, Canvas module items, quiz/checklist previews, local progress view, certificates, notifications, files, profile, and help.
 4. Mobile preview at `http://localhost:8081`.
 5. Admin dashboard.
 6. Admin Incident Detection with AI and IoT rows, evidence image, metadata, ranger recommendations, filters, and official status update.

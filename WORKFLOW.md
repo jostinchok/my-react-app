@@ -155,13 +155,14 @@ cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 ```
 
-Apply the training platform schema and migration for Admin course/module/resource linkage:
+Apply the training platform schema and migrations for Admin Canvas course/module/item linkage:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
 mysql -u root -p park_guide_database < database/db.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
 ```
 
 Check tables:
@@ -211,6 +212,30 @@ curl -X POST http://localhost:4000/api/incidents/<INCIDENT_ID>/ranger-recommenda
   -H "X-Actor-Role: park_ranger" \
   -d '{"recommendation":"Recommend False Alarm","note":"Ranger checked the area and recommends Admin review as false alarm."}'
 ```
+
+## Canvas Training Demo Flow
+
+Use this flow to show that Admin-created Canvas content reaches the Park Guide User Portal:
+
+1. Open `http://localhost:5174/admin/course`.
+2. Create or select a course.
+3. Add a module inside the course.
+4. Add at least one Canvas module item.
+5. Open `http://localhost:5175/user`, enroll or select a matching module, and confirm the learning item appears from the user API.
+
+Supported Canvas item preview checks:
+
+- Page/text: preview rich text or body content in the module detail pane.
+- File: show the file/resource frame and download/open action when a file URL exists.
+- Image: show the image frame.
+- Video: show the video frame or video URL action.
+- External link: show the link action and metadata.
+- Quiz: answer the quiz interaction and confirm the local result changes the module item state.
+- Checklist: tick checklist rows and confirm the checklist renders clearly.
+
+Pending production-ready check:
+
+- Canvas item completion and quiz results currently use local User Portal state. Persistent server-side progress is still pending; after the progress API is implemented, refresh the User Portal and verify completion/quiz state remains, then verify Admin can view each guide's progress summary.
 
 ## Terminal 3: AI Camera Monitor
 
@@ -394,10 +419,10 @@ Image rule for report/demo assets:
 1. Open `http://localhost:5173` and show the root hub cards and service links.
 2. Open Login/Register/Forgot Password, then Park Guide/User Portal at `http://localhost:5175/user`.
 3. Switch User01/User02/User03.
-4. Show backend-linked modules, module detail, quiz, progress, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
+4. Show API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, local completion state, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
 5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
-7. Open Admin Course/Training pages and create or review a course, module, and course resource.
+7. Open Admin Course/Training pages and create or review a Canvas course, module, and module item. Confirm page, text, file, image, video, external link, quiz, and checklist item previews as time allows.
 8. Open Admin Course Requests, Students, and Badge pages to show linked guide account and certificate workflows.
 9. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
 10. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, ranger recommendations, and Admin official status update.
@@ -416,8 +441,8 @@ Capture:
 ```text
 1. Root hub with all demo links.
 2. Park Guide dashboard.
-3. Module catalog and module detail/quiz.
-4. Progress and certificates/badges.
+3. Canvas module catalog, item preview, quiz, checklist, and media/resource display.
+4. Local progress view and certificates/badges.
 5. Notifications, resources/files, profile, and permission guide.
 6. Mobile preview.
 7. Admin dashboard.
