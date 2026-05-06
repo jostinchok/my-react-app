@@ -221,3 +221,22 @@ button:hover {
   text-align: left;
   line-height: 1.45;
 }
+
+/* Hide browser-native password reveal/clear icons.
+   We use our own React eye button, so native icons would appear duplicated in Edge/Chrome. */
+.pw-field input::-ms-reveal,
+.pw-field input::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.pw-field input::-webkit-credentials-auto-fill-button,
+.pw-field input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  height: 0;
+  width: 0;
+  margin: 0;
+}
