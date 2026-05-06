@@ -74,6 +74,203 @@ const initials = (name = 'User') =>
     .slice(0, 2)
     .toUpperCase()
 
+const parseJsonMaybe = (value) => {
+  if (Array.isArray(value)) return value
+  if (value && typeof value === 'object') return value
+  if (typeof value !== 'string') return value
+  const text = value.trim()
+  if (!text) return value
+  if (!['[', '{'].includes(text[0])) return value
+  try {
+    return JSON.parse(text)
+  } catch {
+    return value
+  }
+}
+
+const toList = (value) => {
+  const parsed = parseJsonMaybe(value)
+  if (Array.isArray(parsed)) return parsed
+  if (parsed && typeof parsed === 'object') return [parsed]
+  if (typeof parsed === 'string') {
+    return parsed
+      .split(/\r?\n|\s*;\s*/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+const toPlainText = (value) => {
+  if (value === undefined || value === null) return ''
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (typeof value === 'object') {
+    return cleanText(value.title, value.name, value.label, value.text, value.content, value.body, value.description)
+  }
+  return ''
+}
+
+const normalizeItemType = (value) => {
+  const text = cleanText(value, 'page').toLowerCase().replace(/[_-]+/g, ' ')
+  if (text.includes('external') || text === 'url' || text === 'link') return 'link'
+  if (text.includes('image') || text.includes('photo') || text.includes('diagram')) return 'image'
+  if (text.includes('video') || text.includes('youtube')) return 'video'
+  if (text.includes('quiz') || text.includes('assessment')) return 'quiz'
+  if (text.includes('check')) return 'checklist'
+  if (text.includes('file') || text.includes('pdf') || text.includes('document') || text.includes('slide')) return 'file'
+  if (text.includes('text')) return 'text'
+  return 'page'
+}
+
+const CANVAS_ITEM_META = {
+  page: { label: 'Page', icon: '▤', helper: 'Rich text learning page' },
+  text: { label: 'Text', icon: '≡', helper: 'Short text lesson' },
+  file: { label: 'File', icon: '▣', helper: 'Document, slide, or downloadable resource' },
+  image: { label: 'Image', icon: '▧', helper: 'Diagram, screenshot, or evidence image' },
+  video: { label: 'Video', icon: '▶', helper: 'Training video or walkthrough' },
+  link: { label: 'External Link', icon: '🔗', helper: 'Website, Canvas page, or reference' },
+  quiz: { label: 'Quiz', icon: '?', helper: 'Scenario question with answer choices' },
+  checklist: { label: 'Checklist', icon: '✓', helper: 'Step-by-step completion list' },
+}
+
+const itemTypeMeta = (type) => CANVAS_ITEM_META[normalizeItemType(type)] || CANVAS_ITEM_META.page
+
+const normalizeCanvasItem = (rawItem, index, module) => {
+  const raw = rawItem && typeof rawItem === 'object' ? rawItem : { title: rawItem }
+  const type = normalizeItemType(raw.type || raw.itemType || raw.item_type || raw.contentType || raw.content_type || raw.kind)
+  const id = cleanText(
+    raw.id,
+    raw.itemId,
+    raw.item_id,
+    raw.moduleItemId,
+    raw.module_item_id,
+    `${module?.id || 'module'}-item-${index + 1}`
+  )
+  const title = cleanText(raw.title, raw.name, raw.itemTitle, raw.item_title, raw.label, `${itemTypeMeta(type).label} ${index + 1}`)
+  const description = cleanText(raw.description, raw.subtitle, raw.summary, raw.caption, raw.body, raw.content, '')
+  const content = cleanText(raw.content, raw.pageContent, raw.page_content, raw.text, raw.body, raw.markdown, raw.description, '')
+  const url = cleanText(raw.url, raw.href, raw.link, raw.fileUrl, raw.file_url, raw.mediaUrl, raw.media_url, raw.image, raw.imageUrl, raw.image_url)
+  const sortOrder = Number(raw.sortOrder ?? raw.sort_order ?? raw.order ?? raw.position ?? index + 1)
+
+  return {
+    ...raw,
+    id,
+    type,
+    title,
+    description,
+    content,
+    url,
+    status: cleanText(raw.status, raw.published ? 'Published' : '', 'Published'),
+    sortOrder: Number.isFinite(sortOrder) ? sortOrder : index + 1,
+    moduleId: cleanText(raw.moduleId, raw.module_id, module?.id),
+    moduleTitle: cleanText(module?.title, raw.moduleTitle, raw.module_title),
+  }
+}
+
+const getCanvasItems = (module) => {
+  if (!module) return []
+  const directItems = toList(
+    module.items ||
+    module.moduleItems ||
+    module.module_items ||
+    module.canvasItems ||
+    module.canvas_items ||
+    module.learningItems ||
+    module.learning_items
+  )
+
+  if (directItems.length > 0) {
+    return directItems
+      .map((item, index) => normalizeCanvasItem(item, index, module))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+  }
+
+  const lessonItems = toList(module.lessons).map((lesson, index) =>
+    normalizeCanvasItem(
+      {
+        id: `${module.id}-lesson-${index + 1}`,
+        type: 'page',
+        title: toPlainText(lesson) || `Lesson ${index + 1}`,
+        description: 'Learning page generated from the lesson checklist.',
+        content: toPlainText(lesson),
+        sortOrder: index + 1,
+      },
+      index,
+      module
+    )
+  )
+
+  const resourceItems = toList(module.resources).map((resource, index) =>
+    normalizeCanvasItem(
+      {
+        id: cleanText(resource?.id, `${module.id}-resource-${index + 1}`),
+        type: resource?.type || 'file',
+        title: toPlainText(resource) || `Resource ${index + 1}`,
+        description: cleanText(resource?.description, resource?.moduleTitle, 'Module resource'),
+        url: cleanText(resource?.url, resource?.href, resource?.fileUrl),
+        sortOrder: lessonItems.length + index + 1,
+      },
+      lessonItems.length + index,
+      module
+    )
+  )
+
+  const quizItem = module.quiz
+    ? [
+        normalizeCanvasItem(
+          {
+            id: `${module.id}-quiz`,
+            type: 'quiz',
+            title: 'Scenario assessment',
+            description: module.quiz.question,
+            content: module.quiz.question,
+            options: module.quiz.options,
+            answer: module.quiz.answer,
+            sortOrder: lessonItems.length + resourceItems.length + 1,
+          },
+          lessonItems.length + resourceItems.length,
+          module
+        ),
+      ]
+    : []
+
+  return [...lessonItems, ...resourceItems, ...quizItem]
+}
+
+const getModuleObjectives = (module) => {
+  const objectives = toList(module?.objectives).map(toPlainText).filter(Boolean)
+  if (objectives.length > 0) return objectives
+
+  const items = getCanvasItems(module)
+  const derived = items
+    .filter((item) => item.type === 'page' || item.type === 'text' || item.type === 'checklist')
+    .map((item) => cleanText(item.objective, item.description, item.title))
+    .filter(Boolean)
+    .slice(0, 4)
+
+  return derived.length > 0 ? derived : ['Review the module content', 'Complete each learning item', 'Apply the workflow during field duty']
+}
+
+const getQuizFromItem = (item, module) => {
+  if (!item && module?.quiz?.question) return module.quiz
+  if (!item || normalizeItemType(item.type) !== 'quiz') return module?.quiz || null
+
+  const optionList = toList(item.options || item.choices || item.answers || item.quizOptions || item.quiz_options)
+    .map(toPlainText)
+    .filter(Boolean)
+
+  return {
+    question: cleanText(item.question, item.content, item.description, module?.quiz?.question, 'Scenario assessment question will appear here.'),
+    options: optionList.length > 0 ? optionList : module?.quiz?.options || [],
+    answer: Number(item.answer ?? item.correctAnswer ?? item.correct_answer ?? item.correctIndex ?? item.correct_index ?? module?.quiz?.answer ?? 0),
+  }
+}
+
+const isResourceLikeItem = (item) => ['file', 'image', 'video', 'link'].includes(normalizeItemType(item?.type))
+
+const moduleImageSrc = (module) => cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
+
 const readLoginSession = () => {
   try {
     const raw = localStorage.getItem('sfc_session')
@@ -116,6 +313,7 @@ function App() {
     message: 'Waiting for uploaded course files.',
   })
   const [selectedModuleId, setSelectedModuleId] = useState(null)
+  const [selectedCanvasItemId, setSelectedCanvasItemId] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [moduleSearch, setModuleSearch] = useState('')
   const [moduleStatus, setModuleStatus] = useState('all')
@@ -295,6 +493,25 @@ function App() {
 
   const profileUser = currentUser
   const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || null
+  const selectedModuleItems = useMemo(() => getCanvasItems(selectedModule), [selectedModule])
+  const selectedModuleObjectives = useMemo(() => getModuleObjectives(selectedModule), [selectedModule])
+  const selectedCanvasItem = selectedModuleItems.find((item) => item.id === selectedCanvasItemId) || selectedModuleItems[0] || null
+  const selectedModuleQuiz = getQuizFromItem(
+    selectedModuleItems.find((item) => item.type === 'quiz'),
+    selectedModule
+  )
+
+  useEffect(() => {
+    if (!selectedModule) {
+      setSelectedCanvasItemId(null)
+      return
+    }
+
+    const items = getCanvasItems(selectedModule)
+    setSelectedCanvasItemId((currentItemId) =>
+      items.some((item) => item.id === currentItemId) ? currentItemId : items[0]?.id || null
+    )
+  }, [selectedModuleId, trainingModules])
 
   const moduleMap = useMemo(
     () => new Map(trainingModules.map((module) => [module.id, module])),
@@ -303,15 +520,34 @@ function App() {
 
   const allResources = useMemo(
     () =>
-      trainingModules.flatMap((module) =>
-        module.resources.map((resource) => ({
+      trainingModules.flatMap((module) => {
+        const seededResources = toList(module.resources).map((resource, index) => ({
           ...resource,
+          id: cleanText(resource?.id, `${module.id}-resource-${index + 1}`),
+          title: toPlainText(resource) || `Resource ${index + 1}`,
+          type: cleanText(resource?.type, 'File'),
           moduleId: module.id,
           moduleTitle: module.title,
           category: module.category,
           park: module.park,
         }))
-      ),
+
+        const canvasResources = getCanvasItems(module)
+          .filter(isResourceLikeItem)
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            type: itemTypeMeta(item.type).label,
+            url: item.url,
+            moduleId: module.id,
+            moduleTitle: module.title,
+            category: module.category,
+            park: module.park,
+          }))
+
+        const unique = new Map([...seededResources, ...canvasResources].map((resource) => [resource.id, resource]))
+        return [...unique.values()]
+      }),
     [trainingModules]
   )
 
@@ -340,12 +576,22 @@ function App() {
 
   const isEnrolled = (module, user = currentUser) => !!module && user.enrolledModuleIds?.includes(module.id)
 
+  const completedItemIdsFor = (module, user = currentUser) =>
+    new Set((user.completedLessons?.[module?.id] || []).map((item) => String(item)))
+
+  const isCanvasItemDone = (module, item, user = currentUser) => {
+    if (!module || !item) return false
+    if (item.type === 'quiz') return !!user.quizResults?.[module.id]?.passed
+    return completedItemIdsFor(module, user).has(String(item.id))
+  }
+
   const getProgress = (module, user = currentUser) => {
     if (!module) return 0
     if (!isEnrolled(module, user)) return 0
-    const lessonsDone = user.completedLessons?.[module.id]?.length || 0
-    const quizDone = user.quizResults?.[module.id]?.passed ? 1 : 0
-    return Math.round(((lessonsDone + quizDone) / ((module.lessons?.length || 0) + 1)) * 100)
+    const items = getCanvasItems(module)
+    if (items.length === 0) return 0
+    const completedCount = items.filter((item) => isCanvasItemDone(module, item, user)).length
+    return Math.round((completedCount / items.length) * 100)
   }
 
   const enrolledModules = useMemo(
@@ -441,7 +687,10 @@ function App() {
 
   const openModule = (moduleId) => {
     if (!moduleId) return
+    const module = trainingModules.find((item) => item.id === moduleId)
+    const firstItem = getCanvasItems(module)[0]
     setSelectedModuleId(moduleId)
+    setSelectedCanvasItemId(firstItem?.id || null)
     setActiveTab('module')
     setSidebarOpen(false)
   }
@@ -493,12 +742,33 @@ function App() {
     })
   }
 
-  const submitQuiz = (module) => {
-    if (!module) return
+  const toggleCanvasItem = (module, item) => {
+    if (!module || !item) return
+    if (!isEnrolled(module)) return
+    if (item.type === 'quiz') return
+
+    updateCurrentUser((user) => {
+      const existing = (user.completedLessons?.[module.id] || []).map((value) => String(value))
+      const itemId = String(item.id)
+      const next = existing.includes(itemId)
+        ? existing.filter((value) => value !== itemId)
+        : [...existing, itemId]
+      return {
+        ...user,
+        completedLessons: {
+          ...(user.completedLessons || {}),
+          [module.id]: next,
+        },
+      }
+    })
+  }
+
+  const submitQuiz = (module, quizDefinition = getQuizFromItem(null, module)) => {
+    if (!module || !quizDefinition) return
     if (!isEnrolled(module)) return
     const selected = Number(quizDraft[module.id])
     if (Number.isNaN(selected)) return
-    const passed = selected === module.quiz.answer
+    const passed = selected === Number(quizDefinition.answer ?? 0)
     updateCurrentUser((user) => ({
       ...user,
       quizResults: {
@@ -514,8 +784,8 @@ function App() {
     addNotification(
       passed ? 'Quiz passed' : 'Quiz needs review',
       passed
-        ? `${module.title} quiz passed. Complete all lessons to prepare the badge for admin review.`
-        : `Review the resources in ${module.title} and try again.`,
+        ? `${module.title} quiz passed. Complete all Canvas items to prepare the badge for admin review.`
+        : `Review the Canvas items in ${module.title} and try again.`,
       passed ? 'certificate' : 'training'
     )
   }
@@ -787,7 +1057,7 @@ function App() {
               <div className="hero-grid">
                 <div
                   className="hero-copy"
-                  style={{ '--hero-image': nextModule ? `url(${nextModule.image})` : 'none' }}
+                  style={{ '--hero-image': nextModule && moduleImageSrc(nextModule) ? `url(${moduleImageSrc(nextModule)})` : 'none' }}
                 >
                   <span className="kicker">Citrus learning path</span>
                   <h2>Fresh field training for Sarawak park guides.</h2>
@@ -806,7 +1076,7 @@ function App() {
                 <div className="next-card">
                   {nextModule ? (
                     <>
-                      <img src={nextModule.image} alt="" />
+                      <ModuleVisual module={nextModule} className="next-card-visual" />
                       <div>
                         <span>Next action</span>
                         <strong>{nextModule.title}</strong>
@@ -835,7 +1105,7 @@ function App() {
                     )}
                     {enrolledModules.map((module) => (
                       <button key={module.id} type="button" onClick={() => openModule(module.id)}>
-                        <img src={module.image} alt="" />
+                        <ModuleThumb module={module} />
                         <span>
                           <strong>{module.title}</strong>
                           <small>{module.park} - {module.duration}</small>
@@ -927,10 +1197,7 @@ function App() {
                   const enrolled = isEnrolled(module)
                   return (
                     <article key={module.id} className="module-card">
-                      <button type="button" className="module-image" onClick={() => openModule(module.id)}>
-                        <img src={module.image} alt="" />
-                        <span style={{ background: module.accent }}>{module.category}</span>
-                      </button>
+                      <ModuleVisual module={module} className="module-image" asButton onClick={() => openModule(module.id)} />
                       <div className="module-card-body">
                         <div className="module-meta">
                           <span>{module.level}</span>
@@ -956,8 +1223,8 @@ function App() {
 
           {activeTab === 'module' && selectedModule && (
             <section className="page-stack">
-              <div className="module-detail-hero">
-                <img src={selectedModule.image} alt="" />
+              <div className="module-detail-hero canvas-detail-hero">
+                <ModuleVisual module={selectedModule} className="module-detail-visual" />
                 <div>
                   <span className="kicker">{selectedModule.category} / {selectedModule.park}</span>
                   <h2>{selectedModule.title}</h2>
@@ -966,6 +1233,7 @@ function App() {
                     <span>{selectedModule.level}</span>
                     <span>{selectedModule.duration}</span>
                     <span>{selectedModule.format}</span>
+                    <span>{selectedModuleItems.length} Canvas item{selectedModuleItems.length === 1 ? '' : 's'}</span>
                     <span>{getProgress(selectedModule)}% complete</span>
                   </div>
                   <ProgressBar value={getProgress(selectedModule)} />
@@ -980,83 +1248,92 @@ function App() {
                 </div>
               </div>
 
-              <div className="content-grid detail-layout">
-                <section className="panel wide">
-                  <PanelTitle kicker="Learning objectives" title="What this module teaches" />
-                  <div className="objective-grid">
-                    {selectedModule.objectives.map((objective) => (
+              <div className="content-grid detail-layout canvas-detail-layout">
+                <section className="panel wide canvas-module-panel">
+                  <PanelTitle kicker="Canvas module" title="Learning items" />
+                  <div className="module-source-banner ready">
+                    This module is rendered from the Admin Canvas-style builder. Open each item, review the preview, then mark it complete.
+                  </div>
+
+                  {!isEnrolled(selectedModule) && (
+                    <EmptyFrame title="Enroll first" body="Park Guides must enroll before completing Canvas items and quiz attempts." />
+                  )}
+
+                  <div className="objective-grid canvas-objective-grid">
+                    {selectedModuleObjectives.map((objective) => (
                       <div key={objective}>{objective}</div>
                     ))}
                   </div>
 
-                  <PanelTitle kicker="Lesson checklist" title="Complete each step" />
-                  <div className="lesson-list">
-                    {selectedModule.lessons.map((lesson, index) => {
-                      const done = currentUser.completedLessons?.[selectedModule.id]?.includes(index)
+                  <div className="canvas-item-list">
+                    {selectedModuleItems.length === 0 && (
+                      <EmptyFrame title="No Canvas items yet" body="Admin can add pages, files, images, videos, links, quizzes, and checklists from the Course builder." />
+                    )}
+                    {selectedModuleItems.map((item, index) => {
+                      const meta = itemTypeMeta(item.type)
+                      const done = isCanvasItemDone(selectedModule, item)
+                      const selected = selectedCanvasItem?.id === item.id
                       return (
-                        <label key={lesson} className={done ? 'done' : ''}>
-                          <input
-                            type="checkbox"
-                            checked={!!done}
-                            disabled={!isEnrolled(selectedModule)}
-                            onChange={() => toggleLesson(selectedModule, index)}
-                          />
-                          <span>{String(index + 1).padStart(2, '0')}</span>
-                          <strong>{lesson}</strong>
-                        </label>
+                        <article key={item.id} className={`canvas-item-row ${selected ? 'selected' : ''} ${done ? 'done' : ''}`}>
+                          <label className="canvas-item-check" title={item.type === 'quiz' ? 'Complete the quiz to tick this item.' : 'Mark item complete'}>
+                            <input
+                              type="checkbox"
+                              checked={done}
+                              disabled={!isEnrolled(selectedModule) || item.type === 'quiz'}
+                              onChange={() => toggleCanvasItem(selectedModule, item)}
+                            />
+                          </label>
+                          <button type="button" className="canvas-item-open" onClick={() => setSelectedCanvasItemId(item.id)}>
+                            <span className="canvas-item-icon">{meta.icon}</span>
+                            <span className="canvas-item-main">
+                              <strong>{String(index + 1).padStart(2, '0')}. {item.title}</strong>
+                              <small>{meta.label} · {item.description || meta.helper}</small>
+                            </span>
+                          </button>
+                          <span className="canvas-item-status">{done ? 'complete' : item.status}</span>
+                        </article>
                       )
                     })}
                   </div>
                 </section>
 
-                <aside className="panel">
-                  <PanelTitle kicker="Scenario quiz" title="Assessment" />
-                  <p className="quiz-question">{selectedModule.quiz.question}</p>
-                  <div className="quiz-options">
-                    {selectedModule.quiz.options.map((option, index) => (
-                      <label key={option}>
-                        <input
-                          type="radio"
-                          name={`quiz-${selectedModule.id}`}
-                          value={index}
-                          checked={Number(quizDraft[selectedModule.id]) === index}
-                          disabled={!isEnrolled(selectedModule)}
-                          onChange={(event) =>
-                            setQuizDraft((prev) => ({
-                              ...prev,
-                              [selectedModule.id]: event.target.value,
-                            }))
-                          }
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className="full-button"
-                    disabled={!isEnrolled(selectedModule) || quizDraft[selectedModule.id] === undefined}
-                    onClick={() => submitQuiz(selectedModule)}
-                  >
-                    Submit quiz
-                  </button>
-                  {currentUser.quizResults?.[selectedModule.id] && (
-                    <div className={currentUser.quizResults[selectedModule.id].passed ? 'quiz-result pass' : 'quiz-result review'}>
-                      {currentUser.quizResults[selectedModule.id].passed ? 'Passed' : 'Review needed'} - Score {currentUser.quizResults[selectedModule.id].score}%
-                    </div>
-                  )}
+                <aside className="panel canvas-preview-panel">
+                  <PanelTitle kicker="Park Guide preview" title="Item preview" />
+                  <CanvasItemPreview
+                    item={selectedCanvasItem}
+                    module={selectedModule}
+                    enrolled={isEnrolled(selectedModule)}
+                    completed={isCanvasItemDone(selectedModule, selectedCanvasItem)}
+                    onToggleComplete={() => toggleCanvasItem(selectedModule, selectedCanvasItem)}
+                    quizDefinition={selectedCanvasItem?.type === 'quiz' ? getQuizFromItem(selectedCanvasItem, selectedModule) : selectedModuleQuiz}
+                    quizDraft={quizDraft}
+                    setQuizDraft={setQuizDraft}
+                    submitQuiz={submitQuiz}
+                    quizResult={currentUser.quizResults?.[selectedModule.id]}
+                    saved={selectedCanvasItem ? savedResourceIds.has(selectedCanvasItem.id) : false}
+                    onSaveResource={() => selectedCanvasItem && toggleResource(selectedCanvasItem.id)}
+                  />
                 </aside>
               </div>
 
               <section className="panel">
                 <PanelTitle kicker="Resources" title="Module files and media" />
                 <div className="resource-grid">
-                  {selectedModule.resources.map((resource) => (
+                  {selectedModuleItems.filter(isResourceLikeItem).length === 0 && (
+                    <EmptyFrame title="No media resources yet" body="Admin can add file, image, video, and external link items from the Course builder." />
+                  )}
+                  {selectedModuleItems.filter(isResourceLikeItem).map((item) => (
                     <ResourceCard
-                      key={resource.id}
-                      resource={{ ...resource, moduleTitle: selectedModule.title, category: selectedModule.category }}
-                      saved={savedResourceIds.has(resource.id)}
-                      onToggle={() => toggleResource(resource.id)}
+                      key={item.id}
+                      resource={{
+                        id: item.id,
+                        title: item.title,
+                        type: itemTypeMeta(item.type).label,
+                        moduleTitle: selectedModule.title,
+                        category: selectedModule.category,
+                      }}
+                      saved={savedResourceIds.has(item.id)}
+                      onToggle={() => toggleResource(item.id)}
                     />
                   ))}
                 </div>
@@ -1167,7 +1444,7 @@ function App() {
                   const module = moduleMap.get(certificate.moduleId)
                   return (
                     <article key={certificate.id} className="certificate-card">
-                      {module?.image && <img className="certificate-art" src={module.image} alt="" />}
+                      {moduleImageSrc(module) && <img className="certificate-art" src={moduleImageSrc(module)} alt="" />}
                       <div className="certificate-stamp">{module?.badge?.slice(0, 2).toUpperCase() || 'SFC'}</div>
                       <span>{certificate.status}</span>
                       <h3>{certificate.title}</h3>
@@ -1473,6 +1750,180 @@ function ResourceCard({ resource, saved, onToggle }) {
         {saved ? 'Saved' : 'Save'}
       </button>
     </article>
+  )
+}
+
+function ModuleVisual({ module, className = '', asButton = false, onClick }) {
+  const src = moduleImageSrc(module)
+  const content = (
+    <>
+      {src ? <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} /> : <div className="module-image-pattern" />}
+      <span style={{ background: cleanText(module?.accent, '#ff7a1a') }}>{cleanText(module?.category, 'Training')}</span>
+    </>
+  )
+
+  if (asButton) {
+    return (
+      <button type="button" className={`${className} module-visual`} onClick={onClick}>
+        {content}
+      </button>
+    )
+  }
+
+  return <div className={`${className} module-visual`}>{content}</div>
+}
+
+function ModuleThumb({ module }) {
+  const src = moduleImageSrc(module)
+  return (
+    <span className="module-thumb" style={{ '--module-accent': cleanText(module?.accent, '#ff7a1a') }}>
+      {src ? <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} /> : initials(module?.title || 'Module')}
+    </span>
+  )
+}
+
+function CanvasItemPreview({
+  item,
+  module,
+  enrolled,
+  completed,
+  onToggleComplete,
+  quizDefinition,
+  quizDraft,
+  setQuizDraft,
+  submitQuiz,
+  quizResult,
+  saved,
+  onSaveResource,
+}) {
+  if (!item) {
+    return <EmptyFrame title="Select an item" body="Choose a Canvas item from the module list to preview what Park Guides will see." />
+  }
+
+  const meta = itemTypeMeta(item.type)
+  const checklistItems = toList(item.checklist || item.checklistItems || item.checklist_items || item.content)
+    .map(toPlainText)
+    .filter(Boolean)
+  const hasExternalUrl = Boolean(cleanText(item.url))
+
+  return (
+    <div className="canvas-preview-content">
+      <div className="canvas-preview-heading">
+        <span className="canvas-item-icon large">{meta.icon}</span>
+        <div>
+          <strong>{item.title}</strong>
+          <small>{meta.label} · {module?.title}</small>
+        </div>
+      </div>
+
+      {item.description && <p className="canvas-preview-description">{item.description}</p>}
+
+      {(item.type === 'page' || item.type === 'text') && (
+        <div className="canvas-rich-content">
+          {item.content || item.description || 'Admin page content will appear here after it is added in the Course builder.'}
+        </div>
+      )}
+
+      {item.type === 'image' && (
+        <div className="canvas-media-frame image-frame">
+          {hasExternalUrl ? <img src={item.url} alt={item.title} /> : <span>Image placeholder</span>}
+        </div>
+      )}
+
+      {item.type === 'video' && (
+        <div className="canvas-media-frame video-frame">
+          <span>▶</span>
+          <strong>{hasExternalUrl ? 'Video link ready' : 'Video placeholder'}</strong>
+          <small>{hasExternalUrl ? item.url : 'Add an MP4 or YouTube link from Admin.'}</small>
+        </div>
+      )}
+
+      {item.type === 'file' && (
+        <div className="canvas-file-frame">
+          <strong>{item.title}</strong>
+          <p>{item.description || 'Downloadable file or document resource.'}</p>
+          <button type="button" disabled={!hasExternalUrl} onClick={() => hasExternalUrl && window.open(item.url, '_blank', 'noopener,noreferrer')}>
+            {hasExternalUrl ? 'Open file' : 'File URL not attached yet'}
+          </button>
+        </div>
+      )}
+
+      {item.type === 'link' && (
+        <div className="canvas-file-frame">
+          <strong>External reference</strong>
+          <p>{item.description || item.url || 'Admin can attach a website, Canvas page, or reference URL.'}</p>
+          <button type="button" disabled={!hasExternalUrl} onClick={() => hasExternalUrl && window.open(item.url, '_blank', 'noopener,noreferrer')}>
+            {hasExternalUrl ? 'Open link' : 'Link not attached yet'}
+          </button>
+        </div>
+      )}
+
+      {item.type === 'checklist' && (
+        <div className="canvas-checklist-preview">
+          {(checklistItems.length > 0 ? checklistItems : ['Review the evidence', 'Write a field note', 'Send recommendation for Admin review']).map((step, index) => (
+            <label key={`${step}-${index}`}>
+              <input type="checkbox" disabled />
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{step}</strong>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {item.type === 'quiz' && (
+        <div className="canvas-quiz-preview">
+          <p className="quiz-question">{quizDefinition?.question || item.description || 'Quiz question will appear here.'}</p>
+          {quizDefinition?.options?.length > 0 ? (
+            <div className="quiz-options">
+              {quizDefinition.options.map((option, index) => (
+                <label key={option}>
+                  <input
+                    type="radio"
+                    name={`quiz-${module.id}`}
+                    value={index}
+                    checked={Number(quizDraft[module.id]) === index}
+                    disabled={!enrolled}
+                    onChange={(event) =>
+                      setQuizDraft((prev) => ({
+                        ...prev,
+                        [module.id]: event.target.value,
+                      }))
+                    }
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <EmptyFrame title="Quiz options missing" body="Add answer choices in the Admin Course builder before the live demo." />
+          )}
+          <button
+            type="button"
+            className="full-button"
+            disabled={!enrolled || !quizDefinition?.options?.length || quizDraft[module.id] === undefined}
+            onClick={() => submitQuiz(module, quizDefinition)}
+          >
+            Submit quiz
+          </button>
+          {quizResult && (
+            <div className={quizResult.passed ? 'quiz-result pass' : 'quiz-result review'}>
+              {quizResult.passed ? 'Passed' : 'Review needed'} - Score {quizResult.score}%
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="canvas-preview-actions">
+        {isResourceLikeItem(item) && (
+          <button type="button" className="secondary-form-button" onClick={onSaveResource}>
+            {saved ? 'Saved resource' : 'Save resource'}
+          </button>
+        )}
+        <button type="button" className="full-button" disabled={!enrolled || item.type === 'quiz'} onClick={onToggleComplete}>
+          {completed ? 'Mark incomplete' : item.type === 'quiz' ? 'Complete quiz to finish' : 'Mark complete'}
+        </button>
+      </div>
+    </div>
   )
 }
 
