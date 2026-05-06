@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import '../Login.css';
 
+const loginBasePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const logoSrc = `${loginBasePath}sfc-citrus-logo.webp`;
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,11 +50,11 @@ const Login = () => {
   return (
     <div className="login-container">
       <img
-        src="/images/sfc-citrus-logo.webp"
+        src={logoSrc}
         alt="SFC Digital Guide logo"
         className="logo"
       />
-      <h1>SFC Digital Park Portal Login</h1>
+      <h1>SFC Digital Portal Login</h1>
       <p className="demo-auth-note">
         Demo authentication only. Use guide@example.com / 1234, admin@example.com / admin,
         or ranger@example.com / ranger.

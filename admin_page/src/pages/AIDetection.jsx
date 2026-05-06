@@ -25,6 +25,11 @@ import "../Admin.css";
 
 const API_BASE_URL = import.meta.env.VITE_MONITORING_API_BASE_URL || "http://localhost:4000";
 const backendBaseUrl = API_BASE_URL.replace(/\/$/, "");
+const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
+const NOT_AVAILABLE = "Not available";
 
 const MQTT_BROKER_URL = "wss://broker.hivemq.com:8884/mqtt";
 const MQTT_TOPIC = "ctip/sensor/plant-zone-01/proximity";
@@ -53,8 +58,9 @@ const resolveEvidenceImageUrl = (evidenceImage) => {
 };
 
 const formatDateTime = (timestamp) => {
+  if (!timestamp) return NOT_AVAILABLE;
   const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return "Unknown";
+  if (Number.isNaN(date.getTime())) return NOT_AVAILABLE;
 
   return date.toLocaleString("en-MY", {
     dateStyle: "medium",
@@ -64,12 +70,23 @@ const formatDateTime = (timestamp) => {
 
 const formatPercent = (value) => {
   const number = Number(value);
-  return Number.isFinite(number) ? `${Math.round(number * 100)}%` : "Unavailable";
+  return Number.isFinite(number) ? `${Math.round(number * 100)}%` : NOT_AVAILABLE;
 };
 
 const formatDecimal = (value, digits = 2) => {
   const number = Number(value);
-  return Number.isFinite(number) ? number.toFixed(digits) : "Unavailable";
+  return Number.isFinite(number) ? number.toFixed(digits) : NOT_AVAILABLE;
+};
+
+const displayValue = (value) => {
+  if (value === null || value === undefined) return NOT_AVAILABLE;
+  if (typeof value === "string" && value.trim() === "") return NOT_AVAILABLE;
+  return value;
+};
+
+const formatCentimeters = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${number} cm` : NOT_AVAILABLE;
 };
 
 const formatBytes = (value) => {
@@ -713,6 +730,10 @@ const AIDetection = () => {
     <Box className="incident-dashboard">
       <Box className="incident-hero">
         <Box>
+          <Box className="incident-page-brand">
+            <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
+            <span>SFC Dashboard</span>
+          </Box>
           <Typography className="incident-eyebrow">AI / IoT Monitoring</Typography>
           <Typography component="h1" className="incident-title">
             Admin Incident Detection
@@ -738,7 +759,7 @@ const AIDetection = () => {
         </span>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 2 }}>
+      <Paper className="incident-telemetry-card" sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
           <Typography sx={{ fontWeight: "bold" }}>MQTT:</Typography>
           <Chip
@@ -791,7 +812,7 @@ const AIDetection = () => {
         </Alert>
       )}
 
-      <Paper sx={{ p: 2, mb: 2 }}>
+      <Paper className="incident-camera-card" sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>
           Live Camera Preview
         </Typography>
@@ -990,36 +1011,41 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
       )}
 
       <Box className="incident-detail-grid">
+        <DetailItem label="Source" value={sourceLabel[incident.source] || incident.source} />
         <DetailItem label="Severity" value={incident.severity} />
-        <DetailItem label="Status" value={incident.status} />
         <DetailItem label="Location" value={incident.location} />
         <DetailItem label="Timestamp" value={formatDateTime(incident.timestamp)} />
+        <DetailItem label="Status" value={incident.status} />
       </Box>
 
-      {incident.source === "AI_CAMERA" && incident.ai && (
+      {incident.source === "AI_CAMERA" && incident.ai ? (
         <Box className="incident-metadata-card">
           <Typography component="h3">AI evidence metadata</Typography>
-          <DetailItem label="Predicted Class" value={incident.ai.predictedClass || "Unknown"} />
+          <DetailItem label="Predicted Class" value={incident.ai.predictedClass} />
           <DetailItem label="Confidence" value={formatPercent(incident.ai.confidence)} />
           <DetailItem label="Margin" value={formatDecimal(incident.ai.margin)} />
-          <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : "Unavailable"} />
+          <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
             value={`Plants ${formatPercent(probabilities.TouchingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
-      )}
+      ) : incident.source === "AI_CAMERA" ? (
+        <MetadataPlaceholder message="No AI metadata available for this incident." />
+      ) : null}
 
-      {incident.source === "IOT_SENSOR" && incident.iot && (
+      {incident.source === "IOT_SENSOR" && incident.iot ? (
         <Box className="incident-metadata-card">
           <Typography component="h3">IoT sensor metadata</Typography>
           <DetailItem label="Sensor ID" value={incident.iot.sensorId} />
-          <DetailItem label="Distance" value={`${incident.iot.distanceCm} cm`} />
-          <DetailItem label="Threshold" value={`${incident.iot.thresholdCm} cm`} />
+          <DetailItem label="Distance" value={formatCentimeters(incident.iot.distanceCm)} />
+          <DetailItem label="Threshold" value={formatCentimeters(incident.iot.thresholdCm)} />
           <DetailItem label="MQTT Topic" value={incident.iot.topic} />
           <DetailItem label="Location" value={incident.location} />
         </Box>
-      )}
+      ) : incident.source === "IOT_SENSOR" ? (
+        <MetadataPlaceholder message="No IoT metadata available for this incident." />
+      ) : null}
 
       <Box className="incident-notes">
         <Typography component="h3">Review notes</Typography>
@@ -1039,7 +1065,7 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
         </Box>
       )}
 
-      <Box className="incident-status-actions">
+      <Box className="incident-status-actions admin-official-status">
         <Typography component="h3">Official incident status</Typography>
         {INCIDENT_STATUSES.map((status) => (
           <Button
@@ -1056,10 +1082,16 @@ const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => 
   );
 };
 
+const MetadataPlaceholder = ({ message }) => (
+  <Box className="incident-metadata-placeholder">
+    <Typography>{message}</Typography>
+  </Box>
+);
+
 const DetailItem = ({ label, value }) => (
   <Box className="incident-detail-item">
     <span>{label}</span>
-    <strong>{value ?? "Unavailable"}</strong>
+    <strong>{displayValue(value)}</strong>
   </Box>
 );
 

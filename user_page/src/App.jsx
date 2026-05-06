@@ -24,6 +24,10 @@ import {
 } from './services/databaseFrames'
 
 const STORAGE_KEY = 'sfc_citrus_training_demo'
+const userBasePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`
+const logoSrc = `${userBasePath}sfc-citrus-logo.webp`
 const editableProfileFields = new Set(['displayName', 'email', 'phone', 'yearsExperience', 'address'])
 
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
@@ -622,9 +626,9 @@ function App() {
     <div className="app-shell">
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="brand-block">
-          <div className="brand-mark">SFC</div>
+          <img className="brand-logo" src={logoSrc} alt="SFC Digital Portal logo" />
           <div>
-            <strong>Guide Center</strong>
+            <strong>SFC Digital Portal</strong>
             <span>Digital Training</span>
           </div>
         </div>
@@ -662,7 +666,8 @@ function App() {
             <span />
             <span />
           </button>
-          <div>
+          <img className="topbar-logo" src={logoSrc} alt="SFC Digital Portal logo" />
+          <div className="topbar-brand-copy">
             <span className="kicker">SFC / {activeTab.replace('-', ' ').toUpperCase()}</span>
             <h1>{currentUser.assignedPark}</h1>
           </div>

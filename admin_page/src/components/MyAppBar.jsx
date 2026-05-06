@@ -13,6 +13,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useLocation } from "react-router-dom";
 import "../Admin.css";
 
+const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
+
 const NotificationButton = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const notifications = [
@@ -67,6 +72,7 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
     if (location.pathname.startsWith("/admin/students")) return "STUDENTS";
     if (location.pathname.startsWith("/admin/badge")) return "BADGE";
     if (location.pathname.startsWith("/admin/detection")) return "DETECTION";
+    if (location.pathname.startsWith("/admin/ranger")) return "RANGER";
     return "DASHBOARD";
   }, [location.pathname]);
 
@@ -76,10 +82,10 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
       elevation={0}
       sx={{
         height: "86px",
-        background: "#ffffff",
+        background: "linear-gradient(135deg, #ffffff 0%, #fff8e6 58%, #f4fbdf 100%)",
         color: "var(--text-main)",
-        boxShadow: "0 2px 15px rgba(0,0,0,0.05)",
-        borderBottom: "1px solid #e0e0e0",
+        boxShadow: "0 10px 28px rgba(11, 59, 40, 0.08)",
+        borderBottom: "1px solid rgba(255, 210, 63, 0.38)",
         justifyContent: "center",
         ml: open ? `${sidebarWidth}px` : "0px",
         width: open ? `calc(100% - ${sidebarWidth}px)` : "100%",
@@ -102,9 +108,9 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
               width: "50px",
               height: "50px",
               borderRadius: "14px",
-              border: open ? "1px solid #000000" : "2px solid #1e1e1e",
-              background: open ? "#f3f5f2" : "#ffffff",
-              color: open ? "#1e1e1e" : "#000000",
+              border: open ? "1px solid #cfe4c6" : "1px solid #f0c264",
+              background: open ? "#fff8e6" : "#ffffff",
+              color: "#0b3b28",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -113,23 +119,26 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
               boxShadow: "none",
               "&:hover": {
                 transform: "translateY(-1px)",
-                background: open ? "#379237" : "#379237",
-                color: open ? "#ffffff" : "#f6f6f6",
+                background: "linear-gradient(135deg, #ff7a1a, #ffd23f)",
+                color: "#102419",
+                borderColor: "#ff7a1a",
               },
             }}
           >
             {open ? <CloseIcon /> : <MenuIcon />}
           </Box>
-              <Box
-                sx={{
-                  fontWeight: 500,
-                  color: "var(--primary-mid)",
-                  letterSpacing: "0.2px",
-                  fontSize: "1rem",
-                }}
-              >
-              SFC / {currentLabel}
-              </Box>
+          <Box className={`admin-top-brand ${open ? "sidebar-open" : "sidebar-closed"}`}>
+            <Box
+              component="img"
+              className="admin-top-brand-logo"
+              src={logoSrc}
+              alt="SFC Digital Portal logo"
+            />
+            <Box className="admin-top-brand-copy">
+              <span>SFC Dashboard</span>
+              <strong>{currentLabel}</strong>
+            </Box>
+          </Box>
           </Box>
           
         <Box className="admin-top-actions">

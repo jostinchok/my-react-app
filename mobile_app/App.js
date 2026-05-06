@@ -226,14 +226,16 @@ const copy = {
 
 const palette = {
   bg: '#fff8e6',
-  panel: '#fffdf7',
+  panel: '#fffdf4',
   text: '#1e2a22',
   muted: '#607166',
-  border: '#dce7d7',
+  border: '#eadfbd',
   accent: '#ff7a1a',
   accentSoft: '#fff1cf',
   primaryDark: '#0b3b28',
+  primary: '#175f3e',
   lime: '#a8e64a',
+  sun: '#ffd23f',
 }
 
 const navTabs = ['profile', 'files', 'settings', 'logout']
@@ -447,7 +449,7 @@ const ProfileView = ({ profile, t }) => {
             setIsNavMounted(true)
             setIsNavOpen(true)
           }}
-          style={[styles.menuBtn, { borderColor: palette.border, backgroundColor: palette.bg }]}
+          style={[styles.menuBtn, { borderColor: palette.sun, backgroundColor: palette.bg }]}
         >
           <Text style={{ color: palette.text, fontWeight: '900' }}>☰</Text>
         </Pressable>
@@ -506,12 +508,12 @@ const ProfileView = ({ profile, t }) => {
                   style={[
                     styles.switchBtn,
                     {
-                      backgroundColor: trainingView === v ? palette.accent : palette.panel,
+                      backgroundColor: trainingView === v ? palette.sun : palette.panel,
                       borderColor: palette.border,
                     },
                   ]}
                 >
-                  <Text style={{ color: trainingView === v ? '#fff' : palette.text, fontWeight: '700' }}>
+                  <Text style={{ color: palette.text, fontWeight: '700' }}>
                     {v === 'courses' ? t.coursesTab : t.calendarTab}
                   </Text>
                 </Pressable>
@@ -733,11 +735,11 @@ const ProfileView = ({ profile, t }) => {
                       styles.chipBtn,
                       {
                         borderColor: palette.border,
-                        backgroundColor: language === item.key ? palette.accent : palette.panel,
+                        backgroundColor: language === item.key ? palette.sun : palette.panel,
                       },
                     ]}
                   >
-                    <Text style={{ color: language === item.key ? '#fff' : palette.text }}>{item.label}</Text>
+                    <Text style={{ color: palette.text }}>{item.label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -805,11 +807,11 @@ const ProfileView = ({ profile, t }) => {
                   style={[
                     styles.sideNavItem,
                     (activeTab === tab || hoveredTab === tab) && {
-                      backgroundColor: palette.accent,
+                      backgroundColor: palette.sun,
                     },
                   ]}
                 >
-                <Text style={{ color: (activeTab === tab || hoveredTab === tab) ? '#fff' : '#bdc3c7', fontWeight: '700', fontSize: 16, includeFontPadding: false }}>{t[tab]}</Text>
+                <Text style={{ color: (activeTab === tab || hoveredTab === tab) ? palette.primaryDark : '#fff8e6', fontWeight: '700', fontSize: 16, includeFontPadding: false }}>{t[tab]}</Text>
                 </Pressable>
             ))}
           </Animated.View>
@@ -866,9 +868,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    shadowColor: '#0b3b28',
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  headerLogo: { width: 38, height: 38, borderRadius: 9 },
+  headerLogo: { width: 38, height: 38, borderRadius: 9, borderWidth: 1, borderColor: '#ffd23f' },
   menuBtn: { 
     borderWidth: 1, 
     borderRadius: 10, 
@@ -876,7 +883,11 @@ const styles = StyleSheet.create({
     height: 44, 
     alignItems: 'center', 
     justifyContent: 'center',
-    fontSize: 20
+    fontSize: 20,
+    shadowColor: '#ff7a1a',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   headerTitle: { fontSize: 20, fontWeight: '900' },
   contentWrap: { padding: 12, gap: 10 },
@@ -889,22 +900,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 8,
   },
-  card: { borderWidth: 1, borderRadius: 14, padding: 12, gap: 8 },
+  card: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 10, shadowColor: '#0b3b28', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
   h1: { fontSize: 28, fontWeight: '900' },
   h2: { fontSize: 24, fontWeight: '800' },
   stackGap: { gap: 10 },
-  hero: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
+  hero: { borderWidth: 1, borderRadius: 20, padding: 16, gap: 10, shadowColor: '#0b3b28', shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
   heroBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  heroLogo: { width: 48, height: 48, borderRadius: 12 },
-  statRow: { flexDirection: 'row', gap: 8 },
-  statCard: { flex: 1, borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
+  heroLogo: { width: 48, height: 48, borderRadius: 12, borderWidth: 1, borderColor: '#ffd23f' },
+  statRow: { flexDirection: 'row', gap: 10 },
+  statCard: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 12, gap: 6, shadowColor: '#0b3b28', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 } },
   statBig: { fontSize: 30, fontWeight: '900' },
   trainingSwitchRow: { flexDirection: 'row', gap: 8 },
-  switchBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  switchBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   courseToolbar: { flexDirection: 'row' },
-  iconBtn: { borderWidth: 1, borderRadius: 10, width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { borderWidth: 1, borderRadius: 12, width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   courseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  courseCard: { width: '48%', borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+  courseCard: { width: '48%', borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
   courseThumb: { height: 90 },
   courseBody: { padding: 10, gap: 4 },
   calendarWrap: { flexDirection: 'row', gap: 8 },
@@ -936,6 +947,10 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     padding: 14,
     gap: 8,
+    shadowColor: '#0b3b28',
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
+    shadowOffset: { width: 10, height: 0 },
   },
   sideNavBrand: {
     flexDirection: 'row',
@@ -947,7 +962,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.1)',
   },
-  sideNavLogo: { width: 40, height: 40, borderRadius: 10 },
+  sideNavLogo: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: '#ffd23f' },
   sideNavTitle: { 
     fontSize: 18, 
     fontWeight: '700', 
@@ -964,20 +979,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center'
   },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, borderWidth: 1, gap: 8 },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, borderWidth: 1, gap: 10 },
   sheetTitle: { marginTop: 8, fontWeight: '800' },
-  modalCard: { margin: 16, borderRadius: 12, borderWidth: 1, padding: 12, gap: 8 },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  modalCard: { margin: 16, borderRadius: 18, borderWidth: 1, padding: 14, gap: 10 },
+  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fffdf4' },
   inputTall: { minHeight: 84, textAlignVertical: 'top' },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
   secondaryBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9 },
-  primaryBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9, alignItems: 'center' },
-  primaryBtnText: { color: '#fff', fontWeight: '800' },
-  settingsSection: { borderWidth: 1, borderRadius: 12, padding: 10, gap: 8 },
+  primaryBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' },
+  primaryBtnText: { color: '#102419', fontWeight: '900' },
+  settingsSection: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10, backgroundColor: '#fffdf4' },
   settingsTitle: { fontSize: 16, fontWeight: '800' },
   rowGap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chipBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  profileCard: { borderWidth: 1, borderRadius: 14, padding: 16, backgroundColor: palette.panel, borderColor: palette.border },
+  profileCard: { borderWidth: 1, borderRadius: 18, padding: 16, backgroundColor: palette.panel, borderColor: palette.border, shadowColor: '#0b3b28', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
   profileAvatarCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   profileAvatarPreview: { 
     width: 72, 

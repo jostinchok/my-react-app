@@ -46,11 +46,11 @@ const Login = ({ onLoginSuccess }) => {
   return (
     <div className="login-container">
       <img
-        src="/OIP.jpg"
-        alt="Digital Park Guide Logo"
+        src="/images/sfc-citrus-logo.webp"
+        alt="SFC Digital Guide logo"
         className="logo"
       />
-      <h1>Digital Park Login</h1>
+      <h1>SFC Digital Portal Login</h1>
       <input
         type="email"
         placeholder="Email"

@@ -22,6 +22,11 @@ import "../Admin.css";
 
 const API_BASE_URL = import.meta.env.VITE_MONITORING_API_BASE_URL || "http://localhost:4000";
 const backendBaseUrl = API_BASE_URL.replace(/\/$/, "");
+const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
+const NOT_AVAILABLE = "Not available";
 
 const sourceLabel = {
   AI_CAMERA: "AI Camera",
@@ -47,8 +52,9 @@ const responsePriority = {
 };
 
 const formatDateTime = (timestamp) => {
+  if (!timestamp) return NOT_AVAILABLE;
   const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return "Unknown";
+  if (Number.isNaN(date.getTime())) return NOT_AVAILABLE;
 
   return date.toLocaleString("en-MY", {
     dateStyle: "medium",
@@ -56,14 +62,38 @@ const formatDateTime = (timestamp) => {
   });
 };
 
+const formatTableTime = (timestamp) => {
+  if (!timestamp) return NOT_AVAILABLE;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return NOT_AVAILABLE;
+
+  return date.toLocaleString("en-MY", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const formatPercent = (value) => {
   const number = Number(value);
-  return Number.isFinite(number) ? `${Math.round(number * 100)}%` : "Unavailable";
+  return Number.isFinite(number) ? `${Math.round(number * 100)}%` : NOT_AVAILABLE;
 };
 
 const formatDecimal = (value, digits = 2) => {
   const number = Number(value);
-  return Number.isFinite(number) ? number.toFixed(digits) : "Unavailable";
+  return Number.isFinite(number) ? number.toFixed(digits) : NOT_AVAILABLE;
+};
+
+const displayValue = (value) => {
+  if (value === null || value === undefined) return NOT_AVAILABLE;
+  if (typeof value === "string" && value.trim() === "") return NOT_AVAILABLE;
+  return value;
+};
+
+const formatCentimeters = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${number} cm` : NOT_AVAILABLE;
 };
 
 const statusClassName = (status = "") => String(status).toLowerCase().replace(/\s+/g, "-");
@@ -264,6 +294,10 @@ const ParkRangerConsole = () => {
     <Box className="ranger-console">
       <Box component="header" className="ranger-header">
         <Box>
+          <Box className="incident-page-brand">
+            <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
+            <span>SFC Digital Portal</span>
+          </Box>
           <Typography className="incident-eyebrow">Park Ranger</Typography>
           <Typography component="h1" className="ranger-title">
             Field Response Console
@@ -321,7 +355,7 @@ const ParkRangerConsole = () => {
                     <TableCell>Event Type</TableCell>
                     <TableCell>Severity</TableCell>
                     <TableCell>Location</TableCell>
-                    <TableCell>Timestamp</TableCell>
+                    <TableCell>Time</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell align="right">Open</TableCell>
                   </TableRow>
@@ -342,17 +376,21 @@ const ParkRangerConsole = () => {
                           {sourceLabel[incident.source] || incident.source}
                         </span>
                       </TableCell>
-                      <TableCell>{incident.eventType}</TableCell>
+                      <TableCell className="ranger-event-cell">{displayValue(incident.eventType)}</TableCell>
                       <TableCell>
                         <span className={`severity-chip ${incident.severity}`}>
-                          {incident.severity}
+                          {displayValue(incident.severity)}
                         </span>
                       </TableCell>
-                      <TableCell>{incident.location}</TableCell>
-                      <TableCell>{formatDateTime(incident.timestamp)}</TableCell>
+                      <TableCell className="ranger-location-cell" title={incident.location}>
+                        {displayValue(incident.location)}
+                      </TableCell>
+                      <TableCell className="ranger-time-cell" title={formatDateTime(incident.timestamp)}>
+                        {formatTableTime(incident.timestamp)}
+                      </TableCell>
                       <TableCell>
                         <span className={`status-chip ${statusClassName(incident.status)}`}>
-                          {incident.status}
+                          {displayValue(incident.status)}
                         </span>
                       </TableCell>
                       <TableCell align="right">
@@ -436,30 +474,34 @@ const RangerIncidentDetail = ({
         <DetailItem label="Status" value={incident.status} />
       </Box>
 
-      {incident.source === "AI_CAMERA" && incident.ai && (
+      {incident.source === "AI_CAMERA" && incident.ai ? (
         <Box className="incident-metadata-card">
           <Typography component="h3">AI metadata</Typography>
-          <DetailItem label="Predicted Class" value={incident.ai.predictedClass || "Unknown"} />
+          <DetailItem label="Predicted Class" value={incident.ai.predictedClass} />
           <DetailItem label="Confidence" value={formatPercent(incident.ai.confidence)} />
           <DetailItem label="Margin" value={formatDecimal(incident.ai.margin)} />
-          <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : "Unavailable"} />
+        <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
             value={`Plants ${formatPercent(probabilities.TouchingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
-      )}
+      ) : incident.source === "AI_CAMERA" ? (
+        <MetadataPlaceholder message="No AI metadata available for this incident." />
+      ) : null}
 
-      {incident.source === "IOT_SENSOR" && incident.iot && (
+      {incident.source === "IOT_SENSOR" && incident.iot ? (
         <Box className="incident-metadata-card">
           <Typography component="h3">IoT metadata</Typography>
           <DetailItem label="Sensor ID" value={incident.iot.sensorId} />
-          <DetailItem label="Distance" value={`${incident.iot.distanceCm} cm`} />
-          <DetailItem label="Threshold" value={`${incident.iot.thresholdCm} cm`} />
+          <DetailItem label="Distance" value={formatCentimeters(incident.iot.distanceCm)} />
+          <DetailItem label="Threshold" value={formatCentimeters(incident.iot.thresholdCm)} />
           <DetailItem label="MQTT Topic" value={incident.iot.topic} />
           <DetailItem label="Location" value={incident.location} />
         </Box>
-      )}
+      ) : incident.source === "IOT_SENSOR" ? (
+        <MetadataPlaceholder message="No IoT metadata available for this incident." />
+      ) : null}
 
       <Box className="incident-notes ranger-notes">
         <Typography component="h3">Incident notes</Typography>
@@ -495,7 +537,7 @@ const RangerIncidentDetail = ({
           {fieldNote.length}/{MAX_FIELD_NOTE_LENGTH}
         </Typography>
 
-        <Box className="incident-status-actions ranger-status-actions">
+        <Box className="ranger-recommendation-actions">
           <Typography component="h3">Recommendation</Typography>
           {rangerRecommendations.map((action) => (
             <Button
@@ -518,10 +560,16 @@ const RangerIncidentDetail = ({
   );
 };
 
+const MetadataPlaceholder = ({ message }) => (
+  <Box className="incident-metadata-placeholder">
+    <Typography>{message}</Typography>
+  </Box>
+);
+
 const DetailItem = ({ label, value }) => (
   <Box className="incident-detail-item">
     <span>{label}</span>
-    <strong>{value ?? "Unavailable"}</strong>
+    <strong>{displayValue(value)}</strong>
   </Box>
 );
 

@@ -4,7 +4,10 @@ import { NavLink } from "react-router-dom";
 import { useSidebarState } from "react-admin";
 
 const SIDEBAR_WIDTH = 312;
-const logoSrc = `${import.meta.env.BASE_URL}sfc-citrus-logo.webp`;
+const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
 
 const Sidebar = () => {
   const [open] = useSidebarState();
@@ -82,7 +85,7 @@ const Sidebar = () => {
               lineHeight: 1.2,
             }}
           >
-            Digital Portal
+            SFC Digital Portal
           </Typography>
         </Box>
 
