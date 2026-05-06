@@ -32,7 +32,7 @@ The training platform now has a demo MySQL integration for Admin-created courses
 - Supported Canvas module item types are `page`, `text`, `file`, `image`, `video`, `link`, `quiz`, and `checklist`.
 - Canvas module items are stored in `course_module_items` through `user_login/server/migrations/003_canvas_module_items.sql`; the Admin training API also ensures the table before Canvas item operations.
 - The Park Guide User Portal reads Canvas-style module items from the user API and renders them as learning items. It supports item preview, media/resource display, quiz interaction, checklist rendering, persisted completion state, and local fallback when the progress API is unavailable.
-- Persistent Canvas learning progress now has a User API and MySQL migration for item completion and quiz attempts. The remaining follow-up is an Admin-facing guide progress summary UI.
+- Persistent Canvas learning progress now has a User API and MySQL migration for item completion and quiz attempts. Admin can view persisted guide progress through the Admin training API and `/admin/students`.
 - AI/IoT monitoring incidents remain separate from training content. Admin remains responsible for official incident status changes; Park Ranger can add field notes and recommendations only.
 
 ## Citrus Energetic UI System
@@ -104,7 +104,7 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress view, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. Admin-created Canvas courses/modules/items and course resources can load from the user API. Canvas item completion and quiz attempts persist through the User API when `004_canvas_learning_progress.sql` is applied, with local fallback if the API/database is unavailable. |
 | Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence and reads the user training module API when available. Screens are simpler than the full web portal. |
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
-| Admin Course / Training / Guide / Badge Pages | Demo-ready | Admin can create/edit/delete Canvas-style courses, modules, and module items; supported item types are page, text, file, image, video, external link, quiz, and checklist. Admin can also upload/download/delete course resources, review enrollment requests, manage guide accounts, and issue badges through the admin API. |
+| Admin Course / Training / Guide / Badge Pages | Demo-ready | Admin can create/edit/delete Canvas-style courses, modules, and module items; supported item types are page, text, file, image, video, external link, quiz, and checklist. Admin can also upload/download/delete course resources, review enrollment requests, manage guide accounts, view persisted Canvas learning progress, and issue badges through the admin API. |
 | Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, ranger recommendations, and official status updates. Sends admin role header for optional role-check mode. |
 | Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Recommend Acknowledged/In Review/Resolved/False Alarm actions. Ranger recommendations do not change the official incident status. |
 | Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, `PATCH /api/incidents/:id/status`, and `POST /api/incidents/:id/ranger-recommendation` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. Official status updates are Admin-only when role checks are enabled. |
@@ -169,7 +169,7 @@ IoT browser capture contract:
 - AI camera and IoT ingestion can require device tokens with `DEVICE_TOKEN_AUTH_ENABLED=true`.
 - Official incident status changes require the Admin role header with `ROLE_CHECK_ENABLED=true`.
 - Park Ranger can view incidents, add field notes, and submit status-outcome recommendations for Admin review without changing `incident.status`.
-- Canvas training content is connected between Admin and the Park Guide User Portal. Item-level completion and quiz attempts now have User API persistence; Admin-facing progress reporting remains a follow-up.
+- Canvas training content is connected between Admin and the Park Guide User Portal. Item-level completion and quiz attempts now have User API persistence, and Admin can review guide progress summaries from the Admin training API.
 - Admin, Park Ranger, and Park Guide role boundaries are clearly shown in the demo.
 - Frontend route guards are intentionally not enforced in production style; this remains documented as a limitation for the tutor check.
 - Production MQTT should use a private broker with authentication and TLS.
@@ -184,6 +184,7 @@ IoT browser capture contract:
 - Polished Park Ranger Console as a response-only field console with urgent incidents, field notes, recommendation actions, and role boundaries.
 - Added a demo-safe IoT test publisher fallback: MQTT remains the first path, but public-broker timeouts can fall back to the local incidents API with the same IOT_SENSOR payload.
 - Updated documentation for MySQL-first incident persistence, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
+- Added an Admin-facing Canvas learning progress summary so `/admin/students` can show guide completion percentage, completed item counts, and latest quiz score from persisted MySQL progress.
 - Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
 - Selectively integrated the useful training-platform features from `origin/New_version` without merging its incident role regression or generated files: Admin course/module/resource management, guide management, badge issuing, enrollment requests, user resource visibility, and mobile module visibility now share backend data.
 - Added the Canvas-style course/module/item builder to the Admin Course page and connected its module items into the Park Guide User Portal learning-item renderer.

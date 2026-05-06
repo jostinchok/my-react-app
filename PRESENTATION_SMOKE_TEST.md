@@ -66,15 +66,16 @@ Expected local routes:
 7. Confirm the Canvas progress banner says the item or quiz attempt saved to MySQL.
 8. Refresh the browser.
 9. Confirm completed item and quiz state remain complete.
-10. If the User API or MySQL is unavailable, confirm the Portal clearly says it is using local fallback.
+10. Open `http://localhost:5174/admin/students`.
+11. Confirm the matching guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score.
+12. If the User API or MySQL is unavailable, confirm the Portal clearly says it is using local fallback and Admin shows a safe empty/fallback progress message.
 
 ## 6. AI Camera Incident
 
-Run the AI camera monitor from the project virtual environment when assets are available:
+Run the AI camera monitor on Chia's Mac with the project Conda Python:
 
 ```bash
-source .venv/bin/activate
-python scripts/run_ai_camera_monitor.py
+/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0
 ```
 
 Demo checks:
@@ -104,16 +105,6 @@ Demo checks:
 
 ## 9. Final Wording Check
 
-Run the required wording scan:
+Run the required old plant-wording scan from the final verification checklist.
 
-```bash
-grep -RInE "Touching Plants|touching plants|touching plant|plant touching" \
-  admin_page/src \
-  user_page/src \
-  user_login/server/src \
-  user_login/server/scripts \
-  scripts \
-  PROJECT_NOTES.md README.md TODO.md WORKFLOW.md CYBERSECURITY_REVIEW.md || true
-```
-
-Expected result: no user-facing Admin/Ranger/User source labels use the old wording. A dataset-scraping notebook may still contain old search phrases and should remain untouched for this runtime demo pass.
+Expected result: no matches for the old user-facing wording. Internal `TouchingPlants` class aliases may remain only where needed for the old AI model compatibility layer.

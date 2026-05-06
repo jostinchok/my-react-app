@@ -262,6 +262,7 @@ http://localhost:4001/api/canvas-progress?userId=1
 http://localhost:4001/api/canvas-progress/summary?userId=1
 http://localhost:4002/api/courses
 http://localhost:4002/api/courses/<COURSE_ID>/canvas
+http://localhost:4002/api/admin/canvas-progress-summary
 ```
 
 Check stored incidents:
@@ -288,11 +289,18 @@ mysql -u root -p cos30049_assignment \
   -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
 ```
 
-AI/IoT monitoring incidents use the monitoring MySQL database and remain separate from training content. The training platform has demo MySQL-backed linkage for Admin-created Canvas courses, modules, module items, resources, guide accounts, enrollment requests, badges, item completion, and quiz attempts. Admin-facing progress review remains a follow-up.
+AI/IoT monitoring incidents use the monitoring MySQL database and remain separate from training content. The training platform has demo MySQL-backed linkage for Admin-created Canvas courses, modules, module items, resources, guide accounts, enrollment requests, badges, item completion, quiz attempts, and Admin-facing guide progress summaries.
 
 ## AI Camera Runtime
 
-Activate the local venv first:
+On Chia's Mac, use the project Conda Python for the local camera demo:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0
+```
+
+Generic teammate fallback: activate the local venv first:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
@@ -419,10 +427,9 @@ Security controls now available for demonstration:
 AI camera token mode:
 
 ```bash
-python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
+/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000 \
+  --camera-index 0 \
   --device-token "<copy-generated-ai-token>"
 ```
 
@@ -555,7 +562,7 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 
 - Login/register is a demo flow, not production authentication.
 - Frontend route guards are not enforced in production style; optional role checks protect the official incident status API and ranger recommendation API.
-- Admin-created Canvas training content and User Portal Canvas progress are API/database linked when the User API and `004_canvas_learning_progress.sql` migration are available. The User Portal keeps local fallback state if the progress API/database is unavailable.
+- Admin-created Canvas training content, User Portal Canvas progress, and Admin guide progress summaries are API/database linked when the User/Admin APIs and `004_canvas_learning_progress.sql` migration are available. The User Portal keeps local fallback state if the progress API/database is unavailable, and Admin shows a safe empty progress summary if tables are unavailable.
 - The AI model depends on local model files under `artifacts/` and `models/`.
 - MQTT public broker behavior depends on network availability.
 - The IoT test publisher includes a local API fallback for lecturer-demo reliability when the public MQTT broker times out.

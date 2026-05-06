@@ -237,17 +237,25 @@ Supported Canvas item preview checks:
 Persistent progress check:
 
 - Canvas item completion and quiz results save through the User API when MySQL is running and `004_canvas_learning_progress.sql` has been applied. Mark an item complete, submit a quiz, refresh the User Portal, and verify completion/quiz state remains. If the API/database is unavailable, the Portal shows a local fallback progress message.
+- Admin progress review: open `http://localhost:5174/admin/students` and confirm each guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score from `http://localhost:4002/api/admin/canvas-progress-summary`.
 
 ## Terminal 3: AI Camera Monitor
 
-Prepare Python:
+On Chia's Mac, run the camera with the project Conda Python:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0
+```
+
+Generic teammate fallback: prepare Python from the local venv:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 source .venv/bin/activate
 ```
 
-Run the AI camera:
+Run the AI camera from the generic local venv:
 
 ```bash
 python scripts/run_ai_camera_monitor.py \

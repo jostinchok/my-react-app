@@ -32,7 +32,7 @@ Canvas-style training content is connected from Admin to the Park Guide User Por
 | Asset | Why it matters | Current protection |
 | --- | --- | --- |
 | Guide profiles | Personal and training identity data | Demo guide/account data can be managed through the Admin training API; production recommendation is server-side auth, least-privilege access, and encrypted database storage. |
-| Canvas training records and quiz results | Assessment and certification evidence | Canvas content, item completion, and quiz attempts are API/database linked for the User Portal; production recommendation is stronger auth, access control, audit review, and Admin progress reporting. |
+| Canvas training records and quiz results | Assessment and certification evidence | Canvas content, item completion, quiz attempts, and Admin progress summaries are API/database linked; production recommendation is stronger auth, access control, and audit review. |
 | Admin incident records | Operational monitoring data | Memory/MySQL incident store with validation and browser-safe evidence URLs. |
 | AI/IoT evidence images/JSON | Review/report/training evidence | Stored in `alerts/ai` and `alerts/iot`; frontend receives `/evidence/ai/<filename>` or `/evidence/iot/<filename>`, not `/Users/...`. |
 | IoT sensor payloads | Conservation enforcement signals | Optional device token validation for API/MQTT ingestion. |
@@ -104,7 +104,7 @@ Do not commit the generated token values. Do not commit downloaded Google Drive 
 | IoT Sensor/MQTT Ingestion | Demo-ready / Prototype | MQTT/API publisher supports `IOT_SENSOR_TOKEN`; public HiveMQ remains prototype-only. |
 | Backend API | Demo-ready | Validates incident payloads, optional token auth, optional role checks, and safe evidence URLs. |
 | MySQL Incident Database | Demo-ready | Stores monitoring incidents/actions/evidence only. AI/IoT incident workflow remains separate from training content. |
-| Training Content Database | Partial / Demo-ready | Stores Admin-created Canvas courses/modules/items, item progress, quiz attempts, and related training demo data. Admin-facing progress review and stronger access-control review remain follow-ups. |
+| Training Content Database | Partial / Demo-ready | Stores Admin-created Canvas courses/modules/items, item progress, quiz attempts, Admin progress summaries, and related training demo data. Stronger access-control review remains a follow-up. |
 | Evidence Storage | Demo-ready | Repo-local `alerts/ai` and `alerts/iot`, served through `/evidence/ai` and `/evidence/iot`; frontend hides absolute filesystem paths. |
 | GitHub Hygiene | Demo-ready | Real secrets and large local runtime/model/dependency folders should remain untracked. |
 
@@ -118,7 +118,7 @@ Do not commit the generated token values. Do not commit downloaded Google Drive 
 | Public MQTT broker spoofing | IoT bridge | Topic can receive public messages | Optional `device_token` in payload when token mode is enabled | Public HiveMQ has no broker-level auth | Explain production private MQTT with TLS/auth. |
 | Absolute path exposure | API/frontends | Local user path leakage | Evidence normalization returns `/evidence/ai/<filename>` or `/evidence/iot/<filename>` | Raw local evidence files still exist on demo machine | Smoke test checks no `/Users/` in `/api/incidents`. |
 | Real secrets in Git | Repo | Credential leakage | `.env.example` placeholders and Git ignore rules | Manual review required before commits | Show `.env.example` and safety grep. |
-| Canvas progress API access control | User API | A demo route could be called directly with another `userId` | Progress is parameterized SQL and tied to `users.user_id`; UI role boundary is clear | Production JWT/session authorization and Admin progress review are pending | Show Project Scope audit table and TODO priority section. |
+| Canvas progress API access control | User/Admin APIs | Demo routes can be called directly with another `userId` or viewed from the demo-open Admin page | Progress is parameterized SQL and tied to `users.user_id`; Admin progress summary is read-only and UI role boundary is clear | Production JWT/session authorization and formal RBAC are pending | Show Project Scope audit table and TODO priority section. |
 | Password reset token exposure in demo | Auth endpoint | Demo endpoint returns token for local testing | Token hash stored in DB; response is demo-only | Production email delivery flow deferred | Explain limitation in tutor review. |
 
 ## 8. Tutor Demo Commands
@@ -150,15 +150,13 @@ IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
 npm run security:smoke
 ```
 
-Run AI camera with token mode:
+Run AI camera with token mode on Chia's Mac:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-source .venv/bin/activate
-python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
+/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000 \
+  --camera-index 0 \
   --device-token "<copy-generated-ai-token>"
 ```
 
@@ -197,7 +195,7 @@ Capture:
 - Replace demo-open frontend routes with JWT or server-session authentication.
 - Enforce server-side route protection for Admin and Park Ranger pages.
 - Add formal role-based access control across all APIs.
-- Add Admin-facing guide progress summaries and production authorization checks around Canvas progress, assessments, and certificates.
+- Add production authorization checks around Canvas progress, assessments, certificates, and Admin guide progress summaries.
 - Use a private MQTT broker with username/password and TLS.
 - Add device token rotation, expiry, and revocation records.
 - Use device identity per camera/sensor instead of shared demo tokens.

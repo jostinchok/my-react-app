@@ -10,12 +10,12 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 
 ## Top Priority: Canvas Learning Progress
 
-The Canvas-style course/module/item builder is connected from Admin to the Park Guide User Portal. Item progress and quiz attempts now have User API/MySQL persistence; the remaining production-ready follow-up is Admin-facing progress review.
+The Canvas-style course/module/item builder is connected from Admin to the Park Guide User Portal. Item progress and quiz attempts now have User API/MySQL persistence, and Admin can view guide progress summaries from `/admin/students`.
 
 - [x] Add server-side persistence for a user completing a Canvas module item.
 - [x] Add server-side persistence for a user submitting a Canvas quiz item and its result.
 - [x] After persistence is implemented, refresh the User Portal and confirm completed items and quiz state are preserved when the User API/database is running.
-- [ ] Add an Admin-facing view that reads each guide's Canvas progress summary.
+- [x] Add an Admin-facing view that reads each guide's Canvas progress summary.
 - [ ] Keep AI/IoT incident records separate from training progress and keep Admin as the only official incident status updater.
 
 ## Project Scope Checklist
@@ -31,7 +31,7 @@ The Canvas-style course/module/item builder is connected from Admin to the Park 
 | Admin Incident Detection | Demo-ready | Open `http://localhost:5174/admin/detection`; show AI and IoT rows, summary cards, filters, evidence, metadata, ranger recommendations, fallback/live states, and Admin official status update. |
 | Park Ranger Console | Demo-ready | Open `http://localhost:5174/admin/ranger`; show response-only role, urgent incidents, field notes, and recommendation buttons. Ranger recommendations do not change official incident status. |
 | Backend API | Demo-ready | `curl http://localhost:4000/api/health`; confirm `persistence=mysql`, `requested=mysql`, and `active=mysql`. |
-| AI camera script | Demo-ready | Run `scripts/run_ai_camera_monitor.py` from local `.venv`; use `--device-token` when token auth is enabled; press `q` or ESC to stop safely. |
+| AI camera script | Demo-ready | On Chia's Mac, run `/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0`; use `--device-token` when token auth is enabled; press `q` or ESC to stop safely. |
 | IoT simulation / physical sensor support | Partial / Demo-ready | Run `cd user_login/server && npm run publish:test-iot` or trigger the physical sensor while Admin Detection is open. Browser capture saves curated evidence under `alerts/iot`, serves `/evidence/iot/<filename>`, and shares the same memory/MySQL incident record with Park Ranger; Admin remains the final status decision maker. |
 | MySQL incident persistence | Demo-ready | Apply migration, run with `INCIDENT_STORAGE=mysql` and `INCIDENT_MYSQL_FALLBACK=none`, then query `monitoring_incidents`. |
 | Cybersecurity controls | Partial / Demo-ready | Show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generator, optional device tokens, optional role checks, validation behavior, and smoke test output. |
@@ -61,7 +61,7 @@ The Canvas-style course/module/item builder is connected from Admin to the Park 
 - [ ] Run `node --check user_login/server/scripts/publish-test-iot.js`.
 - [ ] Run `node --check user_login/server/scripts/security-smoke-test.js`.
 - [ ] Run `node --check user_login/server/scripts/generate-demo-tokens.js`.
-- [ ] Run `source .venv/bin/activate && python -m py_compile scripts/run_ai_camera_monitor.py`.
+- [ ] Run `/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python -m py_compile scripts/run_ai_camera_monitor.py` on Chia's Mac, or use the local `.venv` command only as a generic fallback.
 - [ ] Generate local demo tokens with `cd user_login/server && npm run generate:tokens`.
 - [ ] If showing cybersecurity controls, start app with `DEVICE_TOKEN_AUTH_ENABLED=true ROLE_CHECK_ENABLED=true`.
 - [ ] Run `cd user_login/server && npm run security:smoke` with the same token values.
@@ -81,7 +81,7 @@ The Canvas-style course/module/item builder is connected from Admin to the Park 
 
 ## Intentionally Deferred
 
-- Admin-facing Canvas guide progress summary UI beyond the User API summary endpoint.
+- Production-grade authorization and audit review around Admin Canvas guide progress summaries.
 - Production-grade training enrollment approvals, certificate templates, and audit trails beyond the current demo CRUD/API linkage.
 - Production-grade authentication and password reset.
 - Production-grade JWT/session route protection.

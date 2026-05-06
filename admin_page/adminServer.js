@@ -55,10 +55,28 @@ const rowOf = async (sql, values = []) => {
   return rows[0] || null
 }
 
+const tableExists = async (tableName) => {
+  const table = await rowOf(
+    `SELECT TABLE_NAME
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+     LIMIT 1`,
+    [databaseName, tableName]
+  )
+  return Boolean(table)
+}
+
 const formatDateOnly = (value) => {
   if (!value) return ''
   if (value instanceof Date) return value.toISOString().slice(0, 10)
   return String(value).slice(0, 10)
+}
+
+const dateToIso = (value) => {
+  if (!value) return null
+  if (value instanceof Date) return value.toISOString()
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString()
 }
 
 const safeFileName = (value = 'resource') => {
@@ -121,6 +139,33 @@ const normalizeResource = (resource = {}) => ({
   size: formatBytes(resource.size_bytes),
   uploaded: formatDateOnly(resource.uploaded_at),
   download_url: `/api/courses/${encodeURIComponent(resource.course_id)}/resources/${resource.resource_id}/download`,
+})
+
+const percent = (value, total) => {
+  const numerator = Number(value || 0)
+  const denominator = Number(total || 0)
+  return denominator > 0 ? Math.round((numerator / denominator) * 100) : 0
+}
+
+const emptyAdminCanvasProgressSummary = (message = 'Canvas learning progress is unavailable.') => ({
+  ok: true,
+  persistence: 'unavailable',
+  fallback: true,
+  message,
+  summary: {
+    totalGuides: 0,
+    total_guides: 0,
+    totalAvailableItems: 0,
+    total_available_items: 0,
+    totalCompletedItems: 0,
+    total_completed_items: 0,
+    totalQuizAttempts: 0,
+    total_quiz_attempts: 0,
+    averageCompletionPercent: 0,
+    average_completion_percent: 0,
+  },
+  guides: [],
+  courses: [],
 })
 
 const ensureColumn = async (tableName, columnName, definition) => {
@@ -401,7 +446,7 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
     status: 'ok',
     message: 'Admin backend connected to MySQL',
     database: databaseName,
-    features: ['courses', 'modules', 'course_resources', 'guide_management', 'badges'],
+    features: ['courses', 'modules', 'course_resources', 'guide_management', 'badges', 'canvas_learning_progress_summary'],
   })
 }))
 
@@ -1367,6 +1412,325 @@ app.get('/api/students', asyncRoute(async (_req, res) => {
     }),
   })
 }))
+
+app.get('/api/admin/canvas-progress-summary', async (_req, res) => {
+  try {
+    const hasUsers = await tableExists('users')
+    if (!hasUsers) {
+      res.json(emptyAdminCanvasProgressSummary('Guide accounts table is not available yet.'))
+      return
+    }
+
+    const [guideRows, hasCanvasItems, hasCanvasProgress, hasCanvasQuizAttempts] = await Promise.all([
+      rowsOf(`
+        SELECT
+          u.user_id AS id,
+          u.name,
+          u.email,
+          u.created_at,
+          r.role_name,
+          gp.organization AS assigned_course,
+          gp.status
+        FROM users u
+        LEFT JOIN roles r ON r.role_id = u.role_id
+        LEFT JOIN guide_profiles gp ON gp.guide_id = u.user_id
+        WHERE r.role_name IN ('guide', 'user') OR r.role_name IS NULL
+        ORDER BY u.created_at DESC, u.user_id DESC
+      `),
+      tableExists('course_module_items'),
+      tableExists('canvas_item_progress'),
+      tableExists('canvas_quiz_attempts'),
+    ])
+
+    const guidesBase = guideRows.map((guide) => {
+      const guideNumber = String(guide.id).padStart(4, '0')
+      return {
+        userId: guide.id,
+        user_id: guide.id,
+        guideId: guide.id,
+        guide_id: guide.id,
+        guideCode: `GUIDE-SFC-${guideNumber}`,
+        guide_code: `GUIDE-SFC-${guideNumber}`,
+        trainingId: `TRN-SFC-${guideNumber}`,
+        training_id: `TRN-SFC-${guideNumber}`,
+        name: guide.name || 'Unnamed guide',
+        email: guide.email || '',
+        roleLabel: guide.role_name === 'user' ? 'Park User' : 'Park Guide',
+        role_label: guide.role_name === 'user' ? 'Park User' : 'Park Guide',
+        assignedCourse: guide.assigned_course || 'None',
+        assigned_course: guide.assigned_course || 'None',
+        eligibility: guide.status === 'inactive' ? 'Rejected' : 'Approved',
+      }
+    })
+
+    if (!hasCanvasItems) {
+      const fallback = emptyAdminCanvasProgressSummary('Canvas module items table is not available yet.')
+      res.json({
+        ...fallback,
+        summary: {
+          ...fallback.summary,
+          totalGuides: guidesBase.length,
+          total_guides: guidesBase.length,
+        },
+        guides: guidesBase.map((guide) => ({
+          ...guide,
+          completedCanvasItems: 0,
+          completed_canvas_items: 0,
+          totalAvailableItems: 0,
+          total_available_items: 0,
+          completionPercent: 0,
+          completion_percent: 0,
+          quizAttempts: 0,
+          quiz_attempts: 0,
+          latestQuizScore: null,
+          latest_quiz_score: null,
+          latestQuizAt: null,
+          latest_quiz_at: null,
+          latestQuizLabel: 'No quiz attempts yet',
+          latest_quiz_label: 'No quiz attempts yet',
+          modules: [],
+        })),
+      })
+      return
+    }
+
+    const moduleItemRows = await rowsOf(`
+      SELECT
+        cmi.course_id,
+        COALESCE(c.course_name, cmi.course_id) AS course_name,
+        cmi.module_id,
+        COALESCE(tm.title, CONCAT('Module ', cmi.module_id)) AS module_title,
+        COALESCE(tm.sort_order, 0) AS module_sort_order,
+        COUNT(cmi.item_id) AS total_items
+      FROM course_module_items cmi
+      LEFT JOIN courses c ON c.course_id = cmi.course_id
+      LEFT JOIN training_modules tm ON tm.module_id = cmi.module_id
+      WHERE cmi.status = 'published'
+      GROUP BY cmi.course_id, c.course_name, cmi.module_id, tm.title, tm.sort_order
+      ORDER BY c.course_name ASC, module_sort_order ASC, tm.title ASC, cmi.module_id ASC
+    `)
+
+    const moduleTotals = new Map()
+    const courseMap = new Map()
+
+    for (const row of moduleItemRows) {
+      const totalItems = Number(row.total_items || 0)
+      const moduleKey = `${row.course_id}:${row.module_id}`
+      moduleTotals.set(moduleKey, {
+        courseId: row.course_id,
+        courseName: row.course_name || row.course_id,
+        moduleId: row.module_id,
+        moduleTitle: row.module_title || `Module ${row.module_id}`,
+        totalItems,
+      })
+
+      const course = courseMap.get(row.course_id) || {
+        courseId: row.course_id,
+        course_id: row.course_id,
+        courseName: row.course_name || row.course_id,
+        course_name: row.course_name || row.course_id,
+        totalItems: 0,
+        total_items: 0,
+        modules: [],
+      }
+      course.totalItems += totalItems
+      course.total_items = course.totalItems
+      course.modules.push({
+        moduleId: row.module_id,
+        module_id: row.module_id,
+        moduleTitle: row.module_title || `Module ${row.module_id}`,
+        module_title: row.module_title || `Module ${row.module_id}`,
+        totalItems,
+        total_items: totalItems,
+      })
+      courseMap.set(row.course_id, course)
+    }
+
+    const totalAvailableItems = moduleItemRows.reduce((sum, row) => sum + Number(row.total_items || 0), 0)
+
+    const [progressRows, quizRows] = await Promise.all([
+      hasCanvasProgress
+        ? rowsOf(`
+          SELECT
+            cip.user_id,
+            cip.course_id,
+            COALESCE(c.course_name, cip.course_id) AS course_name,
+            cip.module_id,
+            COALESCE(tm.title, CONCAT('Module ', cip.module_id)) AS module_title,
+            COUNT(DISTINCT cip.item_id) AS completed_items,
+            MAX(cip.updated_at) AS last_activity_at
+          FROM canvas_item_progress cip
+          INNER JOIN course_module_items cmi
+            ON cmi.item_id = cip.item_id
+           AND cmi.module_id = cip.module_id
+           AND cmi.course_id = cip.course_id
+          LEFT JOIN courses c ON c.course_id = cip.course_id
+          LEFT JOIN training_modules tm ON tm.module_id = cip.module_id
+          WHERE cip.status = 'completed'
+            AND cmi.status = 'published'
+          GROUP BY cip.user_id, cip.course_id, c.course_name, cip.module_id, tm.title
+        `)
+        : Promise.resolve([]),
+      hasCanvasQuizAttempts
+        ? rowsOf(`
+          SELECT
+            cqa.user_id,
+            cqa.course_id,
+            COALESCE(c.course_name, cqa.course_id) AS course_name,
+            cqa.module_id,
+            COALESCE(tm.title, CONCAT('Module ', cqa.module_id)) AS module_title,
+            cqa.item_id,
+            cmi.title AS item_title,
+            cqa.score_percent,
+            cqa.is_correct,
+            cqa.attempted_at,
+            cqa.attempt_id
+          FROM canvas_quiz_attempts cqa
+          LEFT JOIN course_module_items cmi ON cmi.item_id = cqa.item_id
+          LEFT JOIN courses c ON c.course_id = cqa.course_id
+          LEFT JOIN training_modules tm ON tm.module_id = cqa.module_id
+          ORDER BY cqa.user_id ASC, cqa.attempted_at DESC, cqa.attempt_id DESC
+        `)
+        : Promise.resolve([]),
+    ])
+
+    const progressByUser = new Map()
+    for (const row of progressRows) {
+      const userId = Number(row.user_id)
+      const current = progressByUser.get(userId) || {
+        completedItems: 0,
+        completed_items: 0,
+        lastActivityAt: null,
+        last_activity_at: null,
+        modules: [],
+      }
+      const moduleKey = `${row.course_id}:${row.module_id}`
+      const moduleTotal = moduleTotals.get(moduleKey)
+      const completedItems = Number(row.completed_items || 0)
+      current.completedItems += completedItems
+      current.completed_items = current.completedItems
+      const lastActivityAt = dateToIso(row.last_activity_at)
+      if (lastActivityAt && (!current.lastActivityAt || lastActivityAt > current.lastActivityAt)) {
+        current.lastActivityAt = lastActivityAt
+        current.last_activity_at = lastActivityAt
+      }
+      current.modules.push({
+        courseId: row.course_id,
+        course_id: row.course_id,
+        courseName: row.course_name || row.course_id,
+        course_name: row.course_name || row.course_id,
+        moduleId: row.module_id,
+        module_id: row.module_id,
+        moduleTitle: row.module_title || `Module ${row.module_id}`,
+        module_title: row.module_title || `Module ${row.module_id}`,
+        completedItems,
+        completed_items: completedItems,
+        totalItems: moduleTotal?.totalItems || 0,
+        total_items: moduleTotal?.totalItems || 0,
+        completionPercent: percent(completedItems, moduleTotal?.totalItems || 0),
+        completion_percent: percent(completedItems, moduleTotal?.totalItems || 0),
+        lastActivityAt,
+        last_activity_at: lastActivityAt,
+      })
+      progressByUser.set(userId, current)
+    }
+
+    const quizByUser = new Map()
+    for (const row of quizRows) {
+      const userId = Number(row.user_id)
+      const current = quizByUser.get(userId) || {
+        quizAttempts: 0,
+        quiz_attempts: 0,
+        latestQuizScore: null,
+        latest_quiz_score: null,
+        latestQuizAt: null,
+        latest_quiz_at: null,
+        latestQuizLabel: 'No quiz attempts yet',
+        latest_quiz_label: 'No quiz attempts yet',
+        latestQuizPassed: null,
+        latest_quiz_passed: null,
+      }
+      current.quizAttempts += 1
+      current.quiz_attempts = current.quizAttempts
+      if (!current.latestQuizAt) {
+        const latestQuizAt = dateToIso(row.attempted_at)
+        const labelParts = [row.course_name, row.module_title, row.item_title].filter(Boolean)
+        current.latestQuizScore = Number(row.score_percent || 0)
+        current.latest_quiz_score = current.latestQuizScore
+        current.latestQuizAt = latestQuizAt
+        current.latest_quiz_at = latestQuizAt
+        current.latestQuizLabel = labelParts.length ? labelParts.join(' / ') : 'Canvas quiz'
+        current.latest_quiz_label = current.latestQuizLabel
+        current.latestQuizPassed = Boolean(row.is_correct)
+        current.latest_quiz_passed = current.latestQuizPassed
+      }
+      quizByUser.set(userId, current)
+    }
+
+    const guides = guidesBase.map((guide) => {
+      const progress = progressByUser.get(Number(guide.userId)) || {}
+      const quiz = quizByUser.get(Number(guide.userId)) || {}
+      const completedCanvasItems = Number(progress.completedItems || 0)
+      const completionPercent = percent(completedCanvasItems, totalAvailableItems)
+
+      return {
+        ...guide,
+        completedCanvasItems,
+        completed_canvas_items: completedCanvasItems,
+        totalAvailableItems,
+        total_available_items: totalAvailableItems,
+        completionPercent,
+        completion_percent: completionPercent,
+        quizAttempts: Number(quiz.quizAttempts || 0),
+        quiz_attempts: Number(quiz.quizAttempts || 0),
+        latestQuizScore: quiz.latestQuizScore ?? null,
+        latest_quiz_score: quiz.latestQuizScore ?? null,
+        latestQuizAt: quiz.latestQuizAt || null,
+        latest_quiz_at: quiz.latestQuizAt || null,
+        latestQuizLabel: quiz.latestQuizLabel || 'No quiz attempts yet',
+        latest_quiz_label: quiz.latestQuizLabel || 'No quiz attempts yet',
+        latestQuizPassed: quiz.latestQuizPassed ?? null,
+        latest_quiz_passed: quiz.latestQuizPassed ?? null,
+        lastActivityAt: progress.lastActivityAt || null,
+        last_activity_at: progress.lastActivityAt || null,
+        modules: (progress.modules || []).sort((a, b) => b.completionPercent - a.completionPercent),
+      }
+    })
+
+    const totalCompletedItems = guides.reduce((sum, guide) => sum + guide.completedCanvasItems, 0)
+    const totalQuizAttempts = guides.reduce((sum, guide) => sum + guide.quizAttempts, 0)
+    const averageCompletionPercent = guides.length
+      ? Math.round(guides.reduce((sum, guide) => sum + guide.completionPercent, 0) / guides.length)
+      : 0
+
+    const partial = !hasCanvasProgress || !hasCanvasQuizAttempts
+    res.json({
+      ok: true,
+      persistence: partial ? 'partial' : 'mysql',
+      fallback: partial,
+      message: partial
+        ? 'Canvas item or quiz progress tables are missing; Admin summary is showing available content with zeroed progress where needed.'
+        : 'Admin Canvas learning progress summary loaded from MySQL.',
+      summary: {
+        totalGuides: guides.length,
+        total_guides: guides.length,
+        totalAvailableItems,
+        total_available_items: totalAvailableItems,
+        totalCompletedItems,
+        total_completed_items: totalCompletedItems,
+        totalQuizAttempts,
+        total_quiz_attempts: totalQuizAttempts,
+        averageCompletionPercent,
+        average_completion_percent: averageCompletionPercent,
+      },
+      guides,
+      courses: Array.from(courseMap.values()),
+    })
+  } catch (error) {
+    console.warn('Admin Canvas progress summary fallback:', error)
+    res.json(emptyAdminCanvasProgressSummary(`Canvas progress summary unavailable: ${error.message}`))
+  }
+})
 
 app.post('/api/students', asyncRoute(async (req, res) => {
   const { name, email, phone = '', module = 'None' } = req.body || {}

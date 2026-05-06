@@ -67,9 +67,50 @@ const menuProps = {
 
 const assignedToCourse = (student) => Boolean(student.module && student.module !== "None");
 
+const emptyCanvasProgress = {
+  completedCanvasItems: 0,
+  totalAvailableItems: 0,
+  completionPercent: 0,
+  quizAttempts: 0,
+  latestQuizScore: null,
+  latestQuizLabel: "No quiz attempts yet",
+  latestQuizAt: null,
+};
+
+const normalizeCanvasProgress = (progress = {}) => {
+  const latestScoreValue = progress.latestQuizScore ?? progress.latest_quiz_score ?? null;
+  const latestQuizScore = latestScoreValue === null || latestScoreValue === undefined ? null : Number(latestScoreValue);
+
+  return {
+    completedCanvasItems: Number(progress.completedCanvasItems ?? progress.completed_canvas_items ?? 0),
+    totalAvailableItems: Number(progress.totalAvailableItems ?? progress.total_available_items ?? 0),
+    completionPercent: Number(progress.completionPercent ?? progress.completion_percent ?? 0),
+    quizAttempts: Number(progress.quizAttempts ?? progress.quiz_attempts ?? 0),
+    latestQuizScore: Number.isFinite(latestQuizScore) ? latestQuizScore : null,
+    latestQuizLabel: progress.latestQuizLabel || progress.latest_quiz_label || "No quiz attempts yet",
+    latestQuizAt: progress.latestQuizAt || progress.latest_quiz_at || null,
+    modules: Array.isArray(progress.modules) ? progress.modules : [],
+  };
+};
+
+const attachCanvasProgress = (students, progressPayload = {}) => {
+  const progressByGuide = new Map(
+    (progressPayload.guides || []).map((guide) => [
+      String(guide.userId ?? guide.user_id ?? guide.guideId ?? guide.guide_id ?? ""),
+      normalizeCanvasProgress(guide),
+    ])
+  );
+
+  return students.map((student) => ({
+    ...student,
+    canvasProgress: progressByGuide.get(String(student.id)) || { ...emptyCanvasProgress },
+  }));
+};
+
 const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [canvasProgressSummary, setCanvasProgressSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,12 +132,21 @@ const StudentManagement = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [studentData, courseData] = await Promise.all([
+      const progressRequest = requestJson(`${API_BASE_URL}/api/admin/canvas-progress-summary`).catch((error) => ({
+        ok: false,
+        fallback: true,
+        message: error.message,
+        summary: {},
+        guides: [],
+      }));
+      const [studentData, courseData, progressData] = await Promise.all([
         requestJson(`${API_BASE_URL}/api/students`),
         requestJson(`${API_BASE_URL}/api/courses`),
+        progressRequest,
       ]);
-      setStudents(studentData.students || []);
+      setStudents(attachCanvasProgress(studentData.students || [], progressData));
       setCourses(courseData.courses || []);
+      setCanvasProgressSummary(progressData);
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
@@ -119,6 +169,7 @@ const StudentManagement = () => {
     }),
     [students]
   );
+  const canvasTotals = canvasProgressSummary?.summary || {};
 
   const filteredStudents = useMemo(
     () =>
@@ -141,6 +192,13 @@ const StudentManagement = () => {
     { label: "Approved / active", value: summary.approved, detail: "Ready for course access", icon: <CheckCircleIcon />, tone: "linear-gradient(135deg, #DDFBD2, #A7E957)" },
     { label: "Rejected / inactive", value: summary.rejected, detail: "Not eligible for issue", icon: <CancelIcon />, tone: "#b53421" },
     { label: "Assigned to course", value: summary.assigned, detail: "Has a linked course", icon: <AssignmentTurnedInIcon />, tone: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
+    {
+      label: "Canvas average",
+      value: `${Number(canvasTotals.averageCompletionPercent || 0)}%`,
+      detail: `${Number(canvasTotals.totalCompletedItems || 0)} / ${Number(canvasTotals.totalAvailableItems || 0)} saved item completions`,
+      icon: <AssignmentTurnedInIcon />,
+      tone: "linear-gradient(135deg, #FFF3C4, #DDFBD2)",
+    },
   ];
 
   const openCreateDialog = () => {
@@ -304,6 +362,12 @@ const StudentManagement = () => {
         ))}
       </Grid>
 
+      {canvasProgressSummary?.fallback && (
+        <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
+          {canvasProgressSummary.message || "Canvas progress summary is using a safe empty fallback."}
+        </Alert>
+      )}
+
       <Box sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4, background: "rgba(255, 253, 247, 0.96)" }}>
         <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ xs: "stretch", md: "center" }}>
           <TextField
@@ -361,6 +425,12 @@ const StudentManagement = () => {
           const isRejected = student.eligibility === "Rejected";
           const assigned = assignedToCourse(student);
           const identity = buildGuideIdentity(student);
+          const canvasProgress = normalizeCanvasProgress(student.canvasProgress);
+          const latestQuizScore = canvasProgress.latestQuizScore;
+          const latestQuizText = latestQuizScore === null || latestQuizScore === undefined
+            ? "No quiz attempts"
+            : `Latest quiz ${Math.round(Number(latestQuizScore))}%`;
+          const topModule = canvasProgress.modules?.[0];
           return (
             <Grid item xs={12} md={6} xl={4} key={student.id}>
               <Card
@@ -428,7 +498,7 @@ const StudentManagement = () => {
                       sx={{ bgcolor: "#FFF3C4", color: "#173126", border: "1px solid #EADFBF", fontWeight: 900 }}
                     />
                     <Chip
-                      label={`Progress ${student.progressPercent || 0}%`}
+                      label={`Canvas ${canvasProgress.completionPercent}%`}
                       size="small"
                       sx={{ bgcolor: "#edf7ff", color: "#1a4e8a", fontWeight: 900 }}
                     />
@@ -436,6 +506,57 @@ const StudentManagement = () => {
                       <Chip label={student.phone} size="small" sx={{ bgcolor: "#fffaf0", color: "#173126", fontWeight: 900 }} />
                     )}
                   </Stack>
+
+                  <Box
+                    sx={{
+                      mt: 2,
+                      p: 1.6,
+                      borderRadius: "16px",
+                      border: "1px solid #D8EAC7",
+                      background: "linear-gradient(135deg, #FFFFFF 0%, #F6FFE8 100%)",
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+                      <Typography sx={{ color: "#173126", fontWeight: 950 }}>Canvas learning progress</Typography>
+                      <Typography sx={{ color: "#FF7A1A", fontWeight: 950 }}>{canvasProgress.completionPercent}%</Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.max(0, Math.min(100, canvasProgress.completionPercent))}
+                      sx={{
+                        my: 1,
+                        height: 8,
+                        borderRadius: 999,
+                        bgcolor: "rgba(216, 234, 199, 0.72)",
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 999,
+                          background: "linear-gradient(135deg, #FF7A1A, #A7E957)",
+                        },
+                      }}
+                    />
+                    <Stack direction="row" flexWrap="wrap" gap={1}>
+                      <Chip
+                        label={`${canvasProgress.completedCanvasItems}/${canvasProgress.totalAvailableItems} items complete`}
+                        size="small"
+                        sx={{ bgcolor: "#FFFFFF", color: "#173126", border: "1px solid #EADFBF", fontWeight: 900 }}
+                      />
+                      <Chip
+                        label={`${canvasProgress.quizAttempts} quiz attempt${canvasProgress.quizAttempts === 1 ? "" : "s"}`}
+                        size="small"
+                        sx={{ bgcolor: "#FFF3C4", color: "#173126", border: "1px solid #EADFBF", fontWeight: 900 }}
+                      />
+                      <Chip
+                        label={latestQuizText}
+                        size="small"
+                        sx={{ bgcolor: "#DDFBD2", color: "#173126", border: "1px solid #BDE58D", fontWeight: 900 }}
+                      />
+                    </Stack>
+                    {topModule && (
+                      <Typography sx={{ mt: 1, color: "#56685D", fontWeight: 850 }}>
+                        Top module: {topModule.moduleTitle || topModule.module_title || "Canvas module"}
+                      </Typography>
+                    )}
+                  </Box>
 
                   <Divider sx={{ my: 2, borderColor: "rgba(234, 214, 167, 0.86)" }} />
 
