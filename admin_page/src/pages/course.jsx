@@ -16,6 +16,7 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  MenuItem,
   Snackbar,
   Tab,
   Tabs,
@@ -116,6 +117,7 @@ const CourseManagement = () => {
   const [resourcesByCourse, setResourcesByCourse] = useState({});
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [resourceUploading, setResourceUploading] = useState(false);
+  const [resourceModuleId, setResourceModuleId] = useState("");
 
   const showMessage = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -144,16 +146,21 @@ const CourseManagement = () => {
     }
   }, []);
 
-  const loadResourcesForCourse = useCallback(async (courseId) => {
-    if (!courseId) return;
+  const loadResourcesForCourse = useCallback(async (courseId, moduleId) => {
+    if (!courseId || !moduleId) return;
     setResourcesLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/resources`);
+      const response = await fetch(
+        `${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/resources?moduleId=${encodeURIComponent(moduleId)}`
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to load resources.");
       setResourcesByCourse((prev) => ({
         ...prev,
-        [courseId]: Array.isArray(data.resources) ? data.resources : [],
+        [courseId]: {
+          ...(prev[courseId] || {}),
+          [moduleId]: Array.isArray(data.resources) ? data.resources : [],
+        },
       }));
     } catch (error) {
       showMessage(error.message, "error");
@@ -165,18 +172,18 @@ const CourseManagement = () => {
   const handleResourceUpload = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file || !selectedCourse) return;
+    if (!file || !selectedCourse || !resourceModuleId) return;
     setResourceUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       const response = await fetch(
-        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources`,
+        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/modules/${encodeURIComponent(resourceModuleId)}/resources`,
         { method: "POST", body: formData }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to upload resource.");
-      await loadResourcesForCourse(selectedCourse.course_id);
+      await loadResourcesForCourse(selectedCourse.course_id, resourceModuleId);
       showMessage("Resource uploaded.");
     } catch (error) {
       showMessage(error.message, "error");
@@ -186,16 +193,16 @@ const CourseManagement = () => {
   };
 
   const handleResourceDelete = async (resource) => {
-    if (!selectedCourse || !resource) return;
+    if (!selectedCourse || !resource || !resourceModuleId) return;
     if (!window.confirm(`Delete "${resource.original_name}"? This cannot be undone.`)) return;
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources/${encodeURIComponent(resource.resource_id)}`,
+        `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/modules/${encodeURIComponent(resourceModuleId)}/resources/${encodeURIComponent(resource.resource_id)}`,
         { method: "DELETE" }
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || "Unable to delete resource.");
-      await loadResourcesForCourse(selectedCourse.course_id);
+      await loadResourcesForCourse(selectedCourse.course_id, resourceModuleId);
       showMessage("Resource deleted.");
     } catch (error) {
       showMessage(error.message, "error");
@@ -203,8 +210,8 @@ const CourseManagement = () => {
   };
 
   const buildResourceDownloadUrl = (resource) => {
-    if (!selectedCourse || !resource) return "#";
-    return `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/resources/${encodeURIComponent(resource.resource_id)}/download`;
+    if (!selectedCourse || !resource || !resourceModuleId) return "#";
+    return `${API_BASE_URL}/api/courses/${encodeURIComponent(selectedCourse.course_id)}/modules/${encodeURIComponent(resourceModuleId)}/resources/${encodeURIComponent(resource.resource_id)}/download`;
   };
 
   useEffect(() => {
@@ -215,14 +222,31 @@ const CourseManagement = () => {
   useEffect(() => {
     if (!selectedCourse?.course_id) return;
     loadModulesForCourse(selectedCourse.course_id);
-    loadResourcesForCourse(selectedCourse.course_id);
-  }, [selectedCourse?.course_id, loadModulesForCourse, loadResourcesForCourse]);
+  }, [selectedCourse?.course_id, loadModulesForCourse]);
 
   const modulesForSelected = useMemo(() => {
     if (!selectedCourse) return [];
     const entry = modulesByCourse[selectedCourse.course_id];
     return Array.isArray(entry) ? entry : [];
   }, [modulesByCourse, selectedCourse]);
+
+  useEffect(() => {
+    if (!selectedCourse?.course_id) {
+      setResourceModuleId("");
+      return;
+    }
+    const nextDefault = modulesForSelected[0]?.id ? String(modulesForSelected[0].id) : "";
+    setResourceModuleId((prev) => {
+      if (!prev) return nextDefault;
+      const stillValid = modulesForSelected.some((m) => String(m.id) === String(prev));
+      return stillValid ? prev : nextDefault;
+    });
+  }, [modulesForSelected, selectedCourse?.course_id]);
+
+  useEffect(() => {
+    if (!selectedCourse?.course_id || !resourceModuleId) return;
+    loadResourcesForCourse(selectedCourse.course_id, resourceModuleId);
+  }, [selectedCourse?.course_id, resourceModuleId, loadResourcesForCourse]);
 
   const sortedCourses = useMemo(() => {
     return courses
@@ -786,12 +810,26 @@ const CourseManagement = () => {
                       <Typography variant="h6" sx={{ fontWeight: 800 }}>
                         Course resources
                       </Typography>
+                      <TextField
+                        size="small"
+                        select
+                        label="Module"
+                        value={resourceModuleId}
+                        onChange={(e) => setResourceModuleId(e.target.value)}
+                        sx={{ minWidth: 220 }}
+                      >
+                        {modulesForSelected.map((m, idx) => (
+                          <MenuItem key={m.id} value={String(m.id)}>
+                            Module {idx + 1}: {m.title}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                       <Button
                         variant="contained"
                         component="label"
                         color="primary"
                         startIcon={<CloudUploadOutlinedIcon />}
-                        disabled={resourceUploading}
+                        disabled={resourceUploading || !resourceModuleId}
                         sx={{ textTransform: "none", fontWeight: 700 }}
                       >
                         {resourceUploading ? "Uploading…" : "Upload file"}
@@ -806,7 +844,7 @@ const CourseManagement = () => {
                       Upload PDFs, documents, slides, images, or videos. Approved guides can download these from the mobile app.
                     </Typography>
                     {(() => {
-                      const resourceList = resourcesByCourse[selectedCourse.course_id] || [];
+                      const resourceList = (resourcesByCourse[selectedCourse.course_id] || {})[resourceModuleId] || [];
                       if (resourcesLoading && resourceList.length === 0) {
                         return (
                           <Typography variant="body2" color="text.secondary">Loading resources…</Typography>
@@ -826,7 +864,7 @@ const CourseManagement = () => {
                           >
                             <Typography sx={{ fontWeight: 700 }}>No resources yet</Typography>
                             <Typography variant="body2" sx={{ mt: 0.5 }}>
-                              Click "Upload file" to add the first resource.
+                              {resourceModuleId ? 'Click "Upload file" to add the first resource for this module.' : 'Choose a module to view resources.'}
                             </Typography>
                           </Box>
                         );

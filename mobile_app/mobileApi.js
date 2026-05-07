@@ -1,7 +1,19 @@
 const toJson = async (res) => {
-  const data = await res.json().catch(() => ({}));
+  const url = res?.url || "unknown-url";
+  const contentType = String(res.headers?.get("content-type") || "").toLowerCase();
+
+  let data = {};
+  if (contentType.includes("application/json")) {
+    data = await res.json().catch(() => ({}));
+  } else {
+    // Some servers return HTML/text on errors (e.g. 404). Capture a short snippet.
+    const text = await res.text().catch(() => "");
+    data = text ? { message: text.slice(0, 180) } : {};
+  }
+
   if (!res.ok) {
-    throw new Error(data.error || data.message || `Request failed (${res.status})`);
+    const msg = data.error || data.message || `Request failed (${res.status})`;
+    throw new Error(`${msg} [${res.status}] ${url}`);
   }
   return data;
 };
@@ -9,7 +21,10 @@ const toJson = async (res) => {
 const contentBaseFromAuthBase = (authBase) => {
   // Auth server usually runs on :4000 while admin/content server is :4001.
   if (!authBase) return "http://localhost:4001";
-  return authBase.replace(/:4000(?=\/|$)/, ":4001");
+  const normalized = String(authBase)
+    .replace(/\.4000(?=\/|$)/, ":4000")
+    .replace(/\.4001(?=\/|$)/, ":4001");
+  return normalized.replace(/:4000(?=\/|$)/, ":4001");
 };
 
 export const mobileContentApi = (authBaseUrl) => {
@@ -43,6 +58,14 @@ export const mobileContentApi = (authBaseUrl) => {
     },
     getCertificates: async (userId) => {
       const res = await fetch(`${base}/api/mobile/certificates/${encodeURIComponent(userId)}`);
+      return toJson(res);
+    },
+    requestCertificate: async (userId, courseId) => {
+      const res = await fetch(`${base}/api/mobile/certificates/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, courseId }),
+      });
       return toJson(res);
     },
     getNotifications: async (userId) => {
@@ -101,13 +124,13 @@ export const mobileContentApi = (authBaseUrl) => {
       });
       return toJson(res);
     },
-    getCourseResources: async (courseId, userId) => {
+    getModuleResources: async (courseId, moduleId, userId) => {
       const res = await fetch(
-        `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/resources?userId=${encodeURIComponent(userId)}`
+        `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/modules/${encodeURIComponent(moduleId)}/resources?userId=${encodeURIComponent(userId)}`
       );
       return toJson(res);
     },
-    uploadCourseResource: async (courseId, userId, file) => {
+    uploadModuleResource: async (courseId, moduleId, userId, file) => {
       const formData = new FormData();
       formData.append("userId", String(userId));
 
@@ -136,13 +159,13 @@ export const mobileContentApi = (authBaseUrl) => {
       }
 
       const res = await fetch(
-        `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/resources`,
+        `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/modules/${encodeURIComponent(moduleId)}/resources`,
         { method: "POST", body: formData }
       );
       return toJson(res);
     },
-    getCourseResourceDownloadUrl: (courseId, resourceId, userId) =>
-      `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/resources/${encodeURIComponent(resourceId)}/download?userId=${encodeURIComponent(userId)}`,
+    getModuleResourceDownloadUrl: (courseId, moduleId, resourceId, userId) =>
+      `${base}/api/mobile/courses/${encodeURIComponent(courseId)}/modules/${encodeURIComponent(moduleId)}/resources/${encodeURIComponent(resourceId)}/download?userId=${encodeURIComponent(userId)}`,
   };
 };
 

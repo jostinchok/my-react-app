@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar'
 import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
+import { ResizeMode, Video } from 'expo-av'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Animated, Image, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Animated, Image, Linking, Modal, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import AuthScreens from './AuthScreens'
 import { API_BASE_URL_STORAGE_KEY, getApiBaseUrl } from './apiConfig'
@@ -27,8 +28,7 @@ const palette = {
 
 const sideMenuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'D' },
-  { id: 'modules', label: 'My Modules', icon: 'M' },
-  { id: 'module', label: 'Module Details', icon: 'I' },
+  { id: 'modules', label: 'Courses', icon: 'M' },
   { id: 'progress', label: 'Progress', icon: 'P' },
   { id: 'certificates', label: 'Certificates', icon: 'C' },
   { id: 'resources', label: 'Resources', icon: 'R' },
@@ -56,6 +56,7 @@ const getTodayIsoDate = () => {
 function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const api = useMemo(() => mobileContentApi(apiBaseUrl), [apiBaseUrl])
   const [isDataLoading, setIsDataLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeMenuId, setActiveMenuId] = useState('dashboard')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -63,6 +64,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const [coursesCatalog, setCoursesCatalog] = useState([])
   const [selectedModuleId, setSelectedModuleId] = useState(null)
   const [activeCourseId, setActiveCourseId] = useState(null)
+  const [openedCourseId, setOpenedCourseId] = useState(null)
   const [moduleSearch, setModuleSearch] = useState('')
   const [courseStatusFilter, setCourseStatusFilter] = useState('all')
   const [moduleProgress, setModuleProgress] = useState({})
@@ -75,7 +77,11 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const [scheduleItems, setScheduleItems] = useState([])
   const [courseActionLoading, setCourseActionLoading] = useState(null)
   const [resourceCourseId, setResourceCourseId] = useState(null)
+  const [resourceModuleId, setResourceModuleId] = useState(null)
   const [resources, setResources] = useState([])
+  const [courseCertificates, setCourseCertificates] = useState([])
+  const [selectedCertificateCourseId, setSelectedCertificateCourseId] = useState(null)
+  const [certificateActionLoading, setCertificateActionLoading] = useState(null)
   const [resourcesLoading, setResourcesLoading] = useState(false)
   const [resourceUploading, setResourceUploading] = useState(false)
   const [scheduleForm, setScheduleForm] = useState({ date: getTodayIsoDate(), title: '', location: '', type: 'Reminder' })
@@ -147,9 +153,9 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     [modules, selectedModuleId]
   )
   const modulesForActiveCourse = useMemo(() => {
-    if (!activeCourseId) return []
-    return modules.filter((m) => String(m.course_id || '') === String(activeCourseId))
-  }, [modules, activeCourseId])
+    if (!openedCourseId) return []
+    return modules.filter((m) => String(m.course_id || '') === String(openedCourseId))
+  }, [modules, openedCourseId])
   const modulesWithState = useMemo(
     () =>
       modules.map((m) => {
@@ -159,11 +165,58 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       }),
     [modules, moduleProgress]
   )
+  const approvedCourses = useMemo(
+    () => (coursesCatalog || []).filter((c) => c.enrollment_status === 'approved'),
+    [coursesCatalog]
+  )
+  const approvedCourseIdSet = useMemo(
+    () => new Set(approvedCourses.map((c) => String(c.course_id))),
+    [approvedCourses]
+  )
+  const approvedModulesWithState = useMemo(
+    () => modulesWithState.filter((m) => approvedCourseIdSet.has(String(m.course_id || ''))),
+    [modulesWithState, approvedCourseIdSet]
+  )
+  const courseProgressSummaries = useMemo(
+    () =>
+      approvedCourses.map((course) => {
+        const courseModules = approvedModulesWithState.filter((m) => String(m.course_id || '') === String(course.course_id))
+        const totalModules = courseModules.length
+        const completedModules = courseModules.filter((m) => m.progress === 100).length
+        const averageProgress =
+          totalModules > 0 ? Math.round(courseModules.reduce((sum, m) => sum + m.progress, 0) / totalModules) : 0
+        return {
+          ...course,
+          modules: courseModules,
+          totalModules,
+          completedModules,
+          averageProgress,
+          isCompleted: totalModules > 0 && completedModules === totalModules,
+        }
+      }),
+    [approvedCourses, approvedModulesWithState]
+  )
   const overallProgress = useMemo(() => {
-    if (!modulesWithState.length) return 0
-    return Math.round(modulesWithState.reduce((sum, m) => sum + m.progress, 0) / modulesWithState.length)
-  }, [modulesWithState])
-  const certificates = useMemo(() => modulesWithState.filter((m) => m.progress === 100), [modulesWithState])
+    if (!courseProgressSummaries.length) return 0
+    return Math.round(
+      courseProgressSummaries.reduce((sum, course) => sum + course.averageProgress, 0) / courseProgressSummaries.length
+    )
+  }, [courseProgressSummaries])
+  const completedModuleCount = useMemo(
+    () => approvedModulesWithState.filter((m) => m.progress === 100).length,
+    [approvedModulesWithState]
+  )
+  const completedCourseCount = useMemo(
+    () => courseProgressSummaries.filter((course) => course.isCompleted).length,
+    [courseProgressSummaries]
+  )
+  const progressStrengthMap = useMemo(() => {
+    const groups = [...new Set(approvedModulesWithState.map((m) => m.category))]
+    return groups.map((category) => {
+      const list = approvedModulesWithState.filter((m) => m.category === category)
+      return { category, avg: Math.round(list.reduce((sum, m) => sum + m.progress, 0) / list.length) }
+    })
+  }, [approvedModulesWithState])
   const unreadCount = notifications.filter((n) => !n.read).length
   const strengthMap = useMemo(() => {
     const groups = [...new Set(modulesWithState.map((m) => m.category))]
@@ -183,16 +236,34 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       return queryMatch && statusMatch
     })
   }, [coursesCatalog, moduleSearch, courseStatusFilter])
+  const visibleCourseCertificates = useMemo(
+    () => (courseCertificates || []).filter((course) => Number(course.totalModules) > 0),
+    [courseCertificates]
+  )
+  const modulesForCertificateCourse = useMemo(() => {
+    if (!selectedCertificateCourseId) return []
+    return modulesWithState.filter((m) => String(m.course_id || '') === String(selectedCertificateCourseId))
+  }, [modulesWithState, selectedCertificateCourseId])
+
+  useEffect(() => {
+    if (!visibleCourseCertificates.length) {
+      if (selectedCertificateCourseId !== null) setSelectedCertificateCourseId(null)
+      return
+    }
+    const exists = visibleCourseCertificates.some((c) => String(c.courseId) === String(selectedCertificateCourseId))
+    if (!exists) setSelectedCertificateCourseId(visibleCourseCertificates[0].courseId)
+  }, [visibleCourseCertificates, selectedCertificateCourseId])
 
   const refreshMobileData = async () => {
     const userId = sessionUser?.user_id
     if (!userId) return
-    const [moduleRes, coursesRes, notificationsRes, scheduleRes, profileRes] = await Promise.all([
+    const [moduleRes, coursesRes, notificationsRes, scheduleRes, profileRes, certificatesRes] = await Promise.all([
       api.getModules(userId),
       api.getCourses(userId),
       api.getNotifications(userId),
       api.getSchedule(userId),
       api.getProfile(userId),
+      api.getCertificates(userId),
     ])
 
     const rawModuleList = Array.isArray(moduleRes.modules) ? moduleRes.modules : []
@@ -232,6 +303,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     )
     setQuizPosition(Object.fromEntries(moduleList.map((m) => [m.id, 0])))
     setCoursesCatalog(Array.isArray(coursesRes.courses) ? coursesRes.courses : [])
+    setCourseCertificates(Array.isArray(certificatesRes.certificates) ? certificatesRes.certificates : [])
     setNotifications(Array.isArray(notificationsRes.notifications) ? notificationsRes.notifications : [])
     setScheduleItems(Array.isArray(scheduleRes.scheduleItems) ? scheduleRes.scheduleItems : [])
 
@@ -298,7 +370,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     const module = modules.find((m) => m.id === moduleId)
     if (module?.course_id) setActiveCourseId(module.course_id)
     setSelectedModuleId(moduleId)
-    setActiveMenuId('module')
+    setActiveMenuId('modules')
     setActiveTab('module')
   }
 
@@ -308,6 +380,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       Alert.alert('No modules yet', 'This course has no published modules yet.')
       return
     }
+    setOpenedCourseId(courseId)
     setActiveCourseId(courseId)
     openModuleDetails(courseModules[0].id)
   }
@@ -324,6 +397,17 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       Alert.alert('Request failed', e.message || 'Unable to submit request.')
     } finally {
       setCourseActionLoading(null)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshMobileData()
+    } catch (e) {
+      Alert.alert('Refresh failed', e.message || 'Unable to fetch latest updates.')
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -653,9 +737,18 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     Alert.alert('Saved', 'Profile updated successfully.')
   }
 /**Download Certificate*/
-  const downloadCertificate = (moduleItem) => {
-    if (moduleItem.progress < 100) return
-    Alert.alert('Download started', `${moduleItem.title} certificate demo download.`)
+  const requestCertificate = async (courseId) => {
+    if (!courseId || !sessionUser?.user_id) return
+    setCertificateActionLoading(courseId)
+    try {
+      await api.requestCertificate(sessionUser.user_id, courseId)
+      await refreshMobileData()
+      Alert.alert('Request sent', 'Your certificate request has been sent to admin for approval.')
+    } catch (e) {
+      Alert.alert('Request failed', e.message || 'Unable to submit certificate request.')
+    } finally {
+      setCertificateActionLoading(null)
+    }
   }
 /**Mark Read*/
   const markRead = async (id) => {
@@ -672,9 +765,9 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   }
   const removeNotification = (id) => setNotifications((prev) => prev.filter((n) => n.id !== id))
 
-  const approvedCourses = useMemo(
-    () => (coursesCatalog || []).filter((c) => c.enrollment_status === 'approved'),
-    [coursesCatalog]
+  const selectedResourceCourse = useMemo(
+    () => approvedCourses.find((c) => String(c.course_id) === String(resourceCourseId)) || null,
+    [approvedCourses, resourceCourseId]
   )
 
   const formatBytes = (bytes) => {
@@ -701,14 +794,41 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     }
   }, [approvedCourses, resourceCourseId])
 
-  const loadResources = async (courseId) => {
-    if (!courseId || !sessionUser?.user_id) {
+  const resourceModulesForCourse = useMemo(() => {
+    if (!resourceCourseId) return []
+    return (modules || []).filter((m) => String(m.course_id || '') === String(resourceCourseId))
+  }, [modules, resourceCourseId])
+  const selectedResourceModule = useMemo(
+    () => resourceModulesForCourse.find((m) => Number(m.id) === Number(resourceModuleId)) || null,
+    [resourceModulesForCourse, resourceModuleId]
+  )
+
+  useEffect(() => {
+    if (!resourceCourseId) {
+      setResourceModuleId(null)
+      return
+    }
+    const valid = resourceModulesForCourse.some((m) => Number(m.id) === Number(resourceModuleId))
+    if (!valid) {
+      setResourceModuleId(resourceModulesForCourse[0]?.id || null)
+    }
+  }, [resourceCourseId, resourceModuleId, resourceModulesForCourse])
+
+  const loadResources = async (courseId, moduleId) => {
+    if (!courseId || !moduleId || !sessionUser?.user_id) {
+      setResources([])
+      return
+    }
+    const moduleStillInCourse = (modules || []).some(
+      (m) => String(m.course_id || '') === String(courseId) && Number(m.id) === Number(moduleId)
+    )
+    if (!moduleStillInCourse) {
       setResources([])
       return
     }
     setResourcesLoading(true)
     try {
-      const data = await api.getCourseResources(courseId, sessionUser.user_id)
+      const data = await api.getModuleResources(courseId, moduleId, sessionUser.user_id)
       setResources(Array.isArray(data.resources) ? data.resources : [])
     } catch (e) {
       setResources([])
@@ -720,12 +840,12 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
 
   useEffect(() => {
     if (activeTab !== 'resources') return
-    loadResources(resourceCourseId)
+    loadResources(resourceCourseId, resourceModuleId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, resourceCourseId, sessionUser?.user_id])
+  }, [activeTab, resourceCourseId, resourceModuleId, sessionUser?.user_id])
 
   const handleResourceUpload = async () => {
-    if (!resourceCourseId || !sessionUser?.user_id) {
+    if (!resourceCourseId || !resourceModuleId || !sessionUser?.user_id) {
       Alert.alert('Choose course', 'Please select an approved course first.')
       return
     }
@@ -735,8 +855,8 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       const file = result.assets?.[0]
       if (!file) return
       setResourceUploading(true)
-      await api.uploadCourseResource(resourceCourseId, sessionUser.user_id, file)
-      await loadResources(resourceCourseId)
+      await api.uploadModuleResource(resourceCourseId, resourceModuleId, sessionUser.user_id, file)
+      await loadResources(resourceCourseId, resourceModuleId)
       Alert.alert('Uploaded', `${file.name} was uploaded.`)
     } catch (e) {
       Alert.alert('Upload failed', e.message || 'Unable to upload file.')
@@ -746,8 +866,8 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   }
 
   const handleResourceDownload = async (resource) => {
-    if (!resourceCourseId || !sessionUser?.user_id || !resource) return
-    const url = api.getCourseResourceDownloadUrl(resourceCourseId, resource.resource_id, sessionUser.user_id)
+    if (!resourceCourseId || !resourceModuleId || !sessionUser?.user_id || !resource) return
+    const url = api.getModuleResourceDownloadUrl(resourceCourseId, resourceModuleId, resource.resource_id, sessionUser.user_id)
     try {
       const supported = await Linking.canOpenURL(url)
       if (!supported) {
@@ -771,14 +891,29 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
             <Text style={styles.topTitle}>SFC Guide Center</Text>
           </View>
         </View>
-        {/* Clickable top-right profile icon as requested */}
-        <Pressable onPress={openProfileFromHeader} style={styles.headerProfileBtn}>
-          <Text style={styles.headerProfileIcon}>{profileInitial}</Text>
-        </Pressable>
+        <View style={styles.topbarRight}>
+          <Pressable onPress={handleRefresh} style={styles.headerRefreshBtn} disabled={isRefreshing || isDataLoading}>
+            <Text style={styles.headerRefreshText}>{isRefreshing ? '...' : '↻'}</Text>
+          </Pressable>
+          {/* Clickable top-right profile icon as requested */}
+          <Pressable onPress={openProfileFromHeader} style={styles.headerProfileBtn}>
+            <Text style={styles.headerProfileIcon}>{profileInitial}</Text>
+          </Pressable>
+        </View>
       </View>
       
 
-      <ScrollView contentContainerStyle={styles.page}>
+      <ScrollView
+        contentContainerStyle={styles.page}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[palette.citrus]}
+            tintColor={palette.citrus}
+          />
+        }
+      >
         {isDataLoading && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Syncing data</Text>
@@ -821,19 +956,23 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
             </View>
             <View style={styles.grid2}>
               <StatCard label="Overall progress" value={`${overallProgress}%`} detail="Across all modules" />
-              <StatCard label="Completed modules" value={`${certificates.length}/${modulesWithState.length}`} detail="Lessons + quiz" />
-              <StatCard label="Certificates" value={`${certificates.length}`} detail="Ready for download" />
+              <StatCard label="Completed modules" value={`${completedModuleCount}/${modulesWithState.length}`} detail="Lessons + quiz" />
+              <StatCard label="Certificates" value={`${courseCertificates.filter((c) => c.requestStatus === 'approved' && c.certId).length}`} detail="Approved by admin" />
               <StatCard label="Unread updates" value={`${unreadCount}`} detail="Notifications pending" />
             </View>
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Active modules</Text>
-              {modulesWithState.map((m) => (
-                <Pressable key={m.id} style={styles.moduleRow} onPress={() => openModuleDetails(m.id)}>
-                  <View style={styles.rowThumb} />
-                  <View style={styles.rowBody}><Text style={styles.rowTitle}>{m.title}</Text><Text style={styles.rowMeta}>{m.park} - {m.duration}</Text></View>
-                  <Text style={styles.rowPct}>{m.progress}%</Text>
-                </Pressable>
-              ))}
+              {approvedModulesWithState.length === 0 ? (
+                <Text style={styles.rowMeta}>No active modules yet. Register and get approved for a course first.</Text>
+              ) : (
+                approvedModulesWithState.map((m) => (
+                  <Pressable key={m.id} style={styles.moduleRow} onPress={() => openModuleDetails(m.id)}>
+                    <View style={styles.rowThumb} />
+                    <View style={styles.rowBody}><Text style={styles.rowTitle}>{m.title}</Text><Text style={styles.rowMeta}>{m.park} - {m.duration}</Text></View>
+                    <Text style={styles.rowPct}>{m.progress}%</Text>
+                  </Pressable>
+                ))
+              )}
             </View>
             <View style={styles.roleCardsRow}>
               <RoleCard title="What user can do" items={['View assigned modules', 'Track progress and quizzes', 'Manage schedule reminders', 'Update profile']} />
@@ -845,7 +984,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
         {activeTab === 'modules' && (
           <View style={styles.stack}>
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>My Modules</Text>
+              <Text style={styles.sectionTitle}>Courses</Text>
               <Text style={styles.rowMeta}>Browse all courses. Register first, then wait for admin approval to access modules.</Text>
               <TextInput style={styles.input} placeholder="Search courses..." value={moduleSearch} onChangeText={setModuleSearch} />
               <SelectLike title="Enrollment status" options={enrollmentStatusOptions} value={courseStatusFilter} onPick={setCourseStatusFilter} />
@@ -916,149 +1055,225 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
 
         {activeTab === 'module' && (
           <View style={styles.stack}>
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Course modules</Text>
-              {modulesForActiveCourse.length === 0 ? (
-                <Text style={styles.rowMeta}>No modules available for this course.</Text>
-              ) : (
-                modulesForActiveCourse.map((m) => (
-                  <Pressable key={`course-module-${m.id}`} style={styles.moduleRow} onPress={() => setSelectedModuleId(m.id)}>
-                    <View style={styles.rowBody}>
-                      <Text style={styles.rowTitle}>{m.title}</Text>
-                      <Text style={styles.rowMeta}>{m.duration} • {m.level}</Text>
-                    </View>
-                    <Text style={styles.rowPct}>{(moduleProgress[m.id] ?? m.progress)}%</Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-            <View style={styles.heroMini}>
-              <Text style={styles.heroKicker}>{selectedModule.category} / {selectedModule.park}</Text>
-              <Text style={styles.heroTitleMini}>{selectedModule.title}</Text>
-              <Text style={styles.heroBodyMini}>{selectedModule.subtitle}</Text>
-              <ProgressBar value={moduleProgress[selectedModule.id] ?? selectedModule.progress} />
-            </View>
-            {selectedModule.objectives?.length > 0 && (
+            {!openedCourseId ? (
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Learning objectives</Text>
-                {selectedModule.objectives.map((item, idx) => <Text key={`obj-${selectedModule.id}-${idx}`} style={styles.listText}>• {item}</Text>)}
+                <Text style={styles.sectionTitle}>Module details</Text>
+                <Text style={styles.rowMeta}>Open an approved course from Courses to view module details.</Text>
               </View>
-            )}
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Learning content</Text>
-              {getTrackableBlocks(selectedModule).map((block, index) => {
-                const checked = (completedSteps[selectedModule.id] || []).includes(index)
-                const label = block.title || (block.type === 'video' ? 'Video lesson' : block.type === 'image' ? 'Image lesson' : 'Lesson')
-                return (
-                  <View key={`content-${selectedModule.id}-${index}`} style={styles.blockCard}>
-                    <Pressable onPress={() => toggleStep(selectedModule.id, index)} style={styles.checkItem}>
-                      <Text style={styles.checkMark}>{checked ? '☑' : '☐'}</Text>
-                      <Text style={styles.listText}>{label}</Text>
+            ) : (
+              <>
+                <View style={styles.card}>
+                  <View style={styles.rowEnd}>
+                    <Text style={styles.sectionTitle}>Course modules</Text>
+                    <Pressable style={styles.secondaryButton} onPress={() => goToTab('modules')}>
+                      <Text style={styles.secondaryText}>Back to Courses</Text>
                     </Pressable>
-                    {block.type === 'text' && !!block.content && (
-                      <Text style={styles.rowMeta}>{block.content}</Text>
-                    )}
-                    {block.type === 'image' && !!block.media_url && (
-                      <View style={styles.lessonMediaFrame}>
-                        <Image source={{ uri: mediaUrl(block.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
-                      </View>
-                    )}
-                    {block.type === 'video' && !!block.media_url && (
-                      Platform.OS === 'web' ? (
-                        <video src={mediaUrl(block.media_url)} controls style={{ width: '100%', borderRadius: 10, marginTop: 6 }} />
-                      ) : (
-                        <Text style={styles.rowMeta}>Video URL: {mediaUrl(block.media_url)}</Text>
-                      )
-                    )}
-                    {(block.caption || block.type !== 'text') && !!block.caption && (
-                      <Text style={styles.rowMeta}>{block.caption}</Text>
-                    )}
                   </View>
-                )
-              })}
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Scenario quiz</Text>
-              {selectedModule.quiz.length > 0 ? (
-                <>
-                  <Text style={styles.quizStepLabel}>Question {(quizPosition[selectedModule.id] || 0) + 1} / {selectedModule.quiz.length}</Text>
-                  <Text style={styles.listText}>{selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.question}</Text>
-                  {(selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.options || []).map((opt, i) => (
-                    <Pressable
-                      key={`opt-${selectedModule.id}-${quizPosition[selectedModule.id] || 0}-${i}`}
-                      onPress={() => selectQuizAnswer(selectedModule.id, quizPosition[selectedModule.id] || 0, i)}
-                      style={[
-                        styles.checkItem,
-                        quizResults[selectedModule.id]?.submitted &&
-                        selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex === i
-                          ? styles.quizCorrect
-                          : undefined,
-                        quizResults[selectedModule.id]?.submitted &&
-                        Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i &&
-                        selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex !== i
-                          ? styles.quizWrong
-                          : undefined,
-                      ]}
-                    >
-                      <Text style={styles.checkMark}>{Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i ? '◉' : '○'}</Text>
-                      <Text style={styles.listText}>{opt}</Text>
-                    </Pressable>
-                  ))}
-                  <View style={styles.quizNavRow}>
-                    <Pressable
-                      style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === 0 && styles.disabledButton]}
-                      onPress={() => moveQuizQuestion(selectedModule.id, -1)}
-                      disabled={(quizPosition[selectedModule.id] || 0) === 0}
-                    >
-                      <Text style={styles.secondaryText}>Previous</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1 && styles.disabledButton]}
-                      onPress={() => moveQuizQuestion(selectedModule.id, 1)}
-                      disabled={(quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1}
-                    >
-                      <Text style={styles.secondaryText}>Next</Text>
-                    </Pressable>
-                    <Pressable style={styles.primaryButton} onPress={submitQuiz}><Text style={styles.primaryText}>Submit</Text></Pressable>
-                  </View>
-                </>
-              ) : (
-                <Text style={styles.rowMeta}>No quiz is available for this module yet.</Text>
-              )}
-              {quizScores[selectedModule.id] && <Text style={styles.scoreText}>Score: {quizScores[selectedModule.id].score}%</Text>}
-              {quizResults[selectedModule.id]?.submitted && (
-                <Text style={styles.rowMeta}>
-                  {quizScores[selectedModule.id]?.passed ? 'All answers are correct.' : 'Review highlighted answers and try again.'}
-                </Text>
-              )}
-              {quizScores[selectedModule.id] && (
-                <View style={styles.quizChartWrap}>
-                  <QuizPieChart score={quizScores[selectedModule.id].score} />
+                  {modulesForActiveCourse.length === 0 ? (
+                    <Text style={styles.rowMeta}>No modules available for this course.</Text>
+                  ) : (
+                    modulesForActiveCourse.map((m) => (
+                      <Pressable key={`course-module-${m.id}`} style={styles.moduleRow} onPress={() => setSelectedModuleId(m.id)}>
+                        <View style={styles.rowBody}>
+                          <Text style={styles.rowTitle}>{m.title}</Text>
+                          <Text style={styles.rowMeta}>{m.duration} • {m.level}</Text>
+                        </View>
+                        <Text style={styles.rowPct}>{(moduleProgress[m.id] ?? m.progress)}%</Text>
+                      </Pressable>
+                    ))
+                  )}
                 </View>
-              )}
-            </View>
+                <View style={styles.heroMini}>
+                  <Text style={styles.heroKicker}>{selectedModule.category} / {selectedModule.park}</Text>
+                  <Text style={styles.heroTitleMini}>{selectedModule.title}</Text>
+                  <Text style={styles.heroBodyMini}>{selectedModule.subtitle}</Text>
+                  <ProgressBar value={moduleProgress[selectedModule.id] ?? selectedModule.progress} />
+                </View>
+                {selectedModule.objectives?.length > 0 && (
+                  <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>Learning objectives</Text>
+                    {selectedModule.objectives.map((item, idx) => <Text key={`obj-${selectedModule.id}-${idx}`} style={styles.listText}>• {item}</Text>)}
+                  </View>
+                )}
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>Learning content</Text>
+                  {getTrackableBlocks(selectedModule).map((block, index) => {
+                    const checked = (completedSteps[selectedModule.id] || []).includes(index)
+                    const label = block.title || (block.type === 'video' ? 'Video lesson' : block.type === 'image' ? 'Image lesson' : 'Lesson')
+                    return (
+                      <View key={`content-${selectedModule.id}-${index}`} style={styles.blockCard}>
+                        <Pressable onPress={() => toggleStep(selectedModule.id, index)} style={styles.checkItem}>
+                          <Text style={styles.checkMark}>{checked ? '☑' : '☐'}</Text>
+                          <Text style={styles.listText}>{label}</Text>
+                        </Pressable>
+                        {block.type === 'text' && !!block.content && (
+                          <Text style={styles.rowMeta}>{block.content}</Text>
+                        )}
+                        {block.type === 'image' && !!block.media_url && (
+                          <View style={styles.lessonMediaFrame}>
+                            <Image source={{ uri: mediaUrl(block.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
+                          </View>
+                        )}
+                        {block.type === 'video' && !!block.media_url && (
+                          Platform.OS === 'web' ? (
+                            <video src={mediaUrl(block.media_url)} controls style={{ width: '100%', borderRadius: 10, marginTop: 6 }} />
+                          ) : (
+                            <View style={styles.lessonMediaFrame}>
+                              <Video
+                                source={{ uri: mediaUrl(block.media_url) }}
+                                useNativeControls
+                                resizeMode={ResizeMode.CONTAIN}
+                                style={styles.lessonMediaVideo}
+                                shouldPlay={false}
+                              />
+                            </View>
+                          )
+                        )}
+                        {(block.caption || block.type !== 'text') && !!block.caption && (
+                          <Text style={styles.rowMeta}>{block.caption}</Text>
+                        )}
+                      </View>
+                    )
+                  })}
+                </View>
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>Scenario quiz</Text>
+                  {selectedModule.quiz.length > 0 ? (
+                    <>
+                      <Text style={styles.quizStepLabel}>Question {(quizPosition[selectedModule.id] || 0) + 1} / {selectedModule.quiz.length}</Text>
+                      <Text style={styles.listText}>{selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.question}</Text>
+                      {(selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.options || []).map((opt, i) => (
+                        <Pressable
+                          key={`opt-${selectedModule.id}-${quizPosition[selectedModule.id] || 0}-${i}`}
+                          onPress={() => selectQuizAnswer(selectedModule.id, quizPosition[selectedModule.id] || 0, i)}
+                          style={[
+                            styles.checkItem,
+                            quizResults[selectedModule.id]?.submitted &&
+                            selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex === i
+                              ? styles.quizCorrect
+                              : undefined,
+                            quizResults[selectedModule.id]?.submitted &&
+                            Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i &&
+                            selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex !== i
+                              ? styles.quizWrong
+                              : undefined,
+                          ]}
+                        >
+                          <Text style={styles.checkMark}>{Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i ? '◉' : '○'}</Text>
+                          <Text style={styles.listText}>{opt}</Text>
+                        </Pressable>
+                      ))}
+                      <View style={styles.quizNavRow}>
+                        <Pressable
+                          style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === 0 && styles.disabledButton]}
+                          onPress={() => moveQuizQuestion(selectedModule.id, -1)}
+                          disabled={(quizPosition[selectedModule.id] || 0) === 0}
+                        >
+                          <Text style={styles.secondaryText}>Previous</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1 && styles.disabledButton]}
+                          onPress={() => moveQuizQuestion(selectedModule.id, 1)}
+                          disabled={(quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1}
+                        >
+                          <Text style={styles.secondaryText}>Next</Text>
+                        </Pressable>
+                        <Pressable style={styles.primaryButton} onPress={submitQuiz}><Text style={styles.primaryText}>Submit</Text></Pressable>
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={styles.rowMeta}>No quiz is available for this module yet.</Text>
+                  )}
+                  {quizScores[selectedModule.id] && <Text style={styles.scoreText}>Score: {quizScores[selectedModule.id].score}%</Text>}
+                  {quizResults[selectedModule.id]?.submitted && (
+                    <Text style={styles.rowMeta}>
+                      {quizScores[selectedModule.id]?.passed ? 'All answers are correct.' : 'Review highlighted answers and try again.'}
+                    </Text>
+                  )}
+                  {quizScores[selectedModule.id] && (
+                    <View style={styles.quizChartWrap}>
+                      <QuizPieChart score={quizScores[selectedModule.id].score} />
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
           </View>
         )}
 
         {activeTab === 'progress' && (
           <View style={styles.stack}>
             <View style={styles.grid2}>
-              <StatCard label="Overall progress" value={`${overallProgress}%`} detail="All modules average" />
-              <StatCard label="Completed modules" value={`${certificates.length}`} detail="Full completion" />
+              <StatCard label="Overall progress" value={`${overallProgress}%`} detail="Approved courses average" />
+              <StatCard
+                label="Completed courses"
+                value={`${completedCourseCount}/${courseProgressSummaries.length}`}
+                detail="All modules completed"
+              />
+              <StatCard
+                label="Completed modules"
+                value={`${completedModuleCount}/${approvedModulesWithState.length}`}
+                detail="Approved courses only"
+              />
             </View>
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Module completion list</Text>
-              {modulesWithState.map((m) => (
-                <View key={m.id} style={styles.progressLine}>
-                  <Text style={styles.rowTitle}>{m.title}</Text>
-                  <ProgressBar value={m.progress} />
-                  <Text style={styles.rowPct}>{m.progress}%</Text>
-                </View>
-              ))}
+              <Text style={styles.sectionTitle}>Approved course progress</Text>
+              {courseProgressSummaries.length === 0 ? (
+                <Text style={styles.rowMeta}>No approved courses yet.</Text>
+              ) : (
+                courseProgressSummaries.map((course) => (
+                  <View key={`approved-course-${course.course_id}`} style={styles.progressLine}>
+                    <View style={styles.rowEnd}>
+                      <Text style={styles.rowTitle}>{course.course_name || `Course ${course.course_id}`}</Text>
+                      <Text style={[styles.inlineBadge, course.isCompleted ? styles.badgeSuccess : styles.badgePending]}>
+                        {course.isCompleted ? 'Completed' : 'In progress'}
+                      </Text>
+                    </View>
+                    <Text style={styles.rowMeta}>Course ID: {course.course_id}</Text>
+                    <Text style={styles.rowMeta}>
+                      Completed modules: {course.completedModules}/{course.totalModules}
+                    </Text>
+                    <ProgressBar value={course.averageProgress} />
+                    <Text style={styles.rowPct}>{course.averageProgress}%</Text>
+                  </View>
+                ))
+              )}
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Approved modules by course</Text>
+              {courseProgressSummaries.length === 0 ? (
+                <Text style={styles.rowMeta}>No module progress available.</Text>
+              ) : (
+                courseProgressSummaries.map((course) => (
+                  <View key={`approved-course-modules-${course.course_id}`} style={styles.progressCourseBlock}>
+                    <Text style={styles.rowTitle}>{course.course_name || `Course ${course.course_id}`}</Text>
+                    <Text style={styles.rowMeta}>Course ID: {course.course_id}</Text>
+                    {course.modules.length === 0 ? (
+                      <Text style={styles.rowMeta}>No modules published for this course.</Text>
+                    ) : (
+                      course.modules.map((m) => (
+                        <View key={`approved-module-${course.course_id}-${m.id}`} style={styles.progressModuleRow}>
+                          <View style={styles.rowBody}>
+                            <Text style={styles.rowTitle}>{m.title || `Module ${m.id}`}</Text>
+                            <Text style={styles.rowMeta}>Module ID: {m.id}</Text>
+                            <Text style={styles.rowMeta}>Course ID: {m.course_id || course.course_id}</Text>
+                          </View>
+                          <View style={styles.progressModuleRight}>
+                            <Text style={[styles.inlineBadge, m.progress === 100 ? styles.badgeSuccess : styles.badgeNeutral]}>
+                              {m.progress === 100 ? 'Completed' : 'In progress'}
+                            </Text>
+                            <Text style={styles.rowPct}>{m.progress}%</Text>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                ))
+              )}
             </View>
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Strength map</Text>
-              {strengthMap.map((s) => (
+              {progressStrengthMap.map((s) => (
                 <View key={s.category} style={styles.progressLine}>
                   <Text style={styles.rowTitle}>{s.category}</Text>
                   <ProgressBar value={s.avg} />
@@ -1073,33 +1288,54 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
           <View style={styles.stack}>
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Certificates</Text>
-              <Text style={styles.rowMeta}>Only completed modules unlock their certificate. Incomplete modules remain locked.</Text>
-              {modulesWithState.map((m) => (
-                <View key={m.id} style={[styles.certificateCard, m.progress < 100 && styles.certificateCardLocked]}>
+              <Text style={styles.rowMeta}>Certificate requests are available only after all modules in a course are completed. Admin approval is required before certificate issuance.</Text>
+              {visibleCourseCertificates.map((course) => {
+                const status = String(course.requestStatus || '').toLowerCase()
+                const isApproved = status === 'approved' && Boolean(course.certId)
+                const isPending = status === 'pending'
+                const canRequest = course.allModulesDone && !isApproved && !isPending
+                return (
+                <View key={course.courseId} style={[styles.certificateCard, !course.allModulesDone && styles.certificateCardLocked]}>
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowTitle}>{m.title}</Text>
-                    <Text style={styles.rowMeta}>{m.progress === 100 ? 'Certificate unlocked' : 'Certificate locked until module completion'}</Text>
+                    <Text style={styles.rowTitle}>{course.courseName}</Text>
+                    <Text style={styles.rowMeta}>{course.doneModules}/{course.totalModules} modules completed</Text>
                     <View style={styles.certificateMetaRow}>
-                      <Text style={[styles.certificateBadge, m.progress === 100 ? styles.certificateBadgeUnlocked : styles.certificateBadgeLocked]}>
-                        {m.progress === 100 ? 'Unlocked' : 'Locked'}
+                      <Text style={[styles.certificateBadge, isApproved ? styles.certificateBadgeUnlocked : styles.certificateBadgeLocked]}>
+                        {isApproved ? 'Approved' : isPending ? 'Pending approval' : course.allModulesDone ? 'Ready to request' : 'Locked'}
                       </Text>
-                      <Text style={styles.rowMeta}>{m.progress}% complete</Text>
+                      <Text style={styles.rowMeta}>{course.certificateCode || `Course ID: ${course.courseId}`}</Text>
                     </View>
                   </View>
                   <Pressable
-                    style={[styles.primaryButton, m.progress < 100 && styles.disabledButton]}
-                    onPress={() => downloadCertificate(m)}
-                    disabled={m.progress < 100}
+                    style={[styles.primaryButton, !canRequest && styles.disabledButton]}
+                    onPress={() => requestCertificate(course.courseId)}
+                    disabled={!canRequest || certificateActionLoading === course.courseId}
                   >
-                    <Text style={styles.primaryText}>{m.progress === 100 ? 'Download' : 'Locked'}</Text>
+                    <Text style={styles.primaryText}>
+                      {certificateActionLoading === course.courseId ? 'Sending...' : isApproved ? 'Issued' : isPending ? 'Pending' : canRequest ? 'Request Certificate' : 'Locked'}
+                    </Text>
                   </Pressable>
                 </View>
-              ))}
+              )})}
+              {visibleCourseCertificates.length === 0 && (
+                <Text style={styles.rowMeta}>No certificates yet. Certificates appear after admin creates badge/modules for a course.</Text>
+              )}
             </View>
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>All module milestones</Text>
+              <Text style={styles.sectionTitle}>All course milestones</Text>
+              {visibleCourseCertificates.length > 0 && (
+                <SelectLike
+                  title="Course"
+                  options={visibleCourseCertificates.map((c) => ({
+                    value: String(c.courseId),
+                    label: `${c.courseName || c.courseId} (${c.doneModules}/${c.totalModules})`,
+                  }))}
+                  value={selectedCertificateCourseId ? String(selectedCertificateCourseId) : ''}
+                  onPick={(value) => setSelectedCertificateCourseId(value)}
+                />
+              )}
               <View style={styles.milestoneGrid}>
-                {modulesWithState.map((m) => (
+                {modulesForCertificateCourse.map((m) => (
                   <View key={m.id} style={[styles.milestone, m.progress === 100 ? styles.milestoneDone : styles.milestonePending]}>
                     <View style={styles.milestoneHeader}>
                       <Text style={styles.rowTitle}>{m.title}</Text>
@@ -1111,6 +1347,9 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                   </View>
                 ))}
               </View>
+              {visibleCourseCertificates.length > 0 && modulesForCertificateCourse.length === 0 && (
+                <Text style={styles.rowMeta}>No modules found for selected course.</Text>
+              )}
             </View>
           </View>
         )}
@@ -1211,20 +1450,47 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
               ) : (
                 <SelectLike
                   title="Course"
-                  options={approvedCourses.map((c) => c.course_id)}
+                  options={approvedCourses.map((c) => ({
+                    value: String(c.course_id),
+                    label: `${c.course_name || c.course_id} (${c.course_id})`,
+                  }))}
                   value={resourceCourseId || ''}
-                  onPick={setResourceCourseId}
+                  onPick={(value) => setResourceCourseId(value)}
                 />
               )}
-              {resourceCourseId && (
+              {selectedResourceCourse && (
+                <View style={styles.courseInfoCard}>
+                  <Text style={styles.courseInfoTitle}>{selectedResourceCourse.course_name || selectedResourceCourse.course_id}</Text>
+                  <Text style={styles.rowMeta}>Course ID: {selectedResourceCourse.course_id}</Text>
+                  {selectedResourceCourse.description ? (
+                    <Text style={styles.rowMeta}>{selectedResourceCourse.description}</Text>
+                  ) : null}
+                  <Text style={styles.rowMeta}>
+                    Duration: {selectedResourceCourse.start_date || '-'} to {selectedResourceCourse.end_date || '-'}
+                  </Text>
+                  <Text style={styles.rowMeta}>Contact hours: {selectedResourceCourse.total_contact_hours ?? 0}</Text>
+                </View>
+              )}
+              {resourceCourseId && resourceModulesForCourse.length > 0 && (
+                <SelectLike
+                  title="Module"
+                  options={resourceModulesForCourse.map((m, idx) => ({
+                    value: String(m.id),
+                    label: `Module ${idx + 1}: ${m.title || `#${m.id}`}`,
+                  }))}
+                  value={resourceModuleId ? String(resourceModuleId) : ''}
+                  onPick={(value) => setResourceModuleId(Number(value))}
+                />
+              )}
+              {selectedResourceModule && (
                 <Text style={styles.rowMeta}>
-                  {approvedCourses.find((c) => c.course_id === resourceCourseId)?.course_name || resourceCourseId}
+                  Selected: {selectedResourceModule.title || `Module ${selectedResourceModule.id}`}
                 </Text>
               )}
               <Pressable
-                style={[styles.primaryButton, (!resourceCourseId || resourceUploading) && styles.disabledButton]}
+                style={[styles.primaryButton, (!resourceCourseId || !resourceModuleId || resourceUploading) && styles.disabledButton]}
                 onPress={handleResourceUpload}
-                disabled={!resourceCourseId || resourceUploading}
+                disabled={!resourceCourseId || !resourceModuleId || resourceUploading}
               >
                 <Text style={styles.primaryText}>{resourceUploading ? 'Uploading…' : 'Upload file'}</Text>
               </Pressable>
@@ -1242,7 +1508,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                     <View style={styles.rowBody}>
                       <Text style={styles.rowTitle} numberOfLines={2}>{res.original_name}</Text>
                       <Text style={styles.rowMeta}>
-                        {formatBytes(res.size_bytes)} • {res.course_name || resourceCourseId}
+                        {formatBytes(res.size_bytes)} • {selectedResourceCourse?.course_name || res.course_name || resourceCourseId}
                       </Text>
                       <Text style={styles.rowMeta}>
                         Uploaded {formatUploadDate(res.created_at)}{res.uploaded_by_name ? ` by ${res.uploaded_by_name}` : ''}
@@ -1475,13 +1741,19 @@ function StatCard({ label, value, detail }) {
 }
 
 function SelectLike({ title, options, value, onPick }) {
+  const normalizedOptions = options.map((option) =>
+    typeof option === 'object' && option !== null
+      ? { value: String(option.value), label: String(option.label ?? option.value) }
+      : { value: String(option), label: String(option) }
+  )
+  const selectedValue = String(value ?? '')
   return (
     <View>
       <Text style={styles.statLabel}>{title}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {options.map((option) => (
-          <Pressable key={option} style={[styles.chip, value === option && styles.chipActive]} onPress={() => onPick(option)}>
-            <Text style={[styles.chipText, value === option && styles.chipTextActive]}>{option}</Text>
+        {normalizedOptions.map((option) => (
+          <Pressable key={option.value} style={[styles.chip, selectedValue === option.value && styles.chipActive]} onPress={() => onPick(option.value)}>
+            <Text style={[styles.chipText, selectedValue === option.value && styles.chipTextActive]}>{option.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -1524,11 +1796,14 @@ const styles = StyleSheet.create({
   // Header uses website cream background and website line color.
   topbar: { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: palette.line, backgroundColor: palette.cream, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topbarLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  topbarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuBtn: { width: 42, height: 42, borderRadius: 10, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   menuText: { color: palette.citrus, fontWeight: '900' },
   kicker: { color: palette.citrus, fontSize: 11, fontWeight: '900' },
   topTitle: { color: palette.forest, fontSize: 18, fontWeight: '900' },
   // New clickable profile icon style for header-right quick access.
+  headerRefreshBtn: { width: 42, height: 42, borderRadius: 10, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
+  headerRefreshText: { color: palette.citrus, fontSize: 18, fontWeight: '900' },
   headerProfileBtn: { width: 42, height: 42, borderRadius: 10, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, alignItems: 'center', justifyContent: 'center' },
   headerProfileIcon: { color: palette.forest, fontSize: 16, fontWeight: '900' },
   page: { padding: 14, gap: 12 },
@@ -1589,6 +1864,16 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, gap: 2 },
   rowTitle: { color: palette.forest, fontWeight: '800' },
   rowMeta: { color: palette.muted, fontSize: 12 },
+  courseInfoCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: '#f9fbf5',
+    gap: 4,
+  },
+  courseInfoTitle: { color: palette.forest, fontSize: 14, fontWeight: '900' },
   rowPct: { color: palette.citrus, fontWeight: '900' },
   rowEnd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   inlineBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, fontSize: 11, fontWeight: '900' },
@@ -1626,6 +1911,7 @@ const styles = StyleSheet.create({
     minHeight: 190,
   },
   lessonMediaImage: { width: '100%', height: 260 },
+  lessonMediaVideo: { width: '100%', height: 240, backgroundColor: '#000' },
   quizCorrect: { backgroundColor: '#ebf8e3', borderRadius: 8, paddingHorizontal: 6 },
   quizWrong: { backgroundColor: '#fde9e5', borderRadius: 8, paddingHorizontal: 6 },
   checkMark: { color: palette.citrus, fontWeight: '900' },
@@ -1671,6 +1957,26 @@ const styles = StyleSheet.create({
   quizPieCorrect: { height: '100%', backgroundColor: palette.leaf },
   quizPieLabel: { color: palette.forest, fontWeight: '800', fontSize: 12 },
   progressLine: { gap: 6, marginBottom: 8 },
+  progressCourseBlock: {
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    gap: 6,
+    backgroundColor: '#fffdf7',
+  },
+  progressModuleRow: {
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: palette.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  progressModuleRight: { alignItems: 'flex-end', gap: 4 },
   certificateCard: {
     borderWidth: 1,
     borderColor: palette.line,

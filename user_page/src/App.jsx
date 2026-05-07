@@ -554,7 +554,7 @@ function App() {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'D' },
-    { id: 'modules', label: 'My Modules', icon: 'M' },
+    { id: 'modules', label: 'Courses', icon: 'M' },
     { id: 'module', label: 'Module Details', icon: 'I' },
     { id: 'progress', label: 'Progress', icon: 'P' },
     { id: 'certificates', label: 'Certificates', icon: 'C' },
@@ -713,7 +713,7 @@ function App() {
           {activeTab === 'modules' && (
             <section className="page-stack">
               <PageIntro
-                kicker="My Modules"
+                kicker="Courses"
                 title={`${trainingModules.length} database module${trainingModules.length === 1 ? '' : 's'}`}
                 body="Search, filter, enroll, and continue modules returned by your database endpoint."
               />

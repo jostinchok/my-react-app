@@ -33,7 +33,14 @@ const BLOCKED_RESOURCE_EXTENSIONS = new Set([
 ])
 
 const courseResourceStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, COURSE_RESOURCES_DIR),
+  destination: (req, _file, cb) => {
+    const safeSeg = (v) => String(v || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80) || 'unknown'
+    const courseId = safeSeg(req.params?.courseId)
+    const moduleId = safeSeg(req.params?.moduleId || req.body?.moduleId || req.query?.moduleId)
+    const dir = path.join(COURSE_RESOURCES_DIR, courseId, moduleId)
+    fs.mkdirSync(dir, { recursive: true })
+    cb(null, dir)
+  },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase()
     cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext || ''}`)
@@ -174,6 +181,10 @@ async function ensureAdminSchema(poolConn) {
   if (!(await columnExists(poolConn, 'training_modules', 'sort_order'))) {
     await tryQ('ALTER TABLE training_modules ADD COLUMN sort_order INT DEFAULT 0', 'training_modules.sort_order column')
   }
+  if (!(await columnExists(poolConn, 'training_modules', 'is_badge'))) {
+    await tryQ('ALTER TABLE training_modules ADD COLUMN is_badge TINYINT(1) NOT NULL DEFAULT 0', 'training_modules.is_badge column')
+    await tryQ('CREATE INDEX idx_training_modules_course_badge ON training_modules (course_id, is_badge)', 'training_modules course+badge index')
+  }
   if (!(await columnExists(poolConn, 'lessons', 'lesson_type'))) {
     await tryQ("ALTER TABLE lessons ADD COLUMN lesson_type VARCHAR(20) DEFAULT 'text'", 'lessons.lesson_type column')
   }
@@ -229,6 +240,17 @@ async function ensureAdminSchema(poolConn) {
       'certifications unique (user_id, module_id)'
     )
   }
+  if (await tableExists(poolConn, 'certifications') && !(await columnExists(poolConn, 'certifications', 'course_id'))) {
+    await tryQ('ALTER TABLE certifications ADD COLUMN course_id VARCHAR(50) NULL', 'certifications.course_id')
+    await tryQ(
+      'ALTER TABLE certifications ADD CONSTRAINT fk_admin_certifications_course FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE SET NULL',
+      'certifications.course_id foreign key'
+    )
+    await tryQ(
+      'CREATE INDEX idx_certifications_course_user ON certifications (course_id, user_id)',
+      'certifications course+user index'
+    )
+  }
 
   if (await tableExists(poolConn, 'guide_profiles') && !(await columnExists(poolConn, 'guide_profiles', 'user_id'))) {
     await tryQ('ALTER TABLE guide_profiles ADD COLUMN user_id INT NULL', 'guide_profiles.user_id column')
@@ -281,9 +303,28 @@ async function ensureAdminSchema(poolConn) {
   )
 
   await tryQ(
+    `CREATE TABLE IF NOT EXISTS certificate_requests (
+      request_id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      course_id VARCHAR(50) NOT NULL,
+      status ENUM('pending', 'approved', 'declined') DEFAULT 'pending',
+      requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      reviewed_at DATETIME NULL,
+      reviewed_by INT NULL,
+      remarks VARCHAR(255) NULL,
+      UNIQUE KEY uniq_certificate_request_user_course (user_id, course_id),
+      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+      FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+      FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
+    )`,
+    'certificate_requests table'
+  )
+
+  await tryQ(
     `CREATE TABLE IF NOT EXISTS course_resources (
       resource_id INT AUTO_INCREMENT PRIMARY KEY,
       course_id VARCHAR(50) NOT NULL,
+      module_id INT NULL,
       uploaded_by INT NULL,
       original_name VARCHAR(255) NOT NULL,
       stored_name VARCHAR(255) NOT NULL,
@@ -291,11 +332,25 @@ async function ensureAdminSchema(poolConn) {
       size_bytes BIGINT NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+      FOREIGN KEY (module_id) REFERENCES training_modules(module_id) ON DELETE CASCADE,
       FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE SET NULL,
-      INDEX idx_course_resources_course (course_id, created_at)
+      INDEX idx_course_resources_course (course_id, created_at),
+      INDEX idx_course_resources_course_module (course_id, module_id, created_at)
     )`,
     'course_resources table'
   )
+
+  if (!(await columnExists(poolConn, 'course_resources', 'module_id'))) {
+    await tryQ('ALTER TABLE course_resources ADD COLUMN module_id INT NULL', 'course_resources.module_id column')
+    await tryQ(
+      'ALTER TABLE course_resources ADD CONSTRAINT fk_admin_course_resources_module FOREIGN KEY (module_id) REFERENCES training_modules(module_id) ON DELETE CASCADE',
+      'course_resources.module_id foreign key'
+    )
+    await tryQ(
+      'CREATE INDEX idx_course_resources_course_module ON course_resources (course_id, module_id, created_at)',
+      'course_resources index course+module'
+    )
+  }
 
   console.log('[admin schema] ready')
 }
@@ -338,9 +393,11 @@ app.get('/api/admin/badges', async (req, res) => {
 
     // 3. 第二步：获取当前公园下的所有徽章/课程
     const [moduleRows] = await pool.query(
-      `SELECT module_id, title, level, criteria, park_id FROM training_modules 
-       WHERE park_id = ? 
-       ORDER BY title`, 
+      `SELECT tm.module_id, tm.title, tm.level, tm.criteria, tm.park_id, tm.course_id, c.course_name
+       FROM training_modules tm
+       LEFT JOIN courses c ON c.course_id = tm.course_id
+       WHERE tm.park_id = ? AND IFNULL(tm.is_badge, 0) = 1
+       ORDER BY tm.title`,
       [parkId]
     );
 
@@ -408,6 +465,8 @@ app.get('/api/admin/badges', async (req, res) => {
         level: module.level,
         criteria: module.criteria,
         park_id: module.park_id,
+        course_id: module.course_id || null,
+        course_name: module.course_name || null,
         students: students
       };
     });
@@ -762,7 +821,16 @@ app.get('/api/courses', async (req, res) => {
           DATE_FORMAT(c.start_date, '%Y-%m-%d') AS start_date,
           DATE_FORMAT(c.end_date, '%Y-%m-%d') AS end_date,
           c.total_contact_hours,
-          COUNT(tm.module_id) AS module_count,
+          COUNT(
+            CASE
+              WHEN IFNULL(tm.is_badge, 0) = 0 AND (
+                EXISTS (SELECT 1 FROM lessons ls WHERE ls.module_id = tm.module_id) OR
+                EXISTS (SELECT 1 FROM quizzes qz WHERE qz.module_id = tm.module_id)
+              )
+                THEN tm.module_id
+              ELSE NULL
+            END
+          ) AS module_count,
           c.created_at
         FROM courses c
         LEFT JOIN training_modules tm ON tm.course_id = c.course_id
@@ -1125,7 +1193,7 @@ app.patch('/api/enrollments/:id', async (req, res) => {
     const noteMessage =
       decision === 'approved'
         ? `Your registration for ${enrollment.course_name} has been approved. You can now access this course modules.`
-        : `Your registration for ${enrollment.course_name} was declined. You may re-apply from My Modules.`
+        : `Your registration for ${enrollment.course_name} was declined. You may re-apply from Courses.`
 
     await connection.query(
       `INSERT INTO notifications (user_id, title, type, message, is_read)
@@ -1141,6 +1209,129 @@ app.patch('/api/enrollments/:id', async (req, res) => {
       message: 'Unable to update enrollment request.',
       error: error.message,
     })
+  } finally {
+    connection.release()
+  }
+})
+
+app.get('/api/admin/certificate-requests', async (req, res) => {
+  try {
+    const status = String(req.query.status || 'pending').toLowerCase()
+    const validStatuses = new Set(['pending', 'approved', 'declined', 'all'])
+    if (!validStatuses.has(status)) {
+      return res.status(400).json({ message: 'Invalid status filter.' })
+    }
+    const parkId = req.query.parkId ? Number(req.query.parkId) : null
+    const params = []
+    const filters = []
+    if (status !== 'all') {
+      filters.push('cr.status = ?')
+      params.push(status)
+    }
+    if (parkId) {
+      filters.push('u.park_id = ?')
+      params.push(parkId)
+    }
+    const whereSql = filters.length ? `WHERE ${filters.join(' AND ')}` : ''
+
+    const [rows] = await pool.query(
+      `SELECT
+         cr.request_id,
+         cr.user_id,
+         cr.course_id,
+         cr.status,
+         cr.requested_at,
+         cr.reviewed_at,
+         cr.remarks,
+         u.name AS user_name,
+         u.email AS user_email,
+         c.course_name,
+         reviewer.name AS reviewed_by_name
+       FROM certificate_requests cr
+       INNER JOIN users u ON u.user_id = cr.user_id
+       INNER JOIN courses c ON c.course_id = cr.course_id
+       LEFT JOIN users reviewer ON reviewer.user_id = cr.reviewed_by
+       ${whereSql}
+       ORDER BY CASE cr.status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END, cr.requested_at DESC`,
+      params
+    )
+    res.json({ requests: rows })
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load certificate requests.', error: error.message })
+  }
+})
+
+app.patch('/api/admin/certificate-requests/:id', async (req, res) => {
+  const connection = await pool.getConnection()
+  try {
+    const requestId = Number(req.params.id)
+    const decision = String(req.body.status || '').toLowerCase()
+    const remarks = req.body.remarks ? String(req.body.remarks).trim() : null
+    const reviewerId = req.body.reviewerId ? Number(req.body.reviewerId) : null
+    if (!requestId || !['approved', 'declined'].includes(decision)) {
+      return res.status(400).json({ message: 'status must be approved or declined.' })
+    }
+
+    await connection.beginTransaction()
+    const [rows] = await connection.query(
+      `SELECT cr.request_id, cr.user_id, cr.course_id, c.course_name
+       FROM certificate_requests cr
+       INNER JOIN courses c ON c.course_id = cr.course_id
+       WHERE cr.request_id = ? FOR UPDATE`,
+      [requestId]
+    )
+    if (!rows.length) {
+      await connection.rollback()
+      return res.status(404).json({ message: 'Certificate request not found.' })
+    }
+    const request = rows[0]
+    const summary = await getCourseCompletionSummary(request.user_id, request.course_id, connection)
+    if (decision === 'approved' && !summary.allDone) {
+      await connection.rollback()
+      return res.status(400).json({ message: 'User has not completed all modules for this course yet.' })
+    }
+
+    await connection.query(
+      `UPDATE certificate_requests
+       SET status = ?, reviewed_at = NOW(), reviewed_by = ?, remarks = ?
+       WHERE request_id = ?`,
+      [decision, reviewerId, remarks, requestId]
+    )
+
+    if (decision === 'approved') {
+      const [moduleRows] = await connection.query(
+        'SELECT module_id FROM training_modules WHERE course_id = ?',
+        [request.course_id]
+      )
+      const expiryDate = new Date()
+      expiryDate.setMonth(expiryDate.getMonth() + 12)
+      for (const moduleRow of moduleRows) {
+        const moduleId = Number(moduleRow.module_id)
+        await connection.query(
+          `INSERT INTO certifications (user_id, module_id, course_id, issue_date, expiry_date, certificate_code)
+           VALUES (?, ?, ?, NOW(), ?, ?)
+           ON DUPLICATE KEY UPDATE course_id=VALUES(course_id), issue_date=NOW(), expiry_date=VALUES(expiry_date), certificate_code=VALUES(certificate_code)`,
+          [request.user_id, moduleId, request.course_id, expiryDate, `CERT-${request.course_id}-${moduleId}-${request.user_id}`]
+        )
+      }
+    }
+
+    const noteTitle = decision === 'approved' ? 'Certificate request approved' : 'Certificate request declined'
+    const noteMessage =
+      decision === 'approved'
+        ? `Your certificate request for ${request.course_name} was approved.`
+        : `Your certificate request for ${request.course_name} was declined.`
+    await connection.query(
+      `INSERT INTO notifications (user_id, title, type, message, is_read)
+       VALUES (?, ?, 'certificate', ?, FALSE)`,
+      [request.user_id, noteTitle, noteMessage]
+    )
+
+    await connection.commit()
+    res.json({ success: true, request_id: requestId, status: decision })
+  } catch (error) {
+    try { await connection.rollback() } catch {}
+    res.status(500).json({ message: 'Unable to review certificate request.', error: error.message })
   } finally {
     connection.release()
   }
@@ -1173,7 +1364,8 @@ app.post('/api/modules/:moduleId/media', upload.single('file'), async (req, res)
 const removeStoredResourceFile = (storedName) => {
   if (!storedName) return
   const filePath = path.join(COURSE_RESOURCES_DIR, storedName)
-  if (path.dirname(filePath) !== COURSE_RESOURCES_DIR) return
+  const normalized = path.normalize(filePath)
+  if (!normalized.startsWith(path.normalize(COURSE_RESOURCES_DIR + path.sep))) return
   fs.unlink(filePath, () => {})
 }
 
@@ -1184,7 +1376,7 @@ const ensureCourseExists = async (courseId) => {
 
 const fetchCourseResource = async (courseId, resourceId) => {
   const [rows] = await pool.query(
-    `SELECT cr.resource_id, cr.course_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes, cr.created_at,
+    `SELECT cr.resource_id, cr.course_id, cr.module_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes, cr.created_at,
             cr.uploaded_by, c.course_name
      FROM course_resources cr
      INNER JOIN courses c ON c.course_id = cr.course_id
@@ -1197,6 +1389,7 @@ const fetchCourseResource = async (courseId, resourceId) => {
 const formatResourceRow = (row, courseName) => ({
   resource_id: row.resource_id,
   course_id: row.course_id,
+  module_id: row.module_id ?? null,
   course_name: courseName ?? row.course_name ?? null,
   original_name: row.original_name,
   stored_name: row.stored_name,
@@ -1205,8 +1398,20 @@ const formatResourceRow = (row, courseName) => ({
   uploaded_by: row.uploaded_by || null,
   uploaded_by_name: row.uploaded_by_name || null,
   created_at: row.created_at,
-  download_url: `/api/courses/${encodeURIComponent(row.course_id)}/resources/${row.resource_id}/download`,
+  download_url: row.module_id
+    ? `/api/courses/${encodeURIComponent(row.course_id)}/modules/${encodeURIComponent(row.module_id)}/resources/${row.resource_id}/download`
+    : `/api/courses/${encodeURIComponent(row.course_id)}/resources/${row.resource_id}/download`,
 })
+
+const ensureModuleInCourse = async (courseId, moduleId) => {
+  const id = Number(moduleId)
+  if (!Number.isInteger(id) || id <= 0) return null
+  const [rows] = await pool.query(
+    'SELECT module_id, title FROM training_modules WHERE module_id = ? AND course_id = ?',
+    [id, courseId]
+  )
+  return rows.length ? rows[0] : null
+}
 
 const userHasApprovedEnrollment = async (userId, courseId) => {
   const [rows] = await pool.query(
@@ -1216,26 +1421,90 @@ const userHasApprovedEnrollment = async (userId, courseId) => {
   return rows.length > 0 && rows[0].status === 'approved'
 }
 
+const courseHasBadge = async (courseId, conn = pool) => {
+  const [rows] = await conn.query(
+    `SELECT module_id FROM training_modules WHERE course_id = ? AND is_badge = 1 LIMIT 1`,
+    [courseId]
+  )
+  return rows.length > 0
+}
+
+const getCourseCompletionSummary = async (userId, courseId, conn = pool) => {
+  const [[totals]] = await conn.query(
+    `SELECT
+       COUNT(DISTINCT tm.module_id) AS total_modules,
+       COUNT(DISTINCT
+         CASE
+           WHEN IFNULL(lesson_totals.lesson_count, 0) = 0
+             THEN CASE WHEN p.user_id IS NOT NULL THEN tm.module_id ELSE NULL END
+           WHEN completed_lessons.lesson_done_count >= lesson_totals.lesson_count
+             THEN tm.module_id
+           ELSE NULL
+         END
+       ) AS done_modules
+     FROM training_modules tm
+     LEFT JOIN (
+       SELECT module_id, COUNT(*) AS lesson_count
+       FROM lessons
+       GROUP BY module_id
+     ) lesson_totals ON lesson_totals.module_id = tm.module_id
+     LEFT JOIN progress p ON p.module_id = tm.module_id AND p.user_id = ?
+     LEFT JOIN (
+       SELECT
+         p2.user_id,
+         p2.module_id,
+         CASE
+           WHEN p2.completed_lessons IS NULL OR TRIM(p2.completed_lessons) = '' THEN 0
+           ELSE LENGTH(p2.completed_lessons) - LENGTH(REPLACE(p2.completed_lessons, ',', '')) + 1
+         END AS lesson_done_count
+       FROM progress p2
+       WHERE p2.user_id = ?
+     ) completed_lessons ON completed_lessons.module_id = tm.module_id AND completed_lessons.user_id = p.user_id
+     WHERE tm.course_id = ?
+       AND IFNULL(tm.is_badge, 0) = 0
+       AND (
+         IFNULL(lesson_totals.lesson_count, 0) > 0 OR
+         EXISTS (SELECT 1 FROM quizzes qz WHERE qz.module_id = tm.module_id)
+       )`,
+    [userId, userId, courseId]
+  )
+  const totalModules = Number(totals?.total_modules) || 0
+  const doneModules = Number(totals?.done_modules) || 0
+  return {
+    totalModules,
+    doneModules,
+    allDone: totalModules > 0 && doneModules >= totalModules,
+  }
+}
+
 // Admin: list resources for a course
 app.get('/api/courses/:courseId/resources', async (req, res) => {
   try {
     const { courseId } = req.params
+    const moduleId = req.query?.moduleId ? Number(req.query.moduleId) : null
     const course = await ensureCourseExists(courseId)
     if (!course) return res.status(404).json({ message: 'Course not found.' })
 
+    if (moduleId && !(await ensureModuleInCourse(courseId, moduleId))) {
+      return res.status(404).json({ message: 'Module not found for this course.' })
+    }
+
+    const whereModuleSql = moduleId ? ' AND cr.module_id = ?' : ''
+    const params = moduleId ? [courseId, moduleId] : [courseId]
     const [rows] = await pool.query(
-      `SELECT cr.resource_id, cr.course_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
+      `SELECT cr.resource_id, cr.course_id, cr.module_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
               cr.uploaded_by, cr.created_at, u.name AS uploaded_by_name
        FROM course_resources cr
        LEFT JOIN users u ON u.user_id = cr.uploaded_by
-       WHERE cr.course_id = ?
+       WHERE cr.course_id = ?${whereModuleSql}
        ORDER BY cr.created_at DESC, cr.resource_id DESC`,
-      [courseId]
+      params
     )
 
     res.json({
       course_id: courseId,
       course_name: course.course_name,
+      module_id: moduleId || null,
       resources: rows.map((r) => formatResourceRow(r, course.course_name)),
     })
   } catch (error) {
@@ -1243,63 +1512,93 @@ app.get('/api/courses/:courseId/resources', async (req, res) => {
   }
 })
 
-// Admin: upload a resource for a course
+// Admin: upload a resource for a specific module in a course
+const handleAdminModuleResourceUpload = async (req, res) => {
+  try {
+    const { courseId, moduleId } = req.params
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded.' })
+
+    const course = await ensureCourseExists(courseId)
+    if (!course) {
+      removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+      return res.status(404).json({ message: 'Course not found.' })
+    }
+
+    const moduleRow = await ensureModuleInCourse(courseId, moduleId)
+    if (!moduleRow) {
+      removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+      return res.status(404).json({ message: 'Module not found for this course.' })
+    }
+
+    const uploadedBy = req.body?.uploadedBy ? Number(req.body.uploadedBy) : null
+    const safeUploadedBy = Number.isInteger(uploadedBy) && uploadedBy > 0 ? uploadedBy : null
+    const storedName = path
+      .join(String(courseId), String(moduleRow.module_id), req.file.filename)
+      .replace(/\\/g, '/')
+
+    const [result] = await pool.query(
+      `INSERT INTO course_resources (course_id, module_id, uploaded_by, original_name, stored_name, mime_type, size_bytes)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        courseId,
+        Number(moduleRow.module_id),
+        safeUploadedBy,
+        req.file.originalname,
+        storedName,
+        req.file.mimetype || null,
+        req.file.size,
+      ]
+    )
+
+    res.status(201).json({
+      resource: formatResourceRow(
+        {
+          resource_id: result.insertId,
+          course_id: courseId,
+          module_id: Number(moduleRow.module_id),
+          original_name: req.file.originalname,
+          stored_name: storedName,
+          mime_type: req.file.mimetype,
+          size_bytes: req.file.size,
+          uploaded_by: safeUploadedBy,
+          created_at: new Date(),
+        },
+        course.course_name
+      ),
+    })
+  } catch (error) {
+    if (req.file?.filename) {
+      const { courseId, moduleId } = req.params
+      removeStoredResourceFile(path.join(String(courseId), String(moduleId), req.file.filename))
+    }
+    res.status(500).json({ message: 'Unable to upload resource.', error: error.message })
+  }
+}
+
+app.post(
+  '/api/courses/:courseId/modules/:moduleId/resources',
+  courseResourceUpload.single('file'),
+  handleAdminModuleResourceUpload
+)
+
+// Back-compat admin upload: require moduleId then reuse handler.
 app.post(
   '/api/courses/:courseId/resources',
+  (req, res, next) => {
+    const moduleId = req.body?.moduleId || req.query?.moduleId
+    if (!moduleId) return res.status(400).json({ message: 'moduleId is required to upload a resource.' })
+    req.params.moduleId = String(moduleId)
+    next()
+  },
   courseResourceUpload.single('file'),
-  async (req, res) => {
-    try {
-      const { courseId } = req.params
-      if (!req.file) return res.status(400).json({ message: 'No file uploaded.' })
-
-      const course = await ensureCourseExists(courseId)
-      if (!course) {
-        removeStoredResourceFile(req.file.filename)
-        return res.status(404).json({ message: 'Course not found.' })
-      }
-
-      const uploadedBy = req.body?.uploadedBy ? Number(req.body.uploadedBy) : null
-      const safeUploadedBy = Number.isInteger(uploadedBy) && uploadedBy > 0 ? uploadedBy : null
-
-      const [result] = await pool.query(
-        `INSERT INTO course_resources (course_id, uploaded_by, original_name, stored_name, mime_type, size_bytes)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          courseId,
-          safeUploadedBy,
-          req.file.originalname,
-          req.file.filename,
-          req.file.mimetype || null,
-          req.file.size,
-        ]
-      )
-
-      res.status(201).json({
-        resource: formatResourceRow(
-          {
-            resource_id: result.insertId,
-            course_id: courseId,
-            original_name: req.file.originalname,
-            stored_name: req.file.filename,
-            mime_type: req.file.mimetype,
-            size_bytes: req.file.size,
-            uploaded_by: safeUploadedBy,
-            created_at: new Date(),
-          },
-          course.course_name
-        ),
-      })
-    } catch (error) {
-      if (req.file?.filename) removeStoredResourceFile(req.file.filename)
-      res.status(500).json({ message: 'Unable to upload resource.', error: error.message })
-    }
-  }
+  handleAdminModuleResourceUpload
 )
 
 // Shared download handler (admin or mobile after access guard)
 const sendResourceDownload = (res, resource) => {
   const filePath = path.join(COURSE_RESOURCES_DIR, resource.stored_name)
-  if (path.dirname(filePath) !== COURSE_RESOURCES_DIR) {
+  const normalized = path.normalize(filePath)
+  if (!normalized.startsWith(path.normalize(COURSE_RESOURCES_DIR + path.sep))) {
     return res.status(400).json({ message: 'Invalid resource path.' })
   }
   if (!fs.existsSync(filePath)) {
@@ -1324,6 +1623,22 @@ app.get('/api/courses/:courseId/resources/:resourceId/download', async (req, res
   }
 })
 
+// Admin: download (module-scoped route)
+app.get('/api/courses/:courseId/modules/:moduleId/resources/:resourceId/download', async (req, res) => {
+  try {
+    const { courseId, resourceId, moduleId } = req.params
+    const moduleRow = await ensureModuleInCourse(courseId, moduleId)
+    if (!moduleRow) return res.status(404).json({ message: 'Module not found for this course.' })
+    const resource = await fetchCourseResource(courseId, Number(resourceId))
+    if (!resource || Number(resource.module_id) !== Number(moduleRow.module_id)) {
+      return res.status(404).json({ message: 'Resource not found.' })
+    }
+    sendResourceDownload(res, resource)
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to download resource.', error: error.message })
+  }
+})
+
 // Admin: delete
 app.delete('/api/courses/:courseId/resources/:resourceId', async (req, res) => {
   try {
@@ -1342,10 +1657,34 @@ app.delete('/api/courses/:courseId/resources/:resourceId', async (req, res) => {
   }
 })
 
-// Mobile: list course resources (approved enrollment only)
-app.get('/api/mobile/courses/:courseId/resources', async (req, res) => {
+// Admin: delete (module-scoped route)
+app.delete('/api/courses/:courseId/modules/:moduleId/resources/:resourceId', async (req, res) => {
   try {
-    const { courseId } = req.params
+    const { courseId, resourceId, moduleId } = req.params
+    const moduleRow = await ensureModuleInCourse(courseId, moduleId)
+    if (!moduleRow) return res.status(404).json({ message: 'Module not found for this course.' })
+
+    const resource = await fetchCourseResource(courseId, Number(resourceId))
+    if (!resource || Number(resource.module_id) !== Number(moduleRow.module_id)) {
+      return res.status(404).json({ message: 'Resource not found.' })
+    }
+
+    await pool.query('DELETE FROM course_resources WHERE resource_id = ? AND course_id = ? AND module_id = ?', [
+      resource.resource_id,
+      courseId,
+      Number(moduleRow.module_id),
+    ])
+    removeStoredResourceFile(resource.stored_name)
+    res.json({ success: true, resource_id: resource.resource_id })
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to delete resource.', error: error.message })
+  }
+})
+
+// Mobile: list module resources (approved enrollment only)
+app.get('/api/mobile/courses/:courseId/modules/:moduleId/resources', async (req, res) => {
+  try {
+    const { courseId, moduleId } = req.params
     const userId = requireUserId(res, req.query.userId)
     if (!userId) return
 
@@ -1356,19 +1695,23 @@ app.get('/api/mobile/courses/:courseId/resources', async (req, res) => {
       return res.status(403).json({ error: 'You do not have access to this course.' })
     }
 
+    const moduleRow = await ensureModuleInCourse(courseId, moduleId)
+    if (!moduleRow) return res.status(404).json({ error: 'Module not found for this course.' })
+
     const [rows] = await pool.query(
-      `SELECT cr.resource_id, cr.course_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
+      `SELECT cr.resource_id, cr.course_id, cr.module_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
               cr.uploaded_by, cr.created_at, u.name AS uploaded_by_name
        FROM course_resources cr
        LEFT JOIN users u ON u.user_id = cr.uploaded_by
-       WHERE cr.course_id = ?
+       WHERE cr.course_id = ? AND cr.module_id = ?
        ORDER BY cr.created_at DESC, cr.resource_id DESC`,
-      [courseId]
+      [courseId, Number(moduleRow.module_id)]
     )
 
     res.json({
       course_id: courseId,
       course_name: course.course_name,
+      module_id: Number(moduleRow.module_id),
       resources: rows.map((r) => formatResourceRow(r, course.course_name)),
     })
   } catch (error) {
@@ -1376,70 +1719,134 @@ app.get('/api/mobile/courses/:courseId/resources', async (req, res) => {
   }
 })
 
-// Mobile: upload a course resource (approved enrollment only)
+// Back-compat mobile list: requires moduleId query param
+app.get('/api/mobile/courses/:courseId/resources', async (req, res) => {
+  try {
+    const { courseId } = req.params
+    const moduleId = req.query?.moduleId ? String(req.query.moduleId) : ''
+    if (!moduleId) return res.status(400).json({ error: 'moduleId is required' })
+
+    const userId = requireUserId(res, req.query.userId)
+    if (!userId) return
+
+    const course = await ensureCourseExists(courseId)
+    if (!course) return res.status(404).json({ error: 'Course not found' })
+
+    if (!(await userHasApprovedEnrollment(userId, courseId))) {
+      return res.status(403).json({ error: 'You do not have access to this course.' })
+    }
+
+    const moduleRow = await ensureModuleInCourse(courseId, moduleId)
+    if (!moduleRow) return res.status(404).json({ error: 'Module not found for this course.' })
+
+    const [rows] = await pool.query(
+      `SELECT cr.resource_id, cr.course_id, cr.module_id, cr.original_name, cr.stored_name, cr.mime_type, cr.size_bytes,
+              cr.uploaded_by, cr.created_at, u.name AS uploaded_by_name
+       FROM course_resources cr
+       LEFT JOIN users u ON u.user_id = cr.uploaded_by
+       WHERE cr.course_id = ? AND cr.module_id = ?
+       ORDER BY cr.created_at DESC, cr.resource_id DESC`,
+      [courseId, Number(moduleRow.module_id)]
+    )
+
+    res.json({
+      course_id: courseId,
+      course_name: course.course_name,
+      module_id: Number(moduleRow.module_id),
+      resources: rows.map((r) => formatResourceRow(r, course.course_name)),
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+const handleMobileModuleResourceUpload = async (req, res) => {
+  try {
+    const { courseId, moduleId } = req.params
+    const userId = requireUserId(res, req.body?.userId)
+    if (!userId) {
+      if (req.file?.filename) removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+      return
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' })
+
+    const course = await ensureCourseExists(courseId)
+    if (!course) {
+      removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+      return res.status(404).json({ error: 'Course not found' })
+    }
+
+    if (!(await userHasApprovedEnrollment(userId, courseId))) {
+      removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+      return res.status(403).json({ error: 'You do not have access to this course.' })
+    }
+
+    const moduleRow = await ensureModuleInCourse(courseId, moduleId)
+    if (!moduleRow) {
+      removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+      return res.status(404).json({ error: 'Module not found for this course.' })
+    }
+
+    const storedName = path.join(String(courseId), String(moduleRow.module_id), req.file.filename).replace(/\\/g, '/')
+    const [result] = await pool.query(
+      `INSERT INTO course_resources (course_id, module_id, uploaded_by, original_name, stored_name, mime_type, size_bytes)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        courseId,
+        Number(moduleRow.module_id),
+        userId,
+        req.file.originalname,
+        storedName,
+        req.file.mimetype || null,
+        req.file.size,
+      ]
+    )
+
+    res.status(201).json({
+      resource: formatResourceRow(
+        {
+          resource_id: result.insertId,
+          course_id: courseId,
+          module_id: Number(moduleRow.module_id),
+          original_name: req.file.originalname,
+          stored_name: storedName,
+          mime_type: req.file.mimetype,
+          size_bytes: req.file.size,
+          uploaded_by: userId,
+          created_at: new Date(),
+        },
+        course.course_name
+      ),
+    })
+  } catch (error) {
+    if (req.file?.filename) {
+      const { courseId, moduleId } = req.params
+      removeStoredResourceFile(path.join(courseId, moduleId, req.file.filename))
+    }
+    res.status(500).json({ error: error.message })
+  }
+}
+
+// Mobile: upload a module resource (approved enrollment only)
+app.post('/api/mobile/courses/:courseId/modules/:moduleId/resources', courseResourceUpload.single('file'), handleMobileModuleResourceUpload)
+
+// Back-compat mobile upload: requires moduleId in body/query then reuse handler
 app.post(
   '/api/mobile/courses/:courseId/resources',
+  (req, res, next) => {
+    const moduleId = req.body?.moduleId || req.query?.moduleId
+    if (!moduleId) return res.status(400).json({ error: 'moduleId is required' })
+    req.params.moduleId = String(moduleId)
+    next()
+  },
   courseResourceUpload.single('file'),
-  async (req, res) => {
-    try {
-      const { courseId } = req.params
-      const userId = requireUserId(res, req.body?.userId)
-      if (!userId) {
-        if (req.file?.filename) removeStoredResourceFile(req.file.filename)
-        return
-      }
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded.' })
-
-      const course = await ensureCourseExists(courseId)
-      if (!course) {
-        removeStoredResourceFile(req.file.filename)
-        return res.status(404).json({ error: 'Course not found' })
-      }
-
-      if (!(await userHasApprovedEnrollment(userId, courseId))) {
-        removeStoredResourceFile(req.file.filename)
-        return res.status(403).json({ error: 'You do not have access to this course.' })
-      }
-
-      const [result] = await pool.query(
-        `INSERT INTO course_resources (course_id, uploaded_by, original_name, stored_name, mime_type, size_bytes)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          courseId,
-          userId,
-          req.file.originalname,
-          req.file.filename,
-          req.file.mimetype || null,
-          req.file.size,
-        ]
-      )
-
-      res.status(201).json({
-        resource: formatResourceRow(
-          {
-            resource_id: result.insertId,
-            course_id: courseId,
-            original_name: req.file.originalname,
-            stored_name: req.file.filename,
-            mime_type: req.file.mimetype,
-            size_bytes: req.file.size,
-            uploaded_by: userId,
-            created_at: new Date(),
-          },
-          course.course_name
-        ),
-      })
-    } catch (error) {
-      if (req.file?.filename) removeStoredResourceFile(req.file.filename)
-      res.status(500).json({ error: error.message })
-    }
-  }
+  handleMobileModuleResourceUpload
 )
 
 // Mobile: download (approved enrollment only)
-app.get('/api/mobile/courses/:courseId/resources/:resourceId/download', async (req, res) => {
+app.get('/api/mobile/courses/:courseId/modules/:moduleId/resources/:resourceId/download', async (req, res) => {
   try {
-    const { courseId, resourceId } = req.params
+    const { courseId, resourceId, moduleId } = req.params
     const userId = requireUserId(res, req.query.userId)
     if (!userId) return
 
@@ -1449,6 +1856,31 @@ app.get('/api/mobile/courses/:courseId/resources/:resourceId/download', async (r
 
     const resource = await fetchCourseResource(courseId, Number(resourceId))
     if (!resource) return res.status(404).json({ error: 'Resource not found' })
+    if (Number(resource.module_id) !== Number(moduleId)) return res.status(404).json({ error: 'Resource not found' })
+
+    sendResourceDownload(res, resource)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Back-compat mobile download: requires moduleId query param
+app.get('/api/mobile/courses/:courseId/resources/:resourceId/download', async (req, res) => {
+  try {
+    const { courseId, resourceId } = req.params
+    const moduleId = req.query?.moduleId ? String(req.query.moduleId) : ''
+    if (!moduleId) return res.status(400).json({ error: 'moduleId is required' })
+
+    const userId = requireUserId(res, req.query.userId)
+    if (!userId) return
+
+    if (!(await userHasApprovedEnrollment(userId, courseId))) {
+      return res.status(403).json({ error: 'You do not have access to this course.' })
+    }
+
+    const resource = await fetchCourseResource(courseId, Number(resourceId))
+    if (!resource) return res.status(404).json({ error: 'Resource not found' })
+    if (Number(resource.module_id) !== Number(moduleId)) return res.status(404).json({ error: 'Resource not found' })
 
     sendResourceDownload(res, resource)
   } catch (error) {
@@ -1457,15 +1889,19 @@ app.get('/api/mobile/courses/:courseId/resources/:resourceId/download', async (r
 })
 
 app.post("/api/admin/badges", async (req, res) => {
-  const { title, level, description, criteria, park_id } = req.body;
+  const { title, level, description, criteria, park_id, course_id } = req.body;
   try {
-    if (!title || !level || !park_id) {
-      return res.status(400).json({ error: "Title, level and park_id are required." });
+    if (!title || !level || !park_id || !course_id) {
+      return res.status(400).json({ error: "Title, level, park_id and course_id are required." });
+    }
+    const [courseRows] = await pool.query("SELECT course_id FROM courses WHERE course_id = ? LIMIT 1", [course_id]);
+    if (!courseRows.length) {
+      return res.status(400).json({ error: "Selected course does not exist." });
     }
 
     const [result] = await pool.query(
-      "INSERT INTO training_modules (title, level, description, criteria, park_id, created_by) VALUES (?, ?, ?, ?, ?, ?)",
-      [title, level, description || "", criteria || "Require 100% Progress", park_id, 1]
+      "INSERT INTO training_modules (title, level, description, criteria, park_id, course_id, created_by, is_badge) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+      [title, level, description || "", criteria || "Require 100% Progress", park_id, course_id, 1]
     );
 
     const [rows] = await pool.query("SELECT * FROM training_modules WHERE module_id=?", [result.insertId]);
@@ -1486,9 +1922,15 @@ app.post("/api/admin/issue-badge", async (req, res) => {
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + months);
 
+    const [[moduleRow]] = await pool.query(
+      "SELECT module_id, course_id FROM training_modules WHERE module_id = ? AND is_badge = 1 LIMIT 1",
+      [badgeId]
+    );
+    if (!moduleRow) return res.status(404).json({ error: "Badge module not found." });
+
     await pool.query(
-      "INSERT INTO certifications (user_id, module_id, issue_date, expiry_date, certificate_code) VALUES (?, ?, NOW(), ?, ?) ON DUPLICATE KEY UPDATE issue_date=NOW(), expiry_date=?",
-      [studentId, badgeId, expiryDate, `CERT-${badgeId}-${studentId}`, expiryDate]
+      "INSERT INTO certifications (user_id, module_id, course_id, issue_date, expiry_date, certificate_code) VALUES (?, ?, ?, NOW(), ?, ?) ON DUPLICATE KEY UPDATE course_id=VALUES(course_id), issue_date=NOW(), expiry_date=?",
+      [studentId, badgeId, moduleRow.course_id || null, expiryDate, `CERT-${badgeId}-${studentId}`, expiryDate]
     );
 
     // ✅ 返回更新后的 badge 对象
@@ -1950,7 +2392,16 @@ app.get('/api/mobile/courses', async (req, res) => {
          ce.requested_at,
          ce.reviewed_at,
          ce.remarks,
-         COUNT(tm.module_id) AS module_count
+         COUNT(
+           CASE
+             WHEN IFNULL(tm.is_badge, 0) = 0 AND (
+               EXISTS (SELECT 1 FROM lessons ls WHERE ls.module_id = tm.module_id) OR
+               EXISTS (SELECT 1 FROM quizzes qz WHERE qz.module_id = tm.module_id)
+             )
+               THEN tm.module_id
+             ELSE NULL
+           END
+         ) AS module_count
        FROM courses c
        LEFT JOIN course_enrollments ce
          ON ce.course_id = c.course_id AND ce.user_id = ?
@@ -2031,7 +2482,12 @@ app.get("/api/mobile/modules", async (req, res) => {
        LEFT JOIN course_enrollments ce
          ON ce.course_id = tm.course_id AND ce.user_id = ?
        LEFT JOIN progress p ON tm.module_id = p.module_id AND p.user_id = ?
-       WHERE tm.course_id IS NULL OR ce.status = 'approved'
+       WHERE IFNULL(tm.is_badge, 0) = 0
+         AND (
+           EXISTS (SELECT 1 FROM lessons ls WHERE ls.module_id = tm.module_id) OR
+           EXISTS (SELECT 1 FROM quizzes qz WHERE qz.module_id = tm.module_id)
+         )
+         AND (tm.course_id IS NULL OR ce.status = 'approved')
        ORDER BY tm.module_id`,
       [userId, userId]
     );
@@ -2223,25 +2679,116 @@ app.get("/api/mobile/certificates/:userId", async (req, res) => {
     const userId = requireUserId(res, req.params.userId);
     if (!userId) return;
     const [rows] = await pool.query(
-      `SELECT tm.module_id, tm.title, IFNULL(p.progress_percent, 0) AS progress_percent,
-              c.cert_id, c.certificate_code, c.issue_date, c.expiry_date
-       FROM training_modules tm
+      `SELECT
+         c.course_id,
+         c.course_name,
+         COUNT(DISTINCT tm.module_id) AS total_modules,
+         COUNT(DISTINCT
+           CASE
+             WHEN IFNULL(lesson_totals.lesson_count, 0) = 0
+               THEN CASE WHEN p.user_id IS NOT NULL THEN tm.module_id ELSE NULL END
+             WHEN completed_lessons.lesson_done_count >= lesson_totals.lesson_count
+               THEN tm.module_id
+             ELSE NULL
+           END
+         ) AS done_modules,
+         cr.status AS request_status,
+         cr.requested_at,
+         cr.reviewed_at,
+         cr.remarks,
+         MAX(cert.cert_id) AS cert_id,
+         MAX(cert.certificate_code) AS certificate_code,
+         MAX(cert.issue_date) AS issue_date,
+         MAX(cert.expiry_date) AS expiry_date
+       FROM courses c
+       LEFT JOIN training_modules tm ON tm.course_id = c.course_id AND IFNULL(tm.is_badge, 0) = 0
+       LEFT JOIN (
+         SELECT module_id, COUNT(*) AS lesson_count
+         FROM lessons
+         GROUP BY module_id
+       ) lesson_totals ON lesson_totals.module_id = tm.module_id
        LEFT JOIN progress p ON p.module_id = tm.module_id AND p.user_id = ?
-       LEFT JOIN certifications c ON c.module_id = tm.module_id AND c.user_id = ?
-       ORDER BY tm.module_id`,
-      [userId, userId]
+       LEFT JOIN (
+         SELECT
+           p2.user_id,
+           p2.module_id,
+           CASE
+             WHEN p2.completed_lessons IS NULL OR TRIM(p2.completed_lessons) = '' THEN 0
+             ELSE LENGTH(p2.completed_lessons) - LENGTH(REPLACE(p2.completed_lessons, ',', '')) + 1
+           END AS lesson_done_count
+         FROM progress p2
+         WHERE p2.user_id = ?
+       ) completed_lessons ON completed_lessons.module_id = tm.module_id AND completed_lessons.user_id = p.user_id
+       LEFT JOIN certificate_requests cr ON cr.course_id = c.course_id AND cr.user_id = ?
+       LEFT JOIN certifications cert ON cert.course_id = c.course_id AND cert.user_id = ?
+       INNER JOIN course_enrollments ce ON ce.course_id = c.course_id AND ce.user_id = ? AND ce.status = 'approved'
+       WHERE EXISTS (
+         SELECT 1
+         FROM training_modules badge_tm
+         WHERE badge_tm.course_id = c.course_id AND badge_tm.is_badge = 1
+       )
+       AND (
+         EXISTS (SELECT 1 FROM lessons ls WHERE ls.module_id = tm.module_id) OR
+         EXISTS (SELECT 1 FROM quizzes qz WHERE qz.module_id = tm.module_id)
+       )
+       GROUP BY c.course_id, c.course_name, cr.status, cr.requested_at, cr.reviewed_at, cr.remarks
+       HAVING COUNT(DISTINCT tm.module_id) > 0
+       ORDER BY c.course_name`,
+      [userId, userId, userId, userId, userId]
     );
-    const certificates = rows.map((r) => ({
-      moduleId: r.module_id,
-      title: r.title,
-      progress: Number(r.progress_percent) || 0,
-      unlocked: (Number(r.progress_percent) || 0) >= 100,
-      certId: r.cert_id || null,
-      certificateCode: r.certificate_code || null,
-      issueDate: r.issue_date || null,
-      expiryDate: r.expiry_date || null,
-    }));
+    const certificates = rows.map((r) => {
+      const totalModules = Number(r.total_modules) || 0
+      const doneModules = Number(r.done_modules) || 0
+      const allModulesDone = totalModules > 0 && doneModules >= totalModules
+      const isApproved = String(r.request_status || '').toLowerCase() === 'approved'
+      return {
+        courseId: r.course_id,
+        courseName: r.course_name,
+        totalModules,
+        doneModules,
+        allModulesDone,
+        requestStatus: r.request_status || null,
+        requestedAt: r.requested_at || null,
+        reviewedAt: r.reviewed_at || null,
+        remarks: r.remarks || '',
+        certId: isApproved ? r.cert_id || null : null,
+        certificateCode: isApproved ? r.certificate_code || null : null,
+        issueDate: isApproved ? r.issue_date || null : null,
+        expiryDate: isApproved ? r.expiry_date || null : null,
+      }
+    });
     res.json({ certificates });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/mobile/certificates/request", async (req, res) => {
+  try {
+    const userId = requireUserId(res, req.body.userId);
+    const courseId = String(req.body.courseId || '').trim()
+    if (!userId || !courseId) return res.status(400).json({ error: "userId and courseId are required" });
+    if (!(await userHasApprovedEnrollment(userId, courseId))) {
+      return res.status(403).json({ error: "Course is not approved for this user." })
+    }
+    if (!(await courseHasBadge(courseId))) {
+      return res.status(400).json({ error: "Certificate is not available for this course yet." })
+    }
+    const summary = await getCourseCompletionSummary(userId, courseId)
+    if (!summary.allDone) {
+      return res.status(400).json({
+        error: "Complete all modules in this course before requesting certificate approval.",
+        totalModules: summary.totalModules,
+        doneModules: summary.doneModules,
+      })
+    }
+    await pool.query(
+      `INSERT INTO certificate_requests (user_id, course_id, status, requested_at, reviewed_at, reviewed_by, remarks)
+       VALUES (?, ?, 'pending', NOW(), NULL, NULL, NULL)
+       ON DUPLICATE KEY UPDATE status='pending', requested_at=NOW(), reviewed_at=NULL, reviewed_by=NULL, remarks=NULL`,
+      [userId, courseId]
+    )
+    res.json({ success: true, courseId, status: 'pending' })
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

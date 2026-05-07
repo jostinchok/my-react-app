@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -n vite,api \"vite\" \"npm run server\"",
     "dev:vite": "vite",
-    "server": "node adminServer.js",
+    "server": "node --watch adminServer.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

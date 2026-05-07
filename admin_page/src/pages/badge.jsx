@@ -27,6 +27,8 @@ const LEVEL_CONFIG = {
 
 const BadgeManagement = () => {
   const [badges, setBadges] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [certificateRequests, setCertificateRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -35,6 +37,7 @@ const BadgeManagement = () => {
     level: "beginner",
     description: "",
     criteria: "Require 100% Progress",
+    course_id: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState(null);
@@ -42,6 +45,7 @@ const BadgeManagement = () => {
 
   const { selectedPark } = useContext(ParkContext);
   const filteredBadges = badges.filter(b => Number(b.park_id) === Number(selectedPark));
+  const filteredCourses = courses.filter(c => !c.park_id || Number(c.park_id) === Number(selectedPark));
 
   useEffect(() => {
     const fetchBadges = async () => {
@@ -59,9 +63,35 @@ const BadgeManagement = () => {
     if (selectedPark) fetchBadges();
   }, [selectedPark]);
 
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch(`http://localhost:4001/api/courses?parkId=${selectedPark}`);
+        const data = await res.json();
+        setCourses(data.courses || []);
+      } catch {
+        setCourses([]);
+      }
+    };
+    if (selectedPark) fetchCourses();
+  }, [selectedPark]);
+
+  useEffect(() => {
+    const fetchCertificateRequests = async () => {
+      try {
+        const res = await fetch(`http://localhost:4001/api/admin/certificate-requests?status=pending&parkId=${selectedPark}`);
+        const data = await res.json();
+        setCertificateRequests(data.requests || []);
+      } catch {
+        setCertificateRequests([]);
+      }
+    };
+    if (selectedPark) fetchCertificateRequests();
+  }, [selectedPark]);
+
   const handleAddBadge = async () => {
-    if (!newBadge.title.trim()) {
-      setSnackbar({ open: true, message: "Please enter a badge title", severity: "warning" });
+    if (!newBadge.title.trim() || !newBadge.course_id) {
+      setSnackbar({ open: true, message: "Please enter badge title and select course", severity: "warning" });
       return;
     }
 
@@ -79,7 +109,7 @@ const BadgeManagement = () => {
 
       setSnackbar({ open: true, message: "Badge added successfully!", severity: "success" });
       setAddDialogOpen(false);
-      setNewBadge({ title: "", level: "beginner", description: "", criteria: "Require 100% Progress"});
+      setNewBadge({ title: "", level: "beginner", description: "", criteria: "Require 100% Progress", course_id: "" });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: "error" });
     } finally {
@@ -122,7 +152,23 @@ const BadgeManagement = () => {
 
   const handleCloseAddDialog = () => {
     setAddDialogOpen(false);
-    setNewBadge({ title: "", level: "beginner", description: "", criteria: "Require 100% Progress" });
+    setNewBadge({ title: "", level: "beginner", description: "", criteria: "Require 100% Progress", course_id: "" });
+  };
+
+  const reviewCertificateRequest = async (requestId, status) => {
+    try {
+      const res = await fetch(`http://localhost:4001/api/admin/certificate-requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, reviewerId: 1 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to review request");
+      setCertificateRequests(prev => prev.filter(r => Number(r.request_id) !== Number(requestId)));
+      setSnackbar({ open: true, message: `Certificate request ${status}`, severity: "success" });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: "error" });
+    }
   };
 
   if (loading) {
@@ -196,6 +242,9 @@ const BadgeManagement = () => {
                       <Box>
                         <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e", lineHeight: 1.2, mb: 0.5 }}>
                           {badge.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                          {badge.course_name || badge.course_id || "No course linked"}
                         </Typography>
                         <Chip 
                           label={config.label} 
@@ -326,6 +375,33 @@ const BadgeManagement = () => {
         )}
       </Box>
 
+      <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Pending Certificate Requests</Typography>
+        {certificateRequests.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No pending certificate requests.</Typography>
+        ) : (
+          <Stack spacing={1.5}>
+            {certificateRequests.map((request) => (
+              <Paper key={request.request_id} variant="outlined" sx={{ p: 2, borderRadius: 2, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{request.user_name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{request.course_name} ({request.course_id})</Typography>
+                  <Typography variant="caption" color="text.secondary">Requested: {new Date(request.requested_at).toLocaleString()}</Typography>
+                </Box>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button size="small" variant="outlined" color="error" onClick={() => reviewCertificateRequest(request.request_id, "declined")}>
+                    Decline
+                  </Button>
+                  <Button size="small" variant="contained" color="success" onClick={() => reviewCertificateRequest(request.request_id, "approved")}>
+                    Approve
+                  </Button>
+                </Box>
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </Paper>
+
 
       {/* 添加徽章弹窗 */}
       <Dialog open={addDialogOpen} onClose={handleCloseAddDialog} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -346,6 +422,16 @@ const BadgeManagement = () => {
             </FormControl>
             <TextField label="Description" fullWidth value={newBadge.description} onChange={(e) => setNewBadge({ ...newBadge, description: e.target.value })} />
             <FormControl fullWidth>
+              <InputLabel>Course</InputLabel>
+              <Select value={newBadge.course_id} label="Course" onChange={(e) => setNewBadge({ ...newBadge, course_id: e.target.value })}>
+                {filteredCourses.map((course) => (
+                  <MenuItem key={course.course_id} value={course.course_id}>
+                    {course.course_name} ({course.course_id})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
               <InputLabel>Criteria</InputLabel>
               <Select value={newBadge.criteria} onChange={(e) => setNewBadge({ ...newBadge, criteria: e.target.value })}>
                 <MenuItem value="Require 100% Progress">Require 100% Progress</MenuItem>
@@ -361,7 +447,7 @@ const BadgeManagement = () => {
           <Button 
             onClick={handleAddBadge} 
             variant="contained" 
-            disabled={!newBadge.title.trim() || isSubmitting}
+            disabled={!newBadge.title.trim() || !newBadge.course_id || isSubmitting}
           >
             {isSubmitting ? "Adding..." : "Add"}
           </Button>
