@@ -66,7 +66,7 @@ Expected local routes:
 7. Confirm the Canvas progress banner says the item or quiz attempt saved to MySQL.
 8. Refresh the browser.
 9. Confirm completed item and quiz state remain complete.
-10. Open `http://localhost:5174/admin/students`.
+10. Open `http://localhost:5174/admin/guides`.
 11. Confirm the matching guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score.
 12. If the User API or MySQL is unavailable, confirm the Portal clearly says it is using local fallback and Admin shows a safe empty/fallback progress message.
 

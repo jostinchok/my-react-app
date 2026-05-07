@@ -71,7 +71,7 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
     if (location.pathname.startsWith("/admin/course-requests")) return "REQUESTS";
     if (location.pathname.startsWith("/admin/course")) return "COURSE";
     if (location.pathname.startsWith("/admin/training")) return "TRAINING";
-    if (location.pathname.startsWith("/admin/students")) return "GUIDES";
+    if (location.pathname.startsWith("/admin/guides")) return "GUIDES";
     if (location.pathname.startsWith("/admin/badge")) return "BADGE";
     if (location.pathname.startsWith("/admin/detection")) return "DETECTION";
     return "DASHBOARD";

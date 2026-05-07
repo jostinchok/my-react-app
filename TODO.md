@@ -10,7 +10,7 @@ Git is available in this team repo branch for the final checkpoint. Do not stage
 
 ## Top Priority: Canvas Learning Progress
 
-The Canvas-style course/module/item builder is connected from Admin to the Park Guide User Portal. Item progress and quiz attempts now have User API/MySQL persistence, and Admin can view guide progress summaries from `/admin/students`.
+The Canvas-style course/module/item builder is connected from Admin to the Park Guide User Portal. Item progress and quiz attempts now have User API/MySQL persistence, and Admin can view guide progress summaries from `/admin/guides`.
 
 - [x] Add server-side persistence for a user completing a Canvas module item.
 - [x] Add server-side persistence for a user submitting a Canvas quiz item and its result.
@@ -27,7 +27,7 @@ The Canvas-style course/module/item builder is connected from Admin to the Park 
 | User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, certificates, notifications, schedule, profile, and help. |
 | Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces and backend-loaded modules when the user API is running. |
 | Admin Dashboard | Demo-ready | Open `http://localhost:5174/admin`; confirm admin landing page loads. |
-| Admin Course / Training / Guide / Badge Pages | Demo-ready | Open `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/students`, and `/admin/badge`; confirm Canvas courses/modules/items, resources, guides, enrollment requests, and badges use the admin API. |
+| Admin Course / Training / Guide / Badge Pages | Demo-ready | Open `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/guides`, and `/admin/badge`; confirm Canvas courses/modules/items, resources, guides, enrollment requests, and badges use the admin API. |
 | Admin Incident Detection | Demo-ready | Open `http://localhost:5174/admin/detection`; show AI and IoT rows, summary cards, filters, evidence, metadata, ranger recommendations, fallback/live states, and Admin official status update. |
 | Park Ranger Console | Demo-ready | Open `http://localhost:5174/admin/ranger`; show response-only role, urgent incidents, field notes, and recommendation buttons. Ranger recommendations do not change official incident status. |
 | Backend API | Demo-ready | `curl http://localhost:4000/api/health`; confirm `persistence=mysql`, `requested=mysql`, and `active=mysql`. |

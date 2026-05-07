@@ -237,7 +237,7 @@ Supported Canvas item preview checks:
 Persistent progress check:
 
 - Canvas item completion and quiz results save through the User API when MySQL is running and `004_canvas_learning_progress.sql` has been applied. Mark an item complete, submit a quiz, refresh the User Portal, and verify completion/quiz state remains. If the API/database is unavailable, the Portal shows a local fallback progress message.
-- Admin progress review: open `http://localhost:5174/admin/students` and confirm each guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score from `http://localhost:4002/api/admin/canvas-progress-summary`.
+- Admin progress review: open `http://localhost:5174/admin/guides` and confirm each guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score from `http://localhost:4002/api/admin/canvas-progress-summary`.
 
 ## Terminal 3: AI Camera Monitor
 
@@ -389,7 +389,7 @@ http://localhost:5174/admin
 http://localhost:5174/admin/course
 http://localhost:5174/admin/training
 http://localhost:5174/admin/course-requests
-http://localhost:5174/admin/students
+http://localhost:5174/admin/guides
 http://localhost:5174/admin/badge
 http://localhost:5174/admin/detection
 http://localhost:5174/admin/ranger
@@ -432,7 +432,7 @@ Image rule for report/demo assets:
 5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
 7. Open Admin Course/Training pages and create or review a Canvas course, module, and module item. Confirm page, text, file, image, video, external link, quiz, and checklist item previews as time allows.
-8. Open Admin Course Requests, Students, and Badge pages to show linked guide account and certificate workflows.
+8. Open Admin Course Requests, Guides, and Badge pages to show linked guide account and certificate workflows.
 9. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
 10. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, ranger recommendations, and Admin official status update.
 11. Open Park Ranger Console at `http://localhost:5174/admin/ranger`.

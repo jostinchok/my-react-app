@@ -493,7 +493,7 @@ function AdminPage() {
       <Resource name="course" list={CourseManagement} />
       <Resource name="training" list={TrainingModuleSetup} />
       <Resource name="course-requests" list={CourseRequestsPage} />
-      <Resource name="students" list={StudentManagement} options={{ label: "Guides" }} />
+      <Resource name="guides" list={StudentManagement} options={{ label: "Guides" }} />
       <Resource name="badge" list={BadgeManagement} />
       <Resource name="detection" list={AIDetection} />
     </Admin>

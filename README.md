@@ -248,7 +248,7 @@ Admin demo routes:
 http://localhost:5174/admin/course
 http://localhost:5174/admin/training
 http://localhost:5174/admin/course-requests
-http://localhost:5174/admin/students
+http://localhost:5174/admin/guides
 http://localhost:5174/admin/badge
 ```
 

@@ -61,7 +61,70 @@ const menuProps = {
       borderRadius: "14px",
       border: "1px solid rgba(234, 214, 167, 0.86)",
       boxShadow: "0 18px 38px rgba(255, 122, 26, 0.10)",
+      background: "#fffdf7",
+      color: "#173126",
+      "& .MuiMenuItem-root": {
+        color: "#173126",
+        fontWeight: 850,
+      },
+      "& .MuiMenuItem-root.Mui-selected": {
+        backgroundColor: "#FFF3C4",
+        color: "#173126",
+      },
+      "& .MuiMenuItem-root.Mui-selected:hover": {
+        backgroundColor: "#DDFBD2",
+      },
     },
+  },
+};
+
+const guideDialogFieldSx = {
+  "& .MuiInputLabel-root": {
+    color: "#607166",
+    fontWeight: 850,
+  },
+  "& .MuiInputLabel-root.Mui-focused": {
+    color: "#FF7A1A",
+  },
+  "& .MuiOutlinedInput-root": {
+    minHeight: 54,
+    borderRadius: "14px",
+    backgroundColor: "#fffaf0",
+    color: "#173126",
+    fontWeight: 850,
+    "& fieldset": {
+      borderColor: "#D8EAC7",
+    },
+    "&:hover fieldset": {
+      borderColor: "#A7E957",
+    },
+    "&.Mui-focused fieldset": {
+      borderColor: "#FF7A1A",
+      borderWidth: 2,
+    },
+    "&.Mui-disabled": {
+      backgroundColor: "#FFFDF5",
+      color: "#56685D",
+    },
+  },
+  "& .MuiOutlinedInput-input": {
+    color: "#173126",
+    fontWeight: 850,
+    "&::placeholder": {
+      color: "#6F7F73",
+      opacity: 1,
+    },
+  },
+  "& .MuiSelect-select": {
+    color: "#173126",
+    fontWeight: 850,
+  },
+  "& .MuiFormHelperText-root": {
+    color: "#6F7F73",
+    fontWeight: 750,
+  },
+  "& .MuiSvgIcon-root": {
+    color: "#173126",
   },
 };
 
@@ -665,9 +728,27 @@ const StudentManagement = () => {
           {studentForm.id ? "Edit Guide Account" : "Add Guide Account"}
         </DialogTitle>
         <DialogContent sx={{ display: "grid", gap: 2, pt: "20px !important" }}>
-          <TextField label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
-          <TextField label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
-          <TextField label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
+          <TextField
+            label="Name"
+            value={studentForm.name}
+            onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))}
+            fullWidth
+            sx={guideDialogFieldSx}
+          />
+          <TextField
+            label="Phone"
+            value={studentForm.phone}
+            onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))}
+            fullWidth
+            sx={guideDialogFieldSx}
+          />
+          <TextField
+            label="Email"
+            value={studentForm.email}
+            onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))}
+            fullWidth
+            sx={guideDialogFieldSx}
+          />
           <TextField
             label="Assigned Course"
             select
@@ -675,6 +756,7 @@ const StudentManagement = () => {
             onChange={(event) => setStudentForm((prev) => ({ ...prev, module: event.target.value }))}
             SelectProps={{ MenuProps: menuProps }}
             fullWidth
+            sx={guideDialogFieldSx}
           >
             {moduleOptions.map((option) => (
               <MenuItem key={option} value={option}>
@@ -689,6 +771,7 @@ const StudentManagement = () => {
             onChange={(event) => setStudentForm((prev) => ({ ...prev, eligibility: event.target.value }))}
             SelectProps={{ MenuProps: menuProps }}
             fullWidth
+            sx={guideDialogFieldSx}
           >
             <MenuItem value="Approved">Approved</MenuItem>
             <MenuItem value="Rejected">Rejected</MenuItem>

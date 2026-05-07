@@ -17,7 +17,7 @@ const Sidebar = () => {
     { id: "course", label: "Course", icon: "📚", to: "/admin/course" },
     { id: "training", label: "Training", icon: "📖", to: "/admin/training" },
     { id: "course-requests", label: "Requests", icon: "📝", to: "/admin/course-requests" },
-    { id: "students", label: "Guides", icon: "👥", to: "/admin/students" },
+    { id: "guides", label: "Guides", icon: "👥", to: "/admin/guides" },
     { id: "badge", label: "Badge", icon: "📜", to: "/admin/badge" },
     { id: "detection", label: "Incidents", icon: "⚠️", to: "/admin/detection" },
   ];
