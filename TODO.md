@@ -24,7 +24,7 @@ The Canvas-style course/module/item builder is connected from Admin to the Park 
 | --- | --- | --- |
 | Review Hub | Demo-ready | Open `http://localhost:5173`; show all direct links, role notes, and optional cybersecurity-control notes. |
 | Login/Register/Forgot Password | Demo-ready / Auth-enhanced | Show database-backed login/register/forgot-password OTP flow. Explain production JWT/session route protection is deferred. |
-| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show dashboard, API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, certificates, notifications, schedule, profile, and help. |
+| User/Park Guide portal | Demo-ready | Open `http://localhost:5175/user`; switch User01/User02/User03; show backend course list, selected course shell, course overview, modules, item detail, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, certificates, notifications, schedule, profile, and help. |
 | Mobile Preview | Partial / Demo-ready | Open `http://localhost:8081`; show mobile-style access to training/account surfaces and backend-loaded modules when the user API is running. |
 | Admin Dashboard | Demo-ready | Open `http://localhost:5174/admin`; confirm admin landing page loads. |
 | Admin Course / Training / Guide / Badge Pages | Demo-ready | Open `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/students`, and `/admin/badge`; confirm Canvas courses/modules/items, resources, guides, enrollment requests, and badges use the admin API. |
@@ -71,6 +71,7 @@ The Canvas-style course/module/item builder is connected from Admin to the Park 
 - [ ] Create/import `park_guide_database` with `database/db.sql`, then apply `user_login/server/migrations/002_training_platform_tables.sql` for Admin/User training linkage.
 - [ ] Apply `user_login/server/migrations/003_canvas_module_items.sql` for Canvas-style module item storage if the table is not already present.
 - [ ] Apply `user_login/server/migrations/004_canvas_learning_progress.sql` for Canvas item completion and quiz-attempt persistence.
+- [ ] Start the Admin API, then run `npm run seed:canvas-demo` to insert the three backend demo courses.
 - [ ] In Admin Course, create or review one Canvas course, module, and item, then open the User Portal and confirm the item renders from the user API.
 - [ ] In Admin Detection, trigger IoT once and confirm the 2-second delayed 720p browser capture appears in both Admin and Park Ranger.
 - [ ] In Park Ranger Console, submit a recommendation with a field note and confirm the visible official status remains unchanged until Admin updates it.

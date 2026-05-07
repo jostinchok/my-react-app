@@ -166,6 +166,13 @@ mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_m
 mysql -u root -p park_guide_database < user_login/server/migrations/004_canvas_learning_progress.sql
 ```
 
+After Terminal 1 has started the Admin training API on `http://localhost:4002`, insert the three demo Canvas courses through the backend/API/database flow:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm run seed:canvas-demo
+```
+
 Check tables:
 
 ```bash
@@ -428,7 +435,7 @@ Image rule for report/demo assets:
 1. Open `http://localhost:5173` and show the root hub cards and service links.
 2. Open Login/Register/Forgot Password, then Park Guide/User Portal at `http://localhost:5175/user`.
 3. Switch User01/User02/User03.
-4. Show API-linked Canvas modules/items, item preview, quiz interaction, checklist rendering, persisted completion state with local fallback, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
+4. Show backend course list, selected course shell, internal Overview/Modules/Item Detail/Progress/Files/Completion navigation, item preview, quiz interaction, checklist rendering, persisted completion state with local fallback, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
 5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
 7. Open Admin Course/Training pages and create or review a Canvas course, module, and module item. Confirm page, text, file, image, video, external link, quiz, and checklist item previews as time allows.

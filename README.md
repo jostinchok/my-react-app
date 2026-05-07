@@ -12,7 +12,7 @@ This is the active team repository. The completed demo was synced from the local
 
 This project demonstrates the three Project Scope areas:
 
-1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, badges/certificates, notifications, profile, and role boundaries.
+1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal with course list and selected course shell, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, badges/certificates, notifications, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
 3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger recommendation console, evidence serving, and MySQL-backed monitoring incident persistence.
 
@@ -154,6 +154,8 @@ mysql -u root -p park_guide_database < user_login/server/migrations/002_training
 mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/004_canvas_learning_progress.sql
 npm run dev
+# In a second terminal after the Admin API at :4002 is healthy:
+npm run seed:canvas-demo
 ```
 
 AI dataset improvement remains future work and is not part of this merge.
@@ -263,6 +265,23 @@ http://localhost:4001/api/canvas-progress/summary?userId=1
 http://localhost:4002/api/courses
 http://localhost:4002/api/courses/<COURSE_ID>/canvas
 http://localhost:4002/api/admin/canvas-progress-summary
+```
+
+Seed the presentation courses through the Admin API/database path:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm run dev
+# In a second terminal after http://localhost:4002/api/health is online:
+npm run seed:canvas-demo
+```
+
+The seed command inserts:
+
+```text
+SFC Field Response Essentials
+Sarawak Protected Wildlife Awareness
+SFC Park Guide Orientation
 ```
 
 Check stored incidents:

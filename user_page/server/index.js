@@ -529,10 +529,16 @@ const normalizeCourseResource = (row = {}) => ({
 
 const buildModules = async (userId) => {
   const hasCourseId = await columnExists('training_modules', 'course_id')
+  const hasCoursesTable = hasCourseId ? await tableExists('courses') : false
   const modules = await rowsOf(
     `SELECT
        tm.module_id,
        ${hasCourseId ? 'tm.course_id' : 'NULL AS course_id'},
+       ${hasCoursesTable ? 'c.course_name' : 'NULL AS course_name'},
+       ${hasCoursesTable ? 'c.description AS course_description' : 'NULL AS course_description'},
+       ${hasCoursesTable ? "DATE_FORMAT(c.start_date, '%Y-%m-%d')" : 'NULL'} AS course_start_date,
+       ${hasCoursesTable ? "DATE_FORMAT(c.end_date, '%Y-%m-%d')" : 'NULL'} AS course_end_date,
+       ${hasCoursesTable ? 'c.total_contact_hours' : 'NULL'} AS course_contact_hours,
        tm.title,
        tm.description,
        tm.category,
@@ -550,6 +556,7 @@ const buildModules = async (userId) => {
        p.quiz_score,
        p.status AS progress_status
      FROM training_modules tm
+     ${hasCoursesTable ? 'LEFT JOIN courses c ON c.course_id = tm.course_id' : ''}
      LEFT JOIN progress p ON p.module_id = tm.module_id AND p.user_id = ?
      ORDER BY tm.created_at DESC, tm.module_id DESC`,
     [userId]
@@ -681,6 +688,19 @@ const buildModules = async (userId) => {
     return {
       ...module,
       id: module.module_id,
+      courseId: module.course_id,
+      course_id: module.course_id,
+      courseName: module.course_name || module.course_id || 'SFC Training Course',
+      course_name: module.course_name || module.course_id || 'SFC Training Course',
+      courseTitle: module.course_name || module.course_id || 'SFC Training Course',
+      courseDescription: module.course_description || '',
+      course_description: module.course_description || '',
+      courseStartDate: formatDateOnly(module.course_start_date),
+      course_start_date: formatDateOnly(module.course_start_date),
+      courseEndDate: formatDateOnly(module.course_end_date),
+      course_end_date: formatDateOnly(module.course_end_date),
+      courseContactHours: Number(module.course_contact_hours || 0),
+      course_contact_hours: Number(module.course_contact_hours || 0),
       image: module.image_url,
       accent: module.accent_color,
       badge: module.badge_name,

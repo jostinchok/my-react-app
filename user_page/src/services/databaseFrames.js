@@ -266,6 +266,12 @@ export const normalizeModuleRow = (row, index = 0) => {
   return {
     id,
     courseId: asText(row.course_id, ''),
+    courseName: asText(firstValue(row.courseName, row.course_name, row.course_title), ''),
+    courseTitle: asText(firstValue(row.courseTitle, row.course_name, row.course_title), ''),
+    courseDescription: asText(firstValue(row.courseDescription, row.course_description), ''),
+    courseStartDate: asText(firstValue(row.courseStartDate, row.course_start_date), ''),
+    courseEndDate: asText(firstValue(row.courseEndDate, row.course_end_date), ''),
+    courseContactHours: Number(firstValue(row.courseContactHours, row.course_contact_hours, 0)) || 0,
     title,
     subtitle: asText(firstValue(row.subtitle, row.description), 'Module description will appear here after database data is loaded.'),
     category: asText(firstValue(row.category, row.type), 'Database Module'),

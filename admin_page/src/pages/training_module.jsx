@@ -256,7 +256,7 @@ const TrainingModuleSetup = () => {
         <Box sx={{ ...panelSx, p: 4, textAlign: "center" }}>
           <Typography sx={{ color: "#173126", fontWeight: 950 }}>No Canvas-style courses yet</Typography>
           <Typography sx={{ mt: 1, color: "#607166", fontWeight: 800 }}>
-            Go to Course modules and insert the demo templates.
+            Go to Course modules and insert the three demo Canvas courses.
           </Typography>
         </Box>
       )}

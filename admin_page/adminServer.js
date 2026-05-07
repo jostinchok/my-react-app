@@ -1099,19 +1099,20 @@ app.get('/api/module-items/:itemId/download', asyncRoute(async (req, res) => {
 
 app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
   await ensureCanvasModuleItemsSchema()
+  const demoAssetBaseUrl = process.env.DEMO_TRAINING_ASSET_BASE_URL || 'http://localhost:5175/user/training'
 
   const demoCourses = [
     {
       id: 'SFC-FIELD-2026',
       name: 'SFC Field Response Essentials',
-      description: 'Canvas-style training path for reviewing AI camera evidence, IoT proximity alerts, and Ranger recommendation workflows.',
+      description: 'Canvas-style training path for AI camera evidence, IoT proximity alerts, field notes, and Admin-ready recommendations.',
       start: '2026-05-01',
       end: '2026-06-15',
       hours: 12,
       modules: [
         {
-          title: 'AI and IoT Incident Evidence',
-          description: 'Teaches Park Guides and Rangers how to review AI camera and IoT sensor evidence before sending a recommendation to Admin.',
+          title: 'AI and IoT Incident Evidence Review',
+          description: 'Review AI camera and IoT sensor evidence before writing a recommendation for Admin review.',
           category: 'Incident Evidence',
           park: 'Demo Camera Zone',
           level: 'Intermediate',
@@ -1119,15 +1120,17 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
           badge: 'AI Evidence Reviewer',
           objectives: [
             'Identify AI camera incident evidence',
-            'Differentiate touching plants, plucking plants, and touching wildlife',
+            'Differentiate Plucking Plants, wildlife contact, and sensor proximity alerts',
             'Check timestamp, location, and metadata',
             'Avoid treating weak evidence as confirmed behavior too early'
           ],
           items: [
             { type: 'page', title: 'How AI camera evidence is reviewed', description: 'Step-by-step guide for reviewing camera evidence.', content: 'Start by checking the event type, timestamp, location, image clarity, and whether the image clearly shows prohibited visitor interaction. Do not mark a case as resolved from one weak image. Park Rangers should add field notes and recommendations only. Admin remains responsible for official status decisions.' },
-            { type: 'image', title: 'Example evidence photo checklist', description: 'Checklist for reviewing an evidence image.', content: 'Image item placeholder. Upload a real evidence screenshot during demo if available.' },
-            { type: 'video', title: 'Field evidence walkthrough', description: 'Short walkthrough video placeholder.', content: 'Video item placeholder. Admin can upload MP4 training clips here.' },
-            { type: 'link', title: 'SFC field reporting guideline', description: 'External guideline reference.', external_url: 'https://sarawakforestry.com/' },
+            { type: 'text', title: 'Evidence triage note template', description: 'Short field-note pattern.', content: 'Observed behavior: what the evidence shows. Confidence: clear, partial, or unclear. Field action: what the ranger checked. Recommendation: the status outcome Admin should consider.' },
+            { type: 'image', title: 'Example AI evidence frame', description: 'Evidence review image for discussion.', external_url: `${demoAssetBaseUrl}/incident-ai-monitoring.webp`, content: 'Use the frame to discuss event label, timestamp, location, and confidence before writing a field note.' },
+            { type: 'video', title: 'Field evidence walkthrough', description: 'Short walkthrough reference.', external_url: 'https://sarawakforestry.com/', content: 'Open the linked reference during the demo or replace it with an uploaded MP4 from the Admin builder.' },
+            { type: 'link', title: 'SFC field reporting reference', description: 'External guideline reference.', external_url: 'https://sarawakforestry.com/' },
+            { type: 'file', title: 'Incident handover worksheet', description: 'Downloadable worksheet placeholder for field response handover.', external_url: `${demoAssetBaseUrl}/safety-response.webp`, content: 'Use this file item for incident handover evidence during the presentation.' },
             { type: 'checklist', title: 'Evidence quality checklist', description: 'Things to verify before recommending action.', checklist: ['Image is visible and not blurred', 'Event type matches the evidence', 'Location and timestamp are recorded', 'Sensor metadata is available for IoT alerts', 'Recommendation is written clearly for Admin review'] },
             { type: 'quiz', title: 'Is this incident ready for Admin review?', description: 'Quick scenario check.', quiz: { question: 'Who should officially change an incident status?', choices: ['Park Guide', 'Park Ranger', 'Admin', 'Visitor'], answer: 2 } }
           ]
@@ -1147,6 +1150,7 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
           ],
           items: [
             { type: 'page', title: 'Ranger recommendation role boundary', description: 'Clear explanation of what Rangers can and cannot do.', content: 'Park Rangers may view incidents, inspect field evidence, add notes, and recommend outcomes. They should not directly change official incident status. This keeps accountability with Admin while still using Ranger field expertise.' },
+            { type: 'text', title: 'Useful recommendation wording', description: 'Recommended field note phrasing.', content: 'Use neutral wording such as "Recommend In Review because the image is clear but field location needs confirmation." Avoid assigning intent to visitors.' },
             { type: 'checklist', title: 'Field note writing checklist', description: 'Checklist for useful Ranger notes.', checklist: ['Mention what was seen in the field', 'Mention whether evidence matches the location', 'Use neutral wording', 'Avoid guessing intent', 'Recommend next action clearly'] },
             { type: 'quiz', title: 'Official status vs recommendation', description: 'Role boundary quiz.', quiz: { question: 'A Ranger believes an incident is solved. What should they do?', choices: ['Change status to resolved', 'Delete the incident', 'Recommend resolved with field notes', 'Ignore the incident'], answer: 2 } }
           ]
@@ -1166,6 +1170,7 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
           ],
           items: [
             { type: 'page', title: 'Explaining rules to visitors', description: 'Simple script for visitor-facing communication.', content: 'Use friendly, direct language. Explain that protected plants and wildlife must not be touched, plucked, fed, or disturbed. Focus on safety, conservation, and visitor responsibility.' },
+            { type: 'image', title: 'Visitor safety briefing card', description: 'Visual reminder for visitor briefing.', external_url: `${demoAssetBaseUrl}/visitor-safety.webp`, content: 'Use this image item to brief visitors before trail entry.' },
             { type: 'link', title: 'Bako National Park visitor guide', description: 'Visitor reference link.', external_url: 'https://sarawakforestry.com/parks/bako-national-park/' },
             { type: 'checklist', title: 'Visitor safety reminders', description: 'Before patrol checklist.', checklist: ['Brief visitors before trail entry', 'Remind them not to feed wildlife', 'Remind them not to pluck plants', 'Report suspicious behavior early'] }
           ]
@@ -1191,6 +1196,9 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
           objectives: ['Recognize unsafe wildlife interaction', 'Explain why feeding and touching wildlife is harmful', 'Record observation notes'],
           items: [
             { type: 'page', title: 'Why touching wildlife is dangerous', description: 'Basic conservation and safety explanation.', content: 'Touching wildlife can harm animals, create aggressive behavior, spread disease, and put visitors at risk. Staff should intervene early and record evidence when available.' },
+            { type: 'text', title: 'Safe-distance briefing script', description: 'Plain-language visitor script.', content: 'Please keep a safe distance, do not feed wildlife, and let animals move away naturally. This protects visitors and the animals.' },
+            { type: 'image', title: 'Protected wildlife awareness card', description: 'Training visual for no-contact wildlife rules.', external_url: `${demoAssetBaseUrl}/biodiversity-basics.webp`, content: 'Use this image to explain why protected wildlife should be observed from a distance.' },
+            { type: 'video', title: 'Wildlife awareness reference', description: 'Reference video placeholder.', external_url: 'https://sarawakforestry.com/', content: 'Replace this with a local awareness video from Admin if available.' },
             { type: 'quiz', title: 'Wildlife safety check', description: 'Basic quiz.', quiz: { question: 'What should visitors do when they see wildlife?', choices: ['Feed it', 'Touch it gently', 'Observe from a safe distance', 'Chase it away'], answer: 2 } }
           ]
         },
@@ -1205,6 +1213,8 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
           objectives: ['Explain no-touch rules', 'Handle visitor questions', 'Escalate repeat issues'],
           items: [
             { type: 'page', title: 'No-touch policy explanation', description: 'Plain-language policy script.', content: 'Visitors should not touch, pick, pluck, feed, chase, or disturb plants and wildlife. Staff should explain the policy calmly and record incidents when evidence exists.' },
+            { type: 'file', title: 'Policy reminder card', description: 'Downloadable reminder for guide briefing.', external_url: `${demoAssetBaseUrl}/rules-compliance.webp`, content: 'Use this as a file item for no-touch briefing evidence.' },
+            { type: 'link', title: 'Sarawak Forestry policy reference', description: 'External policy reference.', external_url: 'https://sarawakforestry.com/' },
             { type: 'checklist', title: 'No-touch enforcement checklist', description: 'Quick enforcement steps.', checklist: ['Warn politely', 'Explain conservation reason', 'Record evidence if repeated', 'Escalate to Admin if needed'] }
           ]
         },
@@ -1219,7 +1229,85 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
           objectives: ['Judge evidence quality', 'Prepare escalation notes', 'Avoid false claims'],
           items: [
             { type: 'page', title: 'When to escalate', description: 'Escalation decision guide.', content: 'Escalate when evidence shows repeated contact, high-risk behavior, visitor refusal, wildlife distress, or unclear incidents needing Admin review.' },
+            { type: 'text', title: 'Escalation summary format', description: 'Short structured summary.', content: 'Incident type, location, time, evidence quality, field note, recommended outcome, and any follow-up needed.' },
             { type: 'link', title: 'Sarawak Forestry Corporation', description: 'Official reference site.', external_url: 'https://sarawakforestry.com/' }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'SFC-GUIDE-2026',
+      name: 'SFC Park Guide Orientation',
+      description: 'Orientation course for Park Guides using the digital portal, course resources, visitor briefings, and completion evidence.',
+      start: '2026-05-01',
+      end: '2026-07-15',
+      hours: 8,
+      modules: [
+        {
+          title: 'Digital Portal Orientation',
+          description: 'Introduces the SFC Digital Portal, Canvas-style course shell, module items, progress, files, and certificates.',
+          category: 'Orientation',
+          park: 'All Parks',
+          level: 'Beginner',
+          duration: '40 minutes',
+          badge: 'Portal Ready',
+          objectives: [
+            'Open assigned courses',
+            'Use course-level navigation',
+            'Complete module items',
+            'Find files and completion evidence'
+          ],
+          items: [
+            { type: 'page', title: 'Welcome to the SFC Digital Portal', description: 'Orientation page for new Park Guides.', content: 'The portal organizes training into courses. Each course contains an overview, modules, item detail, progress, files, and certificate state. Complete each item and quiz to build completion evidence for Admin.' },
+            { type: 'text', title: 'Course shell quick reference', description: 'Short reference for course navigation.', content: 'Use Overview for course purpose, Modules for the learning sequence, Item Detail for the selected page or quiz, Progress for completion, Files for resources, and Completion for badge or certificate state.' },
+            { type: 'image', title: 'Portal learning flow diagram', description: 'Visual guide for course navigation.', external_url: `${demoAssetBaseUrl}/ecotourism-briefing.webp`, content: 'Use this diagram as an orientation visual for the course shell.' },
+            { type: 'video', title: 'Portal walkthrough reference', description: 'Short walkthrough placeholder.', external_url: 'https://sarawakforestry.com/', content: 'Replace with a recorded walkthrough during final polish if needed.' },
+            { type: 'file', title: 'Guide onboarding checklist file', description: 'Orientation file item for onboarding.', external_url: `${demoAssetBaseUrl}/protected-areas.webp`, content: 'File item used for onboarding checklist evidence.' },
+            { type: 'link', title: 'SFC official website', description: 'External organization reference.', external_url: 'https://sarawakforestry.com/' },
+            { type: 'checklist', title: 'First login checklist', description: 'Steps for a new Park Guide.', checklist: ['Open the assigned course', 'Read the overview', 'Complete the first page item', 'Submit one quiz attempt', 'Review completion state'] },
+            { type: 'quiz', title: 'Portal navigation check', description: 'Course shell quiz.', quiz: { question: 'Where should a Park Guide check certificate readiness?', choices: ['Files', 'Completion', 'Admin Detection', 'Park Ranger Console'], answer: 1 } }
+          ]
+        },
+        {
+          title: 'Visitor Briefing Standards',
+          description: 'Covers practical visitor briefings, trail safety, and protected-area expectations.',
+          category: 'Visitor Briefing',
+          park: 'Kubah National Park',
+          level: 'Beginner',
+          duration: '45 minutes',
+          badge: 'Visitor Briefing Ready',
+          objectives: [
+            'Prepare a clear visitor briefing',
+            'Explain safety and conservation rules',
+            'Use the correct escalation path'
+          ],
+          items: [
+            { type: 'page', title: 'Trail briefing structure', description: 'Briefing sequence for guide teams.', content: 'Start with route expectations, safety reminders, no-contact conservation rules, weather awareness, and how visitors should ask for help.' },
+            { type: 'image', title: 'Rainforest safety visual', description: 'Orientation image for safety briefing.', external_url: `${demoAssetBaseUrl}/kubah-rainforest-safety.webp`, content: 'Use this image item to support a clear safety briefing.' },
+            { type: 'checklist', title: 'Before departure checklist', description: 'Quick checks before a guided route.', checklist: ['Confirm headcount', 'Confirm route and weather', 'Explain protected wildlife boundaries', 'Confirm emergency contact path'] },
+            { type: 'quiz', title: 'Briefing readiness check', description: 'Visitor briefing scenario.', quiz: { question: 'What should be included before visitors enter a protected trail?', choices: ['Only the route name', 'Safety, conservation rules, and contact path', 'A souvenir list', 'No briefing is needed'], answer: 1 } }
+          ]
+        },
+        {
+          title: 'Completion Evidence and Certificates',
+          description: 'Explains how item completion, quiz attempts, and Admin review connect to certificates.',
+          category: 'Completion',
+          park: 'All Parks',
+          level: 'Beginner',
+          duration: '30 minutes',
+          badge: 'Certificate Ready',
+          objectives: [
+            'Complete all required items',
+            'Submit quiz attempts',
+            'Review certificate readiness'
+          ],
+          items: [
+            { type: 'page', title: 'How completion evidence is built', description: 'Completion and certificate state explanation.', content: 'Each completed item and quiz attempt is saved through the User API when MySQL is running. Admin can review progress summaries and issue badges or certificates when the course requirements are complete.' },
+            { type: 'text', title: 'Completion evidence summary', description: 'What Admin can review.', content: 'Admin sees available items, completed items, quiz attempts, latest score, and course-level progress. This demo keeps completion state separate from AI/IoT incident status.' },
+            { type: 'file', title: 'Certificate readiness worksheet', description: 'Course completion file item.', external_url: `${demoAssetBaseUrl}/conservation-law.webp`, content: 'Use this file item as a certificate readiness worksheet during the demo.' },
+            { type: 'link', title: 'Course completion support', description: 'External support reference.', external_url: 'https://sarawakforestry.com/' },
+            { type: 'checklist', title: 'Certificate readiness checklist', description: 'Final course completion checks.', checklist: ['All module items completed', 'Quiz attempts submitted', 'Progress page reviewed', 'Completion page checked', 'Admin can issue badge if approved'] },
+            { type: 'quiz', title: 'Completion state check', description: 'Final orientation quiz.', quiz: { question: 'What data should remain separate from training completion?', choices: ['Canvas item progress', 'Quiz attempts', 'AI and IoT incident status', 'Course certificates'], answer: 2 } }
           ]
         }
       ]
@@ -1295,7 +1383,15 @@ app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
     }
   }
 
-  res.json({ message: 'Canvas-style demo course templates inserted.', courses: demoCourses.map((course) => course.id) })
+  res.json({
+    message: 'Canvas-style demo courses inserted into the training database.',
+    courses: demoCourses.map((course) => ({
+      id: course.id,
+      name: course.name,
+      modules: course.modules.length,
+      items: course.modules.reduce((sum, module) => sum + module.items.length, 0),
+    })),
+  })
 }))
 
 

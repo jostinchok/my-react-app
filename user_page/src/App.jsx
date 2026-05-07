@@ -33,6 +33,28 @@ const userBasePath = import.meta.env.BASE_URL.endsWith('/')
 const logoSrc = `${userBasePath}sfc-citrus-logo.webp`
 const editableProfileFields = new Set(['displayName', 'email', 'phone', 'yearsExperience', 'address'])
 
+const readInitialShell = () => {
+  if (typeof window === 'undefined') return {}
+  const params = new URLSearchParams(window.location.search)
+  const requestedSection = cleanText(params.get('section'), 'overview')
+  const sectionToTab = {
+    overview: 'modules',
+    modules: 'modules',
+    item: 'module',
+    progress: 'progress',
+    files: 'files',
+    completion: 'certificates',
+  }
+  const requestedTab = cleanText(params.get('tab'), sectionToTab[requestedSection], 'dashboard')
+  const allowedTabs = new Set(['dashboard', 'modules', 'module', 'progress', 'files', 'certificates', 'notifications', 'schedule', 'profile'])
+  const allowedSections = new Set(['overview', 'modules'])
+  return {
+    activeTab: allowedTabs.has(requestedTab) ? requestedTab : 'dashboard',
+    courseSubView: allowedSections.has(requestedSection) ? requestedSection : 'overview',
+    courseId: cleanText(params.get('course')),
+  }
+}
+
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
 
 const readStoredUsers = () => {
@@ -338,8 +360,10 @@ const readLoginSession = () => {
 function App() {
   const [users, setUsers] = useState(readStoredUsers)
   const [loginSession] = useState(readLoginSession)
+  const [initialShell] = useState(readInitialShell)
   const [currentUserId, setCurrentUserId] = useState(loginSession?.user_id || users[0]?.id || demoUsers[0].id)
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState(initialShell.activeTab || 'dashboard')
+  const [courseSubView, setCourseSubView] = useState(initialShell.courseSubView || 'overview')
   const [trainingModules, setTrainingModules] = useState([])
   const [moduleFrame, setModuleFrame] = useState({
     status: 'loading',
@@ -364,6 +388,7 @@ function App() {
     status: 'loading',
     message: 'Waiting for uploaded course files.',
   })
+  const [selectedCourseId, setSelectedCourseId] = useState(initialShell.courseId || null)
   const [selectedModuleId, setSelectedModuleId] = useState(null)
   const [selectedCanvasItemId, setSelectedCanvasItemId] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -421,6 +446,12 @@ function App() {
       .then((modules) => {
         if (ignore) return
         setTrainingModules(modules)
+        const firstCourseId = cleanText(modules[0]?.courseId, modules[0]?.course_id)
+        setSelectedCourseId((currentCourseId) =>
+          currentCourseId && modules.some((module) => String(cleanText(module.courseId, module.course_id)) === String(currentCourseId))
+            ? currentCourseId
+            : firstCourseId || null
+        )
         setSelectedModuleId(modules[0]?.id || null)
         setModuleFrame({
           status: modules.length > 0 ? 'ready' : 'empty',
@@ -569,7 +600,78 @@ function App() {
       }
 
   const profileUser = currentUser
-  const selectedModule = trainingModules.find((module) => module.id === selectedModuleId) || null
+  const courseList = useMemo(() => {
+    const courses = new Map()
+
+    trainingModules.forEach((module, index) => {
+      const courseId = cleanText(module.courseId, module.course_id, module.courseName, `course-${index + 1}`)
+      const existing = courses.get(courseId) || {
+        id: courseId,
+        courseId,
+        name: cleanText(module.courseName, module.courseTitle, module.course_name, courseId),
+        description: cleanText(module.courseDescription, module.course_description, 'Course overview will appear after Admin adds a description.'),
+        startDate: cleanText(module.courseStartDate, module.course_start_date),
+        endDate: cleanText(module.courseEndDate, module.course_end_date),
+        contactHours: Number(module.courseContactHours ?? module.course_contact_hours ?? 0) || 0,
+        modules: [],
+        resources: new Map(),
+      }
+
+      existing.modules.push(module)
+
+      toList(module.resources).forEach((resource, resourceIndex) => {
+        const id = cleanText(resource?.id, `${module.id}-resource-${resourceIndex + 1}`)
+        existing.resources.set(id, {
+          id,
+          title: toPlainText(resource) || `Resource ${resourceIndex + 1}`,
+          type: cleanText(resource?.type, 'File'),
+          moduleTitle: module.title,
+          moduleId: module.id,
+          url: cleanText(resource?.url, resource?.href, resource?.fileUrl),
+        })
+      })
+
+      getCanvasItems(module)
+        .filter(isResourceLikeItem)
+        .forEach((item) => {
+          existing.resources.set(item.id, {
+            id: item.id,
+            title: item.title,
+            type: itemTypeMeta(item.type).label,
+            moduleTitle: module.title,
+            moduleId: module.id,
+            url: item.url,
+          })
+        })
+
+      courses.set(courseId, existing)
+    })
+
+    return [...courses.values()].map((course) => ({
+      ...course,
+      modules: course.modules.sort((a, b) => cleanText(a.title).localeCompare(cleanText(b.title))),
+      resources: [...course.resources.values()],
+      itemCount: course.modules.reduce((sum, module) => sum + getCanvasItems(module).length, 0),
+    }))
+  }, [trainingModules])
+
+  useEffect(() => {
+    if (courseList.length === 0) {
+      setSelectedCourseId(null)
+      return
+    }
+    if (!courseList.some((course) => String(course.id) === String(selectedCourseId))) {
+      setSelectedCourseId(courseList[0].id)
+    }
+  }, [courseList, selectedCourseId])
+
+  const selectedCourse = courseList.find((course) => String(course.id) === String(selectedCourseId)) || courseList[0] || null
+  const selectedCourseModules = selectedCourse?.modules || []
+  const selectedModule =
+    selectedCourseModules.find((module) => String(module.id) === String(selectedModuleId)) ||
+    trainingModules.find((module) => String(module.id) === String(selectedModuleId)) ||
+    selectedCourseModules[0] ||
+    null
   const selectedModuleItems = useMemo(() => getCanvasItems(selectedModule), [selectedModule])
   const selectedModuleObjectives = useMemo(() => getModuleObjectives(selectedModule), [selectedModule])
   const selectedCanvasItem = selectedModuleItems.find((item) => item.id === selectedCanvasItemId) || selectedModuleItems[0] || null
@@ -592,6 +694,15 @@ function App() {
     }
     return attempts
   }, [canvasQuizAttempts])
+
+  useEffect(() => {
+    if (!selectedCourse) return
+    if (selectedCourse.modules.some((module) => String(module.id) === String(selectedModuleId))) return
+
+    const firstModule = selectedCourse.modules[0] || null
+    setSelectedModuleId(firstModule?.id || null)
+    setSelectedCanvasItemId(firstModule ? getCanvasItems(firstModule)[0]?.id || null : null)
+  }, [selectedCourseId, selectedModuleId, trainingModules])
 
   useEffect(() => {
     if (!selectedModule) {
@@ -641,6 +752,18 @@ function App() {
         return [...unique.values()]
       }),
     [trainingModules]
+  )
+  const selectedCourseResources = selectedCourse?.resources || []
+  const selectedCourseModuleIds = useMemo(
+    () => new Set(selectedCourseModules.map((module) => String(module.id))),
+    [selectedCourseModules]
+  )
+  const selectedCourseFiles = useMemo(
+    () =>
+      courseFiles.filter((file) =>
+        !selectedCourse || selectedCourseModuleIds.has(String(file.moduleId)) || cleanText(file.course) === selectedCourse.name
+      ),
+    [courseFiles, selectedCourse, selectedCourseModuleIds]
   )
 
   const updateCurrentUser = (updater) => {
@@ -709,6 +832,18 @@ function App() {
     return Math.round((completedCount / items.length) * 100)
   }
 
+  const getCourseProgress = (course, user = currentUser) => {
+    const modules = course?.modules || []
+    if (modules.length === 0) return 0
+    return Math.round(modules.reduce((sum, module) => sum + getProgress(module, user), 0) / modules.length)
+  }
+
+  const getCourseCompletedItemCount = (course) =>
+    (course?.modules || []).reduce(
+      (sum, module) => sum + getCanvasItems(module).filter((item) => isCanvasItemDone(module, item)).length,
+      0
+    )
+
   const enrolledModules = useMemo(
     () => trainingModules.filter((module) => isEnrolled(module)),
     [currentUser, trainingModules, canvasProgressRecords]
@@ -753,6 +888,10 @@ function App() {
       }))
     return [...baseCertificates, ...readyToReview]
   }, [currentUser, completedModules, databaseCertificates])
+  const selectedCourseCertificates = useMemo(
+    () => certificates.filter((certificate) => selectedCourseModuleIds.has(String(certificate.moduleId))),
+    [certificates, selectedCourseModuleIds]
+  )
 
   const earnedBadgeIds = useMemo(
     () => new Set(completedModules.map((module) => module.id)),
@@ -765,13 +904,13 @@ function App() {
   }, [currentUser, enrolledModules, trainingModules, canvasProgressRecords, canvasQuizAttempts])
 
   const categories = useMemo(
-    () => ['all', ...new Set(trainingModules.map((module) => module.category))],
-    [trainingModules]
+    () => ['all', ...new Set(selectedCourseModules.map((module) => module.category))],
+    [selectedCourseModules]
   )
 
   const filteredModules = useMemo(() => {
     const query = moduleSearch.trim().toLowerCase()
-    return trainingModules.filter((module) => {
+    return selectedCourseModules.filter((module) => {
       const progress = getProgress(module)
       const status =
         progress === 100 ? 'completed' : isEnrolled(module) ? 'in-progress' : 'available'
@@ -784,17 +923,17 @@ function App() {
       const matchesCategory = moduleCategory === 'all' || moduleCategory === module.category
       return matchesSearch && matchesStatus && matchesCategory
     })
-  }, [currentUser, moduleSearch, moduleStatus, moduleCategory, trainingModules, canvasProgressRecords, canvasQuizAttempts])
+  }, [currentUser, moduleSearch, moduleStatus, moduleCategory, selectedCourseModules, canvasProgressRecords, canvasQuizAttempts])
 
   const categoryProgress = useMemo(() => {
-    return [...new Set(trainingModules.map((module) => module.category))].map((category) => {
-      const modules = trainingModules.filter((module) => module.category === category)
+    return [...new Set(selectedCourseModules.map((module) => module.category))].map((category) => {
+      const modules = selectedCourseModules.filter((module) => module.category === category)
       const average = Math.round(
         modules.reduce((sum, module) => sum + getProgress(module), 0) / modules.length
       )
       return { category, average }
     })
-  }, [currentUser, trainingModules, canvasProgressRecords, canvasQuizAttempts])
+  }, [currentUser, selectedCourseModules, canvasProgressRecords, canvasQuizAttempts])
 
   const savedResourceIds = new Set(currentUser.savedResources || [])
   const savedResources = [
@@ -809,10 +948,41 @@ function App() {
     setActiveTab('dashboard')
   }
 
+  const goToCourseSection = (section, courseId = selectedCourse?.id) => {
+    const nextCourse = courseList.find((course) => String(course.id) === String(courseId)) || selectedCourse
+    if (nextCourse?.id) {
+      setSelectedCourseId(nextCourse.id)
+      const moduleStillInCourse = nextCourse.modules.some((module) => String(module.id) === String(selectedModuleId))
+      const nextModule = moduleStillInCourse
+        ? nextCourse.modules.find((module) => String(module.id) === String(selectedModuleId))
+        : nextCourse.modules[0]
+      setSelectedModuleId(nextModule?.id || null)
+      setSelectedCanvasItemId(nextModule ? getCanvasItems(nextModule)[0]?.id || null : null)
+    }
+
+    if (section === 'overview' || section === 'modules') {
+      setCourseSubView(section)
+      setActiveTab('modules')
+    } else if (section === 'item') {
+      setActiveTab('module')
+    } else if (section === 'completion') {
+      setActiveTab('certificates')
+    } else {
+      setActiveTab(section)
+    }
+    setSidebarOpen(false)
+  }
+
+  const openCourse = (courseId, section = 'overview') => {
+    goToCourseSection(section, courseId)
+  }
+
   const openModule = (moduleId) => {
     if (!moduleId) return
     const module = trainingModules.find((item) => item.id === moduleId)
     const firstItem = getCanvasItems(module)[0]
+    const courseId = cleanText(module?.courseId, module?.course_id)
+    if (courseId) setSelectedCourseId(courseId)
     setSelectedModuleId(moduleId)
     setSelectedCanvasItemId(firstItem?.id || null)
     setActiveTab('module')
@@ -1227,14 +1397,14 @@ function App() {
   }
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'D' },
-    { id: 'modules', label: 'My Modules', icon: 'M' },
-    { id: 'module', label: 'Module Details', icon: 'I' },
+    { id: 'dashboard', label: 'Courses', icon: 'C' },
+    { id: 'modules', label: 'Course Overview', icon: 'O' },
+    { id: 'module', label: 'Item Detail', icon: 'I' },
     { id: 'progress', label: 'Progress', icon: 'P' },
-    { id: 'certificates', label: 'Certificates', icon: 'C' },
+    { id: 'files', label: 'Files', icon: 'F' },
+    { id: 'certificates', label: 'Completion', icon: '✓' },
     { id: 'notifications', label: 'Notifications', icon: 'N' },
     { id: 'schedule', label: 'Schedule', icon: 'S' },
-    { id: 'files', label: 'Files', icon: 'F' },
     { id: 'profile', label: 'Profile', icon: 'U' },
   ]
 
@@ -1256,6 +1426,7 @@ function App() {
               type="button"
               className={activeTab === item.id ? 'active' : ''}
               onClick={() => {
+                if (item.id === 'modules') setCourseSubView('overview')
                 setActiveTab(item.id)
                 setSidebarOpen(false)
               }}
@@ -1303,72 +1474,74 @@ function App() {
 
         <div className="page-scroll">
           {activeTab === 'dashboard' && (
-            <section className="page-stack">
-              <div className="hero-grid">
-                <div
-                  className="hero-copy"
-                  style={{ '--hero-image': nextModule && moduleImageSrc(nextModule) ? `url(${moduleImageSrc(nextModule)})` : 'none' }}
-                >
-                  <span className="kicker">Citrus learning path</span>
-                  <h2>Fresh field training for Sarawak park guides.</h2>
-                  <p>
-                    Continue assigned modules, pass scenario quizzes, save field resources, and build certificate evidence from one polished user portal.
-                  </p>
-                  <div className="hero-actions">
-                    <button type="button" disabled={!nextModule} onClick={() => openModule(nextModule?.id)}>
-                      {nextModule ? `Continue ${nextModule.title}` : 'Waiting for modules'}
-                    </button>
-                    <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
-                      Browse all modules
-                    </button>
-                  </div>
-                </div>
-                <div className="next-card">
-                  {nextModule ? (
-                    <>
-                      <ModuleVisual module={nextModule} className="next-card-visual" />
-                      <div>
-                        <span>Next action</span>
-                        <strong>{nextModule.title}</strong>
-                        <small>{getProgress(nextModule)}% complete</small>
-                      </div>
-                    </>
-                  ) : (
-                    <EmptyFrame title="Module frame" body={moduleFrame.message} />
-                  )}
-                </div>
+            <section className="page-stack course-list-page">
+              <PageIntro
+                kicker="Course List"
+                title="SFC Digital Portal courses"
+                body="Courses, modules, items, files, progress, and completion state are loaded from the training APIs when MySQL is running."
+              />
+
+              <div className={`module-source-banner ${moduleFrame.status}`}>
+                {moduleFrame.message}
               </div>
 
               <div className="stat-grid">
+                <StatCard label="Courses" value={String(courseList.length).padStart(2, '0')} detail="Backend course records" />
+                <StatCard label="Modules" value={String(trainingModules.length).padStart(2, '0')} detail="Published module blocks" />
+                <StatCard label="Canvas items" value={String(courseList.reduce((sum, course) => sum + course.itemCount, 0)).padStart(2, '0')} detail="Pages, files, videos, quizzes" />
                 <StatCard label="Overall progress" value={`${overallProgress}%`} detail={`${enrolledModules.length} enrolled modules`} />
-                <StatCard label="Completed modules" value={`${completedModules.length}/${trainingModules.length}`} detail="Lessons plus quiz required" />
-                <StatCard label="Certificates" value={String(certificates.length).padStart(2, '0')} detail="Verified or ready for review" />
-                <StatCard label="Unread updates" value={String(unreadCount).padStart(2, '0')} detail="Training, resources, schedule" />
               </div>
 
-              <div className="content-grid single-panel">
-                <section className="panel wide">
-                  <PanelTitle kicker="Learning path" title={`${currentUser.username}'s active modules`} />
-                  <div className="compact-module-list">
-                    {enrolledModules.length === 0 && (
-                      <EmptyFrame title="No database modules yet" body="This box will show enrolled module rows after the database returns module data." />
-                    )}
-                    {enrolledModules.map((module) => (
-                      <button key={module.id} type="button" onClick={() => openModule(module.id)}>
-                        <ModuleThumb module={module} />
-                        <span>
-                          <strong>{module.title}</strong>
-                          <small>{module.park} - {module.duration}</small>
-                        </span>
-                        <b>{getProgress(module)}%</b>
+              <div className="course-list-grid">
+                {courseList.length === 0 && (
+                  <EmptyFrame title="No backend courses yet" body="Run the Canvas demo seed after the Admin API is running, then refresh this page." />
+                )}
+                {courseList.map((course) => (
+                  <article key={course.id} className={`course-card ${selectedCourse?.id === course.id ? 'selected' : ''}`}>
+                    <div className="course-card-topline">
+                      <span>{course.id}</span>
+                      <b>{course.contactHours || course.modules.length}h</b>
+                    </div>
+                    <h3>{course.name}</h3>
+                    <p>{course.description}</p>
+                    <div className="course-card-meta">
+                      <span>{course.modules.length} modules</span>
+                      <span>{course.itemCount} items</span>
+                      <span>{course.resources.length} resources</span>
+                    </div>
+                    <ProgressBar value={getCourseProgress(course)} />
+                    <div className="course-card-actions">
+                      <button type="button" onClick={() => openCourse(course.id, 'overview')}>
+                        Open course
                       </button>
-                    ))}
-                  </div>
-                </section>
-
+                      <button type="button" className="secondary-form-button" onClick={() => openCourse(course.id, 'modules')}>
+                        Modules
+                      </button>
+                    </div>
+                  </article>
+                ))}
               </div>
 
               <div className="content-grid">
+                <section className="panel wide">
+                  <PanelTitle kicker="Selected course" title={selectedCourse?.name || 'Course shell'} />
+                  {selectedCourse ? (
+                    <div className="compact-module-list">
+                      {selectedCourse.modules.map((module) => (
+                        <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                          <ModuleThumb module={module} />
+                          <span>
+                            <strong>{module.title}</strong>
+                            <small>{module.park} - {getCanvasItems(module).length} items</small>
+                          </span>
+                          <b>{getProgress(module)}%</b>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyFrame title="Course shell waiting" body="Course overview, modules, item detail, progress, files, and completion state will appear after backend courses load." />
+                  )}
+                </section>
                 <section className="panel">
                   <PanelTitle kicker="Role boundary" title="What this user can do" />
                   <ul className="permission-list can">
@@ -1391,88 +1564,160 @@ function App() {
 
           {activeTab === 'modules' && (
             <section className="page-stack">
+              <CourseShellNav
+                courses={courseList}
+                selectedCourse={selectedCourse}
+                activeKey={courseSubView}
+                onCourseChange={(courseId) => openCourse(courseId, courseSubView)}
+                onSectionChange={goToCourseSection}
+              />
               <PageIntro
-                kicker="My Modules"
-                title={`${trainingModules.length} database module${trainingModules.length === 1 ? '' : 's'}`}
-                body="Search, filter, enroll, and continue modules returned by your database endpoint."
+                kicker={courseSubView === 'overview' ? 'Course Overview' : 'Course Modules'}
+                title={selectedCourse?.name || 'Course shell'}
+                body={
+                  courseSubView === 'overview'
+                    ? cleanText(selectedCourse?.description, 'Course overview appears after backend course data loads.')
+                    : 'Search, filter, enroll, and continue modules inside the selected course.'
+                }
               />
               <div className={`module-source-banner ${moduleFrame.status}`}>
                 {moduleFrame.message}
               </div>
 
-              <div className="toolbar">
-                <input
-                  type="search"
-                  placeholder="Search modules, parks, topics..."
-                  value={moduleSearch}
-                  onChange={(event) => setModuleSearch(event.target.value)}
-                />
-                <select value={moduleStatus} onChange={(event) => setModuleStatus(event.target.value)}>
-                  <option value="all">All status</option>
-                  <option value="in-progress">In progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="available">Available</option>
-                </select>
-                <select value={moduleCategory} onChange={(event) => setModuleCategory(event.target.value)}>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category === 'all' ? 'All categories' : category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="module-grid">
-                {filteredModules.length === 0 && (
-                  <article className="module-card module-card-empty">
-                    <div className="module-image empty-module-image" />
-                    <div className="module-card-body">
-                      <div className="module-meta">
-                        <span>Database</span>
-                        <span>Frame</span>
-                        <span>Ready</span>
-                      </div>
-                      <h3>Module data frame</h3>
-                      <p>The card design is ready. It will show real module rows after the endpoint in databaseFrames.js returns data.</p>
-                      <ProgressBar value={0} />
-                      <div className="module-actions">
-                        <button type="button" disabled>Waiting for data</button>
-                        <span>0%</span>
-                      </div>
+              {courseSubView === 'overview' && (
+                <div className="course-overview-grid">
+                  <section className="panel wide">
+                    <PanelTitle kicker="Course summary" title={selectedCourse?.name || 'No course selected'} />
+                    <div className="course-overview-meta">
+                      <span>{selectedCourse?.id || 'Course ID'}</span>
+                      <span>{selectedCourse?.modules.length || 0} modules</span>
+                      <span>{selectedCourse?.itemCount || 0} Canvas items</span>
+                      <span>{selectedCourse?.contactHours || 0} contact hours</span>
                     </div>
-                  </article>
-                )}
-                {filteredModules.map((module) => {
-                  const progress = getProgress(module)
-                  const enrolled = isEnrolled(module)
-                  return (
-                    <article key={module.id} className="module-card">
-                      <ModuleVisual module={module} className="module-image" asButton onClick={() => openModule(module.id)} />
-                      <div className="module-card-body">
-                        <div className="module-meta">
-                          <span>{module.level}</span>
-                          <span>{module.duration}</span>
-                          <span>{module.format}</span>
+                    <p>{selectedCourse?.description || 'Course description will appear here after Admin publishes the course.'}</p>
+                    <ProgressBar value={getCourseProgress(selectedCourse)} />
+                    <div className="course-card-actions">
+                      <button type="button" onClick={() => goToCourseSection('modules')}>View modules</button>
+                      <button type="button" className="secondary-form-button" onClick={() => goToCourseSection('item')}>
+                        Open item detail
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="panel">
+                    <PanelTitle kicker="Completion" title="Course state" />
+                    <div className="course-state-list">
+                      <div><span>Progress</span><strong>{getCourseProgress(selectedCourse)}%</strong></div>
+                      <div><span>Items complete</span><strong>{getCourseCompletedItemCount(selectedCourse)}/{selectedCourse?.itemCount || 0}</strong></div>
+                      <div><span>Certificates</span><strong>{selectedCourseCertificates.length}</strong></div>
+                    </div>
+                  </section>
+
+                  <section className="panel wide">
+                    <PanelTitle kicker="Module outline" title="Course modules" />
+                    <div className="compact-module-list">
+                      {selectedCourseModules.length === 0 && (
+                        <EmptyFrame title="No modules yet" body="Admin can add modules from the Course Builder." />
+                      )}
+                      {selectedCourseModules.map((module) => (
+                        <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                          <ModuleThumb module={module} />
+                          <span>
+                            <strong>{module.title}</strong>
+                            <small>{module.level} - {getCanvasItems(module).length} items</small>
+                          </span>
+                          <b>{getProgress(module)}%</b>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {courseSubView === 'modules' && (
+                <>
+                  <div className="toolbar">
+                    <input
+                      type="search"
+                      placeholder="Search modules, parks, topics..."
+                      value={moduleSearch}
+                      onChange={(event) => setModuleSearch(event.target.value)}
+                    />
+                    <select value={moduleStatus} onChange={(event) => setModuleStatus(event.target.value)}>
+                      <option value="all">All status</option>
+                      <option value="in-progress">In progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="available">Available</option>
+                    </select>
+                    <select value={moduleCategory} onChange={(event) => setModuleCategory(event.target.value)}>
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category === 'all' ? 'All categories' : category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="module-grid">
+                    {filteredModules.length === 0 && (
+                      <article className="module-card module-card-empty">
+                        <div className="module-image empty-module-image" />
+                        <div className="module-card-body">
+                          <div className="module-meta">
+                            <span>Database</span>
+                            <span>Frame</span>
+                            <span>Ready</span>
+                          </div>
+                          <h3>Module data frame</h3>
+                          <p>The card design is ready. It will show real module rows after the endpoint in databaseFrames.js returns data.</p>
+                          <ProgressBar value={0} />
+                          <div className="module-actions">
+                            <button type="button" disabled>Waiting for data</button>
+                            <span>0%</span>
+                          </div>
                         </div>
-                        <h3>{module.title}</h3>
-                        <p>{module.subtitle}</p>
-                        <ProgressBar value={progress} />
-                        <div className="module-actions">
-                          <button type="button" onClick={() => (enrolled ? openModule(module.id) : enrollModule(module))}>
-                            {enrolled ? 'Open module' : 'Enroll'}
-                          </button>
-                          <span>{progress}%</span>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
+                      </article>
+                    )}
+                    {filteredModules.map((module) => {
+                      const progress = getProgress(module)
+                      const enrolled = isEnrolled(module)
+                      return (
+                        <article key={module.id} className="module-card">
+                          <ModuleVisual module={module} className="module-image" asButton onClick={() => openModule(module.id)} />
+                          <div className="module-card-body">
+                            <div className="module-meta">
+                              <span>{module.level}</span>
+                              <span>{module.duration}</span>
+                              <span>{module.format}</span>
+                            </div>
+                            <h3>{module.title}</h3>
+                            <p>{module.subtitle}</p>
+                            <ProgressBar value={progress} />
+                            <div className="module-actions">
+                              <button type="button" onClick={() => (enrolled ? openModule(module.id) : enrollModule(module))}>
+                                {enrolled ? 'Open module' : 'Enroll'}
+                              </button>
+                              <span>{progress}%</span>
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </section>
           )}
 
           {activeTab === 'module' && selectedModule && (
             <section className="page-stack">
+              <CourseShellNav
+                courses={courseList}
+                selectedCourse={selectedCourse}
+                activeKey="item"
+                onCourseChange={(courseId) => openCourse(courseId, 'item')}
+                onSectionChange={goToCourseSection}
+              />
               <div className="module-detail-hero canvas-detail-hero">
                 <ModuleVisual module={selectedModule} className="module-detail-visual" />
                 <div>
@@ -1491,7 +1736,7 @@ function App() {
                     <button type="button" onClick={() => enrollModule(selectedModule)}>
                       {isEnrolled(selectedModule) ? 'Continue module' : 'Enroll module'}
                     </button>
-                    <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
+                    <button type="button" className="secondary-button" onClick={() => goToCourseSection('modules')}>
                       Back to modules
                     </button>
                   </div>
@@ -1611,7 +1856,7 @@ function App() {
                   <ProgressBar value={0} />
                   <div className="hero-actions">
                     <button type="button" disabled>Waiting for data</button>
-                    <button type="button" className="secondary-button" onClick={() => setActiveTab('modules')}>
+                    <button type="button" className="secondary-button" onClick={() => goToCourseSection('modules')}>
                       Back to modules
                     </button>
                   </div>
@@ -1634,25 +1879,32 @@ function App() {
 
           {activeTab === 'progress' && (
             <section className="page-stack">
+              <CourseShellNav
+                courses={courseList}
+                selectedCourse={selectedCourse}
+                activeKey="progress"
+                onCourseChange={(courseId) => openCourse(courseId, 'progress')}
+                onSectionChange={goToCourseSection}
+              />
               <PageIntro
-                kicker="Learning Progress"
-                title="Progress, strengths, and certification readiness"
-                body="This page gives the Park Guide a clear view of module completion and where to focus next."
+                kicker="Course Progress"
+                title={selectedCourse?.name || 'Progress, strengths, and certification readiness'}
+                body="This view tracks completion for the selected course shell."
               />
 
               <div className="stat-grid progress-stat-grid">
-                <StatCard label="Overall" value={`${overallProgress}%`} detail="Average across enrolled modules" />
-                <StatCard label="Items done" value={String(completedCanvasItemCount)} detail="Canvas items completed" />
+                <StatCard label="Course progress" value={`${getCourseProgress(selectedCourse)}%`} detail="Average across this course" />
+                <StatCard label="Items done" value={`${getCourseCompletedItemCount(selectedCourse)}/${selectedCourse?.itemCount || 0}`} detail="Canvas items completed" />
               </div>
 
               <div className="content-grid">
                 <section className="panel wide">
                   <PanelTitle kicker="Module progress" title="Completion evidence" />
                   <div className="progress-table">
-                    {trainingModules.length === 0 && (
+                    {selectedCourseModules.length === 0 && (
                       <EmptyFrame title="No module progress yet" body="Progress rows can be joined by module_id after your database modules are available." />
                     )}
-                    {trainingModules.map((module) => (
+                    {selectedCourseModules.map((module) => (
                       <button key={module.id} type="button" onClick={() => openModule(module.id)}>
                         <span>{module.title}</span>
                         <ProgressBar value={getProgress(module)} />
@@ -1683,17 +1935,24 @@ function App() {
 
           {activeTab === 'certificates' && (
             <section className="page-stack">
+              <CourseShellNav
+                courses={courseList}
+                selectedCourse={selectedCourse}
+                activeKey="completion"
+                onCourseChange={(courseId) => openCourse(courseId, 'completion')}
+                onSectionChange={goToCourseSection}
+              />
               <PageIntro
-                kicker="Certificates / Badges"
-                title="Guide credentials and milestones"
-                body="Park Guides can view certificate status and badge progress. Approval actions remain admin-only."
+                kicker="Completion / Certificates"
+                title={selectedCourse?.name || 'Guide credentials and milestones'}
+                body="Park Guides can view selected-course certificate state and badge progress. Approval actions remain admin-only."
               />
 
               <div className="certificate-grid">
-                {certificates.length === 0 && (
+                {selectedCourseCertificates.length === 0 && (
                   <div className="empty-panel">No certificates yet. Complete a module and pass its quiz to prepare one for admin review.</div>
                 )}
-                {certificates.map((certificate) => {
+                {selectedCourseCertificates.map((certificate) => {
                   const module = moduleMap.get(certificate.moduleId)
                   return (
                     <article key={certificate.id} className="certificate-card">
@@ -1723,10 +1982,10 @@ function App() {
               <section className="panel">
                 <PanelTitle kicker="Badges" title="All module milestones" />
                 <div className="badge-grid">
-                  {trainingModules.length === 0 && (
+                  {selectedCourseModules.length === 0 && (
                     <EmptyFrame title="No badge rows yet" body="Badges will use module badge_name or badge fields when database modules load." />
                   )}
-                  {trainingModules.map((module) => (
+                  {selectedCourseModules.map((module) => (
                     <div key={module.id} className={earnedBadgeIds.has(module.id) ? 'badge earned' : 'badge locked'}>
                       <span style={{ background: module.accent }}>{module.badge.slice(0, 2).toUpperCase()}</span>
                       <strong>{module.badge}</strong>
@@ -1844,17 +2103,52 @@ function App() {
           )}
 
           {activeTab === 'files' && (
-            <FileManager
-              files={courseFiles}
-              modules={trainingModules}
-              userId={currentUserId}
-              onFileUploaded={handleCourseFileUploaded}
-              onFileDeleted={handleCourseFileDeleted}
-              onError={(message) => {
-                setFileFrame({ status: 'empty', message })
-                addNotification('File action failed', message, 'resource')
-              }}
-            />
+            <>
+              <section className="page-stack">
+                <CourseShellNav
+                  courses={courseList}
+                  selectedCourse={selectedCourse}
+                  activeKey="files"
+                  onCourseChange={(courseId) => openCourse(courseId, 'files')}
+                  onSectionChange={goToCourseSection}
+                />
+                <PageIntro
+                  kicker="Files / Resources"
+                  title={selectedCourse?.name || 'Course files'}
+                  body="Course-level resources combine Admin module items and Park Guide uploads for the selected course."
+                />
+                <div className={`module-source-banner ${fileFrame.status}`}>
+                  {fileFrame.message}
+                </div>
+                <section className="panel wide">
+                  <PanelTitle kicker="Admin resources" title="Module files, images, videos, and links" />
+                  <div className="resource-grid">
+                    {selectedCourseResources.length === 0 && (
+                      <EmptyFrame title="No Admin resources yet" body="Admin can add file, image, video, and external link items from the Course Builder." />
+                    )}
+                    {selectedCourseResources.map((resource) => (
+                      <ResourceCard
+                        key={resource.id}
+                        resource={resource}
+                        saved={savedResourceIds.has(resource.id)}
+                        onToggle={() => toggleResource(resource.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </section>
+              <FileManager
+                files={selectedCourseFiles}
+                modules={selectedCourseModules}
+                userId={currentUserId}
+                onFileUploaded={handleCourseFileUploaded}
+                onFileDeleted={handleCourseFileDeleted}
+                onError={(message) => {
+                  setFileFrame({ status: 'empty', message })
+                  addNotification('File action failed', message, 'resource')
+                }}
+              />
+            </>
           )}
 
           {activeTab === 'profile' && (
@@ -1943,6 +2237,53 @@ function App() {
 
         </div>
       </main>
+    </div>
+  )
+}
+
+function CourseShellNav({ courses, selectedCourse, activeKey, onCourseChange, onSectionChange }) {
+  const sections = [
+    ['overview', 'Overview'],
+    ['modules', 'Modules'],
+    ['item', 'Item Detail'],
+    ['progress', 'Progress'],
+    ['files', 'Files'],
+    ['completion', 'Completion'],
+  ]
+
+  return (
+    <div className="course-shell-nav">
+      <div className="course-shell-selector">
+        <span className="kicker">Selected course</span>
+        <label>
+          <select
+            value={selectedCourse?.id || ''}
+            onChange={(event) => onCourseChange(event.target.value)}
+            disabled={courses.length === 0}
+          >
+            {courses.length === 0 ? (
+              <option value="">No backend courses loaded</option>
+            ) : (
+              courses.map((course) => (
+                <option key={course.id} value={course.id}>{course.name}</option>
+              ))
+            )}
+          </select>
+        </label>
+      </div>
+      <nav aria-label="Course navigation">
+        {sections.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={activeKey === key ? 'active' : ''}
+            onClick={() => onSectionChange(key)}
+            disabled={!selectedCourse}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

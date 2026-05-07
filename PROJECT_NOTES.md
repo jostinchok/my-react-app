@@ -32,6 +32,8 @@ The training platform now has a demo MySQL integration for Admin-created courses
 - Supported Canvas module item types are `page`, `text`, `file`, `image`, `video`, `link`, `quiz`, and `checklist`.
 - Canvas module items are stored in `course_module_items` through `user_login/server/migrations/003_canvas_module_items.sql`; the Admin training API also ensures the table before Canvas item operations.
 - The Park Guide User Portal reads Canvas-style module items from the user API and renders them as learning items. It supports item preview, media/resource display, quiz interaction, checklist rendering, persisted completion state, and local fallback when the progress API is unavailable.
+- The Park Guide User Portal now groups backend modules into a Canvas-like course shell with global SFC Digital Portal navigation plus course-level Overview, Modules, Item Detail, Progress, Files, and Completion navigation.
+- `npm run seed:canvas-demo` posts to the Admin API seed endpoint and inserts the three presentation courses into MySQL: SFC Field Response Essentials, Sarawak Protected Wildlife Awareness, and SFC Park Guide Orientation.
 - Persistent Canvas learning progress now has a User API and MySQL migration for item completion and quiz attempts. Admin can view persisted guide progress through the Admin training API and `/admin/students`.
 - AI/IoT monitoring incidents remain separate from training content. Admin remains responsible for official incident status changes; Park Ranger can add field notes and recommendations only.
 

@@ -23,9 +23,11 @@ mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_m
 
 ## 2. Start Services
 
-Start the full local demo stack:
+From a clean terminal, install dependencies if needed and start the full local demo stack:
 
 ```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm install
 npm run dev
 ```
 
@@ -39,14 +41,28 @@ Expected local routes:
 - User API health: `http://localhost:4001/api/health`
 - Admin API health: `http://localhost:4002/api/health`
 
+Seed the three presentation courses in a second terminal after `http://localhost:4002/api/health` is online:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm run seed:canvas-demo
+```
+
+Expected seeded courses:
+
+- SFC Field Response Essentials
+- Sarawak Protected Wildlife Awareness
+- SFC Park Guide Orientation
+
 ## 3. Canvas Course Builder
 
 1. Open `http://localhost:5174/admin/course`.
-2. Create a course with a course ID, name, start date, end date, and contact hours.
-3. Add at least one module to that course.
-4. Add one item for each presentation type if time allows: page, text, file, image, video, external link, quiz, and checklist.
-5. Confirm each save shows a success snackbar.
-6. If any save fails, confirm the error snackbar is visible and the dialog stays usable.
+2. Click `Insert Demo Courses` if `npm run seed:canvas-demo` has not already been run.
+3. Confirm at least the three SFC demo courses are visible.
+4. Create a course with a course ID, name, start date, end date, and contact hours only if you need to show manual creation.
+5. Add one item for each presentation type if time allows: page, text, file, image, video, external link, quiz, and checklist.
+6. Confirm each save shows a success snackbar.
+7. If any save fails, confirm the error snackbar is visible and the dialog stays usable.
 
 ## 4. Admin Training View
 
@@ -59,16 +75,17 @@ Expected local routes:
 
 1. Open `http://localhost:5175/user`.
 2. Select the guide profile used for the demo.
-3. Open the module created in Admin.
-4. Preview page/text/file/image/video/link items.
-5. Render checklist items and tick a non-quiz item complete.
-6. Submit one quiz attempt.
-7. Confirm the Canvas progress banner says the item or quiz attempt saved to MySQL.
-8. Refresh the browser.
-9. Confirm completed item and quiz state remain complete.
-10. Open `http://localhost:5174/admin/students`.
-11. Confirm the matching guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score.
-12. If the User API or MySQL is unavailable, confirm the Portal clearly says it is using local fallback and Admin shows a safe empty/fallback progress message.
+3. Confirm the course list shows the three backend demo courses.
+4. Open one course and confirm the course-level internal navigation shows Overview, Modules, Item Detail, Progress, Files, and Completion.
+5. Open a module item detail and preview page/text/file/image/video/link items.
+6. Render checklist items and tick a non-quiz item complete.
+7. Submit one quiz attempt.
+8. Confirm the Canvas progress banner says the item or quiz attempt saved to MySQL.
+9. Refresh the browser.
+10. Confirm completed item and quiz state remain complete.
+11. Open `http://localhost:5174/admin/students`.
+12. Confirm the matching guide card shows Canvas completion percentage, completed item count, quiz attempt count, and latest quiz score.
+13. If the User API or MySQL is unavailable, confirm the Portal clearly says it is using local fallback and Admin shows a safe empty/fallback progress message.
 
 ## 6. AI Camera Incident
 
