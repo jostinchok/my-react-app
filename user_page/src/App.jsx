@@ -22,6 +22,9 @@ import {
   saveAvatarUpload,
   saveCanvasItemProgress,
   saveCanvasQuizAttempt,
+  saveAllNotificationsRead,
+  saveNotificationRead,
+  deleteNotification,
   saveProfileField,
   saveScheduleItem,
   updateScheduleItem,
@@ -969,24 +972,29 @@ function App() {
   const userSchedule = databaseSchedule.length > 0 ? databaseSchedule : currentUser.schedule || []
   const unreadCount = userNotifications.filter((item) => !item.read).length || 0
 
-  const certificates = useMemo(() => {
-    return courseList
-      .filter((course) => getCourseProgress(course) === 100)
-      .map((course) => {
-        const savedCertificate = databaseCertificates.find((certificate) =>
-          String(certificate.courseId) === String(course.id) && !certificate.moduleId
-        )
-        return {
-          id: savedCertificate?.id || `${currentUser.id}-${course.id}-course-ready`,
-          courseId: course.id,
-          title: savedCertificate?.title || `${course.name} Certificate`,
-          status: savedCertificate?.status || 'Ready for admin review',
-          issueDate: savedCertificate?.issueDate || 'Pending',
-          expiryDate: savedCertificate?.expiryDate || '1 year after approval',
-          progress: 100,
-        }
-      })
+  const courseCertificates = useMemo(() => {
+    return courseList.map((course) => {
+      const progress = getCourseProgress(course)
+      const unlocked = progress === 100
+      const savedCertificate = databaseCertificates.find((certificate) =>
+        String(certificate.courseId) === String(course.id) && !certificate.moduleId
+      )
+      return {
+        id: savedCertificate?.id || `${currentUser.id}-${course.id}-course-certificate`,
+        courseId: course.id,
+        title: savedCertificate?.title || `${course.name} Certificate`,
+        status: unlocked ? savedCertificate?.status || 'Ready for admin review' : 'Locked',
+        issueDate: unlocked ? savedCertificate?.issueDate || 'Pending' : 'Locked',
+        expiryDate: unlocked ? savedCertificate?.expiryDate || '1 year after approval' : 'Complete course to unlock',
+        progress,
+        unlocked,
+      }
+    })
   }, [currentUser, courseList, databaseCertificates, canvasProgressRecords, canvasQuizAttempts])
+  const certificates = useMemo(
+    () => courseCertificates.filter((certificate) => certificate.unlocked),
+    [courseCertificates]
+  )
   const selectedCourseCertificates = useMemo(
     () => certificates.filter((certificate) => String(certificate.courseId) === String(selectedCourse?.id)),
     [certificates, selectedCourse]
@@ -1412,26 +1420,40 @@ function App() {
   }
 
   const markNotificationRead = (notificationId) => {
+    setDatabaseNotifications((items) =>
+      items.map((item) => (String(item.id) === String(notificationId) ? { ...item, read: true } : item))
+    )
     updateCurrentUser((user) => ({
       ...user,
       notifications: (user.notifications || []).map((item) =>
-        item.id === notificationId ? { ...item, read: true } : item
+        String(item.id) === String(notificationId) ? { ...item, read: true } : item
       ),
     }))
+    saveNotificationRead(notificationId, currentUserId).catch(() => {
+      // Keep the optimistic UI update visible if the notification endpoint is temporarily unavailable.
+    })
   }
 
   const markAllRead = () => {
+    setDatabaseNotifications((items) => items.map((item) => ({ ...item, read: true })))
     updateCurrentUser((user) => ({
       ...user,
       notifications: (user.notifications || []).map((item) => ({ ...item, read: true })),
     }))
+    saveAllNotificationsRead(currentUserId).catch(() => {
+      // Keep the optimistic UI update visible if the notification endpoint is temporarily unavailable.
+    })
   }
 
   const removeNotification = (notificationId) => {
+    setDatabaseNotifications((items) => items.filter((item) => String(item.id) !== String(notificationId)))
     updateCurrentUser((user) => ({
       ...user,
-      notifications: (user.notifications || []).filter((item) => item.id !== notificationId),
+      notifications: (user.notifications || []).filter((item) => String(item.id) !== String(notificationId)),
     }))
+    deleteNotification(notificationId, currentUserId).catch(() => {
+      // Keep the optimistic delete visible if the notification endpoint is temporarily unavailable.
+    })
   }
 
   const upsertLocalScheduleItem = (scheduleItem) => {
@@ -2310,35 +2332,29 @@ function App() {
 
           {activeTab === 'certificates' && (
             <section className="page-stack">
-              <CourseShellNav
-                courses={courseList}
-                selectedCourse={selectedCourse}
-                activeKey="completion"
-                onCourseChange={(courseId) => openCourse(courseId, 'completion')}
-                onSectionChange={goToCourseSection}
-              />
               <PageIntro
                 kicker="Completion / Certificates"
-                title={selectedCourse?.name || 'Guide credentials and milestones'}
-                body="Course certificates unlock only after every module in the selected course reaches 100% progress."
+                title="Course certificates"
+                body="Every course shows a certificate state here. Locked certificates unlock after every module and required quiz in that course reaches 100% progress."
               />
 
               <div className="certificate-grid">
-                {selectedCourseCertificates.length === 0 && (
-                  <div className="empty-panel">No course certificate yet. Complete every module and pass the required quizzes in this course to unlock the course certificate.</div>
+                {courseCertificates.length === 0 && (
+                  <div className="empty-panel">No course certificates yet. Course certificate cards will appear after courses load from the database.</div>
                 )}
-                {selectedCourseCertificates.map((certificate) => {
+                {courseCertificates.map((certificate) => {
+                  const course = courseList.find((item) => String(item.id) === String(certificate.courseId))
                   return (
-                    <article key={certificate.id} className="certificate-card">
-                      {selectedCourse && <img className="certificate-art" src={courseImageSrc(selectedCourse)} alt="" />}
-                      <div className="certificate-stamp">{initials(selectedCourse?.name || 'SFC')}</div>
+                    <article key={certificate.id} className={`certificate-card ${certificate.unlocked ? 'unlocked' : 'locked'}`}>
+                      {course && <img className="certificate-art" src={courseImageSrc(course)} alt="" />}
+                      <div className="certificate-stamp">{certificate.unlocked ? initials(course?.name || 'SFC') : 'LOCK'}</div>
                       <span>{certificate.status}</span>
                       <h3>{certificate.title}</h3>
-                      <p>{selectedCourse?.name || 'Course credential'}</p>
+                      <p>{course?.name || 'Course credential'}</p>
                       <dl>
                         <div>
                           <dt>Progress</dt>
-                          <dd>{getCourseProgress(selectedCourse)}%</dd>
+                          <dd>{certificate.progress}%</dd>
                         </div>
                         <div>
                           <dt>Issue</dt>
@@ -2349,29 +2365,17 @@ function App() {
                           <dd>{certificate.expiryDate}</dd>
                         </div>
                       </dl>
-                      <button type="button" onClick={() => alert('Connect this button to your certificate file endpoint.')}>
-                        Download certificate
+                      <button
+                        type="button"
+                        disabled={!certificate.unlocked}
+                        onClick={() => alert('Connect this button to your course certificate file endpoint.')}
+                      >
+                        {certificate.unlocked ? 'Download certificate' : 'Locked'}
                       </button>
                     </article>
                   )
                 })}
               </div>
-
-              <section className="panel">
-                <PanelTitle kicker="Course requirements" title="Modules required for course certificate" />
-                <div className="progress-table">
-                  {selectedCourseModules.length === 0 && (
-                    <EmptyFrame title="No module rows yet" body="Course certificate requirements will appear after course modules load." />
-                  )}
-                  {selectedCourseModules.map((module) => (
-                    <button key={module.id} type="button" onClick={() => openModule(module.id)}>
-                      <span>{module.title}</span>
-                      <ProgressBar value={getProgress(module)} />
-                      <b>{getProgress(module)}%</b>
-                    </button>
-                  ))}
-                </div>
-              </section>
             </section>
           )}
 
