@@ -1,7 +1,7 @@
 -- COS30049 CTIP V18 complete Canvas-style demo course records
 -- This file replaces the earlier lightweight demo data with more realistic course records.
 -- Run from project root:
---   mysql -u root -p cos30049_assignment < database/demo_canvas_courses_v18_complete.sql
+--   mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
 
 START TRANSACTION;
 
@@ -68,7 +68,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-FIELD-2026', 'Module 1: Incident Command and Evidence Intake', 'Learn how AI camera alerts and IoT proximity triggers enter the incident workflow, how evidence should be read, and why weak evidence must be reviewed before action.', 'Incident Evidence', 'Bako National Park', 'Intermediate', '1 hour 20 minutes', 'Blended', '', '#ff7a1a', 'Incident Intake Ready', '["Read AI and IoT incident evidence", "Separate raw trigger noise from real incident records", "Check timestamp, location, source, confidence, and image clarity", "Prepare a short evidence intake note"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
+  ('SFC-FIELD-2026', 'Incident Command and Evidence Intake', 'Learn how AI camera alerts and IoT proximity triggers enter the incident workflow, how evidence should be read, and why weak evidence must be reviewed before action.', 'Incident Evidence', 'Bako National Park', 'Intermediate', '1 hour 20 minutes', 'Blended', '', '#ff7a1a', 'Incident Intake Ready', '["Read AI and IoT incident evidence", "Separate raw trigger noise from real incident records", "Check timestamp, location, source, confidence, and image clarity", "Prepare a short evidence intake note"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
 
 SET @m_field_intake = LAST_INSERT_ID();
 
@@ -83,10 +83,10 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_field_intake, 'SFC-FIELD-2026', 'text', 'Evidence intake note template', 'Copy-ready note pattern', 'Incident ID: 
+  (@m_field_intake, 'SFC-FIELD-2026', 'text', 'Evidence intake note template', 'Copy-ready note pattern', 'Incident ID:
 Source: AI Camera or IoT Sensor
-Location: 
-Timestamp: 
+Location:
+Timestamp:
 Evidence quality: clear, partial, or unclear
 Immediate risk: low, medium, or high
 Recommended next step: monitor, ranger review, escalate, or admin decision', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
@@ -124,7 +124,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-FIELD-2026', 'Module 2: AI Camera Review and Plucking Plants Detection', 'Review AI camera evidence for possible plant plucking, wildlife handling, false alarms, and confidence-based escalation.', 'AI Camera Evidence', 'Demo Camera Zone', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'AI Evidence Reviewer', '["Recognize possible plant plucking evidence", "Read predicted class, confidence, margin, and bounding-box metadata", "Avoid changing user-facing wording back to Touching Plants", "Record false alarm notes clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+  ('SFC-FIELD-2026', 'AI Camera Review and Plucking Plants Detection', 'Review AI camera evidence for possible plant plucking, wildlife handling, false alarms, and confidence-based escalation.', 'AI Camera Evidence', 'Demo Camera Zone', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'AI Evidence Reviewer', '["Recognize possible plant plucking evidence", "Read predicted class, confidence, margin, and bounding-box metadata", "Avoid changing user-facing wording back to Touching Plants", "Record false alarm notes clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
 
 SET @m_field_ai = LAST_INSERT_ID();
 
@@ -169,7 +169,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-FIELD-2026', 'Module 3: IoT Proximity Sensor Triage and Alert Grouping', 'Handle repeated sensor readings without flooding the incident page, using grouping rules, thresholds, cooldowns, and zone-based triage.', 'IoT Sensor Evidence', 'Plant Zone A', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'IoT Triage Ready', '["Understand raw trigger flooding", "Apply grouping by zone and time window", "Use cooldowns to reduce duplicate rows", "Escalate only meaningful proximity clusters"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
+  ('SFC-FIELD-2026', 'IoT Proximity Sensor Triage and Alert Grouping', 'Handle repeated sensor readings without flooding the incident page, using grouping rules, thresholds, cooldowns, and zone-based triage.', 'IoT Sensor Evidence', 'Plant Zone A', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'IoT Triage Ready', '["Understand raw trigger flooding", "Apply grouping by zone and time window", "Use cooldowns to reduce duplicate rows", "Escalate only meaningful proximity clusters"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
 
 SET @m_field_iot = LAST_INSERT_ID();
 
@@ -214,7 +214,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-FIELD-2026', 'Module 4: Ranger Field Recommendation Workflow', 'Train Rangers to inspect evidence and recommend outcomes without bypassing Admin control.', 'Ranger Workflow', 'All Parks', 'Intermediate', '55 minutes', 'Blended', '', '#ff7a1a', 'Recommendation Ready', '["Understand recommendation-only responsibility", "Write neutral field notes", "Escalate high-risk cases", "Avoid final status changes as a Ranger"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
+  ('SFC-FIELD-2026', 'Ranger Field Recommendation Workflow', 'Train Rangers to inspect evidence and recommend outcomes without bypassing Admin control.', 'Ranger Workflow', 'All Parks', 'Intermediate', '55 minutes', 'Blended', '', '#ff7a1a', 'Recommendation Ready', '["Understand recommendation-only responsibility", "Write neutral field notes", "Escalate high-risk cases", "Avoid final status changes as a Ranger"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
 
 SET @m_field_ranger = LAST_INSERT_ID();
 
@@ -254,7 +254,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-FIELD-2026', 'Module 5: Admin Decision, Audit Trail, and Handover', 'Show how Admin makes final decisions, records audit events, and prepares handover evidence for reporting.', 'Admin Decision', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Audit Ready', '["Apply final status decisions", "Record admin notes", "Understand audit log importance", "Prepare handover summary"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
+  ('SFC-FIELD-2026', 'Admin Decision, Audit Trail, and Handover', 'Show how Admin makes final decisions, records audit events, and prepares handover evidence for reporting.', 'Admin Decision', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Audit Ready', '["Apply final status decisions", "Record admin notes", "Understand audit log importance", "Prepare handover summary"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
 
 SET @m_field_admin = LAST_INSERT_ID();
 
@@ -269,11 +269,11 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_field_admin, 'SFC-FIELD-2026', 'text', 'Admin decision note template', 'Decision note pattern', 'Decision: 
-Reason: 
-Evidence reviewed: 
-Ranger recommendation: 
-Follow-up required: 
+  (@m_field_admin, 'SFC-FIELD-2026', 'text', 'Admin decision note template', 'Decision note pattern', 'Decision:
+Reason:
+Evidence reviewed:
+Ranger recommendation:
+Follow-up required:
 Audit sensitivity: low, medium, or high', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
 
 INSERT INTO course_module_items
@@ -301,7 +301,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-WILDLIFE-2026', 'Module 1: Protected Wildlife Basics in Sarawak Parks', 'Introduce common protected wildlife, visitor behavior risks, and the reason wildlife contact must be prevented.', 'Wildlife Awareness', 'All Parks', 'Beginner', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Awareness', '["Recognize common wildlife interaction risks", "Explain why feeding and touching wildlife is harmful", "Identify when observation becomes an incident"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
+  ('SFC-WILDLIFE-2026', 'Protected Wildlife Basics in Sarawak Parks', 'Introduce common protected wildlife, visitor behavior risks, and the reason wildlife contact must be prevented.', 'Wildlife Awareness', 'All Parks', 'Beginner', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Awareness', '["Recognize common wildlife interaction risks", "Explain why feeding and touching wildlife is harmful", "Identify when observation becomes an incident"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
 
 SET @m_wild_basics = LAST_INSERT_ID();
 
@@ -346,7 +346,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-WILDLIFE-2026', 'Module 2: Visitor Wildlife Interaction Risks', 'Recognize behaviors that increase risk, such as feeding, crowding, flash photography, and attempting selfies near wildlife.', 'Visitor Risk', 'Wildlife Zones', 'Beginner', '55 minutes', 'Blended', '', '#ff7a1a', 'Visitor Risk Ready', '["Identify risky visitor behavior", "Explain safety reasons clearly", "Separate minor reminders from reportable incidents"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+  ('SFC-WILDLIFE-2026', 'Visitor Wildlife Interaction Risks', 'Recognize behaviors that increase risk, such as feeding, crowding, flash photography, and attempting selfies near wildlife.', 'Visitor Risk', 'Wildlife Zones', 'Beginner', '55 minutes', 'Blended', '', '#ff7a1a', 'Visitor Risk Ready', '["Identify risky visitor behavior", "Explain safety reasons clearly", "Separate minor reminders from reportable incidents"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
 
 SET @m_wild_risk = LAST_INSERT_ID();
 
@@ -391,7 +391,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-WILDLIFE-2026', 'Module 3: No-touch and No-feeding Enforcement', 'Train staff to explain and enforce the no-touch, no-feeding, and no-disturbance policy consistently.', 'Policy', 'All Parks', 'Beginner', '45 minutes', 'Blended', '', '#ff7a1a', 'Policy Ready', '["Explain no-touch policy", "Handle visitor questions", "Record repeated non-compliance"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
+  ('SFC-WILDLIFE-2026', 'No-touch and No-feeding Enforcement', 'Train staff to explain and enforce the no-touch, no-feeding, and no-disturbance policy consistently.', 'Policy', 'All Parks', 'Beginner', '45 minutes', 'Blended', '', '#ff7a1a', 'Policy Ready', '["Explain no-touch policy", "Handle visitor questions", "Record repeated non-compliance"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
 
 SET @m_wild_policy = LAST_INSERT_ID();
 
@@ -432,7 +432,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-WILDLIFE-2026', 'Module 4: Wildlife Evidence Capture and Escalation', 'Decide when wildlife evidence should be monitored, sent to Ranger review, escalated, or marked as false alarm.', 'Evidence', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Evidence Ready', '["Assess wildlife evidence quality", "Write escalation summaries", "Avoid overstating unclear evidence"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
+  ('SFC-WILDLIFE-2026', 'Wildlife Evidence Capture and Escalation', 'Decide when wildlife evidence should be monitored, sent to Ranger review, escalated, or marked as false alarm.', 'Evidence', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Evidence Ready', '["Assess wildlife evidence quality", "Write escalation summaries", "Avoid overstating unclear evidence"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
 
 SET @m_wild_evidence = LAST_INSERT_ID();
 
@@ -447,11 +447,11 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'text', 'Escalation summary format', 'Summary template', 'Incident type: 
-Location: 
-Evidence quality: 
-Visitor response: 
-Wildlife risk: 
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'text', 'Escalation summary format', 'Summary template', 'Incident type:
+Location:
+Evidence quality:
+Visitor response:
+Wildlife risk:
 Recommended Admin action:', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
 
 INSERT INTO course_module_items
@@ -477,7 +477,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-WILDLIFE-2026', 'Module 5: Scenario Practice and Field Readiness', 'Complete scenario checks for visitor reminders, wildlife contact, false alarms, and Admin escalation.', 'Scenario Practice', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Field Ready', '["Apply policy to scenarios", "Choose correct escalation paths", "Prepare for certificate review"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
+  ('SFC-WILDLIFE-2026', 'Scenario Practice and Field Readiness', 'Complete scenario checks for visitor reminders, wildlife contact, false alarms, and Admin escalation.', 'Scenario Practice', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Field Ready', '["Apply policy to scenarios", "Choose correct escalation paths", "Prepare for certificate review"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
 
 SET @m_wild_final = LAST_INSERT_ID();
 
@@ -519,7 +519,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-GUIDE-2026', 'Module 1: Digital Portal and Canvas Learning Flow', 'Learn how to use the SFC Digital Portal course shell, internal course navigation, module item detail, files, progress, and completion state.', 'Orientation', 'All Parks', 'Beginner', '50 minutes', 'Blended', '', '#ff7a1a', 'Portal Ready', '["Open assigned courses", "Use course-level navigation", "Complete module items", "Check progress and certificate state"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
+  ('SFC-GUIDE-2026', 'Digital Portal and Canvas Learning Flow', 'Learn how to use the SFC Digital Portal course shell, internal course navigation, module item detail, files, progress, and completion state.', 'Orientation', 'All Parks', 'Beginner', '50 minutes', 'Blended', '', '#ff7a1a', 'Portal Ready', '["Open assigned courses", "Use course-level navigation", "Complete module items", "Check progress and certificate state"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
 
 SET @m_guide_portal = LAST_INSERT_ID();
 
@@ -569,7 +569,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-GUIDE-2026', 'Module 2: Visitor Briefing and Trail Etiquette', 'Prepare consistent visitor briefings covering route expectations, protected-area rules, and respectful trail behavior.', 'Visitor Briefing', 'Bako National Park', 'Beginner', '55 minutes', 'Blended', '', '#ff7a1a', 'Briefing Ready', '["Prepare a short visitor briefing", "Explain trail etiquette", "Communicate no-touch rules clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+  ('SFC-GUIDE-2026', 'Visitor Briefing and Trail Etiquette', 'Prepare consistent visitor briefings covering route expectations, protected-area rules, and respectful trail behavior.', 'Visitor Briefing', 'Bako National Park', 'Beginner', '55 minutes', 'Blended', '', '#ff7a1a', 'Briefing Ready', '["Prepare a short visitor briefing", "Explain trail etiquette", "Communicate no-touch rules clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
 
 SET @m_guide_briefing = LAST_INSERT_ID();
 
@@ -609,7 +609,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-GUIDE-2026', 'Module 3: Park Safety and Emergency Escalation', 'Learn the basic safety checks, emergency reporting path, and when to contact Admin or Ranger support.', 'Safety', 'All Parks', 'Beginner', '1 hour', 'Blended', '', '#ff7a1a', 'Safety Ready', '["Prepare route safety checks", "Respond to visitor incidents", "Use help and escalation channels"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
+  ('SFC-GUIDE-2026', 'Park Safety and Emergency Escalation', 'Learn the basic safety checks, emergency reporting path, and when to contact Admin or Ranger support.', 'Safety', 'All Parks', 'Beginner', '1 hour', 'Blended', '', '#ff7a1a', 'Safety Ready', '["Prepare route safety checks", "Respond to visitor incidents", "Use help and escalation channels"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
 
 SET @m_guide_safety = LAST_INSERT_ID();
 
@@ -624,11 +624,11 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_guide_safety, 'SFC-GUIDE-2026', 'text', 'Emergency handover note', 'Handover template', 'Location: 
-Visitor condition: 
-Immediate action taken: 
-Support needed: 
-Contact person: 
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'text', 'Emergency handover note', 'Handover template', 'Location:
+Visitor condition:
+Immediate action taken:
+Support needed:
+Contact person:
 Time reported:', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
 
 INSERT INTO course_module_items
@@ -654,7 +654,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-GUIDE-2026', 'Module 4: Learning Evidence and Certificate Process', 'Understand how completed items, quizzes, and Admin review create certificate readiness.', 'Completion', 'All Parks', 'Beginner', '45 minutes', 'Blended', '', '#ff7a1a', 'Certificate Ready', '["Complete required module items", "Submit quiz attempts", "Understand Admin certificate release"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
+  ('SFC-GUIDE-2026', 'Learning Evidence and Certificate Process', 'Understand how completed items, quizzes, and Admin review create certificate readiness.', 'Completion', 'All Parks', 'Beginner', '45 minutes', 'Blended', '', '#ff7a1a', 'Certificate Ready', '["Complete required module items", "Submit quiz attempts", "Understand Admin certificate release"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
 
 SET @m_guide_evidence = LAST_INSERT_ID();
 
@@ -694,7 +694,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-GUIDE-2026', 'Module 5: Final Field Simulation', 'Complete a realistic guide scenario that combines visitor briefing, no-touch rules, wildlife distance, incident reporting, and help desk use.', 'Final Simulation', 'All Parks', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'Field Ready', '["Apply guide briefing skills", "Respond to visitor rule issues", "Use help desk instead of broadcast replies", "Prepare for final Admin review"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
+  ('SFC-GUIDE-2026', 'Final Field Simulation', 'Complete a realistic guide scenario that combines visitor briefing, no-touch rules, wildlife distance, incident reporting, and help desk use.', 'Final Simulation', 'All Parks', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'Field Ready', '["Apply guide briefing skills", "Respond to visitor rule issues", "Use help desk instead of broadcast replies", "Prepare for final Admin review"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
 
 SET @m_guide_final = LAST_INSERT_ID();
 
