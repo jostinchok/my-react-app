@@ -33,6 +33,34 @@ const userBasePath = import.meta.env.BASE_URL.endsWith('/')
   : `${import.meta.env.BASE_URL}/`
 const logoSrc = `${userBasePath}sfc-citrus-logo.webp`
 const editableProfileFields = new Set(['displayName', 'email', 'phone', 'yearsExperience', 'address'])
+const TRAINING_IMAGE_FILES = [
+  'conservation-law.webp',
+  'biodiversity-lab.webp',
+  'biodiversity-basics.webp',
+  'batang-ai-community-protocol.webp',
+  'bako-trail-guiding.webp',
+  'gunung-gading-conservation.webp',
+  'ecotourism-communication.webp',
+  'ecotourism-briefing.webp',
+  'incident-ai-monitoring.webp',
+  'kubah-rainforest-safety.webp',
+  'visitor-safety.webp',
+  'safety-response.webp',
+  'rules-compliance.webp',
+  'protected-areas.webp',
+]
+
+const trainingAsset = (fileName) => `${userBasePath}training/${fileName}`
+
+const stableTrainingImage = (...values) => {
+  const seed = cleanText(...values, 'training image')
+  let hash = 0
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(index)) | 0
+  }
+  const imageIndex = Math.abs(hash) % TRAINING_IMAGE_FILES.length
+  return trainingAsset(TRAINING_IMAGE_FILES[imageIndex])
+}
 
 const readInitialShell = () => {
   if (typeof window === 'undefined') return {}
@@ -329,7 +357,27 @@ const getQuizFromItem = (item, module) => {
 
 const isResourceLikeItem = (item) => ['file', 'image', 'video', 'link'].includes(normalizeItemType(item?.type))
 
-const moduleImageSrc = (module) => cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
+const isLegacyMissingTrainingImage = (value) =>
+  cleanText(value).replace(/\\/g, '/').endsWith('/training/protected-areas.png')
+
+const moduleImageSrc = (module) => {
+  const explicitImage = cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
+  if (explicitImage && !isLegacyMissingTrainingImage(explicitImage)) return explicitImage
+  return stableTrainingImage(module?.id, module?.title, module?.category, module?.park)
+}
+
+const courseImageSrc = (course) => {
+  const explicitImage = cleanText(course?.image, course?.imageUrl, course?.image_url, course?.coverImage, course?.cover_image)
+  if (explicitImage && !isLegacyMissingTrainingImage(explicitImage)) return explicitImage
+
+  const firstModuleWithImage = course?.modules?.find((module) => {
+    const image = cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
+    return image && !isLegacyMissingTrainingImage(image)
+  })
+
+  if (firstModuleWithImage) return moduleImageSrc(firstModuleWithImage)
+  return stableTrainingImage(course?.id, course?.name, course?.description)
+}
 
 const persistableId = (value) => {
   const number = Number(value)
@@ -409,6 +457,7 @@ function App() {
   const [selectedCourseId, setSelectedCourseId] = useState(initialShell.courseId || null)
   const [selectedModuleId, setSelectedModuleId] = useState(null)
   const [selectedCanvasItemId, setSelectedCanvasItemId] = useState(null)
+  const [moduleDetailStep, setModuleDetailStep] = useState('intro')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [moduleSearch, setModuleSearch] = useState('')
   const [moduleStatus, setModuleStatus] = useState('all')
@@ -631,10 +680,18 @@ function App() {
         startDate: cleanText(module.courseStartDate, module.course_start_date),
         endDate: cleanText(module.courseEndDate, module.course_end_date),
         contactHours: Number(module.courseContactHours ?? module.course_contact_hours ?? 0) || 0,
+        image: cleanText(module.courseImage, module.course_image, module.courseImageUrl, module.course_image_url),
         modules: [],
         resources: new Map(),
       }
 
+      existing.image = cleanText(
+        existing.image,
+        module.courseImage,
+        module.course_image,
+        module.courseImageUrl,
+        module.course_image_url
+      )
       existing.modules.push(module)
 
       toList(module.resources).forEach((resource, resourceIndex) => {
@@ -698,8 +755,21 @@ function App() {
     selectedCourseModules[0] ||
     null
   const selectedModuleItems = useMemo(() => getCanvasItems(selectedModule), [selectedModule])
+  const selectedModuleContentItems = useMemo(
+    () => selectedModuleItems.filter((item) => item.type !== 'quiz'),
+    [selectedModuleItems]
+  )
+  const selectedModuleQuizItems = useMemo(
+    () => selectedModuleItems.filter((item) => item.type === 'quiz'),
+    [selectedModuleItems]
+  )
   const selectedModuleObjectives = useMemo(() => getModuleObjectives(selectedModule), [selectedModule])
-  const selectedCanvasItem = selectedModuleItems.find((item) => item.id === selectedCanvasItemId) || selectedModuleItems[0] || null
+  const selectedCanvasItem =
+    selectedModuleContentItems.find((item) => item.id === selectedCanvasItemId) ||
+    selectedModuleContentItems[0] ||
+    selectedModuleItems[0] ||
+    null
+  const selectedCanvasItemIndex = selectedModuleContentItems.findIndex((item) => item.id === selectedCanvasItem?.id)
   const selectedModuleQuiz = getQuizFromItem(
     selectedModuleItems.find((item) => item.type === 'quiz'),
     selectedModule
@@ -735,10 +805,11 @@ function App() {
       return
     }
 
-    const items = getCanvasItems(selectedModule)
+    const items = getCanvasItems(selectedModule).filter((item) => item.type !== 'quiz')
     setSelectedCanvasItemId((currentItemId) =>
       items.some((item) => item.id === currentItemId) ? currentItemId : items[0]?.id || null
     )
+    setModuleDetailStep('intro')
   }, [selectedModuleId, trainingModules])
 
   const moduleMap = useMemo(
@@ -844,7 +915,7 @@ function App() {
 
   const isCanvasItemDone = (module, item, user = currentUser) => {
     if (!module || !item) return false
-    if (item.type === 'quiz' && getQuizResultForItem(module, item, user)) return true
+    if (item.type === 'quiz') return Boolean(getQuizResultForItem(module, item, user)?.passed)
     return completedItemIdsFor(module, user).has(String(item.id))
   }
 
@@ -868,6 +939,11 @@ function App() {
       (sum, module) => sum + getCanvasItems(module).filter((item) => isCanvasItemDone(module, item)).length,
       0
     )
+  const selectedModuleCompletedContentCount = selectedModuleContentItems.filter((item) => isCanvasItemDone(selectedModule, item)).length
+  const selectedModulePassedQuizCount = selectedModuleQuizItems.filter((item) => getQuizResultForItem(selectedModule, item)?.passed).length
+  const selectedModuleContentReady = selectedModuleContentItems.every((item) => isCanvasItemDone(selectedModule, item))
+  const selectedModuleQuizReady = selectedModuleQuizItems.every((item) => getQuizResultForItem(selectedModule, item)?.passed)
+  const selectedModuleCanComplete = Boolean(selectedModule) && selectedModuleContentReady && selectedModuleQuizReady
 
   const enrolledModules = useMemo(
     () => trainingModules.filter((module) => isEnrolled(module)),
@@ -989,6 +1065,7 @@ function App() {
       setCourseSubView(section)
       setActiveTab('modules')
     } else if (section === 'item') {
+      setModuleDetailStep('intro')
       setActiveTab('module')
     } else if (section === 'completion') {
       setActiveTab('certificates')
@@ -1005,11 +1082,12 @@ function App() {
   const openModule = (moduleId) => {
     if (!moduleId) return
     const module = trainingModules.find((item) => item.id === moduleId)
-    const firstItem = getCanvasItems(module)[0]
+    const firstItem = getCanvasItems(module).find((item) => item.type !== 'quiz')
     const courseId = cleanText(module?.courseId, module?.course_id)
     if (courseId) setSelectedCourseId(courseId)
     setSelectedModuleId(moduleId)
     setSelectedCanvasItemId(firstItem?.id || null)
+    setModuleDetailStep('intro')
     setActiveTab('module')
     setSidebarOpen(false)
   }
@@ -1159,6 +1237,51 @@ function App() {
       })
   }
 
+  const completeCanvasItem = (module, item) => {
+    if (!module || !item) return
+    if (!isEnrolled(module)) return
+    if (item.type === 'quiz') return
+    if (isCanvasItemDone(module, item)) return
+
+    upsertOptimisticProgressRecord(module, item, 'completed')
+    updateCurrentUser((user) => {
+      const existing = (user.completedLessons?.[module.id] || []).map((value) => String(value))
+      const itemId = String(item.id)
+      return {
+        ...user,
+        completedLessons: {
+          ...(user.completedLessons || {}),
+          [module.id]: [...new Set([...existing, itemId])],
+        },
+      }
+    })
+
+    const payload = canvasPersistencePayload(module, item)
+    if (!payload) {
+      setCanvasProgressFrame({
+        status: 'fallback',
+        message: 'Canvas progress is using local fallback for this generated item.',
+      })
+      return
+    }
+
+    setCanvasProgressFrame({
+      status: 'saving',
+      message: 'Saving Canvas progress to MySQL...',
+    })
+    saveCanvasItemProgress({
+      ...payload,
+      status: 'completed',
+    })
+      .then((savedPayload) => applyCanvasProgressPayload(savedPayload, 'Canvas item progress saved to MySQL.'))
+      .catch((error) => {
+        setCanvasProgressFrame({
+          status: 'fallback',
+          message: `Canvas progress kept locally. ${error.message}`,
+        })
+      })
+  }
+
   const submitQuiz = (module, item, quizDefinition = getQuizFromItem(item, module)) => {
     if (!module || !quizDefinition) return
     if (!isEnrolled(module)) return
@@ -1181,10 +1304,12 @@ function App() {
     }
     const itemId = String(item?.id || `${module.id}-quiz`)
 
-    upsertOptimisticProgressRecord(module, item, 'completed')
+    upsertOptimisticProgressRecord(module, item, passed ? 'completed' : 'in_progress')
     updateCurrentUser((user) => {
       const existing = (user.completedLessons?.[module.id] || []).map((value) => String(value))
-      const nextCompleted = [...new Set([...existing, itemId])]
+      const nextCompleted = passed
+        ? [...new Set([...existing, itemId])]
+        : existing.filter((value) => value !== itemId)
       return {
         ...user,
         completedLessons: {
@@ -1232,6 +1357,64 @@ function App() {
         ? `${module.title} quiz passed. Complete all Canvas items to prepare the badge for admin review.`
         : `Review the Canvas items in ${module.title} and try again.`,
       passed ? 'certificate' : 'training'
+    )
+  }
+
+  const beginGuidedModule = () => {
+    if (!selectedModule) return
+    if (!isEnrolled(selectedModule)) {
+      enrollModule(selectedModule)
+    }
+    setModuleDetailStep('items')
+  }
+
+  const startGuidedItems = () => {
+    if (!selectedModule) return
+    if (!isEnrolled(selectedModule)) {
+      enrollModule(selectedModule)
+    }
+    const firstUnreadItem =
+      selectedModuleContentItems.find((item) => !isCanvasItemDone(selectedModule, item)) ||
+      selectedModuleContentItems[0] ||
+      null
+
+    if (firstUnreadItem) {
+      setSelectedCanvasItemId(firstUnreadItem.id)
+      setModuleDetailStep('item')
+      return
+    }
+
+    setModuleDetailStep(selectedModuleQuizItems.length > 0 ? 'quiz' : 'complete')
+  }
+
+  const goToPreviousGuidedItem = () => {
+    if (selectedCanvasItemIndex > 0) {
+      setSelectedCanvasItemId(selectedModuleContentItems[selectedCanvasItemIndex - 1].id)
+      setModuleDetailStep('item')
+      return
+    }
+    setModuleDetailStep('items')
+  }
+
+  const goToNextGuidedItem = () => {
+    if (!selectedModule || !selectedCanvasItem) return
+    completeCanvasItem(selectedModule, selectedCanvasItem)
+    const nextItem = selectedModuleContentItems[selectedCanvasItemIndex + 1]
+    if (nextItem) {
+      setSelectedCanvasItemId(nextItem.id)
+      setModuleDetailStep('item')
+      return
+    }
+    setModuleDetailStep(selectedModuleQuizItems.length > 0 ? 'quiz' : 'complete')
+  }
+
+  const completeGuidedModule = () => {
+    if (!selectedModuleCanComplete) return
+    setModuleDetailStep('complete')
+    addNotification(
+      'Module completed',
+      `${selectedModule.title} is 100% complete and ready for course progress review.`,
+      'certificate'
     )
   }
 
@@ -1543,6 +1726,7 @@ function App() {
                 )}
                 {courseList.map((course) => (
                   <article key={course.id} className={`course-card ${selectedCourse?.id === course.id ? 'selected' : ''}`}>
+                    <CourseVisual course={course} className="course-card-image" asButton onClick={() => openCourse(course.id, 'overview')} />
                     <div className="course-card-topline">
                       <span>{course.id}</span>
                       <b>{course.contactHours || course.modules.length}h</b>
@@ -1632,6 +1816,7 @@ function App() {
               {courseSubView === 'overview' && (
                 <div className="course-overview-grid">
                   <section className="panel wide">
+                    {selectedCourse && <CourseVisual course={selectedCourse} className="course-overview-visual" />}
                     <PanelTitle kicker="Course summary" title={selectedCourse?.name || 'No course selected'} />
                     <div className="course-overview-meta">
                       <span>{selectedCourse?.id || 'Course ID'}</span>
@@ -1755,7 +1940,7 @@ function App() {
           )}
 
           {activeTab === 'module' && selectedModule && (
-            <section className="page-stack">
+            <section className="page-stack guided-module-page">
               <CourseShellNav
                 courses={courseList}
                 selectedCourse={selectedCourse}
@@ -1763,6 +1948,158 @@ function App() {
                 onCourseChange={(courseId) => openCourse(courseId, 'item')}
                 onSectionChange={goToCourseSection}
               />
+              <section className="panel wide guided-reader-shell">
+                {moduleDetailStep === 'intro' && (
+                  <div className="guided-step guided-intro-step">
+                    <ModuleVisual module={selectedModule} className="guided-module-visual" />
+                    <div className="guided-step-copy">
+                      <span className="kicker">{selectedCourse?.name || 'Selected course'}</span>
+                      <h2>{selectedModule.title}</h2>
+                      <p>{selectedModule.subtitle || selectedCourse?.description}</p>
+                      <div className="detail-chips">
+                        <span>{selectedModule.level}</span>
+                        <span>{selectedModule.duration}</span>
+                        <span>{selectedModule.format}</span>
+                        <span>{selectedModuleContentItems.length} reading item{selectedModuleContentItems.length === 1 ? '' : 's'}</span>
+                        <span>{selectedModuleQuizItems.length} quiz{selectedModuleQuizItems.length === 1 ? '' : 'zes'}</span>
+                      </div>
+                      <ProgressBar value={getProgress(selectedModule)} />
+                      <div className="guided-action-row">
+                        <button type="button" onClick={beginGuidedModule}>Next</button>
+                        <button type="button" className="secondary-button" onClick={() => goToCourseSection('modules')}>Back to modules</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {moduleDetailStep === 'items' && (
+                  <div className="guided-step">
+                    <PanelTitle kicker="Canvas module" title="Learning items" />
+                    <p className="guided-muted">
+                      This is your table of contents. Items tick automatically only after you read through each item and press Next.
+                    </p>
+                    <div className={`module-source-banner ${canvasProgressFrame.status}`}>
+                      {canvasProgressFrame.message}
+                    </div>
+                    <div className="guided-toc-list">
+                      {selectedModuleContentItems.length === 0 && (
+                        <EmptyFrame title="No learning items yet" body="Admin can add pages, text, files, images, videos, links, and checklists from the Course builder." />
+                      )}
+                      {selectedModuleContentItems.map((item, index) => {
+                        const meta = itemTypeMeta(item.type)
+                        const done = isCanvasItemDone(selectedModule, item)
+                        return (
+                          <article key={item.id} className={`guided-toc-row ${done ? 'done' : ''}`}>
+                            <span className="guided-toc-check" aria-label={done ? 'Completed' : 'Not completed'} />
+                            <span className="canvas-item-icon">{meta.icon}</span>
+                            <span>
+                              <strong>{String(index + 1).padStart(2, '0')}. {item.title}</strong>
+                              <small>{meta.label} / {item.description || meta.helper}</small>
+                            </span>
+                          </article>
+                        )
+                      })}
+                      {selectedModuleQuizItems.length > 0 && (
+                        <article className={`guided-toc-row assessment ${selectedModuleQuizReady ? 'done' : ''}`}>
+                          <span className="guided-toc-check" aria-label={selectedModuleQuizReady ? 'Completed' : 'Not completed'} />
+                          <span className="canvas-item-icon">Q</span>
+                          <span>
+                            <strong>Assessment quiz</strong>
+                            <small>Score 100% to unlock completion</small>
+                          </span>
+                        </article>
+                      )}
+                    </div>
+                    <div className="guided-action-row">
+                      <button type="button" onClick={startGuidedItems}>Next</button>
+                      <button type="button" className="secondary-button" onClick={() => setModuleDetailStep('intro')}>Previous</button>
+                    </div>
+                  </div>
+                )}
+
+                {moduleDetailStep === 'item' && selectedCanvasItem && (
+                  <div className="guided-step">
+                    <div className="guided-reader-heading">
+                      <span className="kicker">Learning item {String(selectedCanvasItemIndex + 1).padStart(2, '0')}</span>
+                      <h2>{selectedCanvasItem.title}</h2>
+                      <p>{selectedCanvasItem.description || itemTypeMeta(selectedCanvasItem.type).helper}</p>
+                    </div>
+                    <GuidedCanvasItemReader
+                      item={selectedCanvasItem}
+                      module={selectedModule}
+                      saved={savedResourceIds.has(selectedCanvasItem.id)}
+                      onSaveResource={() => toggleResource(selectedCanvasItem.id)}
+                    />
+                    <div className="guided-action-row split">
+                      <button type="button" className="secondary-button" onClick={goToPreviousGuidedItem}>Previous</button>
+                      <button type="button" onClick={goToNextGuidedItem}>
+                        {selectedCanvasItemIndex < selectedModuleContentItems.length - 1
+                          ? 'Next'
+                          : selectedModuleQuizItems.length > 0 ? 'Next to quiz' : 'Next'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {moduleDetailStep === 'quiz' && (
+                  <div className="guided-step">
+                    <PanelTitle kicker="Quiz" title="Assessment" />
+                    <p className="guided-muted">You need 100% before the Complete button will work.</p>
+                    <div className="guided-quiz-stack">
+                      {selectedModuleQuizItems.length === 0 && (
+                        <EmptyFrame title="No quiz in this module" body="You can complete this module after reading all learning items." />
+                      )}
+                      {selectedModuleQuizItems.map((item) => (
+                        <GuidedQuizCard
+                          key={item.id}
+                          item={item}
+                          module={selectedModule}
+                          quizDefinition={getQuizFromItem(item, selectedModule)}
+                          quizDraft={quizDraft}
+                          setQuizDraft={setQuizDraft}
+                          submitQuiz={submitQuiz}
+                          quizResult={getQuizResultForItem(selectedModule, item)}
+                          enrolled={isEnrolled(selectedModule)}
+                        />
+                      ))}
+                    </div>
+                    <div className="guided-action-row split">
+                      <button type="button" className="secondary-button" onClick={() => {
+                        const lastItem = selectedModuleContentItems[selectedModuleContentItems.length - 1]
+                        if (lastItem) {
+                          setSelectedCanvasItemId(lastItem.id)
+                          setModuleDetailStep('item')
+                        } else {
+                          setModuleDetailStep('items')
+                        }
+                      }}>
+                        Previous
+                      </button>
+                      <button type="button" disabled={!selectedModuleCanComplete} onClick={completeGuidedModule}>
+                        Complete
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {moduleDetailStep === 'complete' && (
+                  <div className="guided-step guided-complete-step">
+                    <span className="guided-complete-mark" aria-hidden="true" />
+                    <span className="kicker">Module complete</span>
+                    <h2>{selectedModule.title}</h2>
+                    <p>
+                      {selectedModuleCanComplete
+                        ? 'All required learning items and quizzes are complete.'
+                        : 'Review the remaining learning items or score 100% in the quiz before this module can be completed.'}
+                    </p>
+                    <ProgressBar value={getProgress(selectedModule)} />
+                    <div className="guided-action-row">
+                      <button type="button" onClick={() => goToCourseSection('progress')}>View progress</button>
+                      <button type="button" className="secondary-button" onClick={() => setModuleDetailStep('items')}>Review items</button>
+                    </div>
+                  </div>
+                )}
+              </section>
               <div className="module-detail-hero canvas-detail-hero">
                 <ModuleVisual module={selectedModule} className="module-detail-visual" />
                 <div>
@@ -2395,6 +2732,26 @@ function ResourceCard({ resource, saved, onToggle }) {
   )
 }
 
+function CourseVisual({ course, className = '', asButton = false, onClick }) {
+  const src = courseImageSrc(course)
+  const content = (
+    <>
+      <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} />
+      <span>{cleanText(course?.name, 'Course')}</span>
+    </>
+  )
+
+  if (asButton) {
+    return (
+      <button type="button" className={`${className} course-visual`} onClick={onClick}>
+        {content}
+      </button>
+    )
+  }
+
+  return <div className={`${className} course-visual`}>{content}</div>
+}
+
 function ModuleVisual({ module, className = '', asButton = false, onClick }) {
   const src = moduleImageSrc(module)
   const content = (
@@ -2421,6 +2778,175 @@ function ModuleThumb({ module }) {
     <span className="module-thumb" style={{ '--module-accent': cleanText(module?.accent, '#ff7a1a') }}>
       {src ? <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} /> : initials(module?.title || 'Module')}
     </span>
+  )
+}
+
+function GuidedCanvasItemReader({ item, module, saved, onSaveResource }) {
+  if (!item) {
+    return <EmptyFrame title="No item selected" body="Start the module sequence to open the first learning item." />
+  }
+
+  const type = normalizeItemType(item.type)
+  const meta = itemTypeMeta(type)
+  const checklistItems = toList(item.checklist || item.checklistItems || item.checklist_items || item.content)
+    .map(toPlainText)
+    .filter(Boolean)
+  const hasExternalUrl = Boolean(cleanText(item.url))
+  const contentText = cleanText(
+    item.content,
+    item.description,
+    'The full learning content for this item will appear here after Admin adds it in the Course builder.'
+  )
+
+  return (
+    <div className="guided-canvas-reader">
+      <div className="guided-reader-meta">
+        <span className="canvas-item-icon large">{meta.icon}</span>
+        <div>
+          <strong>{meta.label}</strong>
+          <small>{cleanText(module?.title, 'Selected module')}</small>
+        </div>
+      </div>
+
+      {(type === 'page' || type === 'text') && (
+        <div className="canvas-rich-content">
+          {contentText}
+        </div>
+      )}
+
+      {type === 'image' && (
+        <div className="canvas-media-frame image-frame">
+          {hasExternalUrl ? <img src={item.url} alt={item.title} /> : <span>Image content will appear here after Admin attaches it.</span>}
+        </div>
+      )}
+
+      {type === 'video' && (
+        <div className="canvas-media-frame video-frame">
+          <span>Play</span>
+          <strong>{hasExternalUrl ? 'Video link ready' : 'Video content pending'}</strong>
+          <small>{hasExternalUrl ? item.url : 'Admin can attach an MP4, YouTube, or reference link.'}</small>
+          {hasExternalUrl && (
+            <button type="button" onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}>
+              Open video
+            </button>
+          )}
+        </div>
+      )}
+
+      {type === 'file' && (
+        <div className="canvas-file-frame">
+          <strong>{item.title}</strong>
+          <p>{item.description || 'Open and review this course file before continuing.'}</p>
+          <button
+            type="button"
+            disabled={!hasExternalUrl}
+            onClick={() => hasExternalUrl && window.open(item.url, '_blank', 'noopener,noreferrer')}
+          >
+            {hasExternalUrl ? 'Open file' : 'File URL not attached yet'}
+          </button>
+        </div>
+      )}
+
+      {type === 'link' && (
+        <div className="canvas-file-frame">
+          <strong>External reference</strong>
+          <p>{item.description || item.url || 'Admin can attach a website, Canvas page, or reference URL.'}</p>
+          <button
+            type="button"
+            disabled={!hasExternalUrl}
+            onClick={() => hasExternalUrl && window.open(item.url, '_blank', 'noopener,noreferrer')}
+          >
+            {hasExternalUrl ? 'Open link' : 'Link not attached yet'}
+          </button>
+        </div>
+      )}
+
+      {type === 'checklist' && (
+        <div className="canvas-checklist-preview">
+          {(checklistItems.length > 0 ? checklistItems : ['Review the evidence', 'Write a field note', 'Send recommendation for Admin review']).map((step, index) => (
+            <label key={`${step}-${index}`}>
+              <input type="checkbox" disabled />
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{step}</strong>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {isResourceLikeItem(item) && (
+        <div className="guided-resource-actions">
+          <button type="button" className="secondary-form-button" onClick={onSaveResource}>
+            {saved ? 'Saved resource' : 'Save resource'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GuidedQuizCard({
+  item,
+  module,
+  quizDefinition,
+  quizDraft,
+  setQuizDraft,
+  submitQuiz,
+  quizResult,
+  enrolled,
+}) {
+  const quizKey = getCanvasQuizKey(module, item)
+  const options = toList(quizDefinition?.options).map(toPlainText).filter(Boolean)
+  const selectedValue = quizDraft[quizKey] ?? quizDraft[module?.id]
+  const selectedIndex = Number(selectedValue)
+  const hasSelection = selectedValue !== undefined && selectedValue !== null && !Number.isNaN(selectedIndex)
+
+  return (
+    <article className={`guided-quiz-card ${quizResult?.passed ? 'passed' : quizResult ? 'review' : ''}`}>
+      <div className="guided-quiz-heading">
+        <span className="kicker">{item?.title || 'Assessment quiz'}</span>
+        <h3>{quizDefinition?.question || item?.description || 'Quiz question will appear here.'}</h3>
+      </div>
+
+      {options.length > 0 ? (
+        <div className="quiz-options">
+          {options.map((option, index) => (
+            <label key={`${option}-${index}`}>
+              <input
+                type="radio"
+                name={`guided-quiz-${quizKey}`}
+                value={index}
+                checked={selectedIndex === index}
+                disabled={!enrolled}
+                onChange={(event) =>
+                  setQuizDraft((prev) => ({
+                    ...prev,
+                    [quizKey]: event.target.value,
+                  }))
+                }
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+      ) : (
+        <EmptyFrame title="Quiz options missing" body="Add answer choices in the Admin Course builder before the live demo." />
+      )}
+
+      <button
+        type="button"
+        className="full-button"
+        disabled={!enrolled || options.length === 0 || !hasSelection}
+        onClick={() => submitQuiz(module, item, quizDefinition)}
+      >
+        Submit quiz
+      </button>
+
+      {quizResult && (
+        <div className={quizResult.passed ? 'quiz-result pass' : 'quiz-result review'}>
+          {quizResult.passed ? 'Passed' : 'Review needed'} - Score {quizResult.score}%
+        </div>
+      )}
+    </article>
   )
 }
 

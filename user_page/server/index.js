@@ -955,16 +955,17 @@ app.post('/api/canvas-progress/quiz', asyncRoute(async (req, res) => {
         scorePercentValue,
       ]
     )
+    const quizProgressStatus = isCorrectValue ? 'completed' : 'in_progress'
     await connection.query(
       `INSERT INTO canvas_item_progress
          (user_id, course_id, module_id, item_id, item_type, status, completed_at, last_viewed_at)
-       VALUES (?, ?, ?, ?, 'quiz', 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       VALUES (?, ?, ?, ?, 'quiz', ?, ${isCorrectValue ? 'CURRENT_TIMESTAMP' : 'NULL'}, CURRENT_TIMESTAMP)
        ON DUPLICATE KEY UPDATE
          item_type = 'quiz',
-         status = 'completed',
-         completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+         status = VALUES(status),
+         completed_at = IF(VALUES(status) = 'completed', COALESCE(completed_at, CURRENT_TIMESTAMP), completed_at),
          last_viewed_at = CURRENT_TIMESTAMP`,
-      [userId, courseIdValue, moduleIdValue, itemIdValue]
+      [userId, courseIdValue, moduleIdValue, itemIdValue, quizProgressStatus]
     )
     await connection.commit()
   } catch (error) {
