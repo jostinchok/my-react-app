@@ -21,7 +21,6 @@ import {
   BackendMappingWorkflow,
   HelpDeskWorkflow,
   InboxWorkflow,
-  IncidentOpsWorkflow,
   PermissionsMatrix,
   RangerReviewWorkflow,
   SensorRulesWorkflow,
@@ -532,7 +531,6 @@ function AdminPage() {
       <Resource name="analytics" list={AdminAnalyticsDashboard} options={{ label: "Analytics" }} />
       <Resource name="users" list={UserManagementWorkflow} options={{ label: "Users" }} />
       <Resource name="permissions" list={PermissionsMatrix} options={{ label: "Permissions" }} />
-      <Resource name="incident-ops" list={IncidentOpsWorkflow} options={{ label: "Incident Ops" }} />
       <Resource name="ranger-review" list={RangerReviewWorkflow} options={{ label: "Ranger Review" }} />
       <Resource name="sensor-rules" list={SensorRulesWorkflow} options={{ label: "Sensor Rules" }} />
       <Resource name="announcements" list={AnnouncementsWorkflow} options={{ label: "Announcements" }} />

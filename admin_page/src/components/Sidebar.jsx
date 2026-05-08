@@ -23,7 +23,6 @@ const Sidebar = () => {
     { id: "students", label: "Guides", icon: "👥", to: "/admin/students" },
     { id: "badge", label: "Badge", icon: "📜", to: "/admin/badge" },
     { id: "detection", label: "Incidents", icon: "⚠️", to: "/admin/detection" },
-    { id: "incident-ops", label: "Incident Ops", icon: "🚨", to: "/admin/incident-ops" },
     { id: "ranger-review", label: "Ranger Review", icon: "🧭", to: "/admin/ranger-review" },
     { id: "sensor-rules", label: "Sensor Rules", icon: "📡", to: "/admin/sensor-rules" },
     { id: "announcements", label: "Announcements", icon: "📣", to: "/admin/announcements" },

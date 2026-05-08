@@ -165,3 +165,11 @@ pnpm-lock.yaml.bak
 *.backup
 *.old
 *.orig
+
+# Admin/User runtime evidence generated during local demos
+alerts/ai/*.jpg
+alerts/ai/*.jpeg
+alerts/ai/*.png
+alerts/ai/*.webp
+alerts/ai/*.json
+user_page/public/uploads/

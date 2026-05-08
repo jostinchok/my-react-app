@@ -150,3 +150,14 @@ Admin -> Course Builder
 Admin -> Training Overview
 Admin API -> /api/health
 ```
+
+## V15 Admin Incident Consolidation Check
+
+The Admin portal now treats `/admin/detection` as the official incident operations page.
+
+Expected behavior:
+- Sidebar shows `Incidents`, not a duplicate `Incident Ops` item.
+- Dashboard shortcut opens `/admin/detection`.
+- Park Ranger still uses `Ranger Review` for recommendation-only review.
+- Sensor Rules remains separate for IoT grouping and noise reduction.
+- Admin remains the only role that makes final incident status decisions.

@@ -17,3 +17,13 @@ Use these screenshot names for the Sprint #2 evidence folder.
 ## Notes
 
 The earlier wrap-up pass did not capture screenshots because browser automation was unavailable. Capture manually from the real `my-react-app` project after running the smoke test.
+
+## V15 Admin Consolidation Evidence
+
+Capture these after the V15 patch:
+
+1. `/admin` showing dashboard shortcut to Incidents.
+2. `/admin/detection` showing the official AI/IoT incident queue.
+3. `/admin/ranger-review` showing recommendation-only ranger workflow.
+4. `/admin/sensor-rules` showing IoT grouping/noise-control rules.
+5. Sidebar showing no duplicate `Incident Ops` item.

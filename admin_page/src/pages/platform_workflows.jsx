@@ -62,7 +62,7 @@ const navTargets = [
   { label: "Analytics", path: "/admin/analytics", icon: "📈", detail: "Training funnel and risk snapshot" },
   { label: "Users", path: "/admin/users", icon: "👥", detail: "Account approval and role assignment" },
   { label: "Permissions", path: "/admin/permissions", icon: "🔐", detail: "Role-based access rules" },
-  { label: "Incident Ops", path: "/admin/incident-ops", icon: "🚨", detail: "Admin final incident decisions" },
+  { label: "Incidents", path: "/admin/detection", icon: "🚨", detail: "Official AI/IoT incident queue and final Admin decisions" },
   { label: "Ranger Review", path: "/admin/ranger-review", icon: "🧭", detail: "Recommendation-only ranger console" },
   { label: "Sensor Rules", path: "/admin/sensor-rules", icon: "📡", detail: "IoT grouping and noise reduction" },
   { label: "Announcements", path: "/admin/announcements", icon: "📣", detail: "Read-only broadcast notices" },
@@ -891,7 +891,7 @@ export function RangerReviewWorkflow() {
     <PageShell
       title="Ranger Review Console"
       subtitle="Ranger can inspect evidence and recommend an outcome. Only Admin can make the final official status update."
-      action={<Button component={RouterLink} to="/admin/incident-ops" variant="outlined">Open admin incident ops</Button>}
+      action={<Button component={RouterLink} to="/admin/detection" variant="outlined">Open incidents</Button>}
     >
       <StatsGrid
         items={[
@@ -982,7 +982,7 @@ export function SensorRulesWorkflow() {
     <PageShell
       title="Sensor Rules and Alert Grouping"
       subtitle="Solves the lecturer's concern: if many sensors trigger, the system groups noise into meaningful incident clusters."
-      action={<Button component={RouterLink} to="/admin/incident-ops" variant="outlined">Open incident ops</Button>}
+      action={<Button component={RouterLink} to="/admin/detection" variant="outlined">Open incidents</Button>}
     >
       <StatsGrid
         items={[
