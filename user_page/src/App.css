@@ -1189,6 +1189,20 @@
   font-weight: 900;
 }
 
+.certificate-card.locked {
+  filter: grayscale(0.28);
+}
+
+.certificate-card.locked .certificate-art {
+  opacity: 0.18;
+}
+
+.certificate-card.locked .certificate-stamp {
+  background: #e8ecdf;
+  color: #5f675a;
+  font-size: 0.72rem;
+}
+
 .certificate-card h3 {
   position: relative;
   z-index: 1;
@@ -1216,6 +1230,12 @@
   margin: 0;
   color: var(--forest);
   font-weight: 800;
+}
+
+.certificate-card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  box-shadow: none;
 }
 
 .empty-panel {
@@ -2044,6 +2064,11 @@
 .avatar-upload-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 28px rgba(255, 122, 26, 0.2);
+}
+
+.certificate-card button:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .panel,
