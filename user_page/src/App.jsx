@@ -32,7 +32,7 @@ const userBasePath = import.meta.env.BASE_URL.endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`
 const logoSrc = `${userBasePath}sfc-citrus-logo.webp`
-const editableProfileFields = new Set(['displayName', 'email', 'phone', 'yearsExperience', 'address'])
+const editableProfileFields = new Set(['displayName', 'birthday', 'email', 'phone', 'yearsExperience', 'address'])
 const TRAINING_IMAGE_FILES = [
   'conservation-law.webp',
   'biodiversity-lab.webp',
@@ -812,11 +812,6 @@ function App() {
     setModuleDetailStep('intro')
   }, [selectedModuleId, trainingModules])
 
-  const moduleMap = useMemo(
-    () => new Map(trainingModules.map((module) => [module.id, module])),
-    [trainingModules]
-  )
-
   const allResources = useMemo(
     () =>
       trainingModules.flatMap((module) => {
@@ -975,28 +970,26 @@ function App() {
   const unreadCount = userNotifications.filter((item) => !item.read).length || 0
 
   const certificates = useMemo(() => {
-    const baseCertificates = databaseCertificates
-    const certifiedModuleIds = new Set(baseCertificates.map((certificate) => certificate.moduleId))
-    const readyToReview = completedModules
-      .filter((module) => !certifiedModuleIds.has(module.id))
-      .map((module) => ({
-        id: `${currentUser.id}-${module.id}-ready`,
-        moduleId: module.id,
-        title: module.badge,
-        status: 'Ready for admin review',
-        issueDate: 'Pending',
-        expiryDate: '1 year after approval',
-      }))
-    return [...baseCertificates, ...readyToReview]
-  }, [currentUser, completedModules, databaseCertificates])
+    return courseList
+      .filter((course) => getCourseProgress(course) === 100)
+      .map((course) => {
+        const savedCertificate = databaseCertificates.find((certificate) =>
+          String(certificate.courseId) === String(course.id) && !certificate.moduleId
+        )
+        return {
+          id: savedCertificate?.id || `${currentUser.id}-${course.id}-course-ready`,
+          courseId: course.id,
+          title: savedCertificate?.title || `${course.name} Certificate`,
+          status: savedCertificate?.status || 'Ready for admin review',
+          issueDate: savedCertificate?.issueDate || 'Pending',
+          expiryDate: savedCertificate?.expiryDate || '1 year after approval',
+          progress: 100,
+        }
+      })
+  }, [currentUser, courseList, databaseCertificates, canvasProgressRecords, canvasQuizAttempts])
   const selectedCourseCertificates = useMemo(
-    () => certificates.filter((certificate) => selectedCourseModuleIds.has(String(certificate.moduleId))),
-    [certificates, selectedCourseModuleIds]
-  )
-
-  const earnedBadgeIds = useMemo(
-    () => new Set(completedModules.map((module) => module.id)),
-    [completedModules]
+    () => certificates.filter((certificate) => String(certificate.courseId) === String(selectedCourse?.id)),
+    [certificates, selectedCourse]
   )
 
   const nextModule = useMemo(() => {
@@ -1607,10 +1600,7 @@ function App() {
   const navItems = [
     { id: 'dashboard', label: 'Courses', icon: 'C' },
     { id: 'modules', label: 'Course Overview', icon: 'O' },
-    { id: 'module', label: 'Item Detail', icon: 'I' },
-    { id: 'progress', label: 'Progress', icon: 'P' },
-    { id: 'files', label: 'Files', icon: 'F' },
-    { id: 'certificates', label: 'Completion', icon: '✓' },
+    { id: 'certificates', label: 'Completion', icon: 'C' },
     { id: 'notifications', label: 'Notifications', icon: 'N' },
     { id: 'schedule', label: 'Schedule', icon: 'S' },
     { id: 'profile', label: 'Profile', icon: 'U' },
@@ -2330,23 +2320,26 @@ function App() {
               <PageIntro
                 kicker="Completion / Certificates"
                 title={selectedCourse?.name || 'Guide credentials and milestones'}
-                body="Park Guides can view selected-course certificate state and badge progress. Approval actions remain admin-only."
+                body="Course certificates unlock only after every module in the selected course reaches 100% progress."
               />
 
               <div className="certificate-grid">
                 {selectedCourseCertificates.length === 0 && (
-                  <div className="empty-panel">No certificates yet. Complete a module and pass its quiz to prepare one for admin review.</div>
+                  <div className="empty-panel">No course certificate yet. Complete every module and pass the required quizzes in this course to unlock the course certificate.</div>
                 )}
                 {selectedCourseCertificates.map((certificate) => {
-                  const module = moduleMap.get(certificate.moduleId)
                   return (
                     <article key={certificate.id} className="certificate-card">
-                      {moduleImageSrc(module) && <img className="certificate-art" src={moduleImageSrc(module)} alt="" />}
-                      <div className="certificate-stamp">{module?.badge?.slice(0, 2).toUpperCase() || 'SFC'}</div>
+                      {selectedCourse && <img className="certificate-art" src={courseImageSrc(selectedCourse)} alt="" />}
+                      <div className="certificate-stamp">{initials(selectedCourse?.name || 'SFC')}</div>
                       <span>{certificate.status}</span>
                       <h3>{certificate.title}</h3>
-                      <p>{module?.title || 'Training credential'}</p>
+                      <p>{selectedCourse?.name || 'Course credential'}</p>
                       <dl>
+                        <div>
+                          <dt>Progress</dt>
+                          <dd>{getCourseProgress(selectedCourse)}%</dd>
+                        </div>
                         <div>
                           <dt>Issue</dt>
                           <dd>{certificate.issueDate}</dd>
@@ -2365,17 +2358,17 @@ function App() {
               </div>
 
               <section className="panel">
-                <PanelTitle kicker="Badges" title="All module milestones" />
-                <div className="badge-grid">
+                <PanelTitle kicker="Course requirements" title="Modules required for course certificate" />
+                <div className="progress-table">
                   {selectedCourseModules.length === 0 && (
-                    <EmptyFrame title="No badge rows yet" body="Badges will use module badge_name or badge fields when database modules load." />
+                    <EmptyFrame title="No module rows yet" body="Course certificate requirements will appear after course modules load." />
                   )}
                   {selectedCourseModules.map((module) => (
-                    <div key={module.id} className={earnedBadgeIds.has(module.id) ? 'badge earned' : 'badge locked'}>
-                      <span style={{ background: module.accent }}>{module.badge.slice(0, 2).toUpperCase()}</span>
-                      <strong>{module.badge}</strong>
-                      <small>{earnedBadgeIds.has(module.id) ? 'Earned' : `${getProgress(module)}% complete`}</small>
-                    </div>
+                    <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                      <span>{module.title}</span>
+                      <ProgressBar value={getProgress(module)} />
+                      <b>{getProgress(module)}%</b>
+                    </button>
                   ))}
                 </div>
               </section>
@@ -2594,18 +2587,22 @@ function App() {
                       ['position', 'Position'],
                       ['yearsExperience', 'Years of experience'],
                       ['address', 'Address'],
-                    ].map(([field, label]) => (
-                      <label key={field}>
-                        {label}
-                        <input
-                          type="text"
-                          value={profileUser[field] || '-'}
-                          disabled={!editableProfileFields.has(field)}
-                          onChange={(event) => updateProfileField(field, event.target.value)}
-                          onBlur={(event) => saveProfileEdit(field, event.target.value)}
-                        />
-                      </label>
-                    ))}
+                    ].map(([field, label]) => {
+                      const editable = editableProfileFields.has(field)
+                      const value = profileUser[field] && profileUser[field] !== '-' ? profileUser[field] : ''
+                      return (
+                        <label key={field}>
+                          {label}
+                          <input
+                            type={field === 'birthday' ? 'date' : 'text'}
+                            value={editable ? value : value || '-'}
+                            disabled={!editable}
+                            onChange={(event) => updateProfileField(field, event.target.value)}
+                            onBlur={(event) => saveProfileEdit(field, event.target.value)}
+                          />
+                        </label>
+                      )
+                    })}
                     <label>
                       Guide ID
                       <input type="text" value={profileUser.guideId} disabled />
@@ -2626,35 +2623,21 @@ function App() {
   )
 }
 
-function CourseShellNav({ courses, selectedCourse, activeKey, onCourseChange, onSectionChange }) {
+function CourseShellNav({ selectedCourse, activeKey, onSectionChange }) {
   const sections = [
     ['overview', 'Overview'],
     ['modules', 'Modules'],
     ['item', 'Item Detail'],
     ['progress', 'Progress'],
     ['files', 'Files'],
-    ['completion', 'Completion'],
   ]
 
   return (
     <div className="course-shell-nav">
       <div className="course-shell-selector">
         <span className="kicker">Selected course</span>
-        <label>
-          <select
-            value={selectedCourse?.id || ''}
-            onChange={(event) => onCourseChange(event.target.value)}
-            disabled={courses.length === 0}
-          >
-            {courses.length === 0 ? (
-              <option value="">No backend courses loaded</option>
-            ) : (
-              courses.map((course) => (
-                <option key={course.id} value={course.id}>{course.name}</option>
-              ))
-            )}
-          </select>
-        </label>
+        <strong>{selectedCourse?.name || 'No backend course loaded'}</strong>
+        {selectedCourse && <small>{selectedCourse.id}</small>}
       </div>
       <nav aria-label="Course navigation">
         {sections.map(([key, label]) => (
