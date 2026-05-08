@@ -122,3 +122,14 @@ python3 scripts/check_required_assets.py
 ```
 
 Do not commit downloaded `artifacts/`, `datasets/`, `models/`, `.asset-download-tmp/`, real `.env`, `.venv`, `node_modules`, `dist`, or personal alert images.
+
+
+## Completed: SQL Canvas Demo Records
+
+- Added `database/demo_canvas_courses.sql`.
+- Added `docs/runbooks/demo-canvas-sql.md`.
+- Verified SQL import creates:
+  - `SFC-FIELD-2026`: 3 modules, 16 module items
+  - `SFC-GUIDE-2026`: 3 modules, 18 module items
+  - `SFC-WILDLIFE-2026`: 3 modules, 12 module items
+- Updated official setup direction to prefer SQL insert over frontend-only seeded arrays.

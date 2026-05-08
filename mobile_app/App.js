@@ -390,9 +390,13 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     if (!userId) return
     setCourseActionLoading(courseId)
     try {
-      await api.registerCourse(courseId, userId)
+      const registration = await api.registerCourse(courseId, userId)
       await refreshMobileData()
-      Alert.alert('Request sent', 'Your registration request was submitted to admin for approval.')
+      if (registration?.enrollment_status === 'approved') {
+        Alert.alert('Course approved', 'You are already approved for this course. Tap Open course to continue.')
+      } else {
+        Alert.alert('Request sent', 'Your registration request was submitted to admin for approval.')
+      }
     } catch (e) {
       Alert.alert('Request failed', e.message || 'Unable to submit request.')
     } finally {

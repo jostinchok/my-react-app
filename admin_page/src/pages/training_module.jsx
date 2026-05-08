@@ -57,6 +57,8 @@ const TrainingModuleSetup = () => {
   const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [progressSummary, setProgressSummary] = useState(null);
+  const [progressFallbackMessage, setProgressFallbackMessage] = useState("");
 
   const showMessage = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -67,6 +69,25 @@ const TrainingModuleSetup = () => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.message || "Request failed.");
     return data;
+  };
+
+  const loadAdminProgressSummary = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/canvas-progress-summary`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Progress summary unavailable.");
+
+      setProgressSummary(data);
+      setProgressFallbackMessage(data.message || "");
+    } catch (error) {
+      setProgressSummary({
+        fallback: true,
+        summary: {},
+        guides: [],
+        courses: [],
+      });
+      setProgressFallbackMessage(error.message || "Progress summary unavailable.");
+    }
   };
 
   const loadTrainingData = async () => {
@@ -87,6 +108,8 @@ const TrainingModuleSetup = () => {
         const firstModule = canvasCourses[0]?.modules?.[0];
         return firstModule ? { [firstModule.module_id]: true } : {};
       });
+
+      await loadAdminProgressSummary();
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
@@ -108,6 +131,29 @@ const TrainingModuleSetup = () => {
     const hours = courses.reduce((sum, course) => sum + Number(course.total_contact_hours || 0), 0);
     return { modules, items, resources, hours };
   }, [courses]);
+
+  const numberFrom = (...values) => {
+    const value = values.find((entry) => entry !== undefined && entry !== null && entry !== "");
+    const parsed = Number(value || 0);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const progressStats = progressSummary?.summary || {};
+  const guideProgressRows = Array.isArray(progressSummary?.guides) ? progressSummary.guides : [];
+  const courseProgressRows = Array.isArray(progressSummary?.courses) ? progressSummary.courses : [];
+
+  const totalGuides = numberFrom(progressStats.totalGuides, progressStats.total_guides);
+  const totalAvailableItems = numberFrom(progressStats.totalAvailableItems, progressStats.total_available_items);
+  const totalCompletedItems = numberFrom(progressStats.totalCompletedItems, progressStats.total_completed_items);
+  const totalQuizAttempts = numberFrom(progressStats.totalQuizAttempts, progressStats.total_quiz_attempts);
+  const averageCompletion = numberFrom(progressStats.averageCompletionPercent, progressStats.average_completion_percent);
+
+  const certificateReviewQueue = guideProgressRows
+    .filter((guide) =>
+      numberFrom(guide.completionPercent, guide.completion_percent) >= 100 ||
+      numberFrom(guide.completedItems, guide.completed_items) > 0
+    )
+    .slice(0, 4);
 
   const toggleModule = (moduleId) => {
     setExpanded((prev) => ({ ...prev, [moduleId]: !prev[moduleId] }));
@@ -179,6 +225,140 @@ const TrainingModuleSetup = () => {
           </Grid>
         ))}
       </Grid>
+
+      <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 }, mb: 3 }}>
+        <Stack direction={{ xs: "column", lg: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 2.2 }}>
+          <Box>
+            <Typography className="admin-dashboard-kicker">Progress and certificate review</Typography>
+            <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>
+              Learning evidence dashboard
+            </Typography>
+            <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.8, maxWidth: 840 }}>
+              Admin can review learner completion evidence, quiz attempts, and certificate readiness from the same
+              Canvas-style learning database used by the User Portal.
+            </Typography>
+          </Box>
+          <Chip
+            label={progressSummary?.fallback ? "Progress fallback mode" : "Database-linked progress"}
+            sx={{
+              alignSelf: { xs: "flex-start", lg: "center" },
+              bgcolor: progressSummary?.fallback ? "#fff3c4" : "#dcf8c6",
+              color: "#173126",
+              fontWeight: 950,
+            }}
+          />
+        </Stack>
+
+        {progressFallbackMessage && progressSummary?.fallback && (
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: "14px" }}>
+            {progressFallbackMessage}
+          </Alert>
+        )}
+
+        <Grid container spacing={1.4} sx={{ mb: 2.4 }}>
+          {[
+            ["Guides", totalGuides, "Learner records"],
+            ["Available Items", totalAvailableItems, "Published learning items"],
+            ["Completed Items", totalCompletedItems, "Saved completion evidence"],
+            ["Quiz Attempts", totalQuizAttempts, "Submitted quiz records"],
+            ["Average", String(averageCompletion) + "%", "Average completion"],
+          ].map(([label, value, desc]) => (
+            <Grid item xs={12} sm={6} lg={2.4} key={label}>
+              <Box sx={{ p: 1.6, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+                <Typography className="admin-dashboard-kicker">{label}</Typography>
+                <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.8rem" }}>{value}</Typography>
+                <Typography sx={{ color: "#607166", fontWeight: 800, fontSize: "0.86rem" }}>{desc}</Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={7}>
+            <Box sx={{ p: 2, borderRadius: "18px", bgcolor: "#fffdf5", border: "1px solid #eadfbf" }}>
+              <Typography sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
+                Course completion snapshot
+              </Typography>
+              <Stack gap={1.4}>
+                {courseProgressRows.slice(0, 4).map((course) => {
+                  const percentValue = numberFrom(course.completionPercent, course.completion_percent);
+                  const completed = numberFrom(course.completedItems, course.completed_items);
+                  const available = numberFrom(course.availableItems, course.available_items, course.totalItems, course.total_items);
+                  return (
+                    <Box key={course.course_id || course.courseId || course.course_name}>
+                      <Stack direction="row" justifyContent="space-between" gap={1}>
+                        <Typography sx={{ color: "#173126", fontWeight: 900 }}>
+                          {course.course_name || course.courseName || course.course_id || "Course"}
+                        </Typography>
+                        <Typography sx={{ color: "#173126", fontWeight: 950 }}>
+                          {percentValue}%
+                        </Typography>
+                      </Stack>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, Math.max(0, percentValue))}
+                        sx={{ height: 9, borderRadius: 999, mt: 0.8, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }}
+                      />
+                      <Typography sx={{ color: "#607166", fontWeight: 800, fontSize: "0.82rem", mt: 0.5 }}>
+                        {completed} of {available} learning items completed
+                      </Typography>
+                    </Box>
+                  );
+                })}
+
+                {courseProgressRows.length === 0 && (
+                  <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                    No course progress records yet. Ask a Park Guide to complete module items in the User Portal.
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} lg={5}>
+            <Box sx={{ p: 2, borderRadius: "18px", bgcolor: "#fffdf5", border: "1px solid #eadfbf" }}>
+              <Typography sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
+                Certificate review queue
+              </Typography>
+              <Stack gap={1}>
+                {certificateReviewQueue.map((guide) => {
+                  const percentValue = numberFrom(guide.completionPercent, guide.completion_percent);
+                  const completed = numberFrom(guide.completedItems, guide.completed_items);
+                  const available = numberFrom(guide.availableItems, guide.available_items, guide.totalItems, guide.total_items);
+                  return (
+                    <Box
+                      key={String(guide.user_id || guide.userId || guide.email || "learner") + "-" + String(guide.course_id || guide.courseId || "course")}
+                      sx={{ p: 1.4, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}
+                    >
+                      <Stack direction="row" justifyContent="space-between" gap={1}>
+                        <Box>
+                          <Typography sx={{ color: "#173126", fontWeight: 950 }}>
+                            {guide.name || guide.user_name || guide.email || "Learner"}
+                          </Typography>
+                          <Typography sx={{ color: "#607166", fontWeight: 800, fontSize: "0.82rem" }}>
+                            {guide.course_name || guide.courseName || guide.course_id || "Course"} · {completed}/{available} items
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={percentValue >= 100 ? "Ready" : String(percentValue) + "%"}
+                          size="small"
+                          sx={{ bgcolor: percentValue >= 100 ? "#dcf8c6" : "#fff3c4", color: "#173126", fontWeight: 950 }}
+                        />
+                      </Stack>
+                    </Box>
+                  );
+                })}
+
+                {certificateReviewQueue.length === 0 && (
+                  <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                    No certificate-ready learners yet. Completion evidence will appear here after module items are completed.
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
 

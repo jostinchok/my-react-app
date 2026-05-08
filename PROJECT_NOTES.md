@@ -198,3 +198,18 @@ IoT browser capture contract:
 - Completed IoT browser-camera evidence integration: `/api/incidents/iot-capture` saves compressed captures to `alerts/iot`, serves `/evidence/iot/<filename>`, writes through memory/MySQL incident storage, and deduplicates browser/backend MQTT triggers.
 - Updated run instructions so `/api/health` should show `persistence=mysql`, `requested=mysql`, `active=mysql`, and `fallback=none` for the lecturer demo.
 - Added local asset setup and verification scripts for teammates: `scripts/download_assets_gdrive.py` and `scripts/check_required_assets.py`.
+
+
+## V16 SQL-Based Canvas Demo Records
+
+The Canvas-style demo courses are now available through `database/demo_canvas_courses.sql`.
+
+Official setup:
+
+~~~bash
+mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+~~~
+
+This creates real MySQL records for `courses`, `training_modules`, `lessons`, and `course_module_items`.
+
+The Admin Course Builder, Admin Training Overview, and User Portal read these records through backend APIs. `npm run seed:canvas-demo` remains only as an optional developer helper.

@@ -20,9 +20,28 @@ const host = process.env.API_HOST || '127.0.0.1'
 const defaultUserEmail = process.env.DEFAULT_USER_EMAIL || 'guide@test.com'
 const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
 const adminApiPublicUrl = process.env.ADMIN_API_PUBLIC_URL || 'http://localhost:4002'
+const defaultCorsOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
+  'http://localhost:8081',
+  'http://127.0.0.1:8081',
+  'http://localhost:8082',
+  'http://127.0.0.1:8082',
+]
+
+const configuredCorsOrigins = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
+  ? []
+  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+
 const corsOrigin = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
   ? true
-  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : [...new Set([...configuredCorsOrigins, ...defaultCorsOrigins])]
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
@@ -217,6 +236,16 @@ const normalizeCourseFile = (row = {}) => ({
   uploaded: formatDateOnly(row.uploaded_at),
   uploadedAt: row.uploaded_at,
   url: row.file_url,
+})
+
+const normalizeCourseRow = (row = {}) => ({
+  ...row,
+  start_date: formatDateOnly(row.start_date),
+  end_date: formatDateOnly(row.end_date),
+  module_count: Number(row.module_count || 0),
+  resource_count: Number(row.resource_count || 0),
+  enrollment_status: row.enrollment_status || 'none',
+  remarks: row.decision_note || '',
 })
 
 const parseMaybeJson = (value, fallback) => {
@@ -751,6 +780,70 @@ app.get('/api/training-modules', asyncRoute(async (req, res) => {
   res.json({ modules })
 }))
 
+app.get('/api/courses', asyncRoute(async (req, res) => {
+  const userId = await resolveUserIdForTraining(req)
+  const hasCourses = await tableExists('courses')
+  if (!hasCourses) {
+    res.json({ courses: [] })
+    return
+  }
+
+  const [
+    hasTrainingModuleCourseId,
+    hasCourseResources,
+    hasCourseEnrollments,
+    hasDecisionNote,
+  ] = await Promise.all([
+    columnExists('training_modules', 'course_id'),
+    tableExists('course_resources'),
+    tableExists('course_enrollments'),
+    columnExists('course_enrollments', 'decision_note'),
+  ])
+
+  const enrollmentJoin = hasCourseEnrollments
+    ? 'LEFT JOIN course_enrollments ce ON ce.course_id = c.course_id AND ce.user_id = ?'
+    : ''
+  const moduleJoin = hasTrainingModuleCourseId
+    ? 'LEFT JOIN training_modules tm ON tm.course_id = c.course_id'
+    : ''
+  const resourceJoin = hasCourseResources
+    ? 'LEFT JOIN course_resources cr ON cr.course_id = c.course_id'
+    : ''
+  const enrollmentStatusSelect = hasCourseEnrollments
+    ? "COALESCE(ce.status, 'none') AS enrollment_status"
+    : "'none' AS enrollment_status"
+  const decisionNoteSelect = hasCourseEnrollments && hasDecisionNote
+    ? 'ce.decision_note'
+    : 'NULL AS decision_note'
+  const groupEnrollmentColumns = hasCourseEnrollments
+    ? `, ce.status${hasDecisionNote ? ', ce.decision_note' : ''}`
+    : ''
+
+  const courses = await rowsOf(
+    `SELECT
+       c.course_id,
+       c.course_name,
+       c.description,
+       DATE_FORMAT(c.start_date, '%Y-%m-%d') AS start_date,
+       DATE_FORMAT(c.end_date, '%Y-%m-%d') AS end_date,
+       c.total_contact_hours,
+       c.created_at,
+       ${hasTrainingModuleCourseId ? 'COUNT(DISTINCT tm.module_id)' : '0'} AS module_count,
+       ${hasCourseResources ? 'COUNT(DISTINCT cr.resource_id)' : '0'} AS resource_count,
+       ${enrollmentStatusSelect},
+       ${decisionNoteSelect}
+     FROM courses c
+     ${moduleJoin}
+     ${resourceJoin}
+     ${enrollmentJoin}
+     GROUP BY c.course_id, c.course_name, c.description, c.start_date, c.end_date, c.total_contact_hours, c.created_at${groupEnrollmentColumns}
+     ORDER BY c.created_at DESC, c.course_id ASC`,
+    hasCourseEnrollments ? [userId] : []
+  )
+
+  res.json({ courses: courses.map(normalizeCourseRow) })
+}))
+
 app.get('/api/canvas-progress', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const payload = await loadCanvasProgressPayload(userId)
@@ -1021,6 +1114,38 @@ app.get('/api/notifications', asyncRoute(async (req, res) => {
   res.json({ notifications })
 }))
 
+app.patch('/api/notifications/read-all', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  await pool.query(
+    'UPDATE notifications SET is_read = TRUE WHERE user_id = ?',
+    [userId]
+  )
+  res.json({ ok: true, message: 'All notifications marked as read.' })
+}))
+
+app.patch('/api/notifications/:notificationId/read', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const notificationId = Number(req.params.notificationId)
+  const read = req.body?.read ?? req.body?.is_read ?? true
+
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    res.status(400).json({ message: 'A numeric notification ID is required.' })
+    return
+  }
+
+  const [result] = await pool.query(
+    'UPDATE notifications SET is_read = ? WHERE notification_id = ? AND user_id = ?',
+    [Boolean(read), notificationId, userId]
+  )
+
+  if (result.affectedRows === 0) {
+    res.status(404).json({ message: 'Notification not found.' })
+    return
+  }
+
+  res.json({ ok: true, message: 'Notification read state updated.' })
+}))
+
 app.get('/api/schedule', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const schedule = await rowsOf(
@@ -1151,7 +1276,20 @@ app.post('/api/enrollments/requests', asyncRoute(async (req, res) => {
     [userId, resolvedCourseId]
   )
 
-  res.status(201).json({ ok: true, message: 'Course enrollment request sent to Admin.', courseId: resolvedCourseId })
+  const enrollment = await rowOf(
+    'SELECT status FROM course_enrollments WHERE user_id = ? AND course_id = ? LIMIT 1',
+    [userId, resolvedCourseId]
+  )
+  const enrollmentStatus = enrollment?.status || 'pending'
+
+  res.status(enrollmentStatus === 'approved' ? 200 : 201).json({
+    ok: true,
+    message: enrollmentStatus === 'approved'
+      ? 'Course enrollment is already approved.'
+      : 'Course enrollment request sent to Admin.',
+    courseId: resolvedCourseId,
+    enrollment_status: enrollmentStatus,
+  })
 }))
 
 app.delete('/api/course-files/:fileId', asyncRoute(async (req, res) => {

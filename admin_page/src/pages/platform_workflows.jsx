@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -16,6 +16,17 @@ import {
   Typography,
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
+
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
+
+const requestJson = async (url, options = {}) => {
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || "Request failed.");
+  }
+  return data;
+};
 
 const panelSx = {
   borderRadius: 5,
@@ -62,7 +73,7 @@ const navTargets = [
   { label: "Analytics", path: "/admin/analytics", icon: "📈", detail: "Training funnel and risk snapshot" },
   { label: "Users", path: "/admin/users", icon: "👥", detail: "Account approval and role assignment" },
   { label: "Permissions", path: "/admin/permissions", icon: "🔐", detail: "Role-based access rules" },
-  { label: "Incident Ops", path: "/admin/incident-ops", icon: "🚨", detail: "Admin final incident decisions" },
+  { label: "Incidents", path: "/admin/detection", icon: "🚨", detail: "Official AI/IoT incident queue and final Admin decisions" },
   { label: "Ranger Review", path: "/admin/ranger-review", icon: "🧭", detail: "Recommendation-only ranger console" },
   { label: "Sensor Rules", path: "/admin/sensor-rules", icon: "📡", detail: "IoT grouping and noise reduction" },
   { label: "Announcements", path: "/admin/announcements", icon: "📣", detail: "Read-only broadcast notices" },
@@ -891,7 +902,7 @@ export function RangerReviewWorkflow() {
     <PageShell
       title="Ranger Review Console"
       subtitle="Ranger can inspect evidence and recommend an outcome. Only Admin can make the final official status update."
-      action={<Button component={RouterLink} to="/admin/incident-ops" variant="outlined">Open admin incident ops</Button>}
+      action={<Button component={RouterLink} to="/admin/detection" variant="outlined">Open incidents</Button>}
     >
       <StatsGrid
         items={[
@@ -982,7 +993,7 @@ export function SensorRulesWorkflow() {
     <PageShell
       title="Sensor Rules and Alert Grouping"
       subtitle="Solves the lecturer's concern: if many sensors trigger, the system groups noise into meaningful incident clusters."
-      action={<Button component={RouterLink} to="/admin/incident-ops" variant="outlined">Open incident ops</Button>}
+      action={<Button component={RouterLink} to="/admin/detection" variant="outlined">Open incidents</Button>}
     >
       <StatsGrid
         items={[
@@ -1054,15 +1065,37 @@ export function SensorRulesWorkflow() {
 
 export function AnnouncementsWorkflow() {
   const [announcements, setAnnouncements] = useState(initialAnnouncements);
+  const [syncMessage, setSyncMessage] = useState("");
   const [form, setForm] = useState({
     title: "Trail condition update",
     audience: "Park Guides",
-    location: "Bako National Park",
+    location: "All locations",
     priority: "Medium",
     message: "Please review the latest trail update before your next shift.",
   });
 
-  const publish = (status) => {
+  useEffect(() => {
+    let ignore = false;
+
+    requestJson(`${API_BASE_URL}/api/admin/announcements`)
+      .then((data) => {
+        if (ignore) return;
+        if (Array.isArray(data.announcements) && data.announcements.length > 0) {
+          setAnnouncements(data.announcements);
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          setSyncMessage(`Announcement database feed unavailable. Showing demo records. ${error.message}`);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const publish = async (status) => {
     const next = {
       id: `ANN-${1000 + announcements.length + 1}`,
       ...form,
@@ -1070,7 +1103,22 @@ export function AnnouncementsWorkflow() {
       status,
       pinned: status === "Sent" && form.priority === "High",
     };
-    setAnnouncements([next, ...announcements]);
+
+    setSyncMessage(status === "Sent" ? "Publishing announcement to user notifications..." : "Saving scheduled announcement...");
+
+    try {
+      const data = await requestJson(`${API_BASE_URL}/api/admin/announcements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, status }),
+      });
+
+      setAnnouncements([data.announcement || next, ...announcements]);
+      setSyncMessage(data.message || "Announcement saved.");
+    } catch (error) {
+      setAnnouncements([next, ...announcements]);
+      setSyncMessage(`Saved on this Admin screen only. User and Mobile notifications were not updated. ${error.message}`);
+    }
   };
 
   return (
@@ -1091,6 +1139,11 @@ export function AnnouncementsWorkflow() {
       <Grid container spacing={3}>
         <Grid item xs={12} lg={5}>
           <DataPanel title="Create announcement" subtitle="Broadcasts are read-only. Users should use Help Desk for follow-up.">
+            {syncMessage ? (
+              <Paper sx={{ p: 1.6, mb: 1.5, borderRadius: 3, background: "#fff7e0" }}>
+                <Typography sx={{ color: "#173126", fontWeight: 850 }}>{syncMessage}</Typography>
+              </Paper>
+            ) : null}
             <FormInput label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
             <FormSelect label="Audience" value={form.audience} onChange={(value) => setForm({ ...form, audience: value })} options={["All Users", "Park Guides", "Park Rangers", "Admins"]} />
             <FormSelect label="Location" value={form.location} onChange={(value) => setForm({ ...form, location: value })} options={["All locations", "Bako National Park", "Niah National Park", "Semenggoh Nature Reserve"]} />
@@ -1114,6 +1167,9 @@ export function AnnouncementsWorkflow() {
                 </Stack>
                 <Typography variant="h6" sx={headingSx}>{item.title}</Typography>
                 <Typography sx={mutedSx}>{item.audience} · {item.location} · {item.channel}</Typography>
+                {typeof item.recipient_count === "number" ? (
+                  <Typography sx={mutedSx}>{item.recipient_count} notification recipient{item.recipient_count === 1 ? "" : "s"}</Typography>
+                ) : null}
                 <Typography sx={{ mt: 1 }}>{item.message}</Typography>
               </Paper>
             ))}

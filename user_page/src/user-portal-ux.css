@@ -1,0 +1,462 @@
+
+/*
+  V20 User Portal UX Polish
+  Scope: user_page only.
+  Goal: make the learner portal feel less like a demo screen and more like a real Canvas-style course portal.
+*/
+
+:root {
+  --ux-forest: #073f2b;
+  --ux-forest-2: #0b5a3b;
+  --ux-leaf: #2f9e55;
+  --ux-citrus: #ff8a1f;
+  --ux-sun: #ffd75a;
+  --ux-cream: #fffaf0;
+  --ux-panel: rgba(255, 255, 255, 0.9);
+  --ux-line: rgba(61, 44, 22, 0.12);
+  --ux-shadow: 0 18px 44px rgba(44, 32, 15, 0.09);
+  --ux-shadow-soft: 0 10px 26px rgba(44, 32, 15, 0.07);
+}
+
+/* App shell */
+
+.app-shell {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 215, 90, 0.26), transparent 28rem),
+    radial-gradient(circle at 100% 18%, rgba(117, 213, 84, 0.22), transparent 28rem),
+    linear-gradient(135deg, #fffdf5 0%, #f3f9eb 52%, #fff6e7 100%) !important;
+}
+
+.workspace {
+  align-items: stretch !important;
+}
+
+.workspace.sidebar-open {
+  width: calc(100% - 292px) !important;
+  margin-left: 292px !important;
+}
+
+.sidebar {
+  width: 292px !important;
+  padding: 18px !important;
+  gap: 18px !important;
+  background:
+    radial-gradient(circle at top left, rgba(255, 215, 90, 0.24), transparent 16rem),
+    linear-gradient(180deg, #064027 0%, #07331f 56%, #041d14 100%) !important;
+  color: #f7ffe9 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 18px 0 46px rgba(6, 42, 26, 0.18);
+}
+
+.brand-block {
+  min-height: 62px !important;
+  padding: 10px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.brand-block strong {
+  color: #fffbe8 !important;
+  font-size: 1rem !important;
+}
+
+.brand-block span,
+.role-card span,
+.role-card p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.nav-list {
+  gap: 8px !important;
+}
+
+.nav-list button {
+  min-height: 46px !important;
+  border-radius: 14px !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid transparent !important;
+}
+
+.nav-list button span {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff4c7 !important;
+}
+
+.nav-list button:hover,
+.nav-list button.active {
+  background: rgba(255, 255, 255, 0.13) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+}
+
+.nav-list button.active {
+  box-shadow: inset 4px 0 0 var(--ux-citrus) !important;
+}
+
+.role-card {
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.role-card strong {
+  color: #fffbe8 !important;
+}
+
+/* Topbar */
+
+.topbar {
+  min-height: 72px !important;
+  padding: 12px 26px !important;
+  background: rgba(255, 253, 247, 0.9) !important;
+  border-bottom: 1px solid rgba(52, 41, 20, 0.1) !important;
+  box-shadow: 0 12px 30px rgba(45, 35, 16, 0.05);
+}
+
+.topbar h1 {
+  font-size: clamp(1.08rem, 1.6vw, 1.35rem) !important;
+  font-weight: 900 !important;
+}
+
+.kicker {
+  color: var(--ux-citrus) !important;
+  letter-spacing: 0.08em !important;
+}
+
+.menu-button,
+.reset-button,
+.logout-button,
+.avatar-button {
+  border-radius: 14px !important;
+}
+
+/* Main page width */
+
+.page-scroll {
+  padding: 34px clamp(22px, 4vw, 54px) 56px !important;
+}
+
+.page-stack {
+  width: min(100%, 1320px) !important;
+  max-width: 1320px !important;
+  gap: 24px !important;
+}
+
+/* Hero and intro panels */
+
+.hero-grid {
+  min-height: 300px !important;
+  gap: 20px !important;
+}
+
+.hero-copy,
+.module-detail-hero {
+  border-radius: 26px !important;
+  box-shadow: var(--ux-shadow) !important;
+}
+
+.hero-copy {
+  background:
+    linear-gradient(135deg, rgba(255, 138, 31, 0.93), rgba(255, 215, 90, 0.82) 58%, rgba(178, 239, 91, 0.76)),
+    var(--hero-image) !important;
+}
+
+.hero-copy h2 {
+  font-size: clamp(2.2rem, 4vw, 4.2rem) !important;
+  letter-spacing: -0.04em !important;
+}
+
+.page-intro {
+  max-width: 960px !important;
+}
+
+.page-intro h2 {
+  letter-spacing: -0.04em !important;
+}
+
+/* Generic cards */
+
+.panel,
+.stat-card,
+.module-card,
+.resource-card,
+.certificate-card,
+.notification-list > *,
+.schedule-list > *,
+.saved-list > *,
+.category-bars > div,
+.progress-table button,
+.user-switcher button,
+.compact-module-list button,
+.lesson-list label {
+  border-radius: 18px !important;
+  border: 1px solid var(--ux-line) !important;
+  box-shadow: var(--ux-shadow-soft) !important;
+}
+
+.panel {
+  padding: clamp(20px, 2.2vw, 30px) !important;
+  background: var(--ux-panel) !important;
+}
+
+.stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.stat-card {
+  min-height: 132px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 238, 0.9)) !important;
+}
+
+.stat-card strong {
+  font-size: clamp(2rem, 3.4vw, 3rem) !important;
+}
+
+/* Course-like screens */
+
+.module-source-banner {
+  border-radius: 14px !important;
+  padding: 12px 16px !important;
+}
+
+.module-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.module-card {
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.module-card:hover,
+.compact-module-list button:hover,
+.progress-table button:hover,
+.resource-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(44, 32, 15, 0.12) !important;
+  border-color: rgba(255, 138, 31, 0.36) !important;
+}
+
+.module-image {
+  height: 168px !important;
+}
+
+.module-card-body {
+  gap: 14px !important;
+  padding: 18px !important;
+}
+
+.module-card h3,
+.panel-title h2,
+.resource-card h3,
+.certificate-card h3 {
+  letter-spacing: -0.02em !important;
+}
+
+.module-meta span,
+.detail-chips span {
+  border-radius: 999px !important;
+  background: #fff2c4 !important;
+  color: #17412e !important;
+}
+
+.module-actions button,
+.hero-actions button,
+.full-button,
+.resource-card button,
+.certificate-card button,
+.notification-actions button,
+.notification-buttons button,
+.schedule-form button {
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, var(--ux-citrus), var(--ux-sun)) !important;
+  box-shadow: 0 12px 22px rgba(255, 138, 31, 0.22) !important;
+}
+
+.secondary-button,
+.hero-actions .secondary-button {
+  background: rgba(255, 255, 255, 0.66) !important;
+  border-color: rgba(35, 60, 34, 0.13) !important;
+  box-shadow: none !important;
+}
+
+/* Canvas item detail */
+
+.content-grid.detail-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px) !important;
+  align-items: start;
+}
+
+.objective-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.objective-grid div {
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, #fff5d6, #eef9e8) !important;
+}
+
+.lesson-list {
+  gap: 12px !important;
+}
+
+.lesson-list label {
+  min-height: 64px !important;
+  background: rgba(255, 253, 245, 0.92) !important;
+}
+
+.lesson-list label.done {
+  background: #edfadc !important;
+}
+
+.lesson-list label > span {
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, var(--ux-sun), #c9ef60) !important;
+}
+
+.quiz-options label {
+  border-radius: 16px !important;
+  background: rgba(255, 253, 245, 0.94) !important;
+  border: 1px solid var(--ux-line);
+}
+
+/* Resource, progress, certificate */
+
+.resource-grid,
+.certificate-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.progress-table button {
+  min-height: 66px !important;
+  background: rgba(255, 253, 245, 0.92) !important;
+}
+
+.progress-bar {
+  height: 10px !important;
+  background: #dfebd8 !important;
+}
+
+.progress-bar div {
+  background: linear-gradient(90deg, var(--ux-leaf), var(--ux-citrus)) !important;
+}
+
+/* Make demo-like boundary panels look like real access guidance instead of a sample block */
+
+.permission-list li {
+  border-radius: 14px !important;
+  background: rgba(244, 250, 238, 0.9) !important;
+}
+
+/* Broad fallback selectors for newer course card class names */
+
+[class*="course-card"],
+[class*="course-tile"],
+[class*="course-summary"],
+[class*="course-panel"],
+[class*="course-shell"],
+[class*="course-overview"],
+[class*="course-home"] {
+  border-radius: 20px !important;
+}
+
+[class*="course-card"],
+[class*="course-tile"] {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--ux-line) !important;
+  box-shadow: var(--ux-shadow-soft) !important;
+}
+
+[class*="course-card"]:hover,
+[class*="course-tile"]:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 138, 31, 0.4) !important;
+  box-shadow: var(--ux-shadow) !important;
+}
+
+[class*="course-card"].active,
+[class*="course-tile"].active,
+button[class*="course"].active {
+  border-color: rgba(255, 138, 31, 0.8) !important;
+  background: linear-gradient(135deg, rgba(255, 246, 212, 0.96), rgba(245, 255, 231, 0.92)) !important;
+}
+
+[class*="course"] button,
+[class*="module"] button {
+  border-radius: 14px;
+}
+
+/* Responsive */
+
+@media (max-width: 1180px) {
+  .workspace.sidebar-open,
+  .workspace.sidebar-closed {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .sidebar {
+    width: min(292px, 86vw) !important;
+  }
+
+  .stat-grid,
+  .module-grid,
+  .resource-grid,
+  .certificate-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .content-grid,
+  .content-grid.detail-layout,
+  .hero-grid,
+  .module-detail-hero {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  .topbar-logo {
+    display: none !important;
+  }
+
+  .topbar-actions {
+    gap: 6px !important;
+  }
+
+  .page-scroll {
+    padding: 18px 14px 42px !important;
+  }
+
+  .stat-grid,
+  .module-grid,
+  .resource-grid,
+  .certificate-grid,
+  .objective-grid,
+  .toolbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .compact-module-list button,
+  .progress-table button {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hero-copy {
+    padding: 26px !important;
+  }
+
+  .hero-copy h2,
+  .page-intro h2,
+  .module-detail-hero h2 {
+    font-size: 2rem !important;
+  }
+}
