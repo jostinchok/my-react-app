@@ -143,6 +143,21 @@ const normalizeResource = (resource = {}) => ({
   download_url: `/api/courses/${encodeURIComponent(resource.course_id)}/resources/${resource.resource_id}/download`,
 })
 
+const normalizeAnnouncement = (announcement = {}) => ({
+  id: announcement.announcement_id ? `ANN-${announcement.announcement_id}` : announcement.id,
+  announcement_id: announcement.announcement_id,
+  title: announcement.title,
+  audience: announcement.audience,
+  location: announcement.location,
+  priority: announcement.priority,
+  channel: announcement.channel,
+  status: announcement.status,
+  pinned: Boolean(announcement.pinned),
+  message: announcement.message,
+  recipient_count: Number(announcement.recipient_count || 0),
+  created_at: announcement.created_at,
+})
+
 const percent = (value, total) => {
   const numerator = Number(value || 0)
   const denominator = Number(total || 0)
@@ -371,6 +386,38 @@ const ensureAdminTrainingSchema = async () => {
   await ensureColumn('course_enrollments', 'decision_note', 'decision_note TEXT NULL')
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      notification_id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      type VARCHAR(80) DEFAULT 'info',
+      message TEXT,
+      is_read BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_notifications_user_created (user_id, created_at),
+      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_announcements (
+      announcement_id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      audience VARCHAR(80) NOT NULL DEFAULT 'All Users',
+      location VARCHAR(120) NOT NULL DEFAULT 'All locations',
+      priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
+      channel VARCHAR(120) NOT NULL DEFAULT 'In-app + Email',
+      status VARCHAR(50) NOT NULL DEFAULT 'Sent',
+      pinned BOOLEAN DEFAULT FALSE,
+      message TEXT,
+      recipient_count INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_admin_announcements_created (created_at),
+      INDEX idx_admin_announcements_status (status)
+    )
+  `)
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_badges (
       badge_id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -452,6 +499,126 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
     message: 'Admin backend connected to MySQL',
     database: databaseName,
     features: ['courses', 'modules', 'course_resources', 'guide_management', 'badges', 'canvas_learning_progress_summary'],
+  })
+}))
+
+const audienceRoleMap = {
+  'Park Guides': ['guide', 'park guide', 'park_guide'],
+  'Park Rangers': ['ranger', 'park ranger', 'park_ranger'],
+  Admins: ['admin'],
+}
+
+const loadAnnouncementRecipients = async ({ audience = 'All Users', location = 'All locations' }) => {
+  const filters = []
+  const values = []
+  const roleNames = audienceRoleMap[audience]
+
+  if (roleNames?.length) {
+    filters.push('LOWER(COALESCE(r.role_name, \'\')) IN (?)')
+    values.push(roleNames)
+  }
+
+  if (location && location !== 'All locations') {
+    filters.push('gp.organization = ?')
+    values.push(location)
+  }
+
+  return rowsOf(
+    `SELECT u.user_id, u.name, u.email, r.role_name, gp.organization
+     FROM users u
+     LEFT JOIN roles r ON r.role_id = u.role_id
+     LEFT JOIN guide_profiles gp ON gp.guide_id = u.user_id
+     ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
+     ORDER BY u.user_id ASC`,
+    values
+  )
+}
+
+app.get('/api/admin/announcements', asyncRoute(async (_req, res) => {
+  const announcements = await rowsOf(
+    `SELECT announcement_id, title, audience, location, priority, channel, status, pinned, message, recipient_count, created_at
+     FROM admin_announcements
+     ORDER BY created_at DESC, announcement_id DESC
+     LIMIT 100`
+  )
+  res.json({ announcements: announcements.map(normalizeAnnouncement) })
+}))
+
+app.post('/api/admin/announcements', asyncRoute(async (req, res) => {
+  const {
+    title = '',
+    audience = 'All Users',
+    location = 'All locations',
+    priority = 'Medium',
+    message = '',
+    status = 'Sent',
+  } = req.body || {}
+
+  const normalizedTitle = String(title).trim()
+  const normalizedMessage = String(message).trim()
+  const normalizedStatus = status === 'Scheduled' ? 'Scheduled' : 'Sent'
+
+  if (!normalizedTitle || !normalizedMessage) {
+    res.status(400).json({ message: 'Announcement title and message are required.' })
+    return
+  }
+
+  const recipients = normalizedStatus === 'Sent'
+    ? await loadAnnouncementRecipients({ audience, location })
+    : []
+  const channel = 'In-app + Email'
+  const pinned = normalizedStatus === 'Sent' && priority === 'High'
+
+  const [announcementResult] = await pool.query(
+    `INSERT INTO admin_announcements
+       (title, audience, location, priority, channel, status, pinned, message, recipient_count)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      normalizedTitle,
+      audience,
+      location,
+      priority,
+      channel,
+      normalizedStatus,
+      pinned,
+      normalizedMessage,
+      recipients.length,
+    ]
+  )
+
+  if (recipients.length) {
+    await pool.query(
+      'INSERT INTO notifications (user_id, title, type, message, is_read) VALUES ?',
+      [recipients.map((recipient) => [
+        recipient.user_id,
+        normalizedTitle,
+        'announcement',
+        `[${priority}] ${normalizedMessage}`,
+        false,
+      ])]
+    )
+  }
+
+  const announcement = await rowOf(
+    `SELECT announcement_id, title, audience, location, priority, channel, status, pinned, message, recipient_count, created_at
+     FROM admin_announcements
+     WHERE announcement_id = ?`,
+    [announcementResult.insertId]
+  )
+
+  res.status(201).json({
+    message: normalizedStatus === 'Sent'
+      ? `Announcement published to ${recipients.length} user${recipients.length === 1 ? '' : 's'}.`
+      : 'Announcement saved as scheduled.',
+    announcement: normalizeAnnouncement(announcement),
+    recipientCount: recipients.length,
+    recipients: recipients.map((recipient) => ({
+      user_id: recipient.user_id,
+      name: recipient.name,
+      email: recipient.email,
+      role: recipient.role_name,
+      location: recipient.organization,
+    })),
   })
 }))
 
