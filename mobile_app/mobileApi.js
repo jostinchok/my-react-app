@@ -321,6 +321,17 @@ export const mobileContentApi = (authBaseUrl) => {
   const base = contentBaseFromAuthBase(authBaseUrl).replace(/\/$/, "");
   const adminBase = adminBaseFromAuthBase(authBaseUrl).replace(/\/$/, "");
 
+  const mergeCourseRecord = (existing = {}, incoming = {}) => {
+    const existingStatus = normalizeEnrollmentStatus(firstValue(existing.enrollment_status, existing.enrollmentStatus, existing.status));
+    const incomingStatus = normalizeEnrollmentStatus(firstValue(incoming.enrollment_status, incoming.enrollmentStatus, incoming.status));
+    return {
+      ...existing,
+      ...incoming,
+      enrollment_status: incomingStatus !== "none" ? incomingStatus : existingStatus,
+      remarks: asText(firstValue(incoming.remarks, incoming.decision_note, existing.remarks, existing.decision_note)),
+    };
+  };
+
   const mergeCourseLists = (adminCourses = [], userCourses = []) => {
     const byId = new Map();
     for (const course of adminCourses) {
@@ -328,7 +339,7 @@ export const mobileContentApi = (authBaseUrl) => {
     }
     for (const course of userCourses) {
       const key = String(course.course_id);
-      byId.set(key, { ...(byId.get(key) || {}), ...course });
+      byId.set(key, mergeCourseRecord(byId.get(key), course));
     }
     return [...byId.values()];
   };
