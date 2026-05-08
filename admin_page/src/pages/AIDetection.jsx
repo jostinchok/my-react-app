@@ -1,3 +1,4 @@
+import { authFetch } from "../utils/authFetch";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mqtt from "mqtt";
 import {
@@ -455,11 +456,10 @@ const AIDetection = () => {
         : undefined,
     };
 
-    const response = await fetch(`${API_BASE_URL}/api/incidents/iot-capture`, {
+    const response = await authFetch(`${API_BASE_URL}/api/incidents/iot-capture`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Actor-Role": "admin",
       },
       body: JSON.stringify(incidentPayload),
     });
@@ -499,7 +499,7 @@ const AIDetection = () => {
 
     const fetchIncidents = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/incidents`, { cache: "no-store" });
+        const response = await authFetch(`${API_BASE_URL}/api/incidents`, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`Backend returned ${response.status}`);
         }
@@ -707,13 +707,12 @@ const AIDetection = () => {
     setSavingIncidentId(incidentId);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/status`,
+    const response = await authFetch(
+      `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/status`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            "X-Actor-Role": "admin",
           },
           body: JSON.stringify({ status }),
         }
@@ -770,12 +769,11 @@ const AIDetection = () => {
     setDeletingIncidentId(incidentId);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}`,
+    const response = await authFetch(
+      `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}`,
         {
           method: "DELETE",
           headers: {
-            "X-Actor-Role": "admin",
           },
         }
       );

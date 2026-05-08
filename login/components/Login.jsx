@@ -46,11 +46,15 @@ const Login = ({ onRegister, onForgot }) => {
       }
 
       const user = data.user;
+
+      localStorage.setItem('sfc_token', data.token);
+
       localStorage.setItem('sfc_session', JSON.stringify({
         user_id: user.user_id,
         name: user.name,
         email: user.email,
         role: user.role_name,
+        token: data.token,
         loginAt: new Date().toISOString(),
       }));
 

@@ -1,3 +1,4 @@
+import { authFetch } from "../utils/authFetch";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -139,7 +140,7 @@ const ParkRangerConsole = () => {
 
     const fetchIncidents = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/incidents`, { cache: "no-store" });
+        const response = await authFetch(`${API_BASE_URL}/api/incidents`, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`Backend returned ${response.status}`);
         }
@@ -274,13 +275,12 @@ const ParkRangerConsole = () => {
     }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/ranger-recommendation`,
+    const response = await authFetch(
+      `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/ranger-recommendation`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Actor-Role": "park_ranger",
           },
           body: JSON.stringify({ recommendation, note }),
         }

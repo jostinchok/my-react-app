@@ -9,6 +9,7 @@ import {
 } from './data/trainingPlatform'
 import {
   API_LINKS,
+  authFetch,
   loadDatabaseFrame,
   normalizeCertificateRow,
   normalizeModuleRow,
@@ -834,7 +835,7 @@ function App() {
     setActiveTab('module')
     addNotification('Module enrolled', `${module.title} is now in your learning path.`, 'training')
     if (module.courseId) {
-      fetch(API_LINKS.enrollmentRequests, {
+      authFetch(API_LINKS.enrollmentRequests, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
