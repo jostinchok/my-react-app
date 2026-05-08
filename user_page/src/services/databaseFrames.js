@@ -272,6 +272,8 @@ export const normalizeModuleRow = (row, index = 0) => {
     courseStartDate: asText(firstValue(row.courseStartDate, row.course_start_date), ''),
     courseEndDate: asText(firstValue(row.courseEndDate, row.course_end_date), ''),
     courseContactHours: Number(firstValue(row.courseContactHours, row.course_contact_hours, 0)) || 0,
+    sortOrder: Number(firstValue(row.sortOrder, row.sort_order, row.moduleSortOrder, row.module_sort_order, index + 1)) || index + 1,
+    sort_order: Number(firstValue(row.sortOrder, row.sort_order, row.moduleSortOrder, row.module_sort_order, index + 1)) || index + 1,
     title,
     subtitle: asText(firstValue(row.subtitle, row.description), 'Module description will appear here after database data is loaded.'),
     category: asText(firstValue(row.category, row.type), 'Database Module'),

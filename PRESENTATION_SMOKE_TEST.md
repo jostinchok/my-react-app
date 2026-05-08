@@ -125,3 +125,28 @@ Demo checks:
 Run the required old plant-wording scan from the final verification checklist.
 
 Expected result: no matches for the old user-facing wording. Internal `TouchingPlants` class aliases may remain only where needed for the old AI model compatibility layer.
+
+
+## V11 User Portal polish checks
+
+After seeding the Canvas demo courses, verify these User Portal details:
+
+1. The User Portal shows the selected-course count, for example `3 modules in this course`, instead of only the global module total.
+2. Course modules follow the Admin learning order, not alphabetical order.
+3. The top breadcrumb changes with the active area, such as `SFC / Course Overview`, `SFC / Modules`, `SFC / Item Detail`, `SFC / Progress`, `SFC / Files`, and `SFC / Completion`.
+4. Module item detail shows a locked sequential learning flow. Later items stay locked until the previous item is completed.
+5. File and external-link learning items mark progress only after the guide opens the file or link.
+
+Recommended evidence sequence:
+
+```text
+User Portal -> Courses
+User Portal -> Course Overview
+User Portal -> Modules
+User Portal -> Item Detail
+User Portal -> Files
+User Portal -> Completion
+Admin -> Course Builder
+Admin -> Training Overview
+Admin API -> /api/health
+```

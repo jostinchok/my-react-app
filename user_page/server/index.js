@@ -529,7 +529,14 @@ const normalizeCourseResource = (row = {}) => ({
 
 const buildModules = async (userId) => {
   const hasCourseId = await columnExists('training_modules', 'course_id')
+  const hasModuleSortOrder = await columnExists('training_modules', 'sort_order')
   const hasCoursesTable = hasCourseId ? await tableExists('courses') : false
+  const moduleOrderClause = [
+    hasCourseId ? 'tm.course_id ASC' : null,
+    hasModuleSortOrder ? 'tm.sort_order ASC' : null,
+    'tm.created_at DESC',
+    'tm.module_id DESC',
+  ].filter(Boolean).join(', ')
   const modules = await rowsOf(
     `SELECT
        tm.module_id,
@@ -550,6 +557,7 @@ const buildModules = async (userId) => {
        tm.accent_color,
        tm.badge_name,
        tm.objectives,
+       ${hasModuleSortOrder ? 'tm.sort_order' : '0'} AS sort_order,
        tm.created_at,
        p.completed_lessons,
        p.quiz_passed,
@@ -558,7 +566,7 @@ const buildModules = async (userId) => {
      FROM training_modules tm
      ${hasCoursesTable ? 'LEFT JOIN courses c ON c.course_id = tm.course_id' : ''}
      LEFT JOIN progress p ON p.module_id = tm.module_id AND p.user_id = ?
-     ORDER BY tm.created_at DESC, tm.module_id DESC`,
+     ORDER BY ${moduleOrderClause}`,
     [userId]
   )
 
@@ -701,6 +709,8 @@ const buildModules = async (userId) => {
       course_end_date: formatDateOnly(module.course_end_date),
       courseContactHours: Number(module.course_contact_hours || 0),
       course_contact_hours: Number(module.course_contact_hours || 0),
+      sortOrder: Number(module.sort_order || 0),
+      sort_order: Number(module.sort_order || 0),
       image: module.image_url,
       accent: module.accent_color,
       badge: module.badge_name,
