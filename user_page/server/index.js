@@ -102,6 +102,11 @@ const columnExists = async (tableName, columnName) => {
   return Boolean(row)
 }
 
+const ensureUserBirthdayColumn = async () => {
+  if (await columnExists('users', 'birthday')) return
+  await pool.query('ALTER TABLE users ADD COLUMN birthday DATE NULL AFTER email')
+}
+
 const ensureRole = async (roleName) => {
   await pool.query('INSERT IGNORE INTO roles (role_name) VALUES (?)', [roleName])
   const role = await rowOf('SELECT role_id FROM roles WHERE role_name = ? LIMIT 1', [roleName])
@@ -981,11 +986,13 @@ app.post('/api/canvas-progress/quiz', asyncRoute(async (req, res) => {
 
 app.get('/api/user-profile', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
+  await ensureUserBirthdayColumn()
   const profile = await rowOf(
     `SELECT
        u.user_id,
        u.name,
        u.email,
+       DATE_FORMAT(u.birthday, '%Y-%m-%d') AS birthday,
        r.role_name,
        gp.guide_id,
        gp.phone,
@@ -1024,6 +1031,7 @@ app.patch('/api/user-profile', asyncRoute(async (req, res) => {
   const userFieldMap = {
     displayName: 'name',
     email: 'email',
+    birthday: 'birthday',
   }
   const profileFieldMap = {
     phone: 'phone',
@@ -1032,6 +1040,7 @@ app.patch('/api/user-profile', asyncRoute(async (req, res) => {
   }
 
   if (userFieldMap[field]) {
+    if (field === 'birthday') await ensureUserBirthdayColumn()
     await pool.query(`UPDATE users SET ${userFieldMap[field]} = ? WHERE user_id = ?`, [value || null, userId])
   } else if (profileFieldMap[field]) {
     await pool.query(
@@ -1093,6 +1102,7 @@ app.get('/api/certifications', asyncRoute(async (req, res) => {
        c.status,
        c.issue_date,
        c.expiry_date,
+       tm.course_id,
        tm.title AS module_title
      FROM certifications c
      LEFT JOIN training_modules tm ON tm.module_id = c.module_id
