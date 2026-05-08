@@ -1,39 +1,5 @@
-:root {
-  --primary-dark: #173126;
-  --primary-mid: #3fae5a;
-  --accent-green: #3fae5a;
-  --sidebar-green: #fff3b8;
-  --sidebar-active: #ffffff;
-  --progress-green: #3fae5a;
-  --progress-bg: #ddfbd2;
-  --bg-light: #fffdf5;
-  --text-main: #173126;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  width: 100%;
-  min-height: 100vh;
-}
+@import "../../shared/default_style.css";
 
 body {
   background: linear-gradient(135deg, #fffdf5 0%, #fff9e8 48%, #f6ffe8 100%);
-  color: var(--text-main);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-#root {
-  width: 100%;
-  max-width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  text-align: left;
-  border: none;
-  display: block;
 }

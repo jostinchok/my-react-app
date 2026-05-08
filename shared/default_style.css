@@ -1,0 +1,180 @@
+/*
+  SFC Digital Portal shared style foundation.
+  Keep shared tokens, reset rules, common shell defaults, and reusable utilities here.
+  Page-specific layouts can stay in their own CSS files until they are safely refactored.
+*/
+
+:root {
+  color-scheme: light;
+
+  --sfc-forest: #0b3b28;
+  --sfc-forest-2: #175f3e;
+  --sfc-forest-3: #032c1d;
+  --sfc-charcoal: #1e2a22;
+  --sfc-leaf: #6bdc45;
+  --sfc-lime: #b8f22f;
+  --sfc-citrus: #ff7a1a;
+  --sfc-sun: #ffd23f;
+  --sfc-cream: #fff9e9;
+  --sfc-mist: #f4f8ee;
+  --sfc-white: #ffffff;
+  --sfc-line: #dfe8d6;
+  --sfc-muted: #617064;
+  --sfc-danger: #c74f3f;
+  --sfc-warning: #f59e0b;
+  --sfc-info: #2563eb;
+  --sfc-success: #0f9f6e;
+  --sfc-shadow: 0 18px 45px rgba(255, 122, 26, 0.12);
+  --sfc-soft-shadow: 0 14px 36px rgba(23, 95, 62, 0.10);
+  --sfc-radius-sm: 8px;
+  --sfc-radius-md: 14px;
+  --sfc-radius-lg: 22px;
+  --sfc-radius-pill: 999px;
+  --sfc-font-main: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Backward-compatible aliases used by the User Portal CSS. */
+  --forest: var(--sfc-forest);
+  --forest-2: var(--sfc-forest-2);
+  --charcoal: var(--sfc-charcoal);
+  --leaf: var(--sfc-leaf);
+  --lime: var(--sfc-lime);
+  --citrus: var(--sfc-citrus);
+  --sun: var(--sfc-sun);
+  --cream: var(--sfc-cream);
+  --mist: var(--sfc-mist);
+  --white: var(--sfc-white);
+  --line: var(--sfc-line);
+  --muted: var(--sfc-muted);
+  --danger: var(--sfc-danger);
+  --shadow: var(--sfc-shadow);
+
+  /* Backward-compatible aliases used by Admin CSS. */
+  --ce-forest: var(--sfc-forest);
+  --ce-forest-2: var(--sfc-forest-2);
+  --ce-citrus: var(--sfc-citrus);
+  --ce-sun: var(--sfc-sun);
+  --ce-lime: #a8e64a;
+  --ce-cream: #fff8e6;
+  --ce-mist: var(--sfc-mist);
+  --ce-charcoal: var(--sfc-charcoal);
+  --ce-line: #dce7d7;
+  --ce-muted: #607166;
+  --ce-shadow: 0 20px 52px rgba(23, 95, 62, 0.12);
+
+  font-family: var(--sfc-font-main);
+  color: var(--sfc-charcoal);
+  background: var(--sfc-cream);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--sfc-cream);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--sfc-cream);
+  color: var(--sfc-charcoal);
+  font-family: var(--sfc-font-main);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  text-align: left;
+  border: none;
+  display: block;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.sfc-surface {
+  border: 1px solid var(--sfc-line);
+  border-radius: var(--sfc-radius-lg);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--sfc-soft-shadow);
+}
+
+.sfc-kicker {
+  color: #d96b12;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sfc-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: var(--sfc-radius-pill);
+  border: 1px solid rgba(11, 59, 40, 0.12);
+  background: #e9ffe2;
+  color: var(--sfc-forest);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.sfc-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--sfc-citrus), var(--sfc-sun));
+  color: var(--sfc-forest);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.sfc-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 59, 40, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--sfc-forest);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sfc-page-gradient {
+  background:
+    radial-gradient(circle at top left, rgba(255, 210, 63, 0.3), transparent 28rem),
+    linear-gradient(135deg, #fffdf4 0%, #eff7e8 42%, #fff4dd 100%);
+}
