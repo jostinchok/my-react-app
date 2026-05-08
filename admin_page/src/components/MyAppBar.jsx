@@ -78,7 +78,6 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
       ["/admin/students", "GUIDES"],
       ["/admin/badge", "BADGE"],
       ["/admin/detection", "DETECTION"],
-      ["/admin/incident-ops", "INCIDENT OPS"],
       ["/admin/ranger-review", "RANGER REVIEW"],
       ["/admin/sensor-rules", "SENSOR RULES"],
       ["/admin/announcements", "ANNOUNCEMENTS"],
