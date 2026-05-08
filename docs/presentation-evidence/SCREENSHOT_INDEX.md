@@ -27,3 +27,12 @@ Capture these after the V15 patch:
 3. `/admin/ranger-review` showing recommendation-only ranger workflow.
 4. `/admin/sensor-rules` showing IoT grouping/noise-control rules.
 5. Sidebar showing no duplicate `Incident Ops` item.
+
+## V17 Admin Training Evidence
+
+Capture:
+
+1. `/admin/training` showing backend-loaded Canvas courses.
+2. `/admin/training` showing Progress and Certificate Review panel.
+3. Empty or fallback progress state if no user completion evidence exists.
+4. Course/module/item list below the progress panel.

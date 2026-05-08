@@ -186,3 +186,17 @@ http://localhost:5174/admin/course
 http://localhost:5174/admin/training
 http://localhost:5175/user
 ~~~
+
+## V17 Admin Progress and Certificate Review
+
+After starting the app, check:
+
+~~~text
+http://localhost:5174/admin/training
+~~~
+
+Expected behavior:
+- Training Overview still lists backend-loaded courses, modules, and module items.
+- A Progress and Certificate Review panel appears above the course list.
+- If progress tables are available, the panel shows guide count, available items, completed items, quiz attempts, average completion, course completion snapshot, and certificate review queue.
+- If progress tables are unavailable or empty, the panel shows a safe fallback/empty state instead of crashing.
