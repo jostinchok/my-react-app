@@ -1157,6 +1157,28 @@ app.patch('/api/notifications/:notificationId/read', asyncRoute(async (req, res)
   res.json({ ok: true, message: 'Notification read state updated.' })
 }))
 
+app.delete('/api/notifications/:notificationId', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const notificationId = Number(req.params.notificationId)
+
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    res.status(400).json({ message: 'A numeric notification ID is required.' })
+    return
+  }
+
+  const [result] = await pool.query(
+    'DELETE FROM notifications WHERE notification_id = ? AND user_id = ?',
+    [notificationId, userId]
+  )
+
+  if (result.affectedRows === 0) {
+    res.status(404).json({ message: 'Notification not found.' })
+    return
+  }
+
+  res.json({ ok: true, message: 'Notification deleted.' })
+}))
+
 app.get('/api/schedule', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const schedule = await rowsOf(
