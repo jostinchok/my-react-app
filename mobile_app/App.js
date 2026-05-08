@@ -69,6 +69,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   const [courseStatusFilter, setCourseStatusFilter] = useState('all')
   const [moduleProgress, setModuleProgress] = useState({})
   const [completedSteps, setCompletedSteps] = useState({})
+  const [currentItemIndexByModule, setCurrentItemIndexByModule] = useState({})
   const [quizAnswers, setQuizAnswers] = useState({})
   const [quizPosition, setQuizPosition] = useState({})
   const [quizScores, setQuizScores] = useState({})
@@ -156,6 +157,19 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     if (!openedCourseId) return []
     return modules.filter((m) => String(m.course_id || '') === String(openedCourseId))
   }, [modules, openedCourseId])
+  const selectedModuleDisplayItems = useMemo(
+    () => getModuleDisplayItems(selectedModule),
+    [selectedModule]
+  )
+  const currentModuleItemIndex = Math.max(
+    0,
+    Math.min(
+      selectedModuleDisplayItems.length - 1,
+      currentItemIndexByModule[selectedModule.id] || 0
+    )
+  )
+  const currentModuleItem = selectedModuleDisplayItems[currentModuleItemIndex] || null
+  const isCurrentModuleQuizItem = currentModuleItem?.kind === 'quiz'
   const modulesWithState = useMemo(
     () =>
       modules.map((m) => {
@@ -282,13 +296,25 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     setModuleProgress(Object.fromEntries(moduleList.map((m) => [m.id, Number(m.progress) || 0])))
     setCompletedSteps(
       Object.fromEntries(
-        moduleList.map((m) => [
-          m.id,
-          Array.isArray(m.completedLessons)
-            ? m.completedLessons.map((n) => Number(n)).filter((n) => Number.isInteger(n) && n >= 0)
-            : [],
-        ])
+        moduleList.map((m) => {
+          const persistedProgress = Number(m.progress) || 0
+          if (persistedProgress <= 0) {
+            return [m.id, []]
+          }
+          const maxIndex = Math.max(0, getTrackableBlocks(m).length - 1)
+          const uniqueIndexes = Array.from(
+            new Set(
+              (Array.isArray(m.completedLessons) ? m.completedLessons : [])
+                .map((n) => Number(n))
+                .filter((n) => Number.isInteger(n) && n >= 0 && n <= maxIndex)
+            )
+          ).sort((a, b) => a - b)
+          return [m.id, uniqueIndexes]
+        })
       )
+    )
+    setCurrentItemIndexByModule(
+      Object.fromEntries(moduleList.map((m) => [m.id, 0]))
     )
     setQuizScores(
       Object.fromEntries(
@@ -370,6 +396,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     const module = modules.find((m) => m.id === moduleId)
     if (module?.course_id) setActiveCourseId(module.course_id)
     setSelectedModuleId(moduleId)
+    setCurrentItemIndexByModule((prev) => ({ ...prev, [moduleId]: 0 }))
     setActiveMenuId('modules')
     setActiveTab('module')
   }
@@ -415,9 +442,51 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     }
   }
 
-  const getTrackableBlocks = (module) => {
+  function getTrackableBlocks(module) {
     const blocks = Array.isArray(module?.contentBlocks) ? module.contentBlocks : []
     return blocks.filter((b) => b.type !== 'quiz')
+  }
+
+  function getModuleDisplayItems(module) {
+    const contentItems = getTrackableBlocks(module).map((block, index) => ({
+      kind: 'content',
+      blockIndex: index,
+      id: `content-${module?.id}-${index}`,
+      block,
+    }))
+    if (Array.isArray(module?.quiz) && module.quiz.length > 0) {
+      contentItems.push({ kind: 'quiz', id: `quiz-${module?.id}` })
+    }
+    return contentItems
+  }
+
+  const persistModuleProgress = (moduleId, nextCompletedSteps) => {
+    const module = modules.find((m) => m.id === moduleId)
+    if (!module) return
+    const trackableTotal = getTrackableBlocks(module).length || 1
+    const uniqueValidSteps = Array.from(
+      new Set(
+        (Array.isArray(nextCompletedSteps) ? nextCompletedSteps : [])
+          .map((n) => Number(n))
+          .filter((n) => Number.isInteger(n) && n >= 0 && n < trackableTotal)
+      )
+    ).sort((a, b) => a - b)
+    const lessonRatio = (uniqueValidSteps.length / trackableTotal) * 70
+    const quizScore = Number(quizScores[moduleId]?.score || 0)
+    const quizRatio = quizScore * 0.3
+    let progress = Number(Math.max(0, Math.min(100, lessonRatio + quizRatio)).toFixed(2))
+    // Enforce: module can only reach 100% when quiz is fully correct.
+    if (quizScore < 100 && progress >= 100) {
+      progress = 99.99
+    }
+    setModuleProgress((state) => ({ ...state, [moduleId]: progress }))
+    api.saveProgress(moduleId, {
+      userId: sessionUser?.user_id,
+      progressPercent: progress,
+      completedLessons: uniqueValidSteps,
+      quizScore,
+      quizPassed: quizScore === 100,
+    }).catch(() => {})
   }
 
   const mediaUrl = (url) => {
@@ -426,25 +495,39 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     return `${api.base}${url.startsWith('/') ? '' : '/'}${url}`
   }
 //related to the database
-  const toggleStep = (moduleId, stepIndex) => {
-    setCompletedSteps((prev) => {
-      const current = prev[moduleId] || []
-      const next = current.includes(stepIndex) ? current.filter((i) => i !== stepIndex) : [...current, stepIndex]
-      const module = modules.find((m) => m.id === moduleId)
-      const trackableTotal = getTrackableBlocks(module).length || 1
-      const lessonRatio = (next.length / trackableTotal) * 70
-      const quizRatio = (quizScores[moduleId]?.score || 0) * 0.3
-      const progress = Math.round(Math.max(0, Math.min(100, lessonRatio + quizRatio)))
-      setModuleProgress((state) => ({ ...state, [moduleId]: progress }))
-      api.saveProgress(moduleId, {
-        userId: sessionUser?.user_id,
-        progressPercent: progress,
-        completedLessons: next,
-        quizScore: quizScores[moduleId]?.score || 0,
-        quizPassed: Boolean(quizScores[moduleId]?.passed),
-      }).catch(() => {})
-      return { ...prev, [moduleId]: next.sort((a, b) => a - b) }
-    })
+  const moveModuleItem = (moduleId, delta) => {
+    const module = modules.find((m) => m.id === moduleId)
+    if (!module) return
+    const totalItems = getModuleDisplayItems(module).length || 1
+    setCurrentItemIndexByModule((prev) => ({
+      ...prev,
+      [moduleId]: Math.max(0, Math.min(totalItems - 1, (prev[moduleId] || 0) + delta)),
+    }))
+  }
+
+  const completeCurrentItemAndAdvance = (moduleId) => {
+    const module = modules.find((m) => m.id === moduleId)
+    if (!module) return
+    const items = getModuleDisplayItems(module)
+    const currentIndex = currentItemIndexByModule[moduleId] || 0
+    const currentItem = items[currentIndex]
+    if (!currentItem) return
+    if (currentItem.kind === 'content') {
+      setCompletedSteps((prev) => {
+        const current = Array.isArray(prev[moduleId]) ? prev[moduleId] : []
+        const alreadyCompleted = current.includes(currentItem.blockIndex)
+        const next = alreadyCompleted
+          ? current
+          : Array.from(new Set([...current, currentItem.blockIndex])).sort((a, b) => a - b)
+        if (!alreadyCompleted) {
+          persistModuleProgress(moduleId, next)
+        }
+        return alreadyCompleted ? prev : { ...prev, [moduleId]: next }
+      })
+    }
+    if (currentIndex < items.length - 1) {
+      moveModuleItem(moduleId, 1)
+    }
   }
 /**Select Quiz Answer*/
   const selectQuizAnswer = (moduleId, questionIndex, optionIndex) => {
@@ -506,9 +589,14 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     const trackableTotal = getTrackableBlocks(module).length || 1
     const lessonRatio = (lessonsDone / trackableTotal) * 70
     const quizRatio = score * 0.3
-    const progress = Math.round(Math.max(0, Math.min(100, lessonRatio + quizRatio)))
+    let progress = Number(Math.max(0, Math.min(100, lessonRatio + quizRatio)).toFixed(2))
+    if (score < 100 && progress >= 100) {
+      progress = 99.99
+    }
     const persisted = Number(moduleProgress[module.id] ?? module.progress ?? 0)
-    const safeProgress = Math.max(progress, persisted)
+    const safeProgress = score === 100
+      ? Math.max(progress, persisted)
+      : Math.min(99.99, Math.max(progress, Math.min(persisted, 99.99)))
     setModuleProgress((prev) => ({ ...prev, [module.id]: safeProgress }))
     api.saveProgress(module.id, {
       userId: sessionUser?.user_id,
@@ -1079,7 +1167,14 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                     <Text style={styles.rowMeta}>No modules available for this course.</Text>
                   ) : (
                     modulesForActiveCourse.map((m) => (
-                      <Pressable key={`course-module-${m.id}`} style={styles.moduleRow} onPress={() => setSelectedModuleId(m.id)}>
+                      <Pressable
+                        key={`course-module-${m.id}`}
+                        style={styles.moduleRow}
+                        onPress={() => {
+                          setSelectedModuleId(m.id)
+                          setCurrentItemIndexByModule((prev) => ({ ...prev, [m.id]: 0 }))
+                        }}
+                      >
                         <View style={styles.rowBody}>
                           <Text style={styles.rowTitle}>{m.title}</Text>
                           <Text style={styles.rowMeta}>{m.duration} • {m.level}</Text>
@@ -1090,113 +1185,139 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                   )}
                 </View>
                 <View style={styles.heroMini}>
-                  <Text style={styles.heroKicker}>{selectedModule.category} / {selectedModule.park}</Text>
-                  <Text style={styles.heroTitleMini}>{selectedModule.title}</Text>
-                  <Text style={styles.heroBodyMini}>{selectedModule.subtitle}</Text>
+                  <Text style={styles.moduleKicker}>{selectedModule.category} / {selectedModule.park}</Text>
+                  <Text style={styles.moduleTitle}>{selectedModule.title}</Text>
+                  <Text style={styles.moduleSubtitle}>{selectedModule.subtitle}</Text>
                   <ProgressBar value={moduleProgress[selectedModule.id] ?? selectedModule.progress} />
                 </View>
                 {selectedModule.objectives?.length > 0 && (
                   <View style={styles.card}>
                     <Text style={styles.sectionTitle}>Learning objectives</Text>
-                    {selectedModule.objectives.map((item, idx) => <Text key={`obj-${selectedModule.id}-${idx}`} style={styles.listText}>• {item}</Text>)}
+                    {selectedModule.objectives.map((item, idx) => <Text key={`obj-${selectedModule.id}-${idx}`} style={styles.moduleObjectiveText}>• {item}</Text>)}
                   </View>
                 )}
                 <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>Learning content</Text>
-                  {getTrackableBlocks(selectedModule).map((block, index) => {
-                    const checked = (completedSteps[selectedModule.id] || []).includes(index)
-                    const label = block.title || (block.type === 'video' ? 'Video lesson' : block.type === 'image' ? 'Image lesson' : 'Lesson')
-                    return (
-                      <View key={`content-${selectedModule.id}-${index}`} style={styles.blockCard}>
-                        <Pressable onPress={() => toggleStep(selectedModule.id, index)} style={styles.checkItem}>
-                          <Text style={styles.checkMark}>{checked ? '☑' : '☐'}</Text>
-                          <Text style={styles.listText}>{label}</Text>
-                        </Pressable>
-                        {block.type === 'text' && !!block.content && (
-                          <Text style={styles.rowMeta}>{block.content}</Text>
-                        )}
-                        {block.type === 'image' && !!block.media_url && (
-                          <View style={styles.lessonMediaFrame}>
-                            <Image source={{ uri: mediaUrl(block.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
-                          </View>
-                        )}
-                        {block.type === 'video' && !!block.media_url && (
-                          Platform.OS === 'web' ? (
-                            <video src={mediaUrl(block.media_url)} controls style={{ width: '100%', borderRadius: 10, marginTop: 6 }} />
-                          ) : (
-                            <View style={styles.lessonMediaFrame}>
-                              <Video
-                                source={{ uri: mediaUrl(block.media_url) }}
-                                useNativeControls
-                                resizeMode={ResizeMode.CONTAIN}
-                                style={styles.lessonMediaVideo}
-                                shouldPlay={false}
-                              />
-                            </View>
-                          )
-                        )}
-                        {(block.caption || block.type !== 'text') && !!block.caption && (
-                          <Text style={styles.rowMeta}>{block.caption}</Text>
-                        )}
-                      </View>
+                  <View style={styles.rowEnd}>
+                    <Text style={styles.sectionTitle}>{isCurrentModuleQuizItem ? 'Scenario quiz' : 'Learning content'}</Text>
+                    <Text style={styles.quizStepLabel}>
+                      Item {selectedModuleDisplayItems.length ? currentModuleItemIndex + 1 : 0} / {selectedModuleDisplayItems.length}
+                    </Text>
+                  </View>
+                  {!currentModuleItem ? (
+                    <Text style={styles.rowMeta}>No content is available for this module yet.</Text>
+                  ) : isCurrentModuleQuizItem ? (
+                    selectedModule.quiz.length > 0 ? (
+                      <>
+                        <Text style={styles.quizStepLabel}>Question {(quizPosition[selectedModule.id] || 0) + 1} / {selectedModule.quiz.length}</Text>
+                        <Text style={styles.moduleQuestionText}>{selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.question}</Text>
+                        {(selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.options || []).map((opt, i) => (
+                          <Pressable
+                            key={`opt-${selectedModule.id}-${quizPosition[selectedModule.id] || 0}-${i}`}
+                            onPress={() => selectQuizAnswer(selectedModule.id, quizPosition[selectedModule.id] || 0, i)}
+                            style={[
+                              styles.checkItem,
+                              quizResults[selectedModule.id]?.submitted &&
+                              selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex === i
+                                ? styles.quizCorrect
+                                : undefined,
+                              quizResults[selectedModule.id]?.submitted &&
+                              Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i &&
+                              selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex !== i
+                                ? styles.quizWrong
+                                : undefined,
+                            ]}
+                          >
+                            <Text style={styles.checkMark}>{Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i ? '◉' : '○'}</Text>
+                            <Text style={styles.moduleOptionText}>{opt}</Text>
+                          </Pressable>
+                        ))}
+                        <View style={styles.quizNavRow}>
+                          <Pressable
+                            style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === 0 && styles.disabledButton]}
+                            onPress={() => moveQuizQuestion(selectedModule.id, -1)}
+                            disabled={(quizPosition[selectedModule.id] || 0) === 0}
+                          >
+                            <Text style={styles.secondaryText}>Previous</Text>
+                          </Pressable>
+                          <Pressable
+                            style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1 && styles.disabledButton]}
+                            onPress={() => moveQuizQuestion(selectedModule.id, 1)}
+                            disabled={(quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1}
+                          >
+                            <Text style={styles.secondaryText}>Next</Text>
+                          </Pressable>
+                          <Pressable style={styles.primaryButton} onPress={submitQuiz}><Text style={styles.primaryText}>Submit</Text></Pressable>
+                        </View>
+                      </>
+                    ) : (
+                      <Text style={styles.rowMeta}>No quiz is available for this module yet.</Text>
                     )
-                  })}
-                </View>
-                <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>Scenario quiz</Text>
-                  {selectedModule.quiz.length > 0 ? (
-                    <>
-                      <Text style={styles.quizStepLabel}>Question {(quizPosition[selectedModule.id] || 0) + 1} / {selectedModule.quiz.length}</Text>
-                      <Text style={styles.listText}>{selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.question}</Text>
-                      {(selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.options || []).map((opt, i) => (
-                        <Pressable
-                          key={`opt-${selectedModule.id}-${quizPosition[selectedModule.id] || 0}-${i}`}
-                          onPress={() => selectQuizAnswer(selectedModule.id, quizPosition[selectedModule.id] || 0, i)}
-                          style={[
-                            styles.checkItem,
-                            quizResults[selectedModule.id]?.submitted &&
-                            selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex === i
-                              ? styles.quizCorrect
-                              : undefined,
-                            quizResults[selectedModule.id]?.submitted &&
-                            Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i &&
-                            selectedModule.quiz[quizPosition[selectedModule.id] || 0]?.answerIndex !== i
-                              ? styles.quizWrong
-                              : undefined,
-                          ]}
-                        >
-                          <Text style={styles.checkMark}>{Number(quizAnswers[selectedModule.id]?.[quizPosition[selectedModule.id] || 0]) === i ? '◉' : '○'}</Text>
-                          <Text style={styles.listText}>{opt}</Text>
-                        </Pressable>
-                      ))}
-                      <View style={styles.quizNavRow}>
-                        <Pressable
-                          style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === 0 && styles.disabledButton]}
-                          onPress={() => moveQuizQuestion(selectedModule.id, -1)}
-                          disabled={(quizPosition[selectedModule.id] || 0) === 0}
-                        >
-                          <Text style={styles.secondaryText}>Previous</Text>
-                        </Pressable>
-                        <Pressable
-                          style={[styles.secondaryButton, (quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1 && styles.disabledButton]}
-                          onPress={() => moveQuizQuestion(selectedModule.id, 1)}
-                          disabled={(quizPosition[selectedModule.id] || 0) === selectedModule.quiz.length - 1}
-                        >
-                          <Text style={styles.secondaryText}>Next</Text>
-                        </Pressable>
-                        <Pressable style={styles.primaryButton} onPress={submitQuiz}><Text style={styles.primaryText}>Submit</Text></Pressable>
-                      </View>
-                    </>
                   ) : (
-                    <Text style={styles.rowMeta}>No quiz is available for this module yet.</Text>
+                    <>
+                      <Text style={styles.rowTitle}>
+                        {currentModuleItem.block.title ||
+                          (currentModuleItem.block.type === 'video'
+                            ? 'Video lesson'
+                            : currentModuleItem.block.type === 'image'
+                              ? 'Image lesson'
+                              : 'Lesson')}
+                      </Text>
+                      {!!currentModuleItem.block.content && (
+                        <Text style={styles.moduleContentText}>{currentModuleItem.block.content}</Text>
+                      )}
+                      {currentModuleItem.block.type === 'image' && !!currentModuleItem.block.media_url && (
+                        <View style={styles.lessonMediaFrame}>
+                          <Image source={{ uri: mediaUrl(currentModuleItem.block.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
+                        </View>
+                      )}
+                      {currentModuleItem.block.type === 'video' && !!currentModuleItem.block.media_url && (
+                        Platform.OS === 'web' ? (
+                          <video src={mediaUrl(currentModuleItem.block.media_url)} controls style={{ width: '100%', borderRadius: 10, marginTop: 6 }} />
+                        ) : (
+                          <View style={styles.lessonMediaFrame}>
+                            <Video
+                              source={{ uri: mediaUrl(currentModuleItem.block.media_url) }}
+                              useNativeControls
+                              resizeMode={ResizeMode.CONTAIN}
+                              style={styles.lessonMediaVideo}
+                              shouldPlay={false}
+                            />
+                          </View>
+                        )
+                      )}
+                      {!!currentModuleItem.block.caption && (
+                        <Text style={styles.moduleCaptionText}>{currentModuleItem.block.caption}</Text>
+                      )}
+                    </>
                   )}
-                  {quizScores[selectedModule.id] && <Text style={styles.scoreText}>Score: {quizScores[selectedModule.id].score}%</Text>}
-                  {quizResults[selectedModule.id]?.submitted && (
+                  <View style={styles.quizNavRow}>
+                    <Pressable
+                      style={[styles.secondaryButton, currentModuleItemIndex === 0 && styles.disabledButton]}
+                      onPress={() => moveModuleItem(selectedModule.id, -1)}
+                      disabled={currentModuleItemIndex === 0}
+                    >
+                      <Text style={styles.secondaryText}>Previous</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.primaryButton,
+                        (currentModuleItemIndex >= selectedModuleDisplayItems.length - 1 || !selectedModuleDisplayItems.length) && styles.disabledButton,
+                      ]}
+                      onPress={() => completeCurrentItemAndAdvance(selectedModule.id)}
+                      disabled={currentModuleItemIndex >= selectedModuleDisplayItems.length - 1 || !selectedModuleDisplayItems.length}
+                    >
+                      <Text style={styles.primaryText}>Next</Text>
+                    </Pressable>
+                  </View>
+                  {isCurrentModuleQuizItem && quizScores[selectedModule.id] && (
+                    <Text style={styles.scoreText}>Score: {quizScores[selectedModule.id].score}%</Text>
+                  )}
+                  {isCurrentModuleQuizItem && quizResults[selectedModule.id]?.submitted && (
                     <Text style={styles.rowMeta}>
                       {quizScores[selectedModule.id]?.passed ? 'All answers are correct.' : 'Review highlighted answers and try again.'}
                     </Text>
                   )}
-                  {quizScores[selectedModule.id] && (
+                  {isCurrentModuleQuizItem && quizScores[selectedModule.id] && (
                     <View style={styles.quizChartWrap}>
                       <QuizPieChart score={quizScores[selectedModule.id].score} />
                     </View>
@@ -1822,6 +1943,9 @@ const styles = StyleSheet.create({
   heroBody: { color: '#fff4dd', marginTop: 8, lineHeight: 20 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   heroMini: { borderRadius: 12, padding: 14, backgroundColor: '#fff2cd', borderWidth: 1, borderColor: '#ecd88d', gap: 8 },
+  moduleKicker: { color: '#825500', fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 },
+  moduleTitle: { color: palette.forest, fontSize: 24, fontWeight: '900', lineHeight: 30 },
+  moduleSubtitle: { color: '#5a695b', fontSize: 15, lineHeight: 23 },
   heroTitleMini: { color: palette.forest, fontSize: 22, fontWeight: '900' },
   heroBodyMini: { color: palette.muted, lineHeight: 20 },
   primaryButton: { backgroundColor: palette.citrus, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
@@ -1870,6 +1994,11 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, gap: 2 },
   rowTitle: { color: palette.forest, fontWeight: '800' },
   rowMeta: { color: palette.muted, fontSize: 12 },
+  moduleObjectiveText: { color: '#203226', fontSize: 15, lineHeight: 24, fontWeight: '600' },
+  moduleQuestionText: { color: '#14261a', fontSize: 17, lineHeight: 26, fontWeight: '700', marginTop: 4 },
+  moduleOptionText: { color: '#1f2f24', fontSize: 15, lineHeight: 23, fontWeight: '600' },
+  moduleContentText: { color: '#2a3a2f', fontSize: 15, lineHeight: 24, fontWeight: '500' },
+  moduleCaptionText: { color: '#5c6a5e', fontSize: 14, lineHeight: 22, fontStyle: 'italic' },
   courseInfoCard: {
     marginTop: 8,
     borderWidth: 1,
@@ -1921,10 +2050,10 @@ const styles = StyleSheet.create({
   quizCorrect: { backgroundColor: '#ebf8e3', borderRadius: 8, paddingHorizontal: 6 },
   quizWrong: { backgroundColor: '#fde9e5', borderRadius: 8, paddingHorizontal: 6 },
   checkMark: { color: palette.citrus, fontWeight: '900' },
-  quizStepLabel: { color: palette.muted, fontSize: 12, fontWeight: '800' },
-  quizNavRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 4 },
+  quizStepLabel: { color: '#5b6c5f', fontSize: 13, fontWeight: '800' },
+  quizNavRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 6 },
   disabledButton: { opacity: 0.45 },
-  listText: { color: palette.charcoal, lineHeight: 20 },
+  listText: { color: palette.charcoal, fontSize: 14, lineHeight: 22 },
   roleCardBlock: {
     flex: 1,
     minHeight: 190,
