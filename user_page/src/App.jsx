@@ -375,137 +375,6 @@ const readLoginSession = () => {
   }
 }
 
-const GUIDE_PRIMARY_NAV = [
-  { id: 'dashboard', label: 'Home', icon: 'H', helper: 'Course dashboard' },
-  { id: 'modules', label: 'Training', icon: 'T', helper: 'Modules and learning' },
-  { id: 'schedule', label: 'Schedule', icon: 'S', helper: 'Deadlines' },
-  { id: 'notifications', label: 'Messages', icon: 'M', helper: 'Inbox and notices' },
-  { id: 'files', label: 'Resources', icon: 'R', helper: 'Files and media' },
-  { id: 'profile', label: 'Profile', icon: 'P', helper: 'Guide account' },
-]
-
-const COURSE_CONTEXT_NAV = [
-  { id: 'dashboard', label: 'Overview', helper: 'Course list' },
-  { id: 'modules', label: 'Current Modules', helper: 'Course modules' },
-  { id: 'module', label: 'Item Detail', helper: 'Learning item' },
-  { id: 'progress', label: 'Progress', helper: 'Completion tracking' },
-  { id: 'files', label: 'Files', helper: 'Course resources' },
-  { id: 'certificates', label: 'Completion', helper: 'Certificates' },
-]
-
-function RolePrimaryNavigation({
-  activeTab,
-  setActiveTab,
-  setCourseSubView,
-  currentUser,
-  selectedCourse,
-  notificationCount = 0,
-  onNavigate,
-}) {
-  const trainingTabs = new Set(['modules', 'module', 'progress', 'certificates'])
-
-  const handlePrimaryNav = (item) => {
-    setActiveTab(item.id)
-    if (item.id === 'modules') {
-      setCourseSubView('overview')
-    }
-    onNavigate?.()
-  }
-
-  return (
-    <nav className="role-nav-shell" aria-label="Park Guide navigation">
-      <div className="role-nav-heading">
-        <span>Guide Workspace</span>
-        <strong>{cleanText(currentUser?.displayName, currentUser?.username, 'Park Guide')}</strong>
-        <small>{cleanText(currentUser?.assignedPark, selectedCourse?.name, 'SFC Digital Portal')}</small>
-      </div>
-
-      <div className="role-nav-list">
-        {GUIDE_PRIMARY_NAV.map((item) => {
-          const active = item.id === 'modules'
-            ? trainingTabs.has(activeTab)
-            : activeTab === item.id
-
-          const badge = item.id === 'notifications' ? notificationCount : 0
-
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={active ? 'active' : ''}
-              onClick={() => handlePrimaryNav(item)}
-            >
-              <span className="role-nav-icon">{item.icon}</span>
-              <span className="role-nav-copy">
-                <strong>{item.label}</strong>
-                <small>{item.helper}</small>
-              </span>
-              {badge > 0 ? <b>{badge}</b> : null}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="role-nav-footer">
-        <span>Current Role</span>
-        <strong>Park Guide</strong>
-        <small>Training access only. Admin controls stay locked.</small>
-      </div>
-    </nav>
-  )
-}
-
-function CourseContextNavigation({
-  activeTab,
-  setActiveTab,
-  setCourseSubView,
-  selectedCourse,
-  selectedModule,
-  selectedModuleItems,
-}) {
-  const courseTabs = new Set(['dashboard', 'modules', 'module', 'progress', 'files', 'certificates'])
-  if (!courseTabs.has(activeTab)) return null
-
-  const handleContextNav = (item) => {
-    setActiveTab(item.id)
-    if (item.id === 'modules') {
-      setCourseSubView('overview')
-    }
-  }
-
-  const moduleCount = selectedCourse?.modules?.length || 0
-  const itemCount = selectedCourse?.itemCount || selectedModuleItems?.length || 0
-
-  return (
-    <section className="course-context-shell" aria-label="Course navigation">
-      <div className="course-context-title">
-        <span>SFC / Course Workspace</span>
-        <strong>{cleanText(selectedCourse?.name, 'SFC Digital Portal courses')}</strong>
-        <small>
-          {moduleCount} module{moduleCount === 1 ? '' : 's'}
-          {' / '}
-          {itemCount} learning item{itemCount === 1 ? '' : 's'}
-          {selectedModule ? ` / Current: ${selectedModule.title}` : ''}
-        </small>
-      </div>
-
-      <div className="course-context-tabs">
-        {COURSE_CONTEXT_NAV.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={activeTab === item.id ? 'active' : ''}
-            onClick={() => handleContextNav(item)}
-          >
-            <strong>{item.label}</strong>
-            <small>{item.helper}</small>
-          </button>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function App() {
   const [users, setUsers] = useState(readStoredUsers)
   const [loginSession] = useState(readLoginSession)
@@ -1592,15 +1461,30 @@ function App() {
           </div>
         </div>
 
-        <RolePrimaryNavigation
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          setCourseSubView={setCourseSubView}
-          currentUser={currentUser}
-          selectedCourse={selectedCourse}
-          notificationCount={unreadCount}
-          onNavigate={() => setSidebarOpen(false)}
-        />
+        <nav className="nav-list" aria-label="User portal">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={activeTab === item.id ? 'active' : ''}
+              onClick={() => {
+                if (item.id === 'modules') setCourseSubView('overview')
+                setActiveTab(item.id)
+                setSidebarOpen(false)
+              }}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+              {item.id === 'notifications' && unreadCount > 0 && <b>{unreadCount}</b>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="role-card">
+          <span>Current Role</span>
+          <strong>{currentUser.role}</strong>
+          <p>Training access only. Admin controls stay locked.</p>
+        </div>
       </aside>
       <div className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)} />
 
@@ -1634,15 +1518,6 @@ function App() {
         </header>
 
         <div className="page-scroll">
-          <CourseContextNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            setCourseSubView={setCourseSubView}
-            selectedCourse={selectedCourse}
-            selectedModule={selectedModule}
-            selectedModuleItems={selectedModuleItems}
-          />
-
           {activeTab === 'dashboard' && (
             <section className="page-stack course-list-page">
               <PageIntro
