@@ -1200,7 +1200,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 16px 0 0;
 }
@@ -2674,6 +2674,19 @@
   gap: 7px;
 }
 
+.course-shell-selector strong {
+  color: var(--forest);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.course-shell-selector small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .course-shell-selector select {
   width: 100%;
   min-height: 44px;
@@ -2687,7 +2700,7 @@
 
 .course-shell-nav nav {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
