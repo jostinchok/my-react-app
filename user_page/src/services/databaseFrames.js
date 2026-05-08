@@ -241,6 +241,14 @@ const parseList = (value) => {
 
 const asText = (value, fallback = '') => String(firstValue(value, fallback))
 
+const asBoolean = (value) => {
+  const raw = firstValue(value, false)
+  if (typeof raw === 'boolean') return raw
+  if (typeof raw === 'number') return raw !== 0
+  const text = String(raw).trim().toLowerCase()
+  return text === '1' || text === 'true' || text === 'yes'
+}
+
 const normalizeOptions = (value) =>
   parseList(value).map((option, index) =>
     typeof option === 'string'
@@ -339,7 +347,7 @@ export const normalizeNotificationRow = (row = {}) => ({
   title: asText(row.title, 'Notification'),
   body: asText(firstValue(row.body, row.message)),
   type: asText(row.type, 'training'),
-  read: Boolean(firstValue(row.read, row.is_read, false)),
+  read: asBoolean(firstValue(row.read, row.is_read, false)),
   createdAt: asText(firstValue(row.createdAt, row.created_at), new Date().toISOString()),
 })
 
@@ -450,6 +458,49 @@ export const saveProfileField = async (field, value, userId) => {
 
   if (!response.ok) {
     throw new Error(payload.message || `Unable to save ${field}.`)
+  }
+
+  return payload
+}
+
+export const saveNotificationRead = async (notificationId, userId, read = true) => {
+  const response = await fetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}/read`, userId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ read }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to update notification.')
+  }
+
+  return payload
+}
+
+export const saveAllNotificationsRead = async (userId) => {
+  const response = await fetch(withUserId(`${API_LINKS.notifications}/read-all`, userId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ read: true }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to update notifications.')
+  }
+
+  return payload
+}
+
+export const deleteNotification = async (notificationId, userId) => {
+  const response = await fetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}`, userId), {
+    method: 'DELETE',
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to delete notification.')
   }
 
   return payload
