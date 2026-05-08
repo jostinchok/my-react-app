@@ -14,12 +14,23 @@ const Sidebar = () => {
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: "📊", to: "/admin" },
+    { id: "analytics", label: "Analytics", icon: "📈", to: "/admin/analytics" },
+    { id: "users", label: "Users", icon: "👥", to: "/admin/users" },
+    { id: "permissions", label: "Permissions", icon: "🔐", to: "/admin/permissions" },
     { id: "course", label: "Course", icon: "📚", to: "/admin/course" },
     { id: "training", label: "Training", icon: "📖", to: "/admin/training" },
     { id: "course-requests", label: "Requests", icon: "📝", to: "/admin/course-requests" },
     { id: "students", label: "Guides", icon: "👥", to: "/admin/students" },
     { id: "badge", label: "Badge", icon: "📜", to: "/admin/badge" },
     { id: "detection", label: "Incidents", icon: "⚠️", to: "/admin/detection" },
+    { id: "incident-ops", label: "Incident Ops", icon: "🚨", to: "/admin/incident-ops" },
+    { id: "ranger-review", label: "Ranger Review", icon: "🧭", to: "/admin/ranger-review" },
+    { id: "sensor-rules", label: "Sensor Rules", icon: "📡", to: "/admin/sensor-rules" },
+    { id: "announcements", label: "Announcements", icon: "📣", to: "/admin/announcements" },
+    { id: "inbox", label: "Inbox", icon: "💬", to: "/admin/inbox" },
+    { id: "help-desk", label: "Help Desk", icon: "🛟", to: "/admin/help-desk" },
+    { id: "backend-map", label: "Backend Map", icon: "🗺️", to: "/admin/backend-map" },
+    { id: "audit-log", label: "Audit Log", icon: "🔎", to: "/admin/audit-log" },
   ];
 
   return (

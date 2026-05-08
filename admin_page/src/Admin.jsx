@@ -1,6 +1,7 @@
 import React from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { Admin, Resource } from "react-admin";
-import { Paper, Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress, Chip
+import { Paper, Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress, Chip, Button
 } from "@mui/material";
 import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import  simpleRestProvider  from "ra-data-simple-rest"; 
@@ -12,6 +13,20 @@ import CourseRequestsPage from "./pages/course_requests.jsx";
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
+import {
+  AdminAnalyticsDashboard,
+  AdminPrototypeDashboard,
+  AnnouncementsWorkflow,
+  AuditLogWorkflow,
+  BackendMappingWorkflow,
+  HelpDeskWorkflow,
+  InboxWorkflow,
+  IncidentOpsWorkflow,
+  PermissionsMatrix,
+  RangerReviewWorkflow,
+  SensorRulesWorkflow,
+  UserManagementWorkflow,
+} from "./pages/platform_workflows.jsx";
 import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
 
 import { People, CheckCircle, School } from '@mui/icons-material';
@@ -115,6 +130,24 @@ function Dashboard() {
           <span>AI_CAMERA + IOT_SENSOR</span>
           <span>Park Guide training seeded</span>
         </Box>
+      </Box>
+
+      <Box className="admin-dashboard-shortcut-grid" sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 2, mb: 3 }}>
+        {[
+          { label: "Open Analytics", to: "/admin/analytics" },
+          { label: "Open Backend Map", to: "/admin/backend-map" },
+          { label: "Open Audit Log", to: "/admin/audit-log" },
+        ].map((shortcut) => (
+          <Button
+            key={shortcut.to}
+            component={RouterLink}
+            to={shortcut.to}
+            variant="contained"
+            sx={{ borderRadius: 999, fontWeight: 900, py: 1.2 }}
+          >
+            {shortcut.label}
+          </Button>
+        ))}
       </Box>
 
       <Box className="admin-dashboard-card-grid">
@@ -489,13 +522,24 @@ function GuideProgress() {
 
 function AdminPage() {
   return (
-    <Admin dataProvider={dataProvider} dashboard={Dashboard} layout={MyLayout}>
+    <Admin dataProvider={dataProvider} dashboard={AdminPrototypeDashboard} layout={MyLayout}>
       <Resource name="course" list={CourseManagement} />
       <Resource name="training" list={TrainingModuleSetup} />
       <Resource name="course-requests" list={CourseRequestsPage} />
       <Resource name="students" list={StudentManagement} options={{ label: "Guides" }} />
       <Resource name="badge" list={BadgeManagement} />
       <Resource name="detection" list={AIDetection} />
+      <Resource name="analytics" list={AdminAnalyticsDashboard} options={{ label: "Analytics" }} />
+      <Resource name="users" list={UserManagementWorkflow} options={{ label: "Users" }} />
+      <Resource name="permissions" list={PermissionsMatrix} options={{ label: "Permissions" }} />
+      <Resource name="incident-ops" list={IncidentOpsWorkflow} options={{ label: "Incident Ops" }} />
+      <Resource name="ranger-review" list={RangerReviewWorkflow} options={{ label: "Ranger Review" }} />
+      <Resource name="sensor-rules" list={SensorRulesWorkflow} options={{ label: "Sensor Rules" }} />
+      <Resource name="announcements" list={AnnouncementsWorkflow} options={{ label: "Announcements" }} />
+      <Resource name="inbox" list={InboxWorkflow} options={{ label: "Inbox" }} />
+      <Resource name="help-desk" list={HelpDeskWorkflow} options={{ label: "Help Desk" }} />
+      <Resource name="backend-map" list={BackendMappingWorkflow} options={{ label: "Backend Map" }} />
+      <Resource name="audit-log" list={AuditLogWorkflow} options={{ label: "Audit Log" }} />
     </Admin>
   );
 }
