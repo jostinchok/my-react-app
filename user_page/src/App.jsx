@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import './user-portal-ux.css'
 import FileManager from './components/FileManager'
 import {
   demoStorageVersion,
