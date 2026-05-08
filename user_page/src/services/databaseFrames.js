@@ -124,7 +124,7 @@ export const PROFILE_FIELD_RULES = {
   },
 }
 
-const placeholderImage = '/training/protected-areas.png'
+const placeholderImage = ''
 
 export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
   modules: `
