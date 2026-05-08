@@ -215,6 +215,21 @@ cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 ```
 
+
+## Canvas Demo Course SQL Records
+
+The three presentation courses are stored as real MySQL records through `database/demo_canvas_courses.sql`.
+
+Preferred setup path:
+
+~~~bash
+mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+~~~
+
+This inserts records into `courses`, `training_modules`, `lessons`, and `course_module_items`.
+
+Admin and User pages read the same records through the backend APIs. The older `npm run seed:canvas-demo` command is kept only as an optional developer helper.
+
 ## Training Platform Persistence
 
 The Admin training API runs on `http://localhost:4002` and the Park Guide user API runs on `http://localhost:4001`. They share the training database tables for:
@@ -267,7 +282,7 @@ http://localhost:4002/api/courses/<COURSE_ID>/canvas
 http://localhost:4002/api/admin/canvas-progress-summary
 ```
 
-Seed the presentation courses through the Admin API/database path:
+Preferred presentation setup: insert the Canvas demo courses directly into MySQL:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
@@ -276,7 +291,7 @@ npm run dev
 npm run seed:canvas-demo
 ```
 
-The seed command inserts:
+The SQL insert file creates these course records:
 
 ```text
 SFC Field Response Essentials

@@ -161,3 +161,28 @@ Expected behavior:
 - Park Ranger still uses `Ranger Review` for recommendation-only review.
 - Sensor Rules remains separate for IoT grouping and noise reduction.
 - Admin remains the only role that makes final incident status decisions.
+
+
+## Canvas Demo Course SQL Setup
+
+Use the SQL insert file as the official presentation setup path:
+
+~~~bash
+mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+~~~
+
+Expected verification result:
+
+~~~text
+SFC-FIELD-2026       SFC Field Response Essentials          3   16
+SFC-GUIDE-2026       SFC Park Guide Orientation             3   18
+SFC-WILDLIFE-2026    Sarawak Protected Wildlife Awareness   3   12
+~~~
+
+Check these pages after starting the app:
+
+~~~text
+http://localhost:5174/admin/course
+http://localhost:5174/admin/training
+http://localhost:5175/user
+~~~

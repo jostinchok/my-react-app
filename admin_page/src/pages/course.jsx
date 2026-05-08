@@ -236,11 +236,11 @@ const CourseManagement = () => {
   }, [selectedCourseId]);
 
   const seedTemplates = async () => {
-    if (!window.confirm("Insert the three Canvas-style SFC demo courses? Existing demo course IDs will be replaced.")) return;
+    if (!window.confirm("Load the three Canvas-style SFC demo course records through the backend insert helper? Existing demo course IDs will be replaced.")) return;
     setLoading(true);
     try {
       const data = await requestJson(`${API_BASE_URL}/api/demo/canvas-seed`, { method: "POST" });
-      showMessage(data.message || "Demo courses inserted.");
+      showMessage(data.message || "Demo course records loaded.");
       const loadedCourses = await loadCourses();
       setSelectedCourseId(loadedCourses.find((course) => course.course_id === "SFC-FIELD-2026")?.course_id || loadedCourses[0]?.course_id || "");
     } catch (error) {
@@ -643,7 +643,7 @@ const CourseManagement = () => {
               Refresh
             </Button>
             <Button onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={{ ...buttonSx, bgcolor: "#dcf8c6", color: "#173126" }}>
-              Insert Demo Courses
+              Load Demo Course Records
             </Button>
             <Button
               variant="contained"
@@ -701,7 +701,7 @@ const CourseManagement = () => {
 
               {courses.length === 0 && (
                 <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-                  No courses yet. Create one or insert the demo templates.
+                  No courses yet. Create one or load the demo course records.
                 </Typography>
               )}
             </Stack>
