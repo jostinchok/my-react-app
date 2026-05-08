@@ -20,9 +20,28 @@ const host = process.env.API_HOST || '127.0.0.1'
 const defaultUserEmail = process.env.DEFAULT_USER_EMAIL || 'guide@test.com'
 const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
 const adminApiPublicUrl = process.env.ADMIN_API_PUBLIC_URL || 'http://localhost:4002'
+const defaultCorsOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
+  'http://localhost:8081',
+  'http://127.0.0.1:8081',
+  'http://localhost:8082',
+  'http://127.0.0.1:8082',
+]
+
+const configuredCorsOrigins = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
+  ? []
+  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+
 const corsOrigin = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
   ? true
-  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : [...new Set([...configuredCorsOrigins, ...defaultCorsOrigins])]
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
