@@ -529,6 +529,7 @@ const normalizeCourseResource = (row = {}) => ({
 
 const buildModules = async (userId) => {
   const hasCourseId = await columnExists('training_modules', 'course_id')
+  const hasProgressPercent = await columnExists('progress', 'progress_percent')
   const modules = await rowsOf(
     `SELECT
        tm.module_id,
@@ -548,6 +549,7 @@ const buildModules = async (userId) => {
        p.completed_lessons,
        p.quiz_passed,
        p.quiz_score,
+       ${hasProgressPercent ? 'p.progress_percent' : 'NULL AS progress_percent'},
        p.status AS progress_status
      FROM training_modules tm
      LEFT JOIN progress p ON p.module_id = tm.module_id AND p.user_id = ?
@@ -706,13 +708,101 @@ const buildModules = async (userId) => {
       completedLessons: parseCompletedLessons(module.completed_lessons),
       quizPassed: Boolean(module.quiz_passed),
       quizScore: module.quiz_score || 0,
+      savedQuizPassed: Boolean(module.quiz_passed),
+      savedQuizScore: module.quiz_score || 0,
+      progress: Number(module.progress_percent || 0),
+      progressPercent: Number(module.progress_percent || 0),
     }
   })
+}
+
+const normalizeEnrollmentStatus = (status) => {
+  const value = String(status || 'none').toLowerCase()
+  return value === 'rejected' ? 'declined' : value
+}
+
+const buildCourses = async (userId) => {
+  const [hasCourses, hasModuleCourseId, hasResources, hasEnrollments] = await Promise.all([
+    tableExists('courses'),
+    columnExists('training_modules', 'course_id'),
+    tableExists('course_resources'),
+    tableExists('course_enrollments'),
+  ])
+
+  if (!hasCourses) {
+    const moduleCount = await rowOf('SELECT COUNT(*) AS total FROM training_modules')
+    return Number(moduleCount?.total || 0) > 0
+      ? [{
+          course_id: 'training-modules',
+          course_name: 'Training Modules',
+          description: 'Database-backed training modules',
+          start_date: '',
+          end_date: '',
+          total_contact_hours: 0,
+          module_count: Number(moduleCount.total || 0),
+          resource_count: 0,
+          enrollment_status: 'approved',
+          remarks: '',
+        }]
+      : []
+  }
+
+  const courses = await rowsOf(
+    `SELECT
+       c.course_id,
+       c.course_name,
+       c.description,
+       DATE_FORMAT(c.start_date, '%Y-%m-%d') AS start_date,
+       DATE_FORMAT(c.end_date, '%Y-%m-%d') AS end_date,
+       c.total_contact_hours,
+       c.created_at,
+       ${hasModuleCourseId ? 'COUNT(DISTINCT tm.module_id)' : '0'} AS module_count,
+       ${hasResources ? 'COUNT(DISTINCT cr.resource_id)' : '0'} AS resource_count,
+       ${hasEnrollments ? "COALESCE(MAX(ce.status), 'none')" : "'none'"} AS enrollment_status,
+       ${hasEnrollments ? 'MAX(ce.decision_note)' : "''"} AS remarks
+     FROM courses c
+     ${hasModuleCourseId ? 'LEFT JOIN training_modules tm ON tm.course_id = c.course_id' : ''}
+     ${hasResources ? 'LEFT JOIN course_resources cr ON cr.course_id = c.course_id' : ''}
+     ${hasEnrollments ? 'LEFT JOIN course_enrollments ce ON ce.course_id = c.course_id AND ce.user_id = ?' : ''}
+     GROUP BY c.course_id, c.course_name, c.description, c.start_date, c.end_date, c.total_contact_hours, c.created_at
+     ORDER BY c.created_at DESC, c.course_id ASC`,
+    hasEnrollments ? [userId] : []
+  )
+
+  if (courses.length === 0) {
+    const moduleCount = await rowOf('SELECT COUNT(*) AS total FROM training_modules')
+    return Number(moduleCount?.total || 0) > 0
+      ? [{
+          course_id: 'training-modules',
+          course_name: 'Training Modules',
+          description: 'Database-backed training modules',
+          start_date: '',
+          end_date: '',
+          total_contact_hours: 0,
+          module_count: Number(moduleCount.total || 0),
+          resource_count: 0,
+          enrollment_status: 'approved',
+          remarks: '',
+        }]
+      : []
+  }
+
+  return courses.map((course) => ({
+    ...course,
+    enrollment_status: normalizeEnrollmentStatus(course.enrollment_status),
+    remarks: course.remarks || '',
+  }))
 }
 
 app.get('/api/health', asyncRoute(async (_req, res) => {
   await pool.query('SELECT 1')
   res.json({ ok: true, database: databaseName })
+}))
+
+app.get('/api/courses', asyncRoute(async (req, res) => {
+  const userId = await resolveUserIdForTraining(req)
+  const courses = await buildCourses(userId)
+  res.json({ courses })
 }))
 
 app.get('/api/training-modules', asyncRoute(async (req, res) => {
@@ -855,6 +945,91 @@ app.post('/api/canvas-progress/quiz', asyncRoute(async (req, res) => {
   res.status(201).json(payload)
 }))
 
+app.patch('/api/progress/:moduleId', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const moduleId = Number(req.params.moduleId)
+  if (!Number.isInteger(moduleId) || moduleId <= 0) {
+    res.status(400).json({ message: 'A numeric module_id is required.' })
+    return
+  }
+
+  const module = await rowOf('SELECT module_id FROM training_modules WHERE module_id = ? LIMIT 1', [moduleId])
+  if (!module) {
+    res.status(404).json({ message: 'Training module not found.' })
+    return
+  }
+
+  const {
+    progressPercent = null,
+    progress_percent = null,
+    completedLessons = [],
+    completed_lessons = [],
+    quizScore = null,
+    quiz_score = null,
+    quizPassed = null,
+    quiz_passed = null,
+  } = req.body || {}
+
+  const percentValue = Math.max(0, Math.min(100, Number(progressPercent ?? progress_percent ?? 0) || 0))
+  const quizScoreValue = Math.max(0, Math.min(100, Number(quizScore ?? quiz_score ?? 0) || 0))
+  const quizPassedValue = booleanValue(quizPassed ?? quiz_passed)
+  const completedLessonValue = JSON.stringify(Array.isArray(completedLessons) ? completedLessons : completed_lessons)
+  const status = percentValue >= 100 ? 'completed' : percentValue > 0 ? 'in_progress' : 'not_started'
+  const hasProgressPercent = await columnExists('progress', 'progress_percent')
+
+  const existing = await rowOf(
+    'SELECT progress_id, completion_date FROM progress WHERE user_id = ? AND module_id = ? ORDER BY progress_id DESC LIMIT 1',
+    [userId, moduleId]
+  )
+
+  if (existing) {
+    await pool.query(
+      `UPDATE progress
+       SET completed_lessons = ?,
+           quiz_passed = ?,
+           quiz_score = ?,
+           status = ?,
+           completion_date = CASE
+             WHEN ? = 'completed' THEN COALESCE(completion_date, CURRENT_TIMESTAMP)
+             ELSE NULL
+           END
+           ${hasProgressPercent ? ', progress_percent = ?' : ''}
+       WHERE progress_id = ? AND user_id = ?`,
+      hasProgressPercent
+        ? [completedLessonValue, quizPassedValue, quizScoreValue, status, status, percentValue, existing.progress_id, userId]
+        : [completedLessonValue, quizPassedValue, quizScoreValue, status, status, existing.progress_id, userId]
+    )
+  } else {
+    await pool.query(
+      `INSERT INTO progress
+         (user_id, module_id, completed_lessons, quiz_passed, quiz_score, status, completion_date${hasProgressPercent ? ', progress_percent' : ''})
+       VALUES (?, ?, ?, ?, ?, ?, IF(? = 'completed', CURRENT_TIMESTAMP, NULL)${hasProgressPercent ? ', ?' : ''})`,
+      hasProgressPercent
+        ? [userId, moduleId, completedLessonValue, quizPassedValue, quizScoreValue, status, status, percentValue]
+        : [userId, moduleId, completedLessonValue, quizPassedValue, quizScoreValue, status, status]
+    )
+  }
+
+  const saved = await rowOf(
+    `SELECT progress_id, user_id, module_id, completed_lessons, quiz_passed, quiz_score, status, completion_date
+            ${hasProgressPercent ? ', progress_percent' : ', NULL AS progress_percent'}
+     FROM progress
+     WHERE user_id = ? AND module_id = ?
+     ORDER BY progress_id DESC
+     LIMIT 1`,
+    [userId, moduleId]
+  )
+
+  res.json({
+    ok: true,
+    progress: {
+      ...saved,
+      completed_lessons: parseCompletedLessons(saved?.completed_lessons),
+      progress_percent: Number(saved?.progress_percent || percentValue),
+    },
+  })
+}))
+
 app.get('/api/user-profile', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const profile = await rowOf(
@@ -899,12 +1074,16 @@ app.patch('/api/user-profile', asyncRoute(async (req, res) => {
 
   const userFieldMap = {
     displayName: 'name',
+    fullName: 'name',
     email: 'email',
   }
   const profileFieldMap = {
     phone: 'phone',
+    phoneNumber: 'phone',
     yearsExperience: 'years_experience',
     address: 'address',
+    assignedPark: 'organization',
+    organization: 'organization',
   }
 
   if (userFieldMap[field]) {
@@ -960,6 +1139,7 @@ app.post('/api/user-profile/avatar', asyncRoute(async (req, res) => {
 
 app.get('/api/certifications', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
+  const hasCertificateCode = await columnExists('certifications', 'certificate_code')
   const certifications = await rowsOf(
     `SELECT
        c.cert_id,
@@ -969,6 +1149,7 @@ app.get('/api/certifications', asyncRoute(async (req, res) => {
        c.status,
        c.issue_date,
        c.expiry_date,
+       ${hasCertificateCode ? 'c.certificate_code' : 'NULL AS certificate_code'},
        tm.title AS module_title
      FROM certifications c
      LEFT JOIN training_modules tm ON tm.module_id = c.module_id
@@ -977,6 +1158,52 @@ app.get('/api/certifications', asyncRoute(async (req, res) => {
     [userId]
   )
   res.json({ certifications })
+}))
+
+app.post('/api/certifications/request', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const { courseId = null, course_id = null } = req.body || {}
+  const requestedCourseId = String(courseId || course_id || '').trim()
+
+  if (!requestedCourseId) {
+    res.status(400).json({ message: 'course_id is required to request a certificate.' })
+    return
+  }
+
+  const hasCourseId = await columnExists('training_modules', 'course_id')
+  const hasModuleSortOrder = await columnExists('training_modules', 'sort_order')
+  const course = await rowOf('SELECT course_id, course_name FROM courses WHERE course_id = ? LIMIT 1', [requestedCourseId])
+  const modules = hasCourseId
+    ? await rowsOf(
+      `SELECT module_id, title
+       FROM training_modules
+       WHERE course_id = ?
+       ORDER BY ${hasModuleSortOrder ? 'sort_order ASC,' : ''} module_id ASC`,
+      [requestedCourseId]
+    )
+    : []
+
+  const title = `Certificate request: ${course?.course_name || requestedCourseId}`
+  const moduleId = modules[0]?.module_id || null
+  const existing = await rowOf(
+    'SELECT cert_id FROM certifications WHERE user_id = ? AND title = ? LIMIT 1',
+    [userId, title]
+  )
+
+  if (!existing) {
+    await pool.query(
+      `INSERT INTO certifications (user_id, module_id, title, status)
+       VALUES (?, ?, ?, 'Pending')`,
+      [userId, moduleId, title]
+    )
+  }
+
+  res.status(existing ? 200 : 201).json({
+    ok: true,
+    message: 'Certificate request saved for admin review.',
+    course_id: requestedCourseId,
+    status: 'Pending',
+  })
 }))
 
 app.get('/api/notifications', asyncRoute(async (req, res) => {
@@ -989,6 +1216,30 @@ app.get('/api/notifications', asyncRoute(async (req, res) => {
     [userId]
   )
   res.json({ notifications })
+}))
+
+app.patch('/api/notifications/read-all', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const read = req.body?.is_read ?? req.body?.read ?? true
+  await pool.query('UPDATE notifications SET is_read = ? WHERE user_id = ?', [booleanValue(read), userId])
+  res.json({ ok: true })
+}))
+
+app.patch('/api/notifications/:notificationId/read', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const notificationId = Number(req.params.notificationId)
+  const read = req.body?.is_read ?? req.body?.read ?? true
+
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    res.status(400).json({ message: 'A numeric notification_id is required.' })
+    return
+  }
+
+  await pool.query(
+    'UPDATE notifications SET is_read = ? WHERE notification_id = ? AND user_id = ?',
+    [booleanValue(read), notificationId, userId]
+  )
+  res.json({ ok: true, notification_id: notificationId, is_read: booleanValue(read) })
 }))
 
 app.get('/api/schedule', asyncRoute(async (req, res) => {
