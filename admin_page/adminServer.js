@@ -124,6 +124,8 @@ const normalizeCourse = (course = {}) => ({
   end_date: formatDateOnly(course.end_date),
   module_count: Number(course.module_count || 0),
   resource_count: Number(course.resource_count || 0),
+  enrollment_status: course.enrollment_status || 'none',
+  remarks: course.decision_note || '',
 })
 
 const normalizeModule = (module = {}) => ({
@@ -364,6 +366,9 @@ const ensureAdminTrainingSchema = async () => {
       FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE
     )
   `)
+  await ensureColumn('course_enrollments', 'requested_at', 'requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+  await ensureColumn('course_enrollments', 'decided_at', 'decided_at DATETIME NULL')
+  await ensureColumn('course_enrollments', 'decision_note', 'decision_note TEXT NULL')
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_badges (
@@ -450,7 +455,17 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
   })
 }))
 
-app.get('/api/courses', asyncRoute(async (_req, res) => {
+app.get('/api/courses', asyncRoute(async (req, res) => {
+  const userId = Number(req.query.userId || req.query.user_id)
+  const includeEnrollment = Number.isInteger(userId) && userId > 0 && await tableExists('course_enrollments')
+  const enrollmentJoin = includeEnrollment
+    ? 'LEFT JOIN course_enrollments ce ON ce.course_id = c.course_id AND ce.user_id = ?'
+    : ''
+  const enrollmentSelect = includeEnrollment
+    ? "COALESCE(ce.status, 'none') AS enrollment_status, ce.decision_note"
+    : "'none' AS enrollment_status, NULL AS decision_note"
+  const enrollmentGroupBy = includeEnrollment ? ', ce.status, ce.decision_note' : ''
+
   const courses = await rowsOf(`
     SELECT
       c.course_id,
@@ -461,13 +476,15 @@ app.get('/api/courses', asyncRoute(async (_req, res) => {
       c.total_contact_hours,
       c.created_at,
       COUNT(DISTINCT tm.module_id) AS module_count,
-      COUNT(DISTINCT cr.resource_id) AS resource_count
+      COUNT(DISTINCT cr.resource_id) AS resource_count,
+      ${enrollmentSelect}
     FROM courses c
     LEFT JOIN training_modules tm ON tm.course_id = c.course_id
     LEFT JOIN course_resources cr ON cr.course_id = c.course_id
-    GROUP BY c.course_id, c.course_name, c.description, c.start_date, c.end_date, c.total_contact_hours, c.created_at
+    ${enrollmentJoin}
+    GROUP BY c.course_id, c.course_name, c.description, c.start_date, c.end_date, c.total_contact_hours, c.created_at${enrollmentGroupBy}
     ORDER BY c.created_at DESC, c.course_id ASC
-  `)
+  `, includeEnrollment ? [userId] : [])
 
   res.json({ courses: courses.map(normalizeCourse) })
 }))
