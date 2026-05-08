@@ -1,9 +1,7 @@
--- COS30049 CTIP Canvas-style demo course records
--- This file inserts demo courses into the real MySQL training tables.
--- It replaces frontend-only seeded arrays with database table records.
---
--- Run:
---   mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+-- COS30049 CTIP V18 complete Canvas-style demo course records
+-- This file replaces the earlier lightweight demo data with more realistic course records.
+-- Run from project root:
+--   mysql -u root -p cos30049_assignment < database/demo_canvas_courses_v18_complete.sql
 
 START TRANSACTION;
 
@@ -48,172 +46,695 @@ WHERE course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026');
 DELETE FROM courses
 WHERE course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026');
 
--- MySQL dump 10.13  Distrib 9.6.0, for macos26.3 (arm64)
---
--- Host: localhost    Database: cos30049_assignment
--- ------------------------------------------------------
--- Server version	9.6.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- GTID state at the beginning of the backup 
---
-
-
---
--- Dumping data for table `courses`
---
--- WHERE:  course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026')
-
-/*!40000 ALTER TABLE `courses` DISABLE KEYS */;
-INSERT INTO `courses` (`course_id`, `course_name`, `description`, `start_date`, `end_date`, `total_contact_hours`, `created_at`, `updated_at`) VALUES ('SFC-FIELD-2026','SFC Field Response Essentials','Canvas-style training path for AI camera evidence, IoT proximity alerts, field notes, and Admin-ready recommendations.','2026-05-01','2026-06-15',12,'2026-05-08 05:52:03','2026-05-08 05:52:03'),('SFC-GUIDE-2026','SFC Park Guide Orientation','Orientation course for Park Guides using the digital portal, course resources, visitor briefings, and completion evidence.','2026-05-01','2026-07-15',8,'2026-05-08 05:52:03','2026-05-08 05:52:03'),('SFC-WILDLIFE-2026','Sarawak Protected Wildlife Awareness','Training modules for recognizing wildlife interaction risk, enforcing no-touch policy, and escalating evidence.','2026-05-01','2026-06-30',10,'2026-05-08 05:52:03','2026-05-08 05:52:03');
-/*!40000 ALTER TABLE `courses` ENABLE KEYS */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-05-08 16:00:28
--- MySQL dump 10.13  Distrib 9.6.0, for macos26.3 (arm64)
---
--- Host: localhost    Database: cos30049_assignment
--- ------------------------------------------------------
--- Server version	9.6.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- GTID state at the beginning of the backup 
---
-
-
---
--- Dumping data for table `training_modules`
---
--- WHERE:  course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026')
-
-/*!40000 ALTER TABLE `training_modules` DISABLE KEYS */;
-INSERT INTO `training_modules` (`module_id`, `title`, `description`, `category`, `park`, `level`, `duration`, `format`, `image_url`, `accent_color`, `badge_name`, `objectives`, `created_by`, `created_at`, `course_id`, `status`, `sort_order`, `criteria`) VALUES (80,'AI and IoT Incident Evidence Review','Review AI camera and IoT sensor evidence before writing a recommendation for Admin review.','Incident Evidence','Demo Camera Zone','Intermediate','1 hour','Blended','','#ff7a1a','AI Evidence Reviewer','[\"Identify AI camera incident evidence\",\"Differentiate Plucking Plants, wildlife contact, and sensor proximity alerts\",\"Check timestamp, location, and metadata\",\"Avoid treating weak evidence as confirmed behavior too early\"]',NULL,'2026-05-08 05:52:03','SFC-FIELD-2026','Published',1,NULL),(81,'Park Ranger Recommendation Workflow','Explains how Rangers add field notes and recommendations without changing official incident status.','Ranger Workflow','Bako National Park','Intermediate','45 minutes','Blended','','#ff7a1a','Ranger Recommendation Ready','[\"Understand Ranger recommendation-only boundaries\",\"Write useful field notes\",\"Recommend outcomes for Admin review\"]',NULL,'2026-05-08 05:52:03','SFC-FIELD-2026','Published',2,NULL),(82,'Visitor Interaction and Conservation Rules','Guides staff on explaining no-touch conservation rules to visitors.','Visitor Safety','All Parks','Beginner','40 minutes','Blended','','#ff7a1a','Visitor Guidance Basics','[\"Explain conservation rules politely\",\"Reduce visitor contact with plants and wildlife\",\"Escalate repeat violations\"]',NULL,'2026-05-08 05:52:03','SFC-FIELD-2026','Published',3,NULL),(83,'Wildlife Interaction Basics','Introduces common visitor-wildlife interaction risks in Sarawak protected parks.','Wildlife','All Parks','Beginner','1 hour','Blended','','#ff7a1a','Wildlife Awareness','[\"Recognize unsafe wildlife interaction\",\"Explain why feeding and touching wildlife is harmful\",\"Record observation notes\"]',NULL,'2026-05-08 05:52:03','SFC-WILDLIFE-2026','Published',1,NULL),(84,'No-touch Visitor Policy','Policy explanation for plants, wildlife, and protected natural resources.','Policy','All Parks','Beginner','35 minutes','Blended','','#ff7a1a','No-touch Policy Ready','[\"Explain no-touch rules\",\"Handle visitor questions\",\"Escalate repeat issues\"]',NULL,'2026-05-08 05:52:03','SFC-WILDLIFE-2026','Published',2,NULL),(85,'Evidence Escalation Guide','Shows when and how to escalate wildlife-related evidence to Admin.','Evidence','All Parks','Intermediate','45 minutes','Blended','','#ff7a1a','Evidence Escalation Ready','[\"Judge evidence quality\",\"Prepare escalation notes\",\"Avoid false claims\"]',NULL,'2026-05-08 05:52:03','SFC-WILDLIFE-2026','Published',3,NULL),(86,'Digital Portal Orientation','Introduces the SFC Digital Portal, Canvas-style course shell, module items, progress, files, and certificates.','Orientation','All Parks','Beginner','40 minutes','Blended','','#ff7a1a','Portal Ready','[\"Open assigned courses\",\"Use course-level navigation\",\"Complete module items\",\"Find files and completion evidence\"]',NULL,'2026-05-08 05:52:03','SFC-GUIDE-2026','Published',1,NULL),(87,'Visitor Briefing Standards','Covers practical visitor briefings, trail safety, and protected-area expectations.','Visitor Briefing','Kubah National Park','Beginner','45 minutes','Blended','','#ff7a1a','Visitor Briefing Ready','[\"Prepare a clear visitor briefing\",\"Explain safety and conservation rules\",\"Use the correct escalation path\"]',NULL,'2026-05-08 05:52:03','SFC-GUIDE-2026','Published',2,NULL),(88,'Completion Evidence and Certificates','Explains how item completion, quiz attempts, and Admin review connect to certificates.','Completion','All Parks','Beginner','30 minutes','Blended','','#ff7a1a','Certificate Ready','[\"Complete all required items\",\"Submit quiz attempts\",\"Review certificate readiness\"]',NULL,'2026-05-08 05:52:03','SFC-GUIDE-2026','Published',3,NULL);
-/*!40000 ALTER TABLE `training_modules` ENABLE KEYS */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-05-08 16:00:29
--- MySQL dump 10.13  Distrib 9.6.0, for macos26.3 (arm64)
---
--- Host: localhost    Database: cos30049_assignment
--- ------------------------------------------------------
--- Server version	9.6.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- GTID state at the beginning of the backup 
---
-
-
---
--- Dumping data for table `lessons`
---
--- WHERE:  module_id IN (SELECT module_id FROM training_modules WHERE course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026'))
-
-/*!40000 ALTER TABLE `lessons` DISABLE KEYS */;
-INSERT INTO `lessons` (`lesson_id`, `module_id`, `title`, `content`, `media_url`, `lesson_type`, `sort_order`) VALUES (92,80,'Overview','Review AI camera and IoT sensor evidence before writing a recommendation for Admin review.',NULL,'Text',1),(93,81,'Overview','Explains how Rangers add field notes and recommendations without changing official incident status.',NULL,'Text',1),(94,82,'Overview','Guides staff on explaining no-touch conservation rules to visitors.',NULL,'Text',1),(95,83,'Overview','Introduces common visitor-wildlife interaction risks in Sarawak protected parks.',NULL,'Text',1),(96,84,'Overview','Policy explanation for plants, wildlife, and protected natural resources.',NULL,'Text',1),(97,85,'Overview','Shows when and how to escalate wildlife-related evidence to Admin.',NULL,'Text',1),(98,86,'Overview','Introduces the SFC Digital Portal, Canvas-style course shell, module items, progress, files, and certificates.',NULL,'Text',1),(99,87,'Overview','Covers practical visitor briefings, trail safety, and protected-area expectations.',NULL,'Text',1),(100,88,'Overview','Explains how item completion, quiz attempts, and Admin review connect to certificates.',NULL,'Text',1);
-/*!40000 ALTER TABLE `lessons` ENABLE KEYS */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-05-08 16:00:30
--- MySQL dump 10.13  Distrib 9.6.0, for macos26.3 (arm64)
---
--- Host: localhost    Database: cos30049_assignment
--- ------------------------------------------------------
--- Server version	9.6.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- GTID state at the beginning of the backup 
---
-
-
---
--- Dumping data for table `course_module_items`
---
--- WHERE:  course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026')
-
-/*!40000 ALTER TABLE `course_module_items` DISABLE KEYS */;
-INSERT INTO `course_module_items` (`item_id`, `module_id`, `course_id`, `item_type`, `title`, `description`, `content`, `external_url`, `file_name`, `stored_name`, `mime_type`, `size_bytes`, `file_url`, `quiz_json`, `checklist_json`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES (285,80,'SFC-FIELD-2026','page','How AI camera evidence is reviewed','Step-by-step guide for reviewing camera evidence.','Start by checking the event type, timestamp, location, image clarity, and whether the image clearly shows prohibited visitor interaction. Do not mark a case as resolved from one weak image. Park Rangers should add field notes and recommendations only. Admin remains responsible for official status decisions.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(286,80,'SFC-FIELD-2026','text','Evidence triage note template','Short field-note pattern.','Observed behavior: what the evidence shows. Confidence: clear, partial, or unclear. Field action: what the ranger checked. Recommendation: the status outcome Admin should consider.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(287,80,'SFC-FIELD-2026','image','Example AI evidence frame','Evidence review image for discussion.','Use the frame to discuss event label, timestamp, location, and confidence before writing a field note.','http://localhost:5175/user/training/incident-ai-monitoring.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(288,80,'SFC-FIELD-2026','video','Field evidence walkthrough','Short walkthrough reference.','Open the linked reference during the demo or replace it with an uploaded MP4 from the Admin builder.','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(289,80,'SFC-FIELD-2026','link','SFC field reporting reference','External guideline reference.','','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',5,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(290,80,'SFC-FIELD-2026','file','Incident handover worksheet','Downloadable worksheet placeholder for field response handover.','Use this file item for incident handover evidence during the presentation.','http://localhost:5175/user/training/safety-response.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',6,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(291,80,'SFC-FIELD-2026','checklist','Evidence quality checklist','Things to verify before recommending action.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"Image is visible and not blurred\", \"Event type matches the evidence\", \"Location and timestamp are recorded\", \"Sensor metadata is available for IoT alerts\", \"Recommendation is written clearly for Admin review\"]','published',7,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(292,80,'SFC-FIELD-2026','quiz','Is this incident ready for Admin review?','Quick scenario check.','','',NULL,NULL,NULL,0,NULL,'{\"answer\": 2, \"choices\": [\"Park Guide\", \"Park Ranger\", \"Admin\", \"Visitor\"], \"question\": \"Who should officially change an incident status?\"}',NULL,'published',8,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(293,81,'SFC-FIELD-2026','page','Ranger recommendation role boundary','Clear explanation of what Rangers can and cannot do.','Park Rangers may view incidents, inspect field evidence, add notes, and recommend outcomes. They should not directly change official incident status. This keeps accountability with Admin while still using Ranger field expertise.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(294,81,'SFC-FIELD-2026','text','Useful recommendation wording','Recommended field note phrasing.','Use neutral wording such as \"Recommend In Review because the image is clear but field location needs confirmation.\" Avoid assigning intent to visitors.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(295,81,'SFC-FIELD-2026','checklist','Field note writing checklist','Checklist for useful Ranger notes.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"Mention what was seen in the field\", \"Mention whether evidence matches the location\", \"Use neutral wording\", \"Avoid guessing intent\", \"Recommend next action clearly\"]','published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(296,81,'SFC-FIELD-2026','quiz','Official status vs recommendation','Role boundary quiz.','','',NULL,NULL,NULL,0,NULL,'{\"answer\": 2, \"choices\": [\"Change status to resolved\", \"Delete the incident\", \"Recommend resolved with field notes\", \"Ignore the incident\"], \"question\": \"A Ranger believes an incident is solved. What should they do?\"}',NULL,'published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(297,82,'SFC-FIELD-2026','page','Explaining rules to visitors','Simple script for visitor-facing communication.','Use friendly, direct language. Explain that protected plants and wildlife must not be touched, plucked, fed, or disturbed. Focus on safety, conservation, and visitor responsibility.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(298,82,'SFC-FIELD-2026','image','Visitor safety briefing card','Visual reminder for visitor briefing.','Use this image item to brief visitors before trail entry.','http://localhost:5175/user/training/visitor-safety.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(299,82,'SFC-FIELD-2026','link','Bako National Park visitor guide','Visitor reference link.','','https://sarawakforestry.com/parks/bako-national-park/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(300,82,'SFC-FIELD-2026','checklist','Visitor safety reminders','Before patrol checklist.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"Brief visitors before trail entry\", \"Remind them not to feed wildlife\", \"Remind them not to pluck plants\", \"Report suspicious behavior early\"]','published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(301,83,'SFC-WILDLIFE-2026','page','Why touching wildlife is dangerous','Basic conservation and safety explanation.','Touching wildlife can harm animals, create aggressive behavior, spread disease, and put visitors at risk. Staff should intervene early and record evidence when available.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(302,83,'SFC-WILDLIFE-2026','text','Safe-distance briefing script','Plain-language visitor script.','Please keep a safe distance, do not feed wildlife, and let animals move away naturally. This protects visitors and the animals.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(303,83,'SFC-WILDLIFE-2026','image','Protected wildlife awareness card','Training visual for no-contact wildlife rules.','Use this image to explain why protected wildlife should be observed from a distance.','http://localhost:5175/user/training/biodiversity-basics.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(304,83,'SFC-WILDLIFE-2026','video','Wildlife awareness reference','Reference video placeholder.','Replace this with a local awareness video from Admin if available.','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(305,83,'SFC-WILDLIFE-2026','quiz','Wildlife safety check','Basic quiz.','','',NULL,NULL,NULL,0,NULL,'{\"answer\": 2, \"choices\": [\"Feed it\", \"Touch it gently\", \"Observe from a safe distance\", \"Chase it away\"], \"question\": \"What should visitors do when they see wildlife?\"}',NULL,'published',5,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(306,84,'SFC-WILDLIFE-2026','page','No-touch policy explanation','Plain-language policy script.','Visitors should not touch, pick, pluck, feed, chase, or disturb plants and wildlife. Staff should explain the policy calmly and record incidents when evidence exists.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(307,84,'SFC-WILDLIFE-2026','file','Policy reminder card','Downloadable reminder for guide briefing.','Use this as a file item for no-touch briefing evidence.','http://localhost:5175/user/training/rules-compliance.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(308,84,'SFC-WILDLIFE-2026','link','Sarawak Forestry policy reference','External policy reference.','','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(309,84,'SFC-WILDLIFE-2026','checklist','No-touch enforcement checklist','Quick enforcement steps.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"Warn politely\", \"Explain conservation reason\", \"Record evidence if repeated\", \"Escalate to Admin if needed\"]','published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(310,85,'SFC-WILDLIFE-2026','page','When to escalate','Escalation decision guide.','Escalate when evidence shows repeated contact, high-risk behavior, visitor refusal, wildlife distress, or unclear incidents needing Admin review.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(311,85,'SFC-WILDLIFE-2026','text','Escalation summary format','Short structured summary.','Incident type, location, time, evidence quality, field note, recommended outcome, and any follow-up needed.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(312,85,'SFC-WILDLIFE-2026','link','Sarawak Forestry Corporation','Official reference site.','','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(313,86,'SFC-GUIDE-2026','page','Welcome to the SFC Digital Portal','Orientation page for new Park Guides.','The portal organizes training into courses. Each course contains an overview, modules, item detail, progress, files, and certificate state. Complete each item and quiz to build completion evidence for Admin.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(314,86,'SFC-GUIDE-2026','text','Course shell quick reference','Short reference for course navigation.','Use Overview for course purpose, Modules for the learning sequence, Item Detail for the selected page or quiz, Progress for completion, Files for resources, and Completion for badge or certificate state.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(315,86,'SFC-GUIDE-2026','image','Portal learning flow diagram','Visual guide for course navigation.','Use this diagram as an orientation visual for the course shell.','http://localhost:5175/user/training/ecotourism-briefing.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(316,86,'SFC-GUIDE-2026','video','Portal walkthrough reference','Short walkthrough placeholder.','Replace with a recorded walkthrough during final polish if needed.','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(317,86,'SFC-GUIDE-2026','file','Guide onboarding checklist file','Orientation file item for onboarding.','File item used for onboarding checklist evidence.','http://localhost:5175/user/training/protected-areas.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',5,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(318,86,'SFC-GUIDE-2026','link','SFC official website','External organization reference.','','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',6,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(319,86,'SFC-GUIDE-2026','checklist','First login checklist','Steps for a new Park Guide.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"Open the assigned course\", \"Read the overview\", \"Complete the first page item\", \"Submit one quiz attempt\", \"Review completion state\"]','published',7,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(320,86,'SFC-GUIDE-2026','quiz','Portal navigation check','Course shell quiz.','','',NULL,NULL,NULL,0,NULL,'{\"answer\": 1, \"choices\": [\"Files\", \"Completion\", \"Admin Detection\", \"Park Ranger Console\"], \"question\": \"Where should a Park Guide check certificate readiness?\"}',NULL,'published',8,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(321,87,'SFC-GUIDE-2026','page','Trail briefing structure','Briefing sequence for guide teams.','Start with route expectations, safety reminders, no-contact conservation rules, weather awareness, and how visitors should ask for help.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(322,87,'SFC-GUIDE-2026','image','Rainforest safety visual','Orientation image for safety briefing.','Use this image item to support a clear safety briefing.','http://localhost:5175/user/training/kubah-rainforest-safety.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(323,87,'SFC-GUIDE-2026','checklist','Before departure checklist','Quick checks before a guided route.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"Confirm headcount\", \"Confirm route and weather\", \"Explain protected wildlife boundaries\", \"Confirm emergency contact path\"]','published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(324,87,'SFC-GUIDE-2026','quiz','Briefing readiness check','Visitor briefing scenario.','','',NULL,NULL,NULL,0,NULL,'{\"answer\": 1, \"choices\": [\"Only the route name\", \"Safety, conservation rules, and contact path\", \"A souvenir list\", \"No briefing is needed\"], \"question\": \"What should be included before visitors enter a protected trail?\"}',NULL,'published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(325,88,'SFC-GUIDE-2026','page','How completion evidence is built','Completion and certificate state explanation.','Each completed item and quiz attempt is saved through the User API when MySQL is running. Admin can review progress summaries and issue badges or certificates when the course requirements are complete.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',1,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(326,88,'SFC-GUIDE-2026','text','Completion evidence summary','What Admin can review.','Admin sees available items, completed items, quiz attempts, latest score, and course-level progress. This demo keeps completion state separate from AI/IoT incident status.','',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',2,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(327,88,'SFC-GUIDE-2026','file','Certificate readiness worksheet','Course completion file item.','Use this file item as a certificate readiness worksheet during the demo.','http://localhost:5175/user/training/conservation-law.webp',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',3,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(328,88,'SFC-GUIDE-2026','link','Course completion support','External support reference.','','https://sarawakforestry.com/',NULL,NULL,NULL,0,NULL,NULL,NULL,'published',4,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(329,88,'SFC-GUIDE-2026','checklist','Certificate readiness checklist','Final course completion checks.','','',NULL,NULL,NULL,0,NULL,NULL,'[\"All module items completed\", \"Quiz attempts submitted\", \"Progress page reviewed\", \"Completion page checked\", \"Admin can issue badge if approved\"]','published',5,'2026-05-08 05:52:03','2026-05-08 05:52:03'),(330,88,'SFC-GUIDE-2026','quiz','Completion state check','Final orientation quiz.','','',NULL,NULL,NULL,0,NULL,'{\"answer\": 2, \"choices\": [\"Canvas item progress\", \"Quiz attempts\", \"AI and IoT incident status\", \"Course certificates\"], \"question\": \"What data should remain separate from training completion?\"}',NULL,'published',6,'2026-05-08 05:52:03','2026-05-08 05:52:03');
-/*!40000 ALTER TABLE `course_module_items` ENABLE KEYS */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-05-08 16:00:32
-
 SET FOREIGN_KEY_CHECKS = 1;
+
+INSERT INTO courses (course_id, course_name, description, start_date, end_date, total_contact_hours)
+VALUES
+  ('SFC-FIELD-2026', 'SFC Field Response Essentials', 'Complete response training for AI camera alerts, IoT proximity clusters, field verification, Ranger recommendations, Admin decisions, and audit-ready handover.', '2026-05-01', '2026-06-30', 18),
+  ('SFC-WILDLIFE-2026', 'Sarawak Protected Wildlife Awareness', 'Complete wildlife awareness course covering protected species, visitor interaction risk, no-feeding policy, evidence capture, escalation, and scenario-based readiness.', '2026-05-01', '2026-07-10', 16),
+  ('SFC-GUIDE-2026', 'SFC Park Guide Orientation', 'Complete onboarding course for Park Guides covering the digital portal, course navigation, visitor briefings, trail safety, evidence completion, help requests, and certificate readiness.', '2026-05-01', '2026-07-31', 14);
+
+INSERT INTO course_resources (course_id, title, file_name, stored_name, mime_type, size_bytes, file_url)
+VALUES
+  ('SFC-FIELD-2026', 'Field response quick checklist', 'sfc-field-response-checklist.txt', 'sfc-field-response-checklist.txt', 'text/plain', 4200, '/uploads/course-resources/sfc-field-response-checklist.txt'),
+  ('SFC-FIELD-2026', 'Incident evidence handover template', 'sfc-incident-evidence-handover.txt', 'sfc-incident-evidence-handover.txt', 'text/plain', 3900, '/uploads/course-resources/sfc-incident-evidence-handover.txt'),
+  ('SFC-WILDLIFE-2026', 'Wildlife interaction briefing card', 'sfc-wildlife-briefing-card.txt', 'sfc-wildlife-briefing-card.txt', 'text/plain', 3600, '/uploads/course-resources/sfc-wildlife-briefing-card.txt'),
+  ('SFC-WILDLIFE-2026', 'Wildlife escalation quick guide', 'sfc-wildlife-escalation-guide.txt', 'sfc-wildlife-escalation-guide.txt', 'text/plain', 4100, '/uploads/course-resources/sfc-wildlife-escalation-guide.txt'),
+  ('SFC-GUIDE-2026', 'Park guide onboarding checklist', 'sfc-guide-onboarding-checklist.txt', 'sfc-guide-onboarding-checklist.txt', 'text/plain', 3500, '/uploads/course-resources/sfc-guide-onboarding-checklist.txt'),
+  ('SFC-GUIDE-2026', 'Visitor briefing template', 'sfc-visitor-briefing-template.txt', 'sfc-visitor-briefing-template.txt', 'text/plain', 3200, '/uploads/course-resources/sfc-visitor-briefing-template.txt');
+
+-- SFC Field Response Essentials
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-FIELD-2026', 'Module 1: Incident Command and Evidence Intake', 'Learn how AI camera alerts and IoT proximity triggers enter the incident workflow, how evidence should be read, and why weak evidence must be reviewed before action.', 'Incident Evidence', 'Bako National Park', 'Intermediate', '1 hour 20 minutes', 'Blended', '', '#ff7a1a', 'Incident Intake Ready', '["Read AI and IoT incident evidence", "Separate raw trigger noise from real incident records", "Check timestamp, location, source, confidence, and image clarity", "Prepare a short evidence intake note"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
+
+SET @m_field_intake = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_field_intake, 'Module overview', 'Learn how AI camera alerts and IoT proximity triggers enter the incident workflow, how evidence should be read, and why weak evidence must be reviewed before action.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'page', 'How the incident queue works', 'Incident intake explanation', 'The incident queue combines AI camera alerts and IoT proximity triggers into reviewable cases. AI records normally include an event label, confidence value, evidence image, timestamp, and location. IoT records may arrive as repeated proximity readings, so they should be grouped by zone and time window before Admin review. Do not treat every raw trigger as a separate incident.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'text', 'Evidence intake note template', 'Copy-ready note pattern', 'Incident ID: 
+Source: AI Camera or IoT Sensor
+Location: 
+Timestamp: 
+Evidence quality: clear, partial, or unclear
+Immediate risk: low, medium, or high
+Recommended next step: monitor, ranger review, escalate, or admin decision', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'image', 'Example AI camera evidence frame', 'Visual review reference', 'Use the image frame to discuss event type, timestamp, confidence, and whether the behavior is visible enough for action.', 'http://localhost:5175/user/training/incident-ai-monitoring.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'video', 'Incident intake walkthrough', 'Short video placeholder', 'Use this walkthrough as the briefing reference for how evidence moves from detection to admin review.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'link', 'SFC official operational reference', 'External reference', 'Open the official organization reference when explaining the real-world conservation context.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'file', 'Incident intake worksheet', 'Downloadable worksheet placeholder', 'Use this worksheet to record source, location, confidence, evidence hash, and recommended next step.', 'https://sarawakforestry.com/', 'incident-intake-worksheet.txt', 'incident-intake-worksheet.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'checklist', 'Evidence intake checklist', 'Minimum checks before review', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Incident source is identified", "Location and timestamp are present", "Evidence image or sensor count is attached", "Severity is not guessed without evidence", "Recommendation is written for Admin, not as a final decision"]', 'published', 7);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_intake, 'SFC-FIELD-2026', 'quiz', 'Incident intake role check', 'One-question role quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Which role should make the official final incident status decision?", "choices": ["Park Guide", "Park Ranger", "Admin", "Visitor"], "answer": 2}', NULL, 'published', 8);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-FIELD-2026', 'Module 2: AI Camera Review and Plucking Plants Detection', 'Review AI camera evidence for possible plant plucking, wildlife handling, false alarms, and confidence-based escalation.', 'AI Camera Evidence', 'Demo Camera Zone', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'AI Evidence Reviewer', '["Recognize possible plant plucking evidence", "Read predicted class, confidence, margin, and bounding-box metadata", "Avoid changing user-facing wording back to Touching Plants", "Record false alarm notes clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+
+SET @m_field_ai = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_field_ai, 'Module overview', 'Review AI camera evidence for possible plant plucking, wildlife handling, false alarms, and confidence-based escalation.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'page', 'Plucking Plants evidence standard', 'Evidence standard', 'User-facing incident wording should say Plucking Plants when the case involves possible protected flora handling. Internal model aliases may still keep older labels for compatibility, but reports and screens should use clear conservation wording.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'text', 'AI confidence interpretation guide', 'Short confidence guide', 'High confidence means the frame strongly matches the model class. Medium confidence needs human review. Low confidence should normally remain monitored or false-alarm candidate unless supported by repeated evidence.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'image', 'Bounding-box review example', 'Visual metadata reference', 'Use this training image to explain why the model prediction still needs human review.', 'http://localhost:5175/user/training/plucking-plants-evidence.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'link', 'AI evidence review reference', 'External reference', 'Use this as a placeholder for the project''s AI training notebook or evidence review reference.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'checklist', 'AI evidence quality checklist', 'Quality checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Predicted class is shown", "Confidence value is recorded", "Image clearly shows the relevant interaction", "Location matches a protected area", "False alarm risk is considered"]', 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'quiz', 'AI evidence decision check', 'Scenario quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "An image is unclear but confidence is high. What should the reviewer do?", "choices": ["Resolve immediately", "Delete the incident", "Send for human review with a note", "Ignore the case"], "answer": 2}', NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ai, 'SFC-FIELD-2026', 'file', 'AI review worksheet', 'Worksheet placeholder', 'Use this file item to document frame number, predicted class, confidence, and review note.', 'https://sarawakforestry.com/', 'ai-review-worksheet.txt', 'ai-review-worksheet.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 7);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-FIELD-2026', 'Module 3: IoT Proximity Sensor Triage and Alert Grouping', 'Handle repeated sensor readings without flooding the incident page, using grouping rules, thresholds, cooldowns, and zone-based triage.', 'IoT Sensor Evidence', 'Plant Zone A', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'IoT Triage Ready', '["Understand raw trigger flooding", "Apply grouping by zone and time window", "Use cooldowns to reduce duplicate rows", "Escalate only meaningful proximity clusters"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
+
+SET @m_field_iot = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_field_iot, 'Module overview', 'Handle repeated sensor readings without flooding the incident page, using grouping rules, thresholds, cooldowns, and zone-based triage.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'page', 'Why raw IoT triggers must be grouped', 'Noise-control explanation', 'A forest deployment may contain many sensors. If each proximity reading becomes an incident, Admin will face alert fatigue. The system should group triggers by zone, threshold, and time window. Example: 37 raw triggers in 20 minutes can become one grouped incident with the evidence count retained.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'text', 'Grouping rule example', 'Rule example', 'Plant Zone A proximity grouping: if 5 or more triggers occur within 20 minutes, create one grouped incident. Apply a 15-minute cooldown before opening another incident for the same zone.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'image', 'Sensor zone example', 'Visual sensor-zone reference', 'Use this visual placeholder to explain how a physical zone maps into a grouped alert.', 'http://localhost:5175/user/training/sensor-zone-map.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'checklist', 'IoT grouping checklist', 'Grouping checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Sensor zone is known", "Trigger count reaches threshold", "Time window is recorded", "Cooldown is applied", "Grouped incident stores raw evidence count"]', 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'quiz', 'Sensor grouping check', 'One-question quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Why should repeated IoT triggers be grouped?", "choices": ["To hide evidence", "To reduce alert noise while keeping evidence count", "To delete sensor data", "To prevent Admin from seeing incidents"], "answer": 1}', NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'link', 'MQTT sensor integration reference', 'External reference', 'Placeholder link for MQTT and sensor integration explanation.', 'https://mqtt.org/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_iot, 'SFC-FIELD-2026', 'file', 'IoT event summary form', 'File placeholder', 'Use this file item for sensor ID, zone, trigger count, time window, and cooldown note.', 'https://sarawakforestry.com/', 'iot-event-summary-form.txt', 'iot-event-summary-form.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 7);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-FIELD-2026', 'Module 4: Ranger Field Recommendation Workflow', 'Train Rangers to inspect evidence and recommend outcomes without bypassing Admin control.', 'Ranger Workflow', 'All Parks', 'Intermediate', '55 minutes', 'Blended', '', '#ff7a1a', 'Recommendation Ready', '["Understand recommendation-only responsibility", "Write neutral field notes", "Escalate high-risk cases", "Avoid final status changes as a Ranger"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
+
+SET @m_field_ranger = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_field_ranger, 'Module overview', 'Train Rangers to inspect evidence and recommend outcomes without bypassing Admin control.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ranger, 'SFC-FIELD-2026', 'page', 'Ranger boundary and accountability', 'Role boundary', 'Park Rangers can inspect evidence, add field notes, and recommend outcomes. They should not directly resolve, delete, or officially close incidents. This protects accountability and keeps the Admin decision trail clean.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ranger, 'SFC-FIELD-2026', 'text', 'Recommended field note wording', 'Copy-ready note', 'Observed visitor near protected flora. Evidence is clear enough for Admin review. Recommend marking the case Under Review until field patrol confirms the location.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ranger, 'SFC-FIELD-2026', 'checklist', 'Ranger note checklist', 'Field note checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Describe what was observed", "Mention confidence or uncertainty", "Mention field confirmation if any", "Recommend a next step", "Do not write the note as final judgment"]', 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ranger, 'SFC-FIELD-2026', 'quiz', 'Ranger action check', 'Role boundary quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "A Ranger thinks an incident is resolved. What should they do?", "choices": ["Change status to Resolved", "Delete the case", "Recommend Resolve with field notes", "Ignore the case"], "answer": 2}', NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ranger, 'SFC-FIELD-2026', 'link', 'Ranger workflow reference', 'External reference', 'Placeholder reference for team SOP documentation.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_ranger, 'SFC-FIELD-2026', 'file', 'Ranger field note template', 'File placeholder', 'Use this file item for a structured Ranger recommendation template.', 'https://sarawakforestry.com/', 'ranger-field-note-template.txt', 'ranger-field-note-template.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-FIELD-2026', 'Module 5: Admin Decision, Audit Trail, and Handover', 'Show how Admin makes final decisions, records audit events, and prepares handover evidence for reporting.', 'Admin Decision', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Audit Ready', '["Apply final status decisions", "Record admin notes", "Understand audit log importance", "Prepare handover summary"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
+
+SET @m_field_admin = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_field_admin, 'Module overview', 'Show how Admin makes final decisions, records audit events, and prepares handover evidence for reporting.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_admin, 'SFC-FIELD-2026', 'page', 'Admin final decision flow', 'Final decision guide', 'Admin reviews evidence, Ranger notes, severity, and history before setting official status. Decisions should be written with enough detail for later audit, especially for resolved, false alarm, and escalated cases.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_admin, 'SFC-FIELD-2026', 'text', 'Admin decision note template', 'Decision note pattern', 'Decision: 
+Reason: 
+Evidence reviewed: 
+Ranger recommendation: 
+Follow-up required: 
+Audit sensitivity: low, medium, or high', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_admin, 'SFC-FIELD-2026', 'checklist', 'Audit-ready decision checklist', 'Decision checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Evidence has been reviewed", "Ranger note is considered", "Decision reason is written", "Status change is logged", "Handover summary is ready"]', 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_admin, 'SFC-FIELD-2026', 'quiz', 'Audit trail check', 'Audit quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Why should incident decisions be recorded in the audit log?", "choices": ["To make the UI longer", "To provide accountability and traceability", "To replace evidence images", "To avoid Admin review"], "answer": 1}', NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_admin, 'SFC-FIELD-2026', 'file', 'Incident handover report template', 'File placeholder', 'Use this file item as the final incident handover report template.', 'https://sarawakforestry.com/', 'incident-handover-report-template.txt', 'incident-handover-report-template.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_field_admin, 'SFC-FIELD-2026', 'link', 'Audit and compliance reference', 'External reference', 'Placeholder for future cybersecurity and audit documentation.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+-- Sarawak Protected Wildlife Awareness
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-WILDLIFE-2026', 'Module 1: Protected Wildlife Basics in Sarawak Parks', 'Introduce common protected wildlife, visitor behavior risks, and the reason wildlife contact must be prevented.', 'Wildlife Awareness', 'All Parks', 'Beginner', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Awareness', '["Recognize common wildlife interaction risks", "Explain why feeding and touching wildlife is harmful", "Identify when observation becomes an incident"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
+
+SET @m_wild_basics = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_wild_basics, 'Module overview', 'Introduce common protected wildlife, visitor behavior risks, and the reason wildlife contact must be prevented.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'page', 'Why wildlife contact is dangerous', 'Conservation and safety explanation', 'Touching, feeding, chasing, or cornering wildlife can harm animals and put visitors at risk. Staff should encourage observation from a safe distance and record evidence when risky behavior occurs.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'text', 'Safe-distance visitor script', 'Visitor briefing script', 'Please keep a safe distance and do not feed or touch wildlife. This protects you, other visitors, and the animals. Let wildlife move away naturally.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'image', 'Protected wildlife awareness card', 'Visual briefing reference', 'Use this visual as a simple reminder that wildlife must be observed, not handled.', 'http://localhost:5175/user/training/biodiversity-basics.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'video', 'Wildlife awareness briefing', 'Video placeholder', 'Use this video item as a placeholder for a recorded wildlife briefing.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'checklist', 'Wildlife observation checklist', 'Observation checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Keep visitor distance safe", "Do not allow feeding", "Do not allow touching", "Record location if behavior continues", "Escalate high-risk behavior"]', 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'quiz', 'Wildlife safety check', 'Basic quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "What should visitors do when they see wildlife?", "choices": ["Feed it", "Touch it gently", "Observe from a safe distance", "Chase it away"], "answer": 2}', NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_basics, 'SFC-WILDLIFE-2026', 'link', 'SFC wildlife reference', 'External reference', 'Official conservation reference placeholder.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 7);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-WILDLIFE-2026', 'Module 2: Visitor Wildlife Interaction Risks', 'Recognize behaviors that increase risk, such as feeding, crowding, flash photography, and attempting selfies near wildlife.', 'Visitor Risk', 'Wildlife Zones', 'Beginner', '55 minutes', 'Blended', '', '#ff7a1a', 'Visitor Risk Ready', '["Identify risky visitor behavior", "Explain safety reasons clearly", "Separate minor reminders from reportable incidents"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+
+SET @m_wild_risk = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_wild_risk, 'Module overview', 'Recognize behaviors that increase risk, such as feeding, crowding, flash photography, and attempting selfies near wildlife.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'page', 'Risk behavior categories', 'Behavior guide', 'Common risky behaviors include feeding wildlife, blocking animal movement, trying to touch animals, chasing animals for photos, and ignoring guide instructions. Staff should intervene early and calmly.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'text', 'Visitor intervention wording', 'Script', 'For your safety and the animal''s safety, please step back and do not feed or touch it. We need to keep the trail safe for everyone.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'image', 'Visitor-wildlife distance example', 'Visual scenario', 'Use this scenario image to discuss when a visitor reminder becomes an incident record.', 'http://localhost:5175/user/training/wildlife-distance.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'checklist', 'Risk triage checklist', 'Triage checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Behavior is observed clearly", "Visitor was reminded", "Risk level is estimated", "Evidence is available if repeated", "Incident is escalated only when justified"]', 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'quiz', 'Risk level decision', 'Scenario quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "A visitor stands too close to wildlife after a warning. What is the best next step?", "choices": ["Ignore it", "Record evidence and escalate if repeated", "Encourage a closer photo", "Delete the reminder"], "answer": 1}', NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'file', 'Wildlife interaction report template', 'File placeholder', 'Use this item as a reporting template for wildlife interaction cases.', 'https://sarawakforestry.com/', 'wildlife-interaction-report-template.txt', 'wildlife-interaction-report-template.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'link', 'Visitor safety reference', 'External reference', 'Placeholder for official visitor safety information.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 7);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-WILDLIFE-2026', 'Module 3: No-touch and No-feeding Enforcement', 'Train staff to explain and enforce the no-touch, no-feeding, and no-disturbance policy consistently.', 'Policy', 'All Parks', 'Beginner', '45 minutes', 'Blended', '', '#ff7a1a', 'Policy Ready', '["Explain no-touch policy", "Handle visitor questions", "Record repeated non-compliance"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
+
+SET @m_wild_policy = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_wild_policy, 'Module overview', 'Train staff to explain and enforce the no-touch, no-feeding, and no-disturbance policy consistently.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_policy, 'SFC-WILDLIFE-2026', 'page', 'No-touch and no-feeding policy', 'Policy explanation', 'The policy is simple: visitors should not touch, feed, chase, pick, pluck, or disturb protected wildlife and plants. Enforcement should start with clear explanation before escalation.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_policy, 'SFC-WILDLIFE-2026', 'text', 'Common visitor question answers', 'FAQ-style answers', 'Q: Can I feed the animal a little? A: No, feeding changes wildlife behavior and may harm the animal.
+Q: Can I touch the plant for a photo? A: No, protected flora should not be touched or plucked.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_policy, 'SFC-WILDLIFE-2026', 'checklist', 'Policy enforcement checklist', 'Enforcement checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Explain the rule politely", "State the conservation reason", "Watch for repeated behavior", "Record evidence when needed", "Escalate persistent refusal"]', 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_policy, 'SFC-WILDLIFE-2026', 'quiz', 'Policy enforcement check', 'Policy quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Which action should be stopped immediately?", "choices": ["Looking at wildlife", "Taking photos from a safe distance", "Feeding wildlife", "Reading trail signage"], "answer": 2}', NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_policy, 'SFC-WILDLIFE-2026', 'file', 'No-touch briefing card', 'File placeholder', 'Use this item as a printable no-touch briefing card.', 'https://sarawakforestry.com/', 'no-touch-briefing-card.txt', 'no-touch-briefing-card.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_policy, 'SFC-WILDLIFE-2026', 'link', 'Policy reference page', 'External reference', 'Placeholder for policy reference documentation.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-WILDLIFE-2026', 'Module 4: Wildlife Evidence Capture and Escalation', 'Decide when wildlife evidence should be monitored, sent to Ranger review, escalated, or marked as false alarm.', 'Evidence', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Evidence Ready', '["Assess wildlife evidence quality", "Write escalation summaries", "Avoid overstating unclear evidence"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
+
+SET @m_wild_evidence = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_wild_evidence, 'Module overview', 'Decide when wildlife evidence should be monitored, sent to Ranger review, escalated, or marked as false alarm.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'page', 'Escalation criteria', 'Decision guide', 'Escalate when evidence shows repeated visitor contact, unsafe wildlife behavior, visitor refusal, wildlife distress, or unclear incidents that need Admin judgment.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'text', 'Escalation summary format', 'Summary template', 'Incident type: 
+Location: 
+Evidence quality: 
+Visitor response: 
+Wildlife risk: 
+Recommended Admin action:', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'image', 'Wildlife evidence frame', 'Visual evidence example', 'Use this image placeholder to explain evidence clarity and false-alarm risk.', 'http://localhost:5175/user/training/wildlife-evidence.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'checklist', 'Escalation checklist', 'Escalation checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Evidence source is recorded", "Risk level is justified", "Ranger note is included", "False alarm possibility is considered", "Admin action is recommended clearly"]', 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'quiz', 'Escalation decision quiz', 'Scenario quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "When should wildlife evidence be escalated?", "choices": ["Only when there is repeated or high-risk behavior", "Every time wildlife appears", "Only after deleting the photo", "Never"], "answer": 0}', NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'link', 'Evidence escalation reference', 'External reference', 'Placeholder for evidence escalation SOP.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-WILDLIFE-2026', 'Module 5: Scenario Practice and Field Readiness', 'Complete scenario checks for visitor reminders, wildlife contact, false alarms, and Admin escalation.', 'Scenario Practice', 'All Parks', 'Intermediate', '1 hour', 'Blended', '', '#ff7a1a', 'Wildlife Field Ready', '["Apply policy to scenarios", "Choose correct escalation paths", "Prepare for certificate review"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
+
+SET @m_wild_final = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_wild_final, 'Module overview', 'Complete scenario checks for visitor reminders, wildlife contact, false alarms, and Admin escalation.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_final, 'SFC-WILDLIFE-2026', 'page', 'Scenario set overview', 'Final practice', 'This module combines policy, visitor communication, evidence review, and escalation into realistic field scenarios. Complete the checklist and quiz before certificate review.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_final, 'SFC-WILDLIFE-2026', 'text', 'Scenario reflection prompt', 'Reflection prompt', 'Choose one scenario and write what you would say to the visitor, what evidence you would record, and whether you would recommend monitoring, Ranger review, or Admin escalation.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_final, 'SFC-WILDLIFE-2026', 'checklist', 'Final wildlife readiness checklist', 'Final checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Can explain no-touch and no-feeding rules", "Can identify risky behavior", "Can write a neutral note", "Can recommend escalation correctly", "Can identify false alarm risk"]', 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_final, 'SFC-WILDLIFE-2026', 'quiz', 'Final wildlife readiness quiz', 'Final quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "A visitor feeds wildlife after two warnings and there is clear image evidence. What should happen?", "choices": ["Ignore the incident", "Recommend Admin escalation with evidence", "Delete the image", "Tell other visitors to feed too"], "answer": 1}', NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_final, 'SFC-WILDLIFE-2026', 'file', 'Wildlife readiness sign-off', 'File placeholder', 'Use this item as a final readiness sign-off form.', 'https://sarawakforestry.com/', 'wildlife-readiness-sign-off.txt', 'wildlife-readiness-sign-off.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_wild_final, 'SFC-WILDLIFE-2026', 'link', 'Wildlife readiness reference', 'External reference', 'Placeholder for additional reading.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+-- SFC Park Guide Orientation
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-GUIDE-2026', 'Module 1: Digital Portal and Canvas Learning Flow', 'Learn how to use the SFC Digital Portal course shell, internal course navigation, module item detail, files, progress, and completion state.', 'Orientation', 'All Parks', 'Beginner', '50 minutes', 'Blended', '', '#ff7a1a', 'Portal Ready', '["Open assigned courses", "Use course-level navigation", "Complete module items", "Check progress and certificate state"]', 'Published', 1, 'Complete all required module items and pass the scenario check.');
+
+SET @m_guide_portal = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_guide_portal, 'Module overview', 'Learn how to use the SFC Digital Portal course shell, internal course navigation, module item detail, files, progress, and completion state.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'page', 'Welcome to the SFC Digital Portal', 'Orientation page', 'The portal organizes training into courses. Each course contains an overview, modules, item detail, progress, files, and completion state. Park Guides complete items and quizzes so Admin can review evidence before certificate release.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'text', 'Course navigation quick reference', 'Reference note', 'Overview explains the course. Modules show the learning sequence. Item Detail opens the selected page, file, quiz, or checklist. Progress shows completion. Files stores resources. Completion shows certificate readiness.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'image', 'Portal flow diagram', 'Visual guide', 'Use this image item to explain how the course shell works.', 'http://localhost:5175/user/training/ecotourism-briefing.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'video', 'Portal walkthrough', 'Video placeholder', 'Use this video item as a recorded portal walkthrough placeholder.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'file', 'First login checklist', 'File placeholder', 'Use this file item to guide new Park Guides through first login steps.', 'https://sarawakforestry.com/', 'first-login-checklist.txt', 'first-login-checklist.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'link', 'SFC official website', 'External reference', 'Organization reference for orientation.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'checklist', 'First login checklist', 'First login tasks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Open the course list", "Select assigned course", "Read the overview", "Open module item detail", "Check completion state"]', 'published', 7);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_portal, 'SFC-GUIDE-2026', 'quiz', 'Portal navigation quiz', 'Navigation quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Where should a Park Guide check certificate readiness?", "choices": ["Files", "Completion", "Admin Detection", "Sensor Rules"], "answer": 1}', NULL, 'published', 8);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-GUIDE-2026', 'Module 2: Visitor Briefing and Trail Etiquette', 'Prepare consistent visitor briefings covering route expectations, protected-area rules, and respectful trail behavior.', 'Visitor Briefing', 'Bako National Park', 'Beginner', '55 minutes', 'Blended', '', '#ff7a1a', 'Briefing Ready', '["Prepare a short visitor briefing", "Explain trail etiquette", "Communicate no-touch rules clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+
+SET @m_guide_briefing = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_guide_briefing, 'Module overview', 'Prepare consistent visitor briefings covering route expectations, protected-area rules, and respectful trail behavior.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_briefing, 'SFC-GUIDE-2026', 'page', 'Visitor briefing structure', 'Briefing guide', 'Start with welcome, route, duration, safety reminders, protected plants and wildlife rules, photo etiquette, waste policy, and help contact path.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_briefing, 'SFC-GUIDE-2026', 'text', 'Two-minute briefing script', 'Script', 'Welcome everyone. Please stay on the trail, follow guide instructions, do not touch or pluck plants, do not feed wildlife, and report any concern to the guide immediately.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_briefing, 'SFC-GUIDE-2026', 'image', 'Trail briefing visual', 'Visual aid', 'Use this image item to support the visitor briefing.', 'http://localhost:5175/user/training/visitor-safety.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_briefing, 'SFC-GUIDE-2026', 'checklist', 'Before departure checklist', 'Departure checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Confirm headcount", "Confirm route and weather", "Explain no-touch policy", "Explain wildlife distance", "Confirm emergency contact path"]', 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_briefing, 'SFC-GUIDE-2026', 'quiz', 'Briefing scenario check', 'Scenario quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Which briefing point should always be included?", "choices": ["Shortcut trails are allowed", "Visitors may feed wildlife", "Do not touch or pluck protected plants", "Ignore weather changes"], "answer": 2}', NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_briefing, 'SFC-GUIDE-2026', 'file', 'Visitor briefing handout', 'File placeholder', 'Use this item as the visitor briefing handout.', 'https://sarawakforestry.com/', 'visitor-briefing-handout.txt', 'visitor-briefing-handout.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-GUIDE-2026', 'Module 3: Park Safety and Emergency Escalation', 'Learn the basic safety checks, emergency reporting path, and when to contact Admin or Ranger support.', 'Safety', 'All Parks', 'Beginner', '1 hour', 'Blended', '', '#ff7a1a', 'Safety Ready', '["Prepare route safety checks", "Respond to visitor incidents", "Use help and escalation channels"]', 'Published', 3, 'Complete all required module items and pass the scenario check.');
+
+SET @m_guide_safety = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_guide_safety, 'Module overview', 'Learn the basic safety checks, emergency reporting path, and when to contact Admin or Ranger support.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'page', 'Safety and escalation basics', 'Safety guide', 'Park Guides should monitor weather, trail condition, visitor health, wildlife presence, and communication readiness. Emergencies should be escalated through the correct contact path immediately.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'text', 'Emergency handover note', 'Handover template', 'Location: 
+Visitor condition: 
+Immediate action taken: 
+Support needed: 
+Contact person: 
+Time reported:', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'image', 'Rainforest safety visual', 'Safety image', 'Use this visual reminder for route preparation and weather awareness.', 'http://localhost:5175/user/training/kubah-rainforest-safety.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'checklist', 'Safety readiness checklist', 'Safety checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Weather checked", "Route condition checked", "Emergency contacts ready", "Visitor headcount recorded", "Escalation path known"]', 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'quiz', 'Emergency escalation quiz', 'Scenario quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "What should a guide do during a serious visitor injury?", "choices": ["Wait until the tour ends", "Escalate immediately through the correct contact path", "Only update the course progress page", "Delete the report"], "answer": 1}', NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_safety, 'SFC-GUIDE-2026', 'link', 'Safety reference', 'External reference', 'Placeholder for official safety reference.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-GUIDE-2026', 'Module 4: Learning Evidence and Certificate Process', 'Understand how completed items, quizzes, and Admin review create certificate readiness.', 'Completion', 'All Parks', 'Beginner', '45 minutes', 'Blended', '', '#ff7a1a', 'Certificate Ready', '["Complete required module items", "Submit quiz attempts", "Understand Admin certificate release"]', 'Published', 4, 'Complete all required module items and pass the scenario check.');
+
+SET @m_guide_evidence = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_guide_evidence, 'Module overview', 'Understand how completed items, quizzes, and Admin review create certificate readiness.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_evidence, 'SFC-GUIDE-2026', 'page', 'How course completion works', 'Completion guide', 'The course is complete only after required items are opened or submitted, quizzes are attempted, and Admin reviews completion evidence. Certificate release should not be automatic when evidence review is required.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_evidence, 'SFC-GUIDE-2026', 'text', 'Completion evidence note', 'Note', 'Completion evidence includes opened pages, submitted checklists, quiz attempts, and file/resource review. Admin can review this evidence before releasing certificates.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_evidence, 'SFC-GUIDE-2026', 'checklist', 'Certificate readiness checklist', 'Readiness checks', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["All required items opened", "Checklist submitted", "Quiz attempted", "Progress reaches requirement", "Admin review pending or released"]', 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_evidence, 'SFC-GUIDE-2026', 'quiz', 'Certificate process quiz', 'Certificate quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "Who should release a certificate after evidence review?", "choices": ["Any visitor", "Admin", "A random learner", "The browser automatically with no evidence"], "answer": 1}', NULL, 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_evidence, 'SFC-GUIDE-2026', 'file', 'Certificate evidence checklist', 'File placeholder', 'Use this item as a certificate evidence checklist.', 'https://sarawakforestry.com/', 'certificate-evidence-checklist.txt', 'certificate-evidence-checklist.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_evidence, 'SFC-GUIDE-2026', 'link', 'Certificate policy reference', 'External reference', 'Placeholder for certificate policy documentation.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO training_modules
+  (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
+VALUES
+  ('SFC-GUIDE-2026', 'Module 5: Final Field Simulation', 'Complete a realistic guide scenario that combines visitor briefing, no-touch rules, wildlife distance, incident reporting, and help desk use.', 'Final Simulation', 'All Parks', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'Field Ready', '["Apply guide briefing skills", "Respond to visitor rule issues", "Use help desk instead of broadcast replies", "Prepare for final Admin review"]', 'Published', 5, 'Complete all required module items and pass the scenario check.');
+
+SET @m_guide_final = LAST_INSERT_ID();
+
+INSERT INTO lessons (module_id, title, content, media_url, lesson_type, sort_order)
+VALUES (@m_guide_final, 'Module overview', 'Complete a realistic guide scenario that combines visitor briefing, no-touch rules, wildlife distance, incident reporting, and help desk use.', NULL, 'Text', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'page', 'Final simulation overview', 'Simulation guide', 'You will handle a simulated group briefing, a visitor near protected flora, a wildlife distance reminder, and a support request. The goal is to show safe communication, proper evidence handling, and correct escalation.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 1);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'text', 'Simulation response prompt', 'Written response', 'Write how you would brief visitors, what you would say when someone tries to pluck a plant, and what help request you would submit if the announcement is unclear.', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 2);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'image', 'Final field scenario visual', 'Visual scenario', 'Use this visual placeholder during the final simulation.', 'http://localhost:5175/user/training/protected-areas.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'checklist', 'Final field readiness checklist', 'Final checklist', '', '', NULL, NULL, NULL, 0, NULL, NULL, '["Briefing completed", "No-touch rule explained", "Wildlife distance explained", "Incident escalation path known", "Help Desk used for follow-up"]', 'published', 4);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'quiz', 'Final guide readiness quiz', 'Final quiz', '', '', NULL, NULL, NULL, 0, NULL, '{"question": "If a broadcast announcement is unclear, what should a user do?", "choices": ["Reply to all users", "Create a Help Desk request", "Ignore it", "Change Admin settings"], "answer": 1}', NULL, 'published', 5);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'file', 'Final field assessment sheet', 'File placeholder', 'Use this item as the final field assessment sheet.', 'https://sarawakforestry.com/', 'final-field-assessment-sheet.txt', 'final-field-assessment-sheet.txt', 'text/plain', 2048, NULL, NULL, NULL, 'published', 6);
+
+INSERT INTO course_module_items
+  (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
+VALUES
+  (@m_guide_final, 'SFC-GUIDE-2026', 'link', 'Final reading reference', 'External reference', 'Placeholder for final reading material.', 'https://sarawakforestry.com/', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 7);
 
 COMMIT;
 
@@ -221,10 +742,13 @@ SELECT
   c.course_id,
   c.course_name,
   COUNT(DISTINCT tm.module_id) AS modules,
-  COUNT(DISTINCT cmi.item_id) AS module_items
+  COUNT(DISTINCT cmi.item_id) AS module_items,
+  COUNT(DISTINCT cr.resource_id) AS resources,
+  c.total_contact_hours AS contact_hours
 FROM courses c
 LEFT JOIN training_modules tm ON tm.course_id = c.course_id
 LEFT JOIN course_module_items cmi ON cmi.course_id = c.course_id
+LEFT JOIN course_resources cr ON cr.course_id = c.course_id
 WHERE c.course_id IN ('SFC-FIELD-2026', 'SFC-WILDLIFE-2026', 'SFC-GUIDE-2026')
-GROUP BY c.course_id, c.course_name
+GROUP BY c.course_id, c.course_name, c.total_contact_hours
 ORDER BY c.course_id;
