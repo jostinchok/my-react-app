@@ -33,6 +33,27 @@ export const API_LINKS = {
     `${USER_API_BASE_URL}/api/canvas-progress`,
 }
 
+export const getAuthToken = () => {
+  try {
+    const session = JSON.parse(localStorage.getItem('sfc_session') || '{}')
+    return session.token || localStorage.getItem('sfc_token') || ''
+  } catch {
+    return localStorage.getItem('sfc_token') || ''
+  }
+}
+
+export const authFetch = (url, options = {}) => {
+  const token = getAuthToken()
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
 export const DB_SQL_SCHEMA = {
   sourceFile: 'database/db.sql',
   database: MYSQL_DATABASE_NAME,
@@ -414,7 +435,7 @@ export const normalizeCollection = (payload, keys, normalizer) => {
 }
 
 export const loadDatabaseFrame = async (url, keys, normalizer) => {
-  const response = await fetch(url, { cache: 'no-store' })
+  const response = await authFetch(url, { cache: 'no-store' })
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
@@ -432,7 +453,7 @@ const withUserId = (url, userId) => {
 }
 
 export const saveProfileField = async (field, value, userId) => {
-  const response = await fetch(withUserId(API_LINKS.profile, userId), {
+  const response = await authFetch(withUserId(API_LINKS.profile, userId), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ field, value }),
@@ -447,7 +468,7 @@ export const saveProfileField = async (field, value, userId) => {
 }
 
 export const saveAvatarUpload = async ({ fileName, dataUrl, userId }) => {
-  const response = await fetch(withUserId(API_LINKS.avatar, userId), {
+  const response = await authFetch(withUserId(API_LINKS.avatar, userId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fileName, dataUrl }),
@@ -462,7 +483,7 @@ export const saveAvatarUpload = async ({ fileName, dataUrl, userId }) => {
 }
 
 export const saveScheduleItem = async (item, userId) => {
-  const response = await fetch(withUserId(API_LINKS.schedule, userId), {
+  const response = await authFetch(withUserId(API_LINKS.schedule, userId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item),
@@ -477,7 +498,7 @@ export const saveScheduleItem = async (item, userId) => {
 }
 
 export const updateScheduleItem = async (item, userId) => {
-  const response = await fetch(withUserId(`${API_LINKS.schedule}/${encodeURIComponent(item.id)}`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.schedule}/${encodeURIComponent(item.id)}`, userId), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item),
@@ -492,7 +513,7 @@ export const updateScheduleItem = async (item, userId) => {
 }
 
 export const deleteScheduleItem = async (scheduleId, userId) => {
-  const response = await fetch(withUserId(`${API_LINKS.schedule}/${encodeURIComponent(scheduleId)}`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.schedule}/${encodeURIComponent(scheduleId)}`, userId), {
     method: 'DELETE',
   })
   const payload = await response.json().catch(() => ({}))
@@ -515,7 +536,7 @@ export const uploadCourseFile = async ({ userId, moduleId, course, fileName, mim
   const url = userId
     ? `${API_LINKS.files}?userId=${encodeURIComponent(userId)}`
     : API_LINKS.files
-  const response = await fetch(url, {
+  const response = await authFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ moduleId, course, fileName, mimeType, sizeBytes, dataUrl }),
@@ -533,7 +554,7 @@ export const deleteCourseFile = async ({ userId, fileId }) => {
   const url = userId
     ? `${API_LINKS.files}/${encodeURIComponent(fileId)}?userId=${encodeURIComponent(userId)}`
     : `${API_LINKS.files}/${encodeURIComponent(fileId)}`
-  const response = await fetch(url, { method: 'DELETE' })
+  const response = await authFetch(url, { method: 'DELETE' })
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
@@ -544,7 +565,7 @@ export const deleteCourseFile = async ({ userId, fileId }) => {
 }
 
 export const loadCanvasProgress = async (userId) => {
-  const response = await fetch(withUserId(API_LINKS.canvasProgress, userId), { cache: 'no-store' })
+  const response = await authFetch(withUserId(API_LINKS.canvasProgress, userId), { cache: 'no-store' })
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
@@ -556,7 +577,7 @@ export const loadCanvasProgress = async (userId) => {
 }
 
 export const saveCanvasItemProgress = async ({ userId, courseId, moduleId, itemId, itemType, status }) => {
-  const response = await fetch(withUserId(`${API_LINKS.canvasProgress}/item`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.canvasProgress}/item`, userId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -587,7 +608,7 @@ export const saveCanvasQuizAttempt = async ({
   isCorrect,
   scorePercent,
 }) => {
-  const response = await fetch(withUserId(`${API_LINKS.canvasProgress}/quiz`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.canvasProgress}/quiz`, userId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

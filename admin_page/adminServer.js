@@ -1,3 +1,6 @@
+import jwt from 'jsonwebtoken'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
@@ -11,6 +14,45 @@ const appRoot = path.resolve(__dirname, '..')
 dotenv.config({ path: path.resolve(appRoot, '.env') })
 
 const app = express()
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}))
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+app.use('/api', apiLimiter)
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+
+const requireAuth = (allowedRoles = []) => {
+  return (req, res, next) => {
+    const authHeader = req.get('Authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : ''
+
+    if (!token) {
+      return res.status(401).json({ message: 'Login token is required.' })
+    }
+
+    try {
+      const user = jwt.verify(token, JWT_SECRET)
+
+      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        return res.status(403).json({ message: 'You are not allowed to access this API.' })
+      }
+
+      req.user = user
+      next()
+    } catch {
+      return res.status(401).json({ message: 'Invalid or expired login token.' })
+    }
+  }
+}
 const port = Number(process.env.ADMIN_API_PORT || process.env.PORT) || 4002
 const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
 const uploadRoot = path.join(__dirname, 'public', 'uploads')
@@ -449,6 +491,9 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
     features: ['courses', 'modules', 'course_resources', 'guide_management', 'badges', 'canvas_learning_progress_summary'],
   })
 }))
+
+// SECURITY: protect all admin APIs after health check
+app.use('/api', requireAuth(['admin']))
 
 app.get('/api/courses', asyncRoute(async (_req, res) => {
   const courses = await rowsOf(`

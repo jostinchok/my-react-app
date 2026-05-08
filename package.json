@@ -17,5 +17,10 @@
     "check:assets": "python3 scripts/check_required_assets.py",
     "download:assets": "python3 scripts/download_assets_gdrive.py",
     "check:mobile": "npm --prefix mobile_app exec expo config -- --type public"
+  },
+  "dependencies": {
+    "express-rate-limit": "^8.5.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3"
   }
 }

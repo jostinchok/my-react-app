@@ -1,3 +1,4 @@
+import { authFetch } from "../utils/authFetch";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -62,8 +63,8 @@ const TrainingModuleSetup = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const requestJson = async (url) => {
-    const response = await fetch(url);
+  const requestJson = async (url, options = {}) => {
+    const response = await authFetch(url, options);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.message || "Request failed.");
     return data;

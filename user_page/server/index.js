@@ -1,3 +1,6 @@
+import jwt from 'jsonwebtoken'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
@@ -15,6 +18,45 @@ const avatarUploadDir = path.join(appRoot, 'public', 'uploads', 'avatars')
 const courseFileUploadDir = path.join(appRoot, 'public', 'uploads', 'course-files')
 
 const app = express()
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}))
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+app.use('/api', apiLimiter)
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+
+const requireAuth = (allowedRoles = []) => {
+  return (req, res, next) => {
+    const authHeader = req.get('Authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : ''
+
+    if (!token) {
+      return res.status(401).json({ message: 'Login token is required.' })
+    }
+
+    try {
+      const user = jwt.verify(token, JWT_SECRET)
+
+      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        return res.status(403).json({ message: 'You are not allowed to access this API.' })
+      }
+
+      req.user = user
+      next()
+    } catch {
+      return res.status(401).json({ message: 'Invalid or expired login token.' })
+    }
+  }
+}
 const port = Number(process.env.API_PORT || 4001)
 const host = process.env.API_HOST || '127.0.0.1'
 const defaultUserEmail = process.env.DEFAULT_USER_EMAIL || 'guide@test.com'
@@ -108,6 +150,8 @@ const ensureDemoUser = async (userId) => {
 }
 
 const resolveUserId = async (req) => {
+  if (req.user?.user_id) return Number(req.user.user_id)
+
   const requestedUserId = Number(req.query.userId || req.body?.userId || req.body?.user_id || process.env.DEFAULT_USER_ID)
   if (Number.isInteger(requestedUserId) && requestedUserId > 0) return requestedUserId
 
@@ -712,8 +756,15 @@ const buildModules = async (userId) => {
 
 app.get('/api/health', asyncRoute(async (_req, res) => {
   await pool.query('SELECT 1')
-  res.json({ ok: true, database: databaseName })
+  res.json({
+    status: 'ok',
+    message: 'User backend connected to MySQL',
+    database: databaseName,
+  })
 }))
+
+// SECURITY: protect all user/guide APIs after health check
+app.use('/api', requireAuth(['guide']))
 
 app.get('/api/training-modules', asyncRoute(async (req, res) => {
   const userId = await resolveUserIdForTraining(req)
@@ -928,7 +979,14 @@ app.post('/api/user-profile/avatar', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const { fileName = 'avatar.png', dataUrl } = req.body || {}
   const match = /^data:(image\/(?:png|jpe?g|webp|gif));base64,([a-zA-Z0-9+/=]+)$/.exec(dataUrl || '')
+  const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
 
+  const buffer = Buffer.from(match[2], 'base64')
+
+  if (buffer.length > MAX_AVATAR_SIZE) {
+    res.status(400).json({ message: 'Avatar file is too large. Maximum size is 2MB.' })
+    return
+  }
   if (!match) {
     res.status(400).json({ message: 'Send an image data URL as dataUrl.' })
     return
@@ -947,7 +1005,7 @@ app.post('/api/user-profile/avatar', asyncRoute(async (req, res) => {
   const avatarUrl = `/uploads/avatars/${avatarFileName}`
 
   await fs.mkdir(avatarUploadDir, { recursive: true })
-  await fs.writeFile(avatarPath, Buffer.from(match[2], 'base64'))
+  await fs.writeFile(avatarPath, buffer)
   await pool.query(
     `INSERT INTO guide_profiles (guide_id, avatar_url)
      VALUES (?, ?)

@@ -1,3 +1,4 @@
+import { authFetch } from "../utils/authFetch";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -92,7 +93,7 @@ const BadgeManagement = () => {
   };
 
   const requestJson = async (url, options = {}) => {
-    const response = await fetch(url, options);
+    const response = await authFetch(url, options);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.message || "Request failed.");
     return data;

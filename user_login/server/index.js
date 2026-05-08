@@ -1,3 +1,6 @@
+import jwt from 'jsonwebtoken'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import express from 'express'
 import cors from 'cors'
 import mysql from 'mysql2/promise'
@@ -40,6 +43,22 @@ fs.mkdirSync(aiEvidenceDir, { recursive: true })
 fs.mkdirSync(iotEvidenceDir, { recursive: true })
 
 const app = express()
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}))
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many attempts. Please try again later.' },
+})
+
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/register', authLimiter)
+app.use('/api/auth/forgot-password', authLimiter)
+app.use('/api/auth/reset-password', authLimiter)
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 app.use('/evidence/ai', express.static(aiEvidenceDir))
@@ -386,16 +405,13 @@ const validateIncidentInput = (payload = {}) => {
 }
 
 const statusActorFromRequest = (req) => {
-  if (!ROLE_CHECK_ENABLED) {
-    return { allowed: true, actorRole: 'api', actorLabel: 'Incident API' }
-  }
+  const actorRole = String(req.user?.role || '').toLowerCase()
 
-  const actorRole = String(req.get('X-Actor-Role') || '').toLowerCase()
   if (!ALLOWED_STATUS_ACTOR_ROLES.has(actorRole)) {
     return {
       allowed: false,
       status: 403,
-      message: 'Official incident status updates require X-Actor-Role admin when ROLE_CHECK_ENABLED=true.',
+      message: 'Only admin users can update incident status.',
     }
   }
 
@@ -407,16 +423,13 @@ const statusActorFromRequest = (req) => {
 }
 
 const rangerRecommendationActorFromRequest = (req) => {
-  if (!ROLE_CHECK_ENABLED) {
-    return { allowed: true, actorRole: 'park_ranger', actorLabel: 'Park Ranger alert console' }
-  }
+  const actorRole = String(req.user?.role || '').toLowerCase()
 
-  const actorRole = String(req.get('X-Actor-Role') || '').toLowerCase()
   if (!ALLOWED_RANGER_RECOMMENDATION_ROLES.has(actorRole)) {
     return {
       allowed: false,
       status: 403,
-      message: 'Ranger recommendations require X-Actor-Role ranger or park_ranger when ROLE_CHECK_ENABLED=true.',
+      message: 'Only ranger users can submit ranger recommendations.',
     }
   }
 
@@ -513,6 +526,70 @@ const runIncidentStoreOperation = async (operation) => {
   }
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h'
+
+const createLoginToken = (user) => {
+  return jwt.sign(
+    {
+      user_id: user.user_id,
+      email: user.email,
+      role: user.role_name,
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  )
+}
+
+const normalizeEmail = (email) => {
+  return String(email || '').trim().toLowerCase()
+}
+
+const validateStrongPassword = (password) => {
+  if (String(password).length < 8) {
+    return 'Password must be at least 8 characters.'
+  }
+
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return 'Password must contain letters and numbers.'
+  }
+
+  return null
+}
+
+const getBearerToken = (req) => {
+  const authHeader = req.get('Authorization') || ''
+  return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+}
+
+const requireAuth = (allowedRoles = []) => {
+  return (req, res, next) => {
+    const token = getBearerToken(req)
+
+    if (!token) {
+      return res.status(401).json({ message: 'Login token is required.' })
+    }
+
+    try {
+      const user = jwt.verify(token, JWT_SECRET)
+      const userRole = String(user.role || '').toLowerCase()
+
+      if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+        return res.status(403).json({ message: 'You are not allowed to access this API.' })
+      }
+
+      req.user = {
+        ...user,
+        role: userRole,
+      }
+
+      next()
+    } catch {
+      return res.status(401).json({ message: 'Invalid or expired login token.' })
+    }
+  }
+}
+
 app.get('/api/health', async (req, res) => {
   let incidentCount = null
   try {
@@ -555,7 +632,7 @@ app.get('/api/health', async (req, res) => {
   }
 })
 
-app.get('/api/incidents', async (req, res) => {
+app.get('/api/incidents', requireAuth(['admin', 'ranger', 'park_ranger']), async (req, res) => {
   try {
     const deletedIncidentIds = await readDeletedIncidentIds()
     const storedIncidents = await runIncidentStoreOperation((store) => store.listIncidents())
@@ -576,7 +653,7 @@ app.get('/api/incidents', async (req, res) => {
   }
 })
 
-app.get('/api/incidents/summary', async (req, res) => {
+app.get('/api/incidents/summary', requireAuth(['admin', 'ranger', 'park_ranger']), async (req, res) => {
   try {
     const summary = await runIncidentStoreOperation((store) => store.summarizeIncidents())
     res.json({
@@ -590,7 +667,7 @@ app.get('/api/incidents/summary', async (req, res) => {
   }
 })
 
-app.post('/api/incidents/iot-capture', async (req, res) => {
+app.post('/api/incidents/iot-capture', requireAuth(['admin']), async (req, res) => {
   const actor = statusActorFromRequest(req)
   if (!actor.allowed) {
     return res.status(actor.status).json({ message: actor.message })
@@ -644,7 +721,7 @@ app.post('/api/incidents', async (req, res) => {
   }
 })
 
-app.patch('/api/incidents/:id/status', async (req, res) => {
+app.patch('/api/incidents/:id/status', requireAuth(['admin']), async (req, res) => {
   const { status } = req.body
   if (!VALID_STATUSES.has(status)) {
     return res.status(400).json({
@@ -674,7 +751,7 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
   }
 })
 
-app.delete('/api/incidents/:id', async (req, res) => {
+app.delete('/api/incidents/:id', requireAuth(['admin']), async (req, res) => {
   const actor = statusActorFromRequest(req)
   if (!actor.allowed) {
     return res.status(actor.status).json({ message: actor.message })
@@ -700,7 +777,7 @@ app.delete('/api/incidents/:id', async (req, res) => {
   }
 })
 
-app.post('/api/incidents/:id/ranger-recommendation', async (req, res) => {
+app.post('/api/incidents/:id/ranger-recommendation', requireAuth(['ranger', 'park_ranger']), async (req, res) => {
   const validation = validateRangerRecommendationInput(req.params.id, req.body)
   if (!validation.valid) {
     return res.status(400).json({ message: validation.message })
@@ -748,19 +825,31 @@ app.post('/api/incidents/:id/ranger-recommendation', async (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password } = req.body
-    if (!name || !email || !password) {
+    const cleanEmail = normalizeEmail(email)
+
+    if (!name || !cleanEmail || !password) {
       return res.status(400).json({ message: 'Name, email and password are required.' })
     }
 
-    const [existing] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
+    const passwordError = validateStrongPassword(password)
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError })
+    }
+
+    const [existing] = await pool.query(
+      'SELECT user_id FROM users WHERE email = ?',
+      [cleanEmail]
+    )
+
     if (existing.length > 0) {
       return res.status(409).json({ message: 'This email is already registered.' })
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
+
     const [result] = await pool.query(
       'INSERT INTO users (role_id, name, email, password_hash) VALUES (?, ?, ?, ?)',
-      [2, name, email, passwordHash]
+      [2, name, cleanEmail, passwordHash]
     )
 
     await pool.query(
@@ -772,7 +861,7 @@ app.post('/api/auth/register', async (req, res) => {
       user: {
         user_id: result.insertId,
         name,
-        email,
+        email: cleanEmail,
         role_name: 'guide',
       },
       message: 'User registered successfully.',
@@ -808,7 +897,10 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(403).json({ message: `Access denied for role ${role}.` })
     }
 
+    const token = createLoginToken(user)
+
     return res.json({
+      token,
       user: {
         user_id: user.user_id,
         name: user.name,
