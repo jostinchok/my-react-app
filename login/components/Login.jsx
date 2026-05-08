@@ -72,6 +72,7 @@ const Login = ({ onRegister, onForgot }) => {
         className="logo"
       />
       <h1>SFC Digital Park Portal Login</h1>
+      <label className="field-label">Email</label>
       <input
         type="email"
         placeholder="Email"
@@ -79,6 +80,7 @@ const Login = ({ onRegister, onForgot }) => {
         onChange={e => setEmail(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && handleLogin()}
       />
+      <label className="field-label">Password</label>
       <div className="pw-field">
         <input
           type={showPassword ? 'text' : 'password'}
@@ -91,6 +93,7 @@ const Login = ({ onRegister, onForgot }) => {
           <EyeIcon open={showPassword} />
         </button>
       </div>
+      <label className="field-label">Login As</label>
       <select value={role} onChange={e => setRole(e.target.value)}>
         <option value="guide">Park Guide</option>
         <option value="admin">Admin</option>

@@ -32,8 +32,10 @@ CREATE TABLE IF NOT EXISTS guide_profiles (
     phone VARCHAR(20),
     organization VARCHAR(100),
     -- user_page database require
+    birthday DATE,
     years_experience INT DEFAULT 0,
     address VARCHAR(255),
+    assigned_park VARCHAR(100),
     avatar_url VARCHAR(255),
     -- until here
     status ENUM('active', 'inactive') DEFAULT 'active',

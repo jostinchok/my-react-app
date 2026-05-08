@@ -110,6 +110,7 @@ const ForgotPassword = ({ onBack }) => {
           <p className="form-hint">
             Enter your registered email and we will send you a 6-digit OTP.
           </p>
+          <label className="field-label">Email</label>
           <input
             type="email"
             placeholder="Email"
@@ -124,12 +125,14 @@ const ForgotPassword = ({ onBack }) => {
           <p className="form-hint">
             Enter the 6-digit OTP from your email and choose a new password.
           </p>
+          <label className="field-label">Email</label>
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={e => setEmail(e.target.value)}
           />
+          <label className="field-label">6-digit OTP</label>
           <input
             type="text"
             placeholder="6-digit OTP"
@@ -138,6 +141,7 @@ const ForgotPassword = ({ onBack }) => {
             value={token}
             onChange={e => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
+          <label className="field-label">New Password</label>
           <div className="pw-field">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -149,6 +153,7 @@ const ForgotPassword = ({ onBack }) => {
               <EyeIcon open={showPassword} />
             </button>
           </div>
+          <label className="field-label">Confirm New Password</label>
           <div className="pw-field">
             <input
               type={showConfirm ? 'text' : 'password'}

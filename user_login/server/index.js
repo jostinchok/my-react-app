@@ -747,7 +747,7 @@ app.post('/api/incidents/:id/ranger-recommendation', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const { name, email, password, birthday, phone, yearsExperience, address, assignedPark } = req.body
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required.' })
     }
@@ -764,8 +764,8 @@ app.post('/api/auth/register', async (req, res) => {
     )
 
     await pool.query(
-      'INSERT INTO guide_profiles (guide_id, phone, organization) VALUES (?, ?, ?)',
-      [result.insertId, '', '']
+      'INSERT INTO guide_profiles (guide_id, phone, organization, birthday, years_experience, address, assigned_park) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [result.insertId, phone || '', '', birthday || null, yearsExperience ?? 0, address || '', assignedPark || null]
     )
 
     return res.status(201).json({
