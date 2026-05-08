@@ -1114,6 +1114,38 @@ app.get('/api/notifications', asyncRoute(async (req, res) => {
   res.json({ notifications })
 }))
 
+app.patch('/api/notifications/read-all', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  await pool.query(
+    'UPDATE notifications SET is_read = TRUE WHERE user_id = ?',
+    [userId]
+  )
+  res.json({ ok: true, message: 'All notifications marked as read.' })
+}))
+
+app.patch('/api/notifications/:notificationId/read', asyncRoute(async (req, res) => {
+  const userId = await resolveUserId(req)
+  const notificationId = Number(req.params.notificationId)
+  const read = req.body?.read ?? req.body?.is_read ?? true
+
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    res.status(400).json({ message: 'A numeric notification ID is required.' })
+    return
+  }
+
+  const [result] = await pool.query(
+    'UPDATE notifications SET is_read = ? WHERE notification_id = ? AND user_id = ?',
+    [Boolean(read), notificationId, userId]
+  )
+
+  if (result.affectedRows === 0) {
+    res.status(404).json({ message: 'Notification not found.' })
+    return
+  }
+
+  res.json({ ok: true, message: 'Notification read state updated.' })
+}))
+
 app.get('/api/schedule', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const schedule = await rowsOf(
