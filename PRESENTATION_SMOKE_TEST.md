@@ -200,3 +200,30 @@ Expected behavior:
 - A Progress and Certificate Review panel appears above the course list.
 - If progress tables are available, the panel shows guide count, available items, completed items, quiz attempts, average completion, course completion snapshot, and certificate review queue.
 - If progress tables are unavailable or empty, the panel shows a safe fallback/empty state instead of crashing.
+
+## V19 Admin Course Builder UX Check
+
+After running the SQL course import and starting the workspace, verify:
+
+~~~bash
+npm --prefix admin_page run build
+node --check admin_page/adminServer.js
+git diff --check
+npm run dev
+~~~
+
+Open:
+
+~~~text
+http://localhost:5174/admin/course
+~~~
+
+Expected:
+
+1. Course list loads from backend records.
+2. Selected course summary shows module, item, resource, and hour counts.
+3. Module outline is compact and does not expand every module at once.
+4. Selected module detail shows the learning items for only the active module.
+5. Item preview panel shows page, text, file, image, video, link, quiz, and checklist content clearly.
+6. Load Demo Course Records, Create Course, Add Module, and Add Item remain available.
+7. No mobile app changes are required for this check.

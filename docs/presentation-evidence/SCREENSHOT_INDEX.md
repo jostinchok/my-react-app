@@ -36,3 +36,12 @@ Capture:
 2. `/admin/training` showing Progress and Certificate Review panel.
 3. Empty or fallback progress state if no user completion evidence exists.
 4. Course/module/item list below the progress panel.
+
+## V19 Admin Course Builder Evidence
+
+Capture these after the V19 Course Builder UX patch:
+
+1. `admin-course-builder-v19-overview.png` - Course Builder with course list, selected course summary, compact module outline, and inspector.
+2. `admin-course-builder-v19-module-detail.png` - Selected module detail showing only that module's items.
+3. `admin-course-builder-v19-item-preview.png` - Inspector showing a selected item preview.
+4. `admin-course-builder-v19-dialog.png` - Add or edit item dialog with item type controls.
