@@ -238,6 +238,16 @@ const normalizeCourseFile = (row = {}) => ({
   url: row.file_url,
 })
 
+const normalizeCourseRow = (row = {}) => ({
+  ...row,
+  start_date: formatDateOnly(row.start_date),
+  end_date: formatDateOnly(row.end_date),
+  module_count: Number(row.module_count || 0),
+  resource_count: Number(row.resource_count || 0),
+  enrollment_status: row.enrollment_status || 'none',
+  remarks: row.decision_note || '',
+})
+
 const parseMaybeJson = (value, fallback) => {
   if (value === null || value === undefined || value === '') return fallback
   if (typeof value === 'object') return value
@@ -770,6 +780,70 @@ app.get('/api/training-modules', asyncRoute(async (req, res) => {
   res.json({ modules })
 }))
 
+app.get('/api/courses', asyncRoute(async (req, res) => {
+  const userId = await resolveUserIdForTraining(req)
+  const hasCourses = await tableExists('courses')
+  if (!hasCourses) {
+    res.json({ courses: [] })
+    return
+  }
+
+  const [
+    hasTrainingModuleCourseId,
+    hasCourseResources,
+    hasCourseEnrollments,
+    hasDecisionNote,
+  ] = await Promise.all([
+    columnExists('training_modules', 'course_id'),
+    tableExists('course_resources'),
+    tableExists('course_enrollments'),
+    columnExists('course_enrollments', 'decision_note'),
+  ])
+
+  const enrollmentJoin = hasCourseEnrollments
+    ? 'LEFT JOIN course_enrollments ce ON ce.course_id = c.course_id AND ce.user_id = ?'
+    : ''
+  const moduleJoin = hasTrainingModuleCourseId
+    ? 'LEFT JOIN training_modules tm ON tm.course_id = c.course_id'
+    : ''
+  const resourceJoin = hasCourseResources
+    ? 'LEFT JOIN course_resources cr ON cr.course_id = c.course_id'
+    : ''
+  const enrollmentStatusSelect = hasCourseEnrollments
+    ? "COALESCE(ce.status, 'none') AS enrollment_status"
+    : "'none' AS enrollment_status"
+  const decisionNoteSelect = hasCourseEnrollments && hasDecisionNote
+    ? 'ce.decision_note'
+    : 'NULL AS decision_note'
+  const groupEnrollmentColumns = hasCourseEnrollments
+    ? `, ce.status${hasDecisionNote ? ', ce.decision_note' : ''}`
+    : ''
+
+  const courses = await rowsOf(
+    `SELECT
+       c.course_id,
+       c.course_name,
+       c.description,
+       DATE_FORMAT(c.start_date, '%Y-%m-%d') AS start_date,
+       DATE_FORMAT(c.end_date, '%Y-%m-%d') AS end_date,
+       c.total_contact_hours,
+       c.created_at,
+       ${hasTrainingModuleCourseId ? 'COUNT(DISTINCT tm.module_id)' : '0'} AS module_count,
+       ${hasCourseResources ? 'COUNT(DISTINCT cr.resource_id)' : '0'} AS resource_count,
+       ${enrollmentStatusSelect},
+       ${decisionNoteSelect}
+     FROM courses c
+     ${moduleJoin}
+     ${resourceJoin}
+     ${enrollmentJoin}
+     GROUP BY c.course_id, c.course_name, c.description, c.start_date, c.end_date, c.total_contact_hours, c.created_at${groupEnrollmentColumns}
+     ORDER BY c.created_at DESC, c.course_id ASC`,
+    hasCourseEnrollments ? [userId] : []
+  )
+
+  res.json({ courses: courses.map(normalizeCourseRow) })
+}))
+
 app.get('/api/canvas-progress', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const payload = await loadCanvasProgressPayload(userId)
@@ -1170,7 +1244,20 @@ app.post('/api/enrollments/requests', asyncRoute(async (req, res) => {
     [userId, resolvedCourseId]
   )
 
-  res.status(201).json({ ok: true, message: 'Course enrollment request sent to Admin.', courseId: resolvedCourseId })
+  const enrollment = await rowOf(
+    'SELECT status FROM course_enrollments WHERE user_id = ? AND course_id = ? LIMIT 1',
+    [userId, resolvedCourseId]
+  )
+  const enrollmentStatus = enrollment?.status || 'pending'
+
+  res.status(enrollmentStatus === 'approved' ? 200 : 201).json({
+    ok: true,
+    message: enrollmentStatus === 'approved'
+      ? 'Course enrollment is already approved.'
+      : 'Course enrollment request sent to Admin.',
+    courseId: resolvedCourseId,
+    enrollment_status: enrollmentStatus,
+  })
 }))
 
 app.delete('/api/course-files/:fileId', asyncRoute(async (req, res) => {
