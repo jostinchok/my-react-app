@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     role_id INT NULL,
     name VARCHAR(100),
     email VARCHAR(100) UNIQUE,
+    birthday DATE NULL,
     password_hash VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES roles(role_id)
