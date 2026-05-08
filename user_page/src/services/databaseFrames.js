@@ -108,10 +108,10 @@ export const DATABASE_TABLE_TEMPLATE = {
 }
 
 export const PROFILE_FIELD_RULES = {
-  readOnlyFromDatabase: ['birthday', 'assignedPark', 'position', 'guideId', 'role'],
-  editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
+  readOnlyFromDatabase: ['assignedPark', 'position', 'guideId', 'role'],
+  editableAndSavedToDatabase: ['displayName', 'birthday', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
-    birthday: 'not included in database/db.sql',
+    birthday: 'users.birthday',
     phone: 'guide_profiles.phone',
     displayName: 'users.name',
     email: 'users.email',
@@ -326,6 +326,7 @@ export const normalizeCourseFileRow = (row = {}) => ({
 
 export const normalizeCertificateRow = (row = {}) => ({
   id: asText(firstValue(row.id, row.cert_id)),
+  courseId: asText(firstValue(row.courseId, row.course_id)),
   moduleId: asText(firstValue(row.moduleId, row.module_id)),
   title: asText(firstValue(row.title, row.module_title), 'Training credential'),
   status: asText(row.status, row.issue_date ? 'Issued' : 'Pending'),
