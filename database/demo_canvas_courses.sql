@@ -1,7 +1,208 @@
 -- COS30049 CTIP V18 complete Canvas-style demo course records
 -- This file replaces the earlier lightweight demo data with more realistic course records.
 -- Run from project root:
---   mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+--   mysql -u root -p park_guide_database < database/demo_canvas_courses.sql
+
+CREATE DATABASE IF NOT EXISTS park_guide_database;
+USE park_guide_database;
+
+-- Schema prerequisites for direct phpMyAdmin imports.
+-- The Canvas demo data depends on the training-platform migrations; keep the
+-- required tables/columns here so this file can be imported on its own after
+-- selecting the project database in phpMyAdmin.
+DROP PROCEDURE IF EXISTS add_column_if_missing;
+
+CREATE TABLE IF NOT EXISTS roles (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    role_id INT NULL,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password_hash VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(role_id)
+);
+
+CREATE TABLE IF NOT EXISTS training_modules (
+    module_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    description TEXT,
+    category VARCHAR(100),
+    park VARCHAR(100),
+    level VARCHAR(50),
+    duration VARCHAR(50),
+    format VARCHAR(50),
+    image_url VARCHAR(255),
+    accent_color VARCHAR(20),
+    badge_name VARCHAR(100),
+    objectives TEXT,
+    created_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS lessons (
+    lesson_id INT AUTO_INCREMENT PRIMARY KEY,
+    module_id INT,
+    title VARCHAR(255),
+    content TEXT,
+    media_url VARCHAR(255),
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+);
+
+CREATE TABLE IF NOT EXISTS progress (
+    progress_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    module_id INT,
+    completed_lessons TEXT,
+    quiz_passed BOOLEAN DEFAULT FALSE,
+    quiz_score INT DEFAULT 0,
+    status ENUM('not_started', 'in_progress', 'completed') DEFAULT 'not_started',
+    completion_date DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+);
+
+CREATE TABLE IF NOT EXISTS certifications (
+    cert_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    module_id INT,
+    title VARCHAR(255),
+    status VARCHAR(100) DEFAULT 'Pending',
+    issue_date DATETIME,
+    expiry_date DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+);
+
+CREATE TABLE IF NOT EXISTS courses (
+    course_id VARCHAR(50) PRIMARY KEY,
+    course_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    total_contact_hours INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS course_id VARCHAR(50) NULL;
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Published';
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS criteria TEXT NULL;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS lesson_type VARCHAR(50) DEFAULT 'Text';
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
+ALTER TABLE progress ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0;
+ALTER TABLE certifications ADD COLUMN IF NOT EXISTS certificate_code VARCHAR(120) NULL;
+
+CREATE TABLE IF NOT EXISTS course_resources (
+    resource_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(120) DEFAULT 'application/octet-stream',
+    size_bytes BIGINT UNSIGNED DEFAULT 0,
+    file_url VARCHAR(512) NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+    INDEX idx_course_resources_course_uploaded (course_id, uploaded_at)
+);
+
+CREATE TABLE IF NOT EXISTS course_enrollments (
+    enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    course_id VARCHAR(50) NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    decided_at DATETIME NULL,
+    decision_note TEXT NULL,
+    UNIQUE KEY uniq_course_enrollment (user_id, course_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS course_module_items (
+  item_id INT AUTO_INCREMENT PRIMARY KEY,
+  module_id INT NOT NULL,
+  course_id VARCHAR(64) NOT NULL,
+  item_type ENUM('page','text','file','image','video','link','quiz','checklist') NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  content LONGTEXT NULL,
+  external_url VARCHAR(1000) NULL,
+  file_name VARCHAR(255) NULL,
+  stored_name VARCHAR(255) NULL,
+  mime_type VARCHAR(120) NULL,
+  size_bytes BIGINT DEFAULT 0,
+  file_url VARCHAR(1000) NULL,
+  quiz_json JSON NULL,
+  checklist_json JSON NULL,
+  status ENUM('published','draft') DEFAULT 'published',
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_module_items_module_sort (module_id, sort_order, item_id),
+  INDEX idx_module_items_course (course_id),
+  CONSTRAINT fk_course_module_items_module_id
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS canvas_item_progress (
+  progress_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  course_id VARCHAR(64) NOT NULL,
+  module_id INT NOT NULL,
+  item_id INT NOT NULL,
+  item_type ENUM('page','text','file','image','video','link','quiz','checklist') NOT NULL,
+  status ENUM('not_started','in_progress','completed') NOT NULL DEFAULT 'not_started',
+  completed_at DATETIME NULL,
+  last_viewed_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_canvas_progress_user_course_module_item (user_id, course_id, module_id, item_id),
+  INDEX idx_canvas_progress_user_module (user_id, module_id),
+  INDEX idx_canvas_progress_item (item_id),
+  CONSTRAINT fk_canvas_progress_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_canvas_progress_module
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_canvas_progress_item
+    FOREIGN KEY (item_id) REFERENCES course_module_items(item_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS canvas_quiz_attempts (
+  attempt_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  course_id VARCHAR(64) NOT NULL,
+  module_id INT NOT NULL,
+  item_id INT NOT NULL,
+  selected_answer TEXT NULL,
+  correct_answer TEXT NULL,
+  is_correct BOOLEAN NOT NULL DEFAULT FALSE,
+  score_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+  attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_canvas_quiz_user_item_attempted (user_id, item_id, attempted_at),
+  INDEX idx_canvas_quiz_user_module (user_id, module_id),
+  CONSTRAINT fk_canvas_quiz_attempt_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_canvas_quiz_attempt_module
+    FOREIGN KEY (module_id) REFERENCES training_modules(module_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_canvas_quiz_attempt_item
+    FOREIGN KEY (item_id) REFERENCES course_module_items(item_id)
+    ON DELETE CASCADE
+);
 
 START TRANSACTION;
 
