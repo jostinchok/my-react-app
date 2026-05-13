@@ -8,7 +8,7 @@ Current branch and remote state:
 
 - Active branch: `shared-default-style-v12`
 - Repository: `jostinchok/my-react-app`
-- Current local HEAD: `1acf59e2e` (`Polish admin sidebar for final demo`)
+- Current local HEAD: `dcf4e259a` (`Prepare final demo documentation and admin incident wording`)
 - `origin/shared-default-style-v12` points to the same commit as local HEAD.
 - The branch has no upstream configured locally, but the remote branch exists.
 - Do not switch to or edit `main` for final-demo work.
@@ -26,9 +26,24 @@ Verified live system status on 2026-05-13:
 - Official incident status updates are Admin-only through `statusUpdateRoles=["admin"]`.
 - Ranger recommendation submission is enabled for Ranger roles through the recommendation endpoint; it must not mutate official incident status.
 
+Latest evidence capture on 2026-05-13:
+
+- Local screenshots were captured under `docs/demo-evidence/2026-05-13/` for backend health, Admin API health, Admin dashboard, Admin Incident Detection, Park Ranger Console, Ranger Review, Sensor Rules, Backend Map, Guide Account Management, and the Edit Guide Account modal.
+- `git status --short --branch` confirmed `shared-default-style-v12`; before screenshot capture the only untracked path was `user_login/server/data/`.
+- Main backend health returned `status=ok`, `persistence=mysql`, 51 incidents, MQTT connected, `deviceTokenAuthEnabled=true`, `roleCheckEnabled=true`, and `statusUpdateRoles=["admin"]`.
+- Admin API health returned `status=ok` and `Admin backend connected to MySQL`.
+- Admin route probes returned HTTP 200 for `/admin`, `/admin/detection`, `/admin/ranger`, `/admin/ranger-review`, `/admin/sensor-rules`, `/admin/backend-map`, and `/admin/students`.
+- Admin official status update verification returned HTTP 200.
+- Park Ranger official status update verification returned HTTP 403.
+- Park Ranger recommendation verification returned HTTP 201 and the official incident status stayed unchanged.
+- Concrete AI evidence check returned HTTP 200 for `/evidence/ai/2026-04-30_01-06-19_alert_TouchingWildlife.jpg`.
+- Concrete IoT evidence check returned HTTP 200 for `/evidence/iot/IOT-BROWSER-2026-05-01T11-56-58-221Z-1777636623157.jpg`.
+- Admin Incident Detection text verification found the visible plant label `Plucking Plants` and did not find the deprecated plant label.
+- Park Ranger Console text verification found recommendation wording and no official status-change buttons.
+
 Already pushed:
 
-- The current branch state through `1acf59e2e` is already present on `origin/shared-default-style-v12`.
+- The current branch state through `dcf4e259a` is already present on `origin/shared-default-style-v12`.
 - Sprint #2 project claims are preserved as prototype-level AI/IoT incident workflow, MySQL incident persistence, MQTT support, device-token security, and role-based Admin/Ranger incident handling.
 - Admin can perform official incident status updates.
 - Park Ranger can view incidents, add field notes, and submit recommendations only.

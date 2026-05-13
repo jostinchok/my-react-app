@@ -126,6 +126,54 @@ Run the required old plant-wording scan from the final verification checklist.
 
 Expected result: no matches for the old user-facing wording. Internal plant-class aliases may remain only where needed for the old AI model compatibility layer.
 
+## 10. Evidence Capture - 2026-05-13
+
+Scope:
+
+- Branch: `shared-default-style-v12`
+- HEAD verified locally: `dcf4e259a`
+- Before screenshot capture, the only untracked path was `user_login/server/data/`.
+- No `user_page` UI/UX files were modified during this evidence pass.
+
+Local screenshots:
+
+```text
+docs/demo-evidence/2026-05-13/main-backend-health.jpg
+docs/demo-evidence/2026-05-13/admin-api-health.jpg
+docs/demo-evidence/2026-05-13/admin-dashboard.jpg
+docs/demo-evidence/2026-05-13/admin-detection.jpg
+docs/demo-evidence/2026-05-13/ranger-console.jpg
+docs/demo-evidence/2026-05-13/ranger-review.jpg
+docs/demo-evidence/2026-05-13/sensor-rules.jpg
+docs/demo-evidence/2026-05-13/backend-map.jpg
+docs/demo-evidence/2026-05-13/guide-account-management.jpg
+docs/demo-evidence/2026-05-13/guide-edit-modal.jpg
+```
+
+Verified endpoint and route status:
+
+- `http://localhost:4000/api/health`: OK, MySQL active, 51 incidents, MQTT connected, device-token auth enabled, role checks enabled.
+- `http://localhost:4002/api/health`: OK, Admin backend connected to MySQL.
+- `http://localhost:5174/admin`: HTTP 200.
+- `http://localhost:5174/admin/detection`: HTTP 200.
+- `http://localhost:5174/admin/ranger`: HTTP 200.
+- `http://localhost:5174/admin/ranger-review`: HTTP 200.
+- `http://localhost:5174/admin/sensor-rules`: HTTP 200.
+- `http://localhost:5174/admin/backend-map`: HTTP 200.
+- `http://localhost:5174/admin/students`: HTTP 200.
+- Edit Guide Account modal: visible in the captured `guide-edit-modal.jpg`.
+- Concrete AI evidence: `http://localhost:4000/evidence/ai/2026-04-30_01-06-19_alert_TouchingWildlife.jpg` returned HTTP 200.
+- Concrete IoT evidence: `http://localhost:4000/evidence/iot/IOT-BROWSER-2026-05-01T11-56-58-221Z-1777636623157.jpg` returned HTTP 200.
+
+Verified Admin/Ranger boundary:
+
+- Admin official status update returned HTTP 200.
+- Park Ranger official status update returned HTTP 403.
+- Park Ranger recommendation returned HTTP 201.
+- Official incident status stayed `New` after the Ranger recommendation.
+- Admin Incident Detection showed `Plucking Plants` for plant-related incidents and the deprecated plant label was absent from the page text.
+- Park Ranger Console showed recommendation wording and did not expose official status-change buttons.
+
 
 ## V11 User Portal polish checks
 

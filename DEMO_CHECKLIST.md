@@ -145,5 +145,6 @@ git diff --check
 node --check scripts/dev-all.mjs
 node --check scripts/hub-server.mjs
 node --check user_login/server/index.js
+npm --prefix admin_page run build
 git status --short --branch
 ```
