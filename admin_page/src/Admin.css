@@ -3106,3 +3106,406 @@ body {
 .canvas-builder-dialog .Mui-focused .MuiOutlinedInput-notchedOutline {
   border-color: #ff7a1a !important;
 }
+
+
+/* V23 Admin and User Portal visual alignment */
+.admin-sidebar,
+.MuiDrawer-paper .admin-sidebar {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 210, 63, 0.24), transparent 9rem),
+    radial-gradient(circle at 92% 22%, rgba(168, 230, 74, 0.18), transparent 12rem),
+    linear-gradient(180deg, #06402a 0%, #0b3b28 54%, #073421 100%) !important;
+  color: #fff8e6 !important;
+  box-shadow: 18px 0 45px rgba(11, 59, 40, 0.16);
+}
+
+.admin-sidebar-header {
+  min-height: 92px;
+  padding: 18px 18px 16px;
+  border-bottom: 1px solid rgba(255, 248, 230, 0.1) !important;
+  background: rgba(255, 248, 230, 0.04);
+}
+
+.admin-sidebar-title {
+  color: #fff8e6 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em;
+}
+
+.admin-sidebar-badge {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  background: #fff8e6 !important;
+  border: 1px solid rgba(255, 210, 63, 0.4);
+  box-shadow: 0 10px 24px rgba(255, 122, 26, 0.18);
+}
+
+.admin-sidebar-logo {
+  border-radius: 10px !important;
+}
+
+.nav-item {
+  min-height: 54px !important;
+  margin: 4px 14px !important;
+  padding: 10px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: rgba(255, 248, 230, 0.86) !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.nav-item:hover {
+  transform: translateX(2px);
+  background: rgba(255, 248, 230, 0.1) !important;
+  border-color: rgba(255, 210, 63, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.nav-item.active,
+.nav-item.Mui-selected {
+  background: linear-gradient(135deg, rgba(27, 122, 73, 0.96), rgba(47, 143, 78, 0.96)) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 210, 63, 0.24) !important;
+  box-shadow: inset 4px 0 0 #ffd23f, 0 12px 24px rgba(0, 0, 0, 0.16) !important;
+}
+
+.nav-item .nav-label,
+.nav-item span,
+.nav-item svg {
+  color: inherit !important;
+}
+
+.admin-sidebar-footer {
+  margin-top: auto;
+  padding: 16px 18px;
+  border-top: 1px solid rgba(255, 248, 230, 0.1) !important;
+  color: rgba(255, 248, 230, 0.68) !important;
+}
+
+.admin-sidebar-version {
+  color: rgba(255, 248, 230, 0.68) !important;
+}
+
+.admin-dashboard-shell,
+.admin-linked-page {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 210, 63, 0.22), transparent 24rem),
+    radial-gradient(circle at 94% 10%, rgba(168, 230, 74, 0.18), transparent 20rem),
+    linear-gradient(135deg, #fffdf4 0%, #eff7e8 50%, #fff4dd 100%) !important;
+}
+
+.admin-top-brand-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #fff8e6;
+  border: 1px solid rgba(255, 210, 63, 0.5);
+}
+
+.admin-top-brand-copy span {
+  color: #0b3b28 !important;
+  font-weight: 950 !important;
+}
+
+.admin-top-brand-copy strong {
+  color: #ff7a1a !important;
+  font-weight: 950 !important;
+}
+
+.admin-top-icon-btn,
+.admin-top-user-btn {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 18px rgba(255, 122, 26, 0.12);
+}
+
+.admin-top-user-btn {
+  background: linear-gradient(135deg, #ff7a1a, #ffd23f) !important;
+  color: #102419 !important;
+}
+
+.admin-hero-banner,
+.incident-hero,
+.ranger-header {
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 248, 230, 0.56) !important;
+  box-shadow: 0 22px 54px rgba(255, 122, 26, 0.14), 0 12px 30px rgba(11, 59, 40, 0.12) !important;
+}
+
+.admin-dashboard-card,
+.incident-stat-card,
+.ranger-stat-card,
+.incident-table-panel,
+.incident-detail-panel,
+.ranger-table-panel,
+.ranger-detail-panel {
+  border-radius: 18px !important;
+  border-color: #eadfbd !important;
+  box-shadow: 0 14px 30px rgba(11, 59, 40, 0.08) !important;
+}
+
+.admin-dashboard-card::before {
+  background: linear-gradient(90deg, #ff7a1a, #ffd23f, #a8e64a) !important;
+}
+
+.admin-dashboard-card-top span {
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #0b3b28, #175f3e) !important;
+}
+
+.admin-dashboard-card.tone-citrus .admin-dashboard-card-top span,
+.admin-dashboard-card.tone-amber .admin-dashboard-card-top span {
+  background: linear-gradient(135deg, #ff7a1a, #ffd23f) !important;
+  color: #102419 !important;
+}
+
+.admin-dashboard-card.tone-lime .admin-dashboard-card-top span,
+.admin-dashboard-card.tone-healthy .admin-dashboard-card-top span {
+  background: linear-gradient(135deg, #175f3e, #a8e64a) !important;
+}
+
+.incident-filter-row .MuiButton-root,
+.incident-detail-button,
+.incident-status-actions .MuiButton-root,
+.ranger-console .MuiButton-root {
+  border-radius: 12px !important;
+  text-transform: none !important;
+  font-weight: 900 !important;
+}
+
+.incident-detail-button,
+.incident-filter-row .MuiButton-root.active,
+.incident-status-actions .MuiButton-root.active {
+  background: linear-gradient(135deg, #ff7a1a, #ffd23f) !important;
+  color: #102419 !important;
+}
+
+@media (max-width: 900px) {
+  .nav-item {
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+  }
+}
+
+
+/* V24 Citrus Energetic 2.0: grouped Admin command rail */
+.admin-command-rail {
+  background:
+    radial-gradient(circle at 48% 0%, rgba(255, 214, 107, 0.12), transparent 10rem),
+    linear-gradient(180deg, #062f20 0%, #0b3b28 52%, #062f20 100%) !important;
+}
+
+.admin-command-brand {
+  min-height: 96px !important;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 20px 18px !important;
+}
+
+.admin-command-brand-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.admin-command-brand-copy .admin-sidebar-title {
+  color: #fffdf4 !important;
+  font-size: 1.05rem !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+}
+
+.admin-command-brand-copy span {
+  color: rgba(255, 253, 244, 0.68);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.admin-command-menu {
+  flex: 1;
+  padding: 12px 12px 18px !important;
+  overflow-y: auto;
+  gap: 14px !important;
+}
+
+.admin-nav-group {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-nav-group-title {
+  margin: 10px 10px 4px !important;
+  color: rgba(255, 253, 244, 0.46) !important;
+  font-size: 0.68rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+}
+
+.admin-command-item,
+.nav-item.admin-command-item {
+  min-height: 46px !important;
+  margin: 0 !important;
+  padding: 9px 12px !important;
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px !important;
+  border-radius: 15px !important;
+  text-decoration: none;
+}
+
+.admin-command-item .nav-icon {
+  width: 30px !important;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(255, 253, 244, 0.12);
+  font-size: 0.95rem !important;
+}
+
+.admin-command-item .nav-label {
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 850;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-command-item.active .nav-icon {
+  background: linear-gradient(135deg, #ff8a1f, #ffd66b);
+  color: #102419 !important;
+}
+
+.admin-command-footer {
+  padding: 14px 18px 18px !important;
+}
+
+.admin-command-footer span {
+  display: block;
+  margin-top: 3px;
+  color: rgba(255, 253, 244, 0.5);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.admin-dashboard-shell,
+.admin-linked-page {
+  background:
+    radial-gradient(circle at 96% 4%, rgba(168, 230, 74, 0.13), transparent 24rem),
+    linear-gradient(135deg, #fffdf4 0%, #f5faee 52%, #fff8e6 100%) !important;
+}
+
+.incident-hero {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(168, 230, 74, 0.28), transparent 15rem),
+    linear-gradient(135deg, #fff8e6 0%, #ffe3aa 46%, #eef9d6 100%) !important;
+}
+
+.ranger-header {
+  background:
+    radial-gradient(circle at 86% 10%, rgba(255, 214, 107, 0.26), transparent 16rem),
+    linear-gradient(135deg, #062f20 0%, #0b3b28 62%, #175f3e 100%) !important;
+}
+
+.admin-hero-banner {
+  background:
+    radial-gradient(circle at 86% 8%, rgba(168, 230, 74, 0.22), transparent 15rem),
+    linear-gradient(135deg, #102419 0%, #0b3b28 58%, #175f3e 100%) !important;
+}
+
+.admin-dashboard-card::before,
+.stat-card::before,
+.module-card::before,
+.certificate-card::before {
+  background: linear-gradient(90deg, #0b3b28, #ff8a1f, #a8e64a) !important;
+}
+
+@media (max-width: 900px) {
+  .admin-command-brand-copy span,
+  .admin-nav-group-title {
+    display: none;
+  }
+}
+
+
+/* V27.1 Admin edit modal visibility fix */
+.MuiDialog-root .MuiDialog-paper,
+.MuiModal-root .MuiDialog-paper {
+  background: #fffdf4 !important;
+  color: #102419 !important;
+  border-radius: 22px !important;
+  border: 1px solid #e7ddc4 !important;
+  box-shadow: 0 24px 80px rgba(16, 36, 25, 0.28) !important;
+}
+
+.MuiDialog-root .MuiDialogTitle-root,
+.MuiDialog-root .MuiDialogContent-root,
+.MuiDialog-root .MuiDialogActions-root,
+.MuiDialog-root .MuiDialog-paper * {
+  color: #102419 !important;
+}
+
+.MuiDialog-root .MuiInputLabel-root,
+.MuiDialog-root .MuiFormLabel-root {
+  color: #496154 !important;
+  font-weight: 800 !important;
+}
+
+.MuiDialog-root .MuiInputLabel-root.Mui-focused,
+.MuiDialog-root .MuiFormLabel-root.Mui-focused {
+  color: #0b3b28 !important;
+}
+
+.MuiDialog-root .MuiInputBase-root,
+.MuiDialog-root .MuiOutlinedInput-root,
+.MuiDialog-root .MuiSelect-select,
+.MuiDialog-root input,
+.MuiDialog-root textarea {
+  background: #fffdf4 !important;
+  color: #102419 !important;
+  font-weight: 750 !important;
+}
+
+.MuiDialog-root .MuiOutlinedInput-notchedOutline {
+  border-color: #e7ddc4 !important;
+}
+
+.MuiDialog-root .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #ffb347 !important;
+}
+
+.MuiDialog-root .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #ff8a1f !important;
+  border-width: 2px !important;
+}
+
+.MuiDialog-root .MuiInputBase-input::placeholder {
+  color: #879287 !important;
+  opacity: 1 !important;
+}
+
+.MuiDialog-root .MuiSelect-icon {
+  color: #102419 !important;
+}
+
+.MuiDialog-root .MuiButton-root {
+  font-weight: 900 !important;
+  text-transform: none !important;
+}
+
+.MuiDialog-root .MuiButton-contained,
+.MuiDialog-root button[type="submit"] {
+  background: linear-gradient(135deg, #ff8a1f, #ffd66b) !important;
+  color: #102419 !important;
+  box-shadow: 0 10px 22px rgba(255, 138, 31, 0.24) !important;
+}
+
+.MuiDialog-root .MuiButton-text,
+.MuiDialog-root .MuiButton-outlined {
+  color: #102419 !important;
+}
