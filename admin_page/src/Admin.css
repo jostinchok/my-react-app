@@ -3509,3 +3509,181 @@ body {
 .MuiDialog-root .MuiButton-outlined {
   color: #102419 !important;
 }
+
+/* V28 presentation readability layer: keep dense admin screens usable across widths. */
+.admin-dashboard-shell,
+.admin-linked-page,
+.incident-dashboard,
+.ranger-console,
+.ranger-standalone-shell {
+  color: #102419;
+  line-height: var(--sfc-readable-line, 1.55);
+}
+
+.admin-dashboard-shell *,
+.admin-linked-page *,
+.incident-dashboard *,
+.ranger-console *,
+.ranger-standalone-shell * {
+  min-width: 0;
+}
+
+.admin-dashboard-shell .MuiTypography-root,
+.admin-linked-page .MuiTypography-root,
+.incident-dashboard .MuiTypography-root,
+.ranger-console .MuiTypography-root,
+.ranger-standalone-shell .MuiTypography-root,
+.admin-dashboard-shell p,
+.admin-linked-page p,
+.incident-dashboard p,
+.ranger-console p {
+  overflow-wrap: anywhere;
+}
+
+.admin-dashboard-shell .MuiButton-root,
+.admin-linked-page .MuiButton-root,
+.incident-dashboard .MuiButton-root,
+.ranger-console .MuiButton-root,
+.ranger-standalone-shell .MuiButton-root {
+  min-height: var(--sfc-control-min, 40px);
+  max-width: 100%;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
+.admin-dashboard-shell .MuiButton-root:focus-visible,
+.admin-linked-page .MuiButton-root:focus-visible,
+.incident-dashboard .MuiButton-root:focus-visible,
+.ranger-console .MuiButton-root:focus-visible,
+.ranger-standalone-shell .MuiButton-root:focus-visible {
+  outline: 3px solid #ff8a1f !important;
+  outline-offset: 3px;
+  box-shadow: var(--sfc-focus-ring, 0 0 0 4px rgba(255, 122, 26, 0.22)) !important;
+}
+
+.admin-dashboard-shell .MuiChip-root,
+.admin-linked-page .MuiChip-root,
+.incident-dashboard .MuiChip-root,
+.ranger-console .MuiChip-root {
+  max-width: 100%;
+  border-radius: 999px !important;
+  font-weight: 850 !important;
+}
+
+.admin-dashboard-shell .MuiChip-label,
+.admin-linked-page .MuiChip-label,
+.incident-dashboard .MuiChip-label,
+.ranger-console .MuiChip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-dashboard-shell .MuiTableContainer-root,
+.admin-linked-page .MuiTableContainer-root,
+.incident-dashboard .MuiTableContainer-root,
+.ranger-console .MuiTableContainer-root {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-dashboard-shell .MuiTableCell-root,
+.admin-linked-page .MuiTableCell-root,
+.incident-dashboard .MuiTableCell-root,
+.ranger-console .MuiTableCell-root {
+  color: #102419 !important;
+  vertical-align: middle;
+}
+
+.admin-dashboard-shell .MuiTableHead-root .MuiTableCell-root,
+.admin-linked-page .MuiTableHead-root .MuiTableCell-root,
+.incident-dashboard .MuiTableHead-root .MuiTableCell-root,
+.ranger-console .MuiTableHead-root .MuiTableCell-root {
+  background: #fff8e6 !important;
+  color: #0b3b28 !important;
+  font-weight: 950 !important;
+}
+
+.admin-dashboard-shell .MuiInputBase-root,
+.admin-linked-page .MuiInputBase-root,
+.incident-dashboard .MuiInputBase-root,
+.ranger-console .MuiInputBase-root,
+.admin-dashboard-shell .MuiSelect-select,
+.admin-linked-page .MuiSelect-select,
+.incident-dashboard .MuiSelect-select,
+.ranger-console .MuiSelect-select {
+  background: #fffdf8 !important;
+  color: #102419 !important;
+}
+
+.admin-dashboard-shell .MuiInputLabel-root,
+.admin-linked-page .MuiInputLabel-root,
+.incident-dashboard .MuiInputLabel-root,
+.ranger-console .MuiInputLabel-root,
+.admin-dashboard-shell .MuiFormLabel-root,
+.admin-linked-page .MuiFormLabel-root,
+.incident-dashboard .MuiFormLabel-root,
+.ranger-console .MuiFormLabel-root {
+  color: #42584c !important;
+  font-weight: 750 !important;
+}
+
+.incident-stat-grid,
+.ranger-stat-grid,
+.admin-dashboard-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+
+@media (max-width: 900px) {
+  .admin-dashboard-shell,
+  .admin-linked-page {
+    padding: 16px;
+  }
+
+  .admin-hero-banner,
+  .incident-hero,
+  .ranger-header {
+    border-radius: 18px !important;
+    padding: 22px !important;
+  }
+
+  .incident-title,
+  .ranger-title {
+    font-size: clamp(1.75rem, 10vw, 2.75rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .admin-hero-chip-row,
+  .incident-status-actions,
+  .ranger-recommendation-actions {
+    width: 100%;
+  }
+
+  .incident-status-actions .MuiButton-root,
+  .ranger-recommendation-actions .MuiButton-root {
+    flex: 1 1 180px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-dashboard-shell,
+  .admin-linked-page {
+    padding: 12px;
+  }
+
+  .admin-dashboard-card .MuiCardContent-root,
+  .incident-table-panel,
+  .incident-detail-panel,
+  .ranger-table-panel,
+  .ranger-detail-panel {
+    padding: 16px !important;
+  }
+
+  .admin-top-brand-copy strong,
+  .admin-hero-chip-row span,
+  .incident-page-brand,
+  .ranger-boundary-card span {
+    white-space: normal !important;
+  }
+}

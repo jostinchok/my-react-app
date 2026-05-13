@@ -61,6 +61,12 @@
   --ce-muted: #607166;
   --ce-shadow: 0 20px 52px rgba(23, 95, 62, 0.12);
 
+  /* Default reusable presentation polish tokens. */
+  --sfc-focus-ring: 0 0 0 4px rgba(255, 122, 26, 0.22);
+  --sfc-readable-line: 1.55;
+  --sfc-page-max: 1440px;
+  --sfc-control-min: 40px;
+
   font-family: var(--sfc-font-main);
   color: var(--sfc-charcoal);
   background: var(--sfc-cream);
@@ -177,4 +183,21 @@ button {
   background:
     radial-gradient(circle at top left, rgba(255, 210, 63, 0.3), transparent 28rem),
     linear-gradient(135deg, #fffdf4 0%, #eff7e8 42%, #fff4dd 100%);
+}
+
+.sfc-text-wrap {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.sfc-scroll-x {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sfc-focusable:focus-visible {
+  outline: 3px solid var(--sfc-citrus);
+  outline-offset: 3px;
+  box-shadow: var(--sfc-focus-ring);
 }

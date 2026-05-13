@@ -23,6 +23,7 @@ Scope lock:
 - [ ] Confirm MySQL is running before demo startup.
 - [ ] Confirm `http://localhost:4000/api/health` reports MySQL incident persistence, `fallback=none`, MQTT enabled/connected, device-token auth enabled, and role checks enabled.
 - [ ] Confirm `http://localhost:4002/api/health` reports the Admin API connected to MySQL.
+- [x] Confirm Login UI demo accounts authenticate through the backend: Admin Demo, User 1-3, and Ranger 1-3.
 - [ ] Confirm `http://localhost:5174/admin` loads before presenting.
 - [ ] Confirm Admin Dashboard, Incidents, Ranger Review, Sensor Rules, Backend Map, Guide Account Management, and Edit Guide Account modal are reachable.
 - [ ] Confirm AI/IoT Incident Operations loads without crashing.

@@ -61,6 +61,16 @@ const AI_CAMERA_TOKEN = process.env.AI_CAMERA_TOKEN || ''
 const IOT_SENSOR_TOKEN = process.env.IOT_SENSOR_TOKEN || ''
 const ALLOWED_STATUS_ACTOR_ROLES = new Set(['admin'])
 const ALLOWED_RANGER_RECOMMENDATION_ROLES = new Set(['ranger', 'park_ranger'])
+const DEMO_AUTH_PASSWORD = '1234'
+const DEMO_AUTH_ACCOUNTS = [
+  { name: 'Admin Demo', email: 'admin@example.com', role: 'admin' },
+  { name: 'User 1', email: 'user1@demo.local', role: 'guide', assignedPark: 'Bako National Park' },
+  { name: 'User 2', email: 'user2@demo.local', role: 'guide', assignedPark: 'Semenggoh Nature Reserve' },
+  { name: 'User 3', email: 'user3@demo.local', role: 'guide', assignedPark: 'Gunung Mulu National Park' },
+  { name: 'Ranger 1', email: 'ranger1@demo.local', role: 'ranger', assignedPark: 'Bako National Park' },
+  { name: 'Ranger 2', email: 'ranger2@demo.local', role: 'ranger', assignedPark: 'Semenggoh Nature Reserve' },
+  { name: 'Ranger 3', email: 'ranger3@demo.local', role: 'ranger', assignedPark: 'Gunung Mulu National Park' },
+]
 
 const mqttState = {
   enabled: MQTT_ENABLED,
@@ -106,6 +116,99 @@ const incidentStorageInfo = () => ({
 })
 
 const errorMessage = (error) => error?.message || error?.code || String(error)
+
+const getGuideProfileColumns = async () => {
+  try {
+    const [columns] = await pool.query('SHOW COLUMNS FROM guide_profiles')
+    return new Set(columns.map((column) => column.Field))
+  } catch (error) {
+    console.warn(`[auth] Demo guide profile sync skipped: ${errorMessage(error)}`)
+    return new Set()
+  }
+}
+
+const upsertDemoGuideProfile = async (userId, account, profileColumns) => {
+  if (!profileColumns.has('guide_id')) return
+
+  const profileValues = {
+    guide_id: userId,
+    phone: '',
+    organization: 'Sarawak Forestry Corporation',
+    birthday: null,
+    years_experience: 2,
+    address: `${account.assignedPark || 'Sarawak park'} demo profile`,
+    assigned_park: account.assignedPark || null,
+    avatar_url: '',
+    status: 'active',
+  }
+
+  const columnsToWrite = [
+    'guide_id',
+    'phone',
+    'organization',
+    'birthday',
+    'years_experience',
+    'address',
+    'assigned_park',
+    'avatar_url',
+    'status',
+  ].filter((column) => profileColumns.has(column))
+
+  const updateColumns = columnsToWrite.filter((column) => column !== 'guide_id')
+  const placeholders = columnsToWrite.map(() => '?').join(', ')
+  const updates = updateColumns.length
+    ? updateColumns.map((column) => `${column} = VALUES(${column})`).join(', ')
+    : 'guide_id = guide_id'
+
+  await pool.query(
+    `INSERT INTO guide_profiles (${columnsToWrite.join(', ')})
+     VALUES (${placeholders})
+     ON DUPLICATE KEY UPDATE ${updates}`,
+    columnsToWrite.map((column) => profileValues[column])
+  )
+}
+
+const ensureDemoAuthAccounts = async () => {
+  try {
+    await pool.query("INSERT IGNORE INTO roles (role_name) VALUES ('admin'), ('guide'), ('ranger')")
+
+    const [roleRows] = await pool.query(
+      "SELECT role_id, role_name FROM roles WHERE role_name IN ('admin', 'guide', 'ranger')"
+    )
+    const roleIds = Object.fromEntries(roleRows.map((row) => [row.role_name, row.role_id]))
+    const passwordHash = await bcrypt.hash(DEMO_AUTH_PASSWORD, 10)
+    const profileColumns = await getGuideProfileColumns()
+
+    for (const account of DEMO_AUTH_ACCOUNTS) {
+      const roleId = roleIds[account.role]
+      if (!roleId) {
+        console.warn(`[auth] Demo account skipped because role is missing: ${account.email}`)
+        continue
+      }
+
+      await pool.query(
+        `INSERT INTO users (role_id, name, email, password_hash)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           role_id = VALUES(role_id),
+           name = VALUES(name),
+           password_hash = VALUES(password_hash)`,
+        [roleId, account.name, account.email, passwordHash]
+      )
+
+      if (account.role === 'guide') {
+        const [userRows] = await pool.query('SELECT user_id FROM users WHERE email = ? LIMIT 1', [account.email])
+        if (userRows[0]?.user_id) {
+          await upsertDemoGuideProfile(userRows[0].user_id, account, profileColumns)
+        }
+      }
+    }
+
+    console.log(`[auth] Demo login accounts ready: ${DEMO_AUTH_ACCOUNTS.map((account) => account.email).join(', ')}`)
+  } catch (error) {
+    console.warn(`[auth] Demo login accounts were not seeded: ${errorMessage(error)}`)
+  }
+}
 
 const readJsonFile = async (filePath) => {
   try {
@@ -422,7 +525,7 @@ const rangerRecommendationActorFromRequest = (req) => {
 
   return {
     allowed: true,
-    actorRole,
+    actorRole: actorRole === 'ranger' ? 'park_ranger' : actorRole,
     actorLabel: 'Park Ranger alert console',
   }
 }
@@ -987,6 +1090,7 @@ const startMqttBridge = () => {
 
 const startServer = async () => {
   await initializeIncidentStore()
+  await ensureDemoAuthAccounts()
 
   app.listen(port, async () => {
     let incidentCount = 'unavailable'

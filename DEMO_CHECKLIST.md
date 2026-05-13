@@ -76,6 +76,7 @@ npm run security:smoke
 ## 4. URLs To Open
 
 - Hub: `http://localhost:5173`
+- Login UI: `http://localhost:5176/login/`
 - Admin dashboard: `http://localhost:5174/admin`
 - Admin incidents: `http://localhost:5174/admin/detection`
 - Park Ranger recommendation console: `http://localhost:5174/admin/ranger`
@@ -89,20 +90,42 @@ npm run security:smoke
 - AI evidence route: `http://localhost:4000/evidence/ai`
 - IoT evidence route: `http://localhost:4000/evidence/iot`
 
+Demo login accounts:
+
+| Account | Email | Role | Password |
+| --- | --- | --- | --- |
+| Admin Demo | `admin@example.com` | Admin | `1234` |
+| User 1 | `user1@demo.local` | Park Guide | `1234` |
+| User 2 | `user2@demo.local` | Park Guide | `1234` |
+| User 3 | `user3@demo.local` | Park Guide | `1234` |
+| Ranger 1 | `ranger1@demo.local` | Park Ranger | `1234` |
+| Ranger 2 | `ranger2@demo.local` | Park Ranger | `1234` |
+| Ranger 3 | `ranger3@demo.local` | Park Ranger | `1234` |
+
+The main backend seeds these presentation accounts on startup when the MySQL auth schema is available. The login page also provides quick-pick buttons for the same account list.
+
 ## 5. Demo Order
 
 1. Open the hub and state that Sprint #2 is a prototype demo, not a production release.
-2. Open Admin Dashboard and show monitoring/training overview only at the level already reported.
-3. Open Admin Incidents and show AI/IoT Incident Operations.
-4. Select a plant-related AI incident and confirm the visible label says `Plucking Plants`.
-5. Show evidence and metadata from AI camera or IoT sensor rows.
-6. Change an official incident status as Admin.
-7. Open Park Ranger Console and add a field note.
-8. Submit a Ranger recommendation.
-9. Return to Admin Incidents and show Ranger recommendations are visible for Admin review.
-10. Open Ranger Review, Sensor Rules, Backend Map, and Guide Account Management to show the supporting admin surfaces.
-11. Open the Edit Guide Account modal from Guide Account Management only to prove visibility.
-12. Open backend health and explain MySQL, MQTT, evidence routes, device-token security, and role checks.
+2. Open Login UI only if you want to show role-specific entry points; use `Admin Demo`, `User 1`, or `Ranger 1`.
+3. Open Admin Dashboard and show monitoring/training overview only at the level already reported.
+4. Open Admin Incidents and show AI/IoT Incident Operations.
+5. Select a plant-related AI incident and confirm the visible label says `Plucking Plants`.
+6. Show evidence and metadata from AI camera or IoT sensor rows.
+7. Change an official incident status as Admin.
+8. Open Park Ranger Console and add a field note.
+9. Submit a Ranger recommendation.
+10. Return to Admin Incidents and show Ranger recommendations are visible for Admin review.
+11. Open Ranger Review, Sensor Rules, Backend Map, and Guide Account Management to show the supporting admin surfaces.
+12. Open the Edit Guide Account modal from Guide Account Management only to prove visibility.
+13. Open backend health and explain MySQL, MQTT, evidence routes, device-token security, and role checks.
+
+Presentation UI check:
+
+- Quickly resize the browser from desktop width to a narrow mobile-like width before the live demo.
+- Confirm Login remains scrollable and the demo account buttons do not overlap.
+- Confirm Admin tables scroll horizontally instead of clipping text.
+- Confirm buttons, chips, modal fields, and table headers remain readable against their backgrounds.
 
 ## 6. Backup Plans
 

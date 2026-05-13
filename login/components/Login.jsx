@@ -13,6 +13,16 @@ const ROLE_REDIRECTS = {
   ranger: `${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174/admin'}/ranger`,
 };
 
+const DEMO_ACCOUNTS = [
+  { label: 'Admin Demo', email: 'admin@example.com', password: '1234', role: 'admin', roleLabel: 'Admin' },
+  { label: 'User 1', email: 'user1@demo.local', password: '1234', role: 'guide', roleLabel: 'Park Guide' },
+  { label: 'User 2', email: 'user2@demo.local', password: '1234', role: 'guide', roleLabel: 'Park Guide' },
+  { label: 'User 3', email: 'user3@demo.local', password: '1234', role: 'guide', roleLabel: 'Park Guide' },
+  { label: 'Ranger 1', email: 'ranger1@demo.local', password: '1234', role: 'ranger', roleLabel: 'Park Ranger' },
+  { label: 'Ranger 2', email: 'ranger2@demo.local', password: '1234', role: 'ranger', roleLabel: 'Park Ranger' },
+  { label: 'Ranger 3', email: 'ranger3@demo.local', password: '1234', role: 'ranger', roleLabel: 'Park Ranger' },
+];
+
 const Login = ({ onRegister, onForgot }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +32,13 @@ const Login = ({ onRegister, onForgot }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+
+  const handleDemoAccountSelect = (account) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setRole(account.role);
+    setMessage({ text: `${account.label} selected. Press Login to continue.`, type: 'success' });
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -99,6 +116,28 @@ const Login = ({ onRegister, onForgot }) => {
         <option value="admin">Admin</option>
         <option value="ranger">Park Ranger</option>
       </select>
+      <section className="demo-account-panel" aria-label="Demo accounts">
+        <div className="demo-account-header">
+          <span className="demo-account-title">Demo accounts</span>
+          <span className="demo-account-password">Password: 1234</span>
+        </div>
+        <div className="demo-account-grid">
+          {DEMO_ACCOUNTS.map((account) => {
+            const active = email === account.email && role === account.role;
+            return (
+              <button
+                type="button"
+                className={`demo-account-button${active ? ' active' : ''}`}
+                key={account.email}
+                onClick={() => handleDemoAccountSelect(account)}
+              >
+                <span className="account-name">{account.label}</span>
+                <span className="account-role">{account.roleLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
       {message.text && (
         <p className={message.type === 'success' ? 'msg-success' : 'msg-error'}>
           {message.text}

@@ -36,7 +36,7 @@ Expected local routes:
 - Hub: `http://localhost:5173`
 - Admin UI: `http://localhost:5174/admin`
 - User Portal: `http://localhost:5175/user`
-- Login UI: `http://localhost:5176/login`
+- Login UI: `http://localhost:5176/login/`
 - Backend health: `http://localhost:4000/api/health`
 - User API health: `http://localhost:4001/api/health`
 - Admin API health: `http://localhost:4002/api/health`
@@ -131,7 +131,7 @@ Expected result: no matches for the old user-facing wording. Internal plant-clas
 Scope:
 
 - Branch: `shared-default-style-v12`
-- HEAD verified locally: `dcf4e259a`
+- Pre-promotion HEAD verified locally: `81101f68f`
 - Before screenshot capture, the only untracked path was `user_login/server/data/`.
 - No `user_page` UI/UX files were modified during this evidence pass.
 
@@ -173,6 +173,53 @@ Verified Admin/Ranger boundary:
 - Official incident status stayed `New` after the Ranger recommendation.
 - Admin Incident Detection showed `Plucking Plants` for plant-related incidents and the deprecated plant label was absent from the page text.
 - Park Ranger Console showed recommendation wording and did not expose official status-change buttons.
+
+## 11. Final Login Demo Account Check - 2026-05-13
+
+The login page provides quick-pick buttons for these presentation accounts:
+
+| Account | Email | Role | Password | Backend login check |
+| --- | --- | --- | --- | --- |
+| Admin Demo | `admin@example.com` | Admin | `1234` | HTTP 200 |
+| User 1 | `user1@demo.local` | Park Guide | `1234` | HTTP 200 |
+| User 2 | `user2@demo.local` | Park Guide | `1234` | HTTP 200 |
+| User 3 | `user3@demo.local` | Park Guide | `1234` | HTTP 200 |
+| Ranger 1 | `ranger1@demo.local` | Park Ranger | `1234` | HTTP 200 |
+| Ranger 2 | `ranger2@demo.local` | Park Ranger | `1234` | HTTP 200 |
+| Ranger 3 | `ranger3@demo.local` | Park Ranger | `1234` | HTTP 200 |
+
+Verified commands:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/login
+npm exec vite build
+
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+node --check user_login/server/index.js
+```
+
+Notes:
+
+- Backend startup ensures the same demo auth accounts when the MySQL auth schema is available.
+- This pass did not modify `user_page` UI/UX files.
+- Current untracked local-only paths after this pass are `docs/demo-evidence/` and `user_login/server/data/`.
+- Generated `login/dist` and `admin_page/dist` build output is ignored and must stay uncommitted.
+
+## 12. Final CSS Readability Check - 2026-05-13
+
+Verified after the CSS pass:
+
+- Login build passed from `login/` with `npm exec vite build`.
+- Admin build passed with `npm --prefix admin_page run build`; only the existing Vite large-chunk warning appeared.
+- `http://localhost:5176/login/` returned HTTP 200.
+- `http://localhost:5174/admin`, `/admin/detection`, `/admin/ranger`, `/admin/sensor-rules`, `/admin/backend-map`, and `/admin/students` returned HTTP 200.
+- No `user_page` files were modified.
+
+CSS scope:
+
+- `shared/default_style.css` received token aliases and opt-in utility classes only.
+- Admin readability polish lives in `admin_page/src/Admin.css`.
+- Login readability polish lives in `login/index.css` and `login/Login.css`.
 
 
 ## V11 User Portal polish checks

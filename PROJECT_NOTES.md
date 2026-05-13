@@ -8,10 +8,11 @@ Current branch and remote state:
 
 - Active branch: `shared-default-style-v12`
 - Repository: `jostinchok/my-react-app`
-- Current local HEAD: `dcf4e259a` (`Prepare final demo documentation and admin incident wording`)
-- `origin/shared-default-style-v12` points to the same commit as local HEAD.
+- Pre-promotion checkpoint: `81101f68f` (`Update final demo evidence verification notes`)
+- `origin/shared-default-style-v12` pointed to the same checkpoint before the final promotion pass.
+- The final login/demo-readiness and CSS touch-up changes are included in the final demo promotion commit.
 - The branch has no upstream configured locally, but the remote branch exists.
-- Do not switch to or edit `main` for final-demo work.
+- Do not switch to or edit `main` for future final-demo work unless the user explicitly asks. On 2026-05-13, the user explicitly requested pushing the final work to `main`.
 
 Verified live system status on 2026-05-13:
 
@@ -41,9 +42,28 @@ Latest evidence capture on 2026-05-13:
 - Admin Incident Detection text verification found the visible plant label `Plucking Plants` and did not find the deprecated plant label.
 - Park Ranger Console text verification found recommendation wording and no official status-change buttons.
 
+Final login/demo-readiness touch-up on 2026-05-13:
+
+- Login UI now has a compact demo account selector for `Admin Demo`, `User 1`, `User 2`, `User 3`, `Ranger 1`, `Ranger 2`, and `Ranger 3`.
+- Demo login password is `1234` for each listed account.
+- Main backend startup now ensures those demo auth accounts exist when the MySQL auth schema is available. No new auth API endpoint was added.
+- Live backend login verification returned HTTP 200 for all seven demo accounts at `POST http://localhost:4000/api/auth/login`.
+- Accepted Ranger recommendation headers are normalized to `park_ranger` for incident audit storage. Park Ranger still cannot officially change incident status.
+- `npm exec vite build` passed from `login/`.
+- Required checks passed: `git diff --check`, `node --check scripts/dev-all.mjs`, `node --check scripts/hub-server.mjs`, `node --check user_login/server/index.js`, and `npm --prefix admin_page run build`.
+- Admin production build completed with Vite's large-chunk warning only.
+
+Final CSS/readability touch-up on 2026-05-13:
+
+- Added safe reusable aliases/utilities to `shared/default_style.css`; no existing `user_page` selectors were edited.
+- Login now consumes the shared default style layer, has stronger focus states, safer small-height behavior, wrapped messages, and a responsive demo-account grid.
+- Admin now has a final readability layer for dense presentation screens: consistent table/header contrast, chip/button sizing, focus rings, form text contrast, horizontal table scrolling, and narrower breakpoint behavior.
+- `scripts/dev-all.mjs` now checks the actual Login route at `http://localhost:5176/login/`.
+- `git diff --check`, `node --check scripts/dev-all.mjs`, `node --check scripts/hub-server.mjs`, `node --check user_login/server/index.js`, `npm --prefix admin_page run build`, and `cd login && npm exec vite build` passed after the CSS pass.
+
 Already pushed:
 
-- The current branch state through `dcf4e259a` is already present on `origin/shared-default-style-v12`.
+- The checkpoint through `81101f68f` is already present on `origin/shared-default-style-v12`; the final promotion commit is intended for `main`.
 - Sprint #2 project claims are preserved as prototype-level AI/IoT incident workflow, MySQL incident persistence, MQTT support, device-token security, and role-based Admin/Ranger incident handling.
 - Admin can perform official incident status updates.
 - Park Ranger can view incidents, add field notes, and submit recommendations only.
@@ -60,6 +80,7 @@ Do not touch:
 Known local issues:
 
 - `user_login/server/data/` remains untracked runtime data and must stay uncommitted.
+- `docs/demo-evidence/` remains untracked local screenshot evidence and must stay uncommitted unless explicitly requested.
 - Existing MySQL/runtime incidents can still contain the legacy raw model event key for the old plant class. UI labels should display this as `Plucking Plants`; do not rewrite runtime database rows during final demo prep.
 - The AI dataset folder still uses a legacy local plant-class folder name; do not rename it unless the code and local assets are intentionally migrated later.
 - Public MQTT, local camera permissions, and MySQL service availability are environment-dependent.
