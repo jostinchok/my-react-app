@@ -1,5 +1,29 @@
 # Project Notes
 
+## Admin UI Polish Checkpoint - 2026-05-14
+
+This checkpoint is for the user-requested branch `final-admin-ui-polish`, based on `main`. It is an Admin UI/UX polish pass only: no backend logic, JWT/auth checks, role checks, database schema, migrations, or demo account logic were changed.
+
+Current polish state:
+
+- Active branch: `final-admin-ui-polish`
+- Base/local HEAD before the polish diff: `f9951caf1`
+- Screenshot evidence was captured locally under `docs/demo-evidence/admin-ui-polish/`; do not stage or commit that folder unless explicitly requested.
+- `ADMIN_UI_POLISH_EVIDENCE.md` records the exact screenshots, pages checked, role behavior check, and build/check results.
+- Existing local runtime/untracked paths remain local-only, including `user_login/server/data/` and `docs/demo-evidence/`.
+- Pre-existing root asset deletions shown by Git status were not part of this polish pass and were not reverted.
+
+Verified during this pass:
+
+- Admin Dashboard was checked with both collapsed and expanded sidebar states.
+- Admin pages checked by screenshot: `/admin`, `/admin/course`, `/admin/training`, `/admin/course-requests`, `/admin/students`, `/admin/certificates`, `/admin/detection`, `/admin/ranger-review`, `/admin/sensor-rules`, `/admin/backend-map`, `/admin/analytics`, `/admin/users`, `/admin/permissions`, `/admin/announcements`, `/admin/inbox`, `/admin/help-desk`, and `/admin/audit-log`.
+- Admin official status PATCH returned HTTP 200 using the selected incident's existing status.
+- Park Ranger official status PATCH returned HTTP 403.
+- Park Ranger recommendation returned HTTP 201 and the official incident status stayed unchanged.
+- Plant incident wording remains user-facing as `Plucking Plants`.
+- Required checks passed: `git diff --check`, `node --check scripts/dev-all.mjs`, `node --check scripts/hub-server.mjs`, `node --check user_login/server/index.js`, `npm --prefix admin_page run build`, `npm --prefix user_page run build`, and `cd login && npm exec vite build`.
+- The Admin build still reports Vite's existing large-chunk warning only.
+
 ## Final Presentation Status - 2026-05-13
 
 This checkpoint is for final presentation and real-time demo readiness only. Sprint #2 has already been submitted, so this branch should only receive documentation continuity updates and small demo-blocking admin/backend/AI-IoT fixes.

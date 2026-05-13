@@ -215,7 +215,7 @@ const TrainingModuleSetup = () => {
           ["Resources", totals.resources, "Course-level downloadable resources"],
           ["Hours", totals.hours, "Total contact hours"],
         ].map(([label, value, desc]) => (
-          <Grid item xs={12} sm={6} lg={2.4} key={label}>
+          <Grid item xs={12} sm={6} xl={2.4} key={label}>
             <Box sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">{label}</Typography>
               <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950 }}>

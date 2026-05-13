@@ -780,7 +780,7 @@ const CourseManagement = () => {
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
 
       <Grid container spacing={2.2} alignItems="flex-start">
-        <Grid item xs={12} lg={3}>
+        <Grid item xs={12} xl={3}>
           <Box sx={{ ...panelSx, p: 2.2, position: { lg: "sticky" }, top: { lg: 18 } }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
               <Box>
@@ -835,7 +835,7 @@ const CourseManagement = () => {
           </Box>
         </Grid>
 
-        <Grid item xs={12} lg={5.5}>
+        <Grid item xs={12} xl={5.5}>
           <Stack gap={2.2}>
             <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
@@ -1068,7 +1068,7 @@ const CourseManagement = () => {
           </Stack>
         </Grid>
 
-        <Grid item xs={12} lg={3.5}>
+        <Grid item xs={12} xl={3.5}>
           <Stack gap={2.2} sx={{ position: { lg: "sticky" }, top: { lg: 18 } }}>
             <Box sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">Builder inspector</Typography>

@@ -18,7 +18,7 @@ Scope lock:
 
 ## Final Demo Tasks
 
-- [ ] Keep working only on `main` for the final-demo hotfix unless the user explicitly changes branches.
+- [x] Keep current Admin UI polish work on `final-admin-ui-polish` per the user's latest instruction; do not switch branches unless explicitly asked.
 - [ ] Confirm `git status --short --branch` shows only intentional doc/admin/backend changes and does not include runtime files.
 - [ ] Confirm MySQL is running before demo startup.
 - [ ] Confirm `http://localhost:4000/api/health` reports MySQL incident persistence, `fallback=none`, MQTT enabled/connected, device-token auth enabled, and role checks enabled.
@@ -26,19 +26,22 @@ Scope lock:
 - [x] Confirm Login UI demo accounts authenticate through the backend: Admin Demo, User 1-3, and Ranger 1-3.
 - [x] Fix demo account switching lockout by raising the source auth limiter default and keeping CORS before auth rate limiting.
 - [x] Make User Portal Item Detail open directly to learning items for the final demo path.
-- [ ] Confirm `http://localhost:5174/admin` loads before presenting.
-- [ ] Confirm Admin Dashboard, Incidents, Ranger Review, Sensor Rules, Backend Map, Guide Account Management, and Edit Guide Account modal are reachable.
-- [ ] Confirm AI/IoT Incident Operations loads without crashing.
-- [ ] Confirm Admin can save official incident status updates.
-- [ ] Confirm Park Ranger can submit recommendations with field notes.
-- [ ] Confirm Park Ranger cannot officially resolve or close incidents through the status endpoint.
+- [x] Confirm `http://localhost:5174/admin` loads before presenting.
+- [x] Confirm Admin Dashboard, Incidents, Ranger Review, Sensor Rules, Backend Map, Guide Account Management, Course Requests, Certificates, Permissions, Inbox, and Help Desk are reachable in the Admin UI polish evidence pass.
+- [x] Confirm AI/IoT Incident Operations loads without crashing.
+- [x] Confirm Admin can save official incident status updates.
+- [x] Confirm Park Ranger can submit recommendations with field notes.
+- [x] Confirm Park Ranger cannot officially resolve or close incidents through the status endpoint.
 - [ ] Confirm `/evidence/ai` and `/evidence/iot` routes are available and use concrete filenames for image previews.
-- [ ] Confirm final plant incident labels say `Plucking Plants` or `plucking/damaging protected plants` in user-facing admin/demo text.
+- [x] Confirm final plant incident labels say `Plucking Plants` or `plucking/damaging protected plants` in user-facing admin/demo text.
 - [ ] Keep old plant-class names only as internal model compatibility aliases, local dataset paths, notebook history, or existing runtime data.
-- [ ] Run `git diff --check`.
-- [ ] Run `node --check scripts/dev-all.mjs`.
-- [ ] Run `node --check scripts/hub-server.mjs`.
-- [ ] Run `node --check user_login/server/index.js`.
+- [x] Run `git diff --check`.
+- [x] Run `node --check scripts/dev-all.mjs`.
+- [x] Run `node --check scripts/hub-server.mjs`.
+- [x] Run `node --check user_login/server/index.js`.
+- [x] Run `npm --prefix admin_page run build`.
+- [x] Run `npm --prefix user_page run build`.
+- [x] Run `cd login && npm exec vite build`.
 
 ## Presentation Guardrails
 

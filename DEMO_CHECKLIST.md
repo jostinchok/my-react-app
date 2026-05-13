@@ -1,6 +1,6 @@
 # Final Presentation Demo Checklist
 
-This checklist is for final demo readiness on `main`. It does not add project scope.
+This checklist is for final demo readiness. It does not add project scope. The current Admin UI polish pass is on `final-admin-ui-polish`, based on `main`; do not switch branches unless the user explicitly asks.
 
 ## 1. Preflight
 
@@ -12,7 +12,7 @@ git status --short --branch
 
 Expected:
 
-- Branch is `main`.
+- Branch is `final-admin-ui-polish` during the current Admin UI polish pass, or `main` after the polish branch is intentionally merged.
 - Do not switch branches during the final-demo hotfix unless the user explicitly asks.
 - `user_login/server/data/` may exist as untracked runtime data and must stay uncommitted.
 - No local datasets, model artifacts, `.env`, runtime database files, or generated incident files should be staged.
@@ -172,5 +172,9 @@ node --check scripts/dev-all.mjs
 node --check scripts/hub-server.mjs
 node --check user_login/server/index.js
 npm --prefix admin_page run build
+npm --prefix user_page run build
+cd login && npm exec vite build
 git status --short --branch
 ```
+
+Admin UI polish evidence is recorded in `ADMIN_UI_POLISH_EVIDENCE.md`. Screenshot files under `docs/demo-evidence/admin-ui-polish/` are local-only unless explicitly requested.

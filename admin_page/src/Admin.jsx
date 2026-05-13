@@ -215,9 +215,7 @@ function GuideProgressOverview() {
 
   return (
     <Card sx={{ 
-      mt: 4, 
-      ml: 2, 
-      p: 4,
+      p: { xs: 2.4, md: 3 },
       width: "100%",
       flexShrink: 0,
       borderRadius: 5,
@@ -225,7 +223,7 @@ function GuideProgressOverview() {
       boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
       }}>
       <Typography variant="h5" sx={{ 
-        textAlign: "center", 
+        textAlign: "left",
         mb: 3, 
         color: "#173126",
         fontWeight: 900,
@@ -368,7 +366,7 @@ function MonitoringPieOnly() {
 
 function MonitoringTrendOnly() {
   return (
-    <Card sx={{ borderRadius: 5, boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)", ml:2, }}>
+    <Card sx={{ borderRadius: 5, boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)" }}>
       <CardContent>
         <Typography variant="h6" sx={{ mb:2, color: "#173126", fontWeight: 900 }}>
           Abnormal Activity Trend (Last 7 Days)
@@ -412,8 +410,8 @@ function GuideProgress() {
   ];
 
   return (
-    <Box sx={{ mt: 4, ml:2}}>
-      <Grid container spacing={4}>
+    <Box>
+      <Grid container spacing={3}>
         {/* --- 左侧：统计卡片 (占 2 列，固定宽度感) --- */}
         <Grid item xs={12} md={2}>
 
@@ -487,9 +485,9 @@ function GuideProgress() {
           <Card sx={{ 
             borderRadius: 5, 
             boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
-            p: 2, 
+            p: { xs: 1.8, md: 2.2 },
             flexGrow: 1,
-            height: "95%",
+            minHeight: { xs: 360, md: 420 },
             width: "100%"
             }}>
 

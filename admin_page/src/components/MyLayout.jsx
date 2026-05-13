@@ -5,7 +5,8 @@ import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import MyAppBar from "./MyAppBar";
 
-const SIDEBAR_WIDTH = 312;
+const SIDEBAR_WIDTH = 304;
+const REACT_ADMIN_MENU_OFFSET = 240;
 
 const MyLayout = (props) => {
   const [open, setOpen] = useState(false);
@@ -41,14 +42,19 @@ const MyLayout = (props) => {
           "--incident-shell-max-width": isIncidentSurface ? "1440px" : undefined,
           background: isIncidentSurface ? incidentBackground : shellBackground,
           minHeight: "calc(100vh - 86px)",
-          marginLeft: open ? "100px" : "-198px",
+          width: open ? `calc(100% - ${SIDEBAR_WIDTH}px)` : "100%",
+          marginLeft: open ? `${SIDEBAR_WIDTH - REACT_ADMIN_MENU_OFFSET}px` : "0px",
           padding: {
-            xs: "22px 16px",
-            md: "32px 28px",
-            lg: "44px 42px",
+            xs: "18px 14px",
+            md: "26px 22px",
+            lg: "30px 28px",
           },
           overflowX: "hidden",
-          transition: "padding 0.25s ease, margin-left 0.35s ease",
+          boxSizing: "border-box",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          transition: "padding 0.25s ease, margin-left 0.35s ease, width 0.35s ease",
         },
       }}
       menu={() => (

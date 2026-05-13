@@ -333,8 +333,8 @@ function statusColor(status) {
 
 function PageShell({ title, subtitle, children, action }) {
   return (
-    <Box className="admin-dashboard-shell">
-      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", md: "center" }} gap={2} sx={{ mb: 3 }}>
+    <Box className="admin-dashboard-shell admin-workflow-page">
+      <Stack className="admin-page-header" direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", md: "center" }} gap={2} sx={{ mb: 3 }}>
         <Box>
           <Typography sx={kickerSx}>SFC platform workflow</Typography>
           <Typography variant="h3" sx={headingSx}>{title}</Typography>

@@ -3687,3 +3687,292 @@ body {
     white-space: normal !important;
   }
 }
+
+/* V29 final-admin-ui-polish: shared Admin dashboard rhythm without changing behavior. */
+:root {
+  --admin-polish-max: 1240px;
+  --admin-polish-wide: 1440px;
+  --admin-polish-gap: 18px;
+  --admin-polish-radius: 18px;
+  --admin-polish-border: #eadfbd;
+  --admin-polish-panel: rgba(255, 255, 255, 0.96);
+  --admin-polish-warm: #fffaf0;
+  --admin-polish-ink: #102419;
+  --admin-polish-muted: #56685d;
+  --admin-polish-shadow: 0 14px 34px rgba(11, 59, 40, 0.08);
+}
+
+.admin-dashboard-shell,
+.admin-linked-page {
+  width: min(100%, var(--admin-polish-max)) !important;
+  max-width: var(--admin-polish-max) !important;
+  margin-inline: auto !important;
+  padding: clamp(18px, 2vw, 28px) !important;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.canvas-builder-page,
+.incident-dashboard,
+.ranger-console {
+  width: min(100%, var(--admin-polish-wide)) !important;
+  max-width: var(--admin-polish-wide) !important;
+}
+
+.incident-dashboard,
+.ranger-console {
+  padding: clamp(18px, 2vw, 28px) !important;
+}
+
+.admin-page-header,
+.admin-linked-page > .MuiBox-root:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(18px, 3vw, 36px);
+  margin-bottom: 24px !important;
+  padding: clamp(24px, 3.2vw, 38px) !important;
+  border: 1px solid rgba(234, 223, 189, 0.88) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(168, 230, 74, 0.26), transparent 17rem),
+    linear-gradient(135deg, #fff8e6 0%, #ffe4ae 48%, #eef9d6 100%) !important;
+  box-shadow: var(--admin-polish-shadow) !important;
+  color: var(--admin-polish-ink) !important;
+}
+
+.admin-page-header > .MuiBox-root,
+.admin-linked-page > .MuiBox-root:first-child > .MuiStack-root,
+.admin-linked-page > .MuiBox-root:first-child > .MuiStack-root > .MuiBox-root {
+  min-width: 0;
+}
+
+.admin-page-header .MuiTypography-h3,
+.admin-linked-page > .MuiBox-root:first-child .MuiTypography-h3 {
+  max-width: 900px;
+  color: var(--admin-polish-ink) !important;
+  font-size: clamp(2rem, 3.2vw, 3rem) !important;
+  line-height: 1.02 !important;
+  letter-spacing: 0 !important;
+}
+
+.admin-page-header .MuiTypography-root:not(.admin-dashboard-kicker),
+.admin-linked-page > .MuiBox-root:first-child .MuiTypography-root:not(.admin-dashboard-kicker) {
+  max-width: 900px;
+}
+
+.admin-page-header .MuiButton-root,
+.admin-linked-page > .MuiBox-root:first-child .MuiButton-root {
+  min-width: 144px;
+  justify-content: center;
+  border-radius: 13px !important;
+}
+
+.admin-dashboard-hero {
+  margin-bottom: 24px !important;
+  padding: clamp(28px, 3.4vw, 42px) !important;
+  border-radius: 22px !important;
+}
+
+.admin-dashboard-shortcut-grid,
+.admin-dashboard-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
+  gap: var(--admin-polish-gap) !important;
+  margin-bottom: 24px !important;
+}
+
+.admin-chart-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)) !important;
+  gap: 20px !important;
+  align-items: stretch;
+}
+
+.admin-dashboard-section {
+  margin: 24px 0 !important;
+}
+
+.admin-dashboard-section > h2 {
+  margin-bottom: 14px !important;
+  font-size: clamp(1.25rem, 2vw, 1.55rem) !important;
+}
+
+.admin-dashboard-shell .incident-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)) !important;
+  gap: var(--admin-polish-gap) !important;
+}
+
+.incident-stat-grid,
+.ranger-stat-grid {
+  gap: var(--admin-polish-gap) !important;
+}
+
+.admin-dashboard-card,
+.admin-dashboard-shell .MuiCard-root,
+.admin-dashboard-shell .MuiPaper-root,
+.admin-linked-page .MuiCard-root,
+.admin-linked-page .MuiPaper-root,
+.incident-stat-card,
+.ranger-stat-card,
+.incident-table-panel,
+.incident-detail-panel,
+.ranger-table-panel,
+.ranger-detail-panel {
+  border-radius: var(--admin-polish-radius) !important;
+  border: 1px solid var(--admin-polish-border) !important;
+  background: var(--admin-polish-panel) !important;
+  box-shadow: var(--admin-polish-shadow) !important;
+}
+
+.admin-dashboard-shell .MuiCardContent-root,
+.admin-linked-page .MuiCardContent-root {
+  padding: clamp(18px, 2vw, 24px) !important;
+}
+
+.admin-dashboard-card {
+  min-height: 176px !important;
+}
+
+.admin-dashboard-card .MuiCardContent-root,
+.admin-linked-page .MuiGrid-root > .MuiCard-root,
+.admin-linked-page .MuiGrid-root > .MuiPaper-root,
+.admin-linked-page .MuiGrid-root > .MuiBox-root {
+  height: 100%;
+}
+
+.admin-linked-page .MuiGrid-container,
+.admin-dashboard-shell .MuiGrid-container {
+  align-items: stretch;
+}
+
+.admin-linked-page .MuiGrid-root > .MuiCard-root,
+.admin-linked-page .MuiGrid-root > .MuiPaper-root,
+.admin-linked-page .MuiGrid-root > .MuiBox-root,
+.admin-dashboard-shell .MuiGrid-root > .MuiCard-root,
+.admin-dashboard-shell .MuiGrid-root > .MuiPaper-root {
+  box-sizing: border-box;
+}
+
+.admin-linked-page .MuiTableContainer-root,
+.admin-dashboard-shell .MuiTableContainer-root,
+.incident-dashboard .MuiTableContainer-root,
+.ranger-console .MuiTableContainer-root {
+  border-radius: 16px;
+  border: 1px solid var(--admin-polish-border);
+  background: #ffffff;
+}
+
+.admin-linked-page .MuiTable-root,
+.admin-dashboard-shell .MuiTable-root,
+.incident-dashboard .MuiTable-root,
+.ranger-console .MuiTable-root {
+  min-width: 760px;
+}
+
+.admin-linked-page .MuiTableHead-root .MuiTableCell-root,
+.admin-dashboard-shell .MuiTableHead-root .MuiTableCell-root,
+.incident-dashboard .MuiTableHead-root .MuiTableCell-root,
+.ranger-console .MuiTableHead-root .MuiTableCell-root {
+  padding-block: 13px !important;
+  color: #0b3b28 !important;
+  background: #fff8e6 !important;
+  font-size: 0.76rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+
+.admin-linked-page .MuiTableBody-root .MuiTableCell-root,
+.admin-dashboard-shell .MuiTableBody-root .MuiTableCell-root,
+.incident-dashboard .MuiTableBody-root .MuiTableCell-root,
+.ranger-console .MuiTableBody-root .MuiTableCell-root {
+  padding-block: 13px !important;
+}
+
+.admin-linked-page .MuiTextField-root,
+.admin-linked-page .MuiFormControl-root,
+.admin-dashboard-shell .MuiTextField-root,
+.admin-dashboard-shell .MuiFormControl-root {
+  min-width: 0;
+}
+
+.admin-linked-page .MuiInputBase-root,
+.admin-dashboard-shell .MuiInputBase-root,
+.incident-dashboard .MuiInputBase-root,
+.ranger-console .MuiInputBase-root {
+  min-height: 46px;
+  border-radius: 14px !important;
+}
+
+.admin-linked-page .MuiButton-root,
+.admin-dashboard-shell .MuiButton-root,
+.incident-dashboard .MuiButton-root,
+.ranger-console .MuiButton-root {
+  border-radius: 13px !important;
+  font-weight: 900 !important;
+}
+
+.MuiDialog-root .MuiDialog-paper {
+  width: min(760px, calc(100vw - 32px));
+  max-width: min(760px, calc(100vw - 32px)) !important;
+  margin: 16px !important;
+}
+
+.MuiDialog-root.canvas-builder-dialog .MuiDialog-paper,
+.canvas-builder-dialog .MuiDialog-paper {
+  width: min(960px, calc(100vw - 32px));
+  max-width: min(960px, calc(100vw - 32px)) !important;
+}
+
+.MuiDialog-root .MuiDialogTitle-root {
+  padding: 22px 24px 8px !important;
+}
+
+.MuiDialog-root .MuiDialogContent-root {
+  padding: 16px 24px 20px !important;
+}
+
+.MuiDialog-root .MuiDialogActions-root {
+  gap: 10px;
+  padding: 14px 24px 22px !important;
+}
+
+.incident-workspace,
+.ranger-workspace {
+  gap: 20px !important;
+}
+
+.incident-detail-panel,
+.ranger-detail-panel {
+  top: 108px;
+}
+
+@media (max-width: 1350px) {
+  .incident-workspace,
+  .ranger-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  .incident-detail-panel,
+  .ranger-detail-panel {
+    position: static !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-page-header,
+  .admin-linked-page > .MuiBox-root:first-child {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 22px !important;
+  }
+
+  .admin-page-header .MuiStack-root,
+  .admin-linked-page > .MuiBox-root:first-child .MuiStack-root {
+    width: 100%;
+  }
+
+  .admin-page-header .MuiButton-root,
+  .admin-linked-page > .MuiBox-root:first-child .MuiButton-root {
+    width: 100%;
+  }
+}
