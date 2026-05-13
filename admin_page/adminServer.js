@@ -55,10 +55,13 @@ const requireAuth = (allowedRoles = []) => {
 }
 const port = Number(process.env.ADMIN_API_PORT || process.env.PORT) || 4002
 const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
+const adminApiPublicUrl = process.env.ADMIN_API_PUBLIC_URL || `http://localhost:${port}`
 const uploadRoot = path.join(__dirname, 'public', 'uploads')
 const resourceUploadDir = path.join(uploadRoot, 'course-resources')
 const moduleMediaDir = path.join(uploadRoot, 'module-media')
+const moduleHeroDir = path.join(uploadRoot, 'module-heroes')
 const blockedUploadExtensions = new Set(['.exe', '.bat', '.cmd', '.com', '.msi', '.ps1', '.sh'])
+const allowedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
@@ -80,8 +83,9 @@ const asyncRoute = (handler) => async (req, res) => {
     await handler(req, res)
   } catch (error) {
     console.error(error)
-    res.status(500).json({
-      message: 'Admin training API request failed. Check MySQL and database migrations.',
+    const statusCode = error.statusCode || 500
+    res.status(statusCode).json({
+      message: statusCode < 500 ? error.message : 'Admin training API request failed. Check MySQL and database migrations.',
       error: process.env.NODE_ENV === 'production' ? undefined : error.message,
     })
   }
@@ -142,6 +146,30 @@ const parseDataUrl = (dataUrl) => {
     mimeType: match[1],
     buffer: Buffer.from(match[2], 'base64'),
   }
+}
+
+const saveModuleHeroImage = async ({ moduleId, fileName = 'module-hero', dataUrl = '' }) => {
+  if (!dataUrl) return ''
+  const parsed = parseDataUrl(dataUrl)
+  if (!parsed || !allowedImageMimeTypes.has(parsed.mimeType)) {
+    const error = new Error('Module hero image must be a JPEG, PNG, GIF, or WebP data URL.')
+    error.statusCode = 400
+    throw error
+  }
+
+  const safeOriginalName = safeFileName(fileName)
+  const extension = path.extname(safeOriginalName).toLowerCase()
+  const originalBase = path.basename(safeOriginalName, extension).slice(0, 96) || 'module-hero'
+  const originalName = `${originalBase}${extension}`.slice(0, 120)
+  if (blockedUploadExtensions.has(extension)) {
+    const error = new Error('This file type is blocked for demo safety.')
+    error.statusCode = 400
+    throw error
+  }
+
+  const storedName = `module-${moduleId}-hero-${Date.now()}-${originalName}`
+  await fs.writeFile(path.join(moduleHeroDir, storedName), parsed.buffer)
+  return `${adminApiPublicUrl}/uploads/module-heroes/${storedName}`
 }
 
 const parseJsonArray = (value) => {
@@ -382,6 +410,7 @@ const ensureAdminTrainingSchema = async () => {
 
   await ensureColumn('courses', 'updated_at', 'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
   await ensureColumn('training_modules', 'course_id', 'course_id VARCHAR(50) NULL')
+  await ensureColumn('training_modules', 'image_url', 'image_url VARCHAR(512) NULL')
   await ensureColumn('training_modules', 'status', "status VARCHAR(50) DEFAULT 'Published'")
   await ensureColumn('training_modules', 'sort_order', 'sort_order INT DEFAULT 0')
   await ensureColumn('training_modules', 'criteria', 'criteria TEXT NULL')
@@ -391,6 +420,7 @@ const ensureAdminTrainingSchema = async () => {
   await ensureColumn('questions', 'sort_order', 'sort_order INT DEFAULT 0')
   await ensureColumn('options', 'sort_order', 'sort_order INT DEFAULT 0')
   await ensureColumn('progress', 'progress_percent', 'progress_percent INT DEFAULT 0')
+  await ensureColumn('certifications', 'course_id', 'course_id VARCHAR(50) NULL')
   await ensureColumn('certifications', 'certificate_code', 'certificate_code VARCHAR(120) NULL')
 
   await pool.query(`
@@ -472,6 +502,7 @@ const ensureAdminTrainingSchema = async () => {
 
   await fs.mkdir(resourceUploadDir, { recursive: true })
   await fs.mkdir(moduleMediaDir, { recursive: true })
+  await fs.mkdir(moduleHeroDir, { recursive: true })
 }
 
 const deleteModuleContent = async (moduleIds) => {
@@ -540,7 +571,7 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
     status: 'ok',
     message: 'Admin backend connected to MySQL',
     database: databaseName,
-    features: ['courses', 'modules', 'course_resources', 'guide_management', 'badges', 'canvas_learning_progress_summary'],
+    features: ['courses', 'modules', 'course_resources', 'guide_management', 'certificates', 'canvas_learning_progress_summary'],
   })
 }))
 
@@ -768,6 +799,7 @@ app.delete('/api/courses/:courseId', asyncRoute(async (req, res) => {
   if (moduleIds.length) {
     await pool.query('DELETE FROM training_modules WHERE module_id IN (?)', [moduleIds])
   }
+  await pool.query('DELETE FROM certifications WHERE course_id = ?', [courseId])
 
   const [result] = await pool.query('DELETE FROM courses WHERE course_id = ?', [courseId])
   await Promise.all(
@@ -802,6 +834,8 @@ app.post('/api/courses/:courseId/modules', asyncRoute(async (req, res) => {
     duration = '1 hour',
     format = 'Blended',
     image_url = '',
+    imageFileName = '',
+    imageDataUrl = '',
     accent_color = '#ff7a1a',
     badge_name = '',
     objectives = [],
@@ -842,6 +876,16 @@ app.post('/api/courses/:courseId/modules', asyncRoute(async (req, res) => {
     ]
   )
 
+  let finalImageUrl = image_url
+  if (imageDataUrl) {
+    finalImageUrl = await saveModuleHeroImage({
+      moduleId: result.insertId,
+      fileName: imageFileName,
+      dataUrl: imageDataUrl,
+    })
+    await pool.query('UPDATE training_modules SET image_url = ? WHERE module_id = ?', [finalImageUrl, result.insertId])
+  }
+
   if (description) {
     await pool.query(
       `INSERT INTO lessons (module_id, title, content, lesson_type, sort_order)
@@ -865,6 +909,8 @@ app.put('/api/modules/:moduleId', asyncRoute(async (req, res) => {
     duration = '1 hour',
     format = 'Blended',
     image_url = '',
+    imageFileName = '',
+    imageDataUrl = '',
     accent_color = '#ff7a1a',
     badge_name = '',
     objectives = [],
@@ -875,6 +921,15 @@ app.put('/api/modules/:moduleId', asyncRoute(async (req, res) => {
   if (!Number.isInteger(moduleId) || !title) {
     res.status(400).json({ message: 'A numeric module ID and title are required.' })
     return
+  }
+
+  let finalImageUrl = image_url
+  if (imageDataUrl) {
+    finalImageUrl = await saveModuleHeroImage({
+      moduleId,
+      fileName: imageFileName,
+      dataUrl: imageDataUrl,
+    })
   }
 
   await pool.query(
@@ -890,7 +945,7 @@ app.put('/api/modules/:moduleId', asyncRoute(async (req, res) => {
       level,
       duration,
       format,
-      image_url,
+      finalImageUrl,
       accent_color,
       badge_name,
       toJsonText(objectives),
@@ -2176,6 +2231,102 @@ app.patch('/api/enrollments/:enrollmentId', asyncRoute(async (req, res) => {
   res.json({ message: 'Enrollment request updated successfully.' })
 }))
 
+const getCourseCompletionForUser = async (userId, courseId) => {
+  await ensureCanvasModuleItemsSchema()
+  const total = await rowOf(
+    `SELECT COUNT(*) AS total_items
+     FROM course_module_items
+     WHERE course_id = ? AND status = 'published'`,
+    [courseId]
+  )
+  const completed = await rowOf(
+    `SELECT COUNT(DISTINCT cip.item_id) AS completed_items
+     FROM canvas_item_progress cip
+     INNER JOIN course_module_items cmi
+       ON cmi.item_id = cip.item_id
+      AND cmi.module_id = cip.module_id
+      AND cmi.course_id = cip.course_id
+     WHERE cip.user_id = ?
+       AND cip.course_id = ?
+       AND cip.status = 'completed'
+       AND cmi.status = 'published'`,
+    [userId, courseId]
+  )
+
+  const totalItems = Number(total?.total_items || 0)
+  const completedItems = Number(completed?.completed_items || 0)
+  return {
+    totalItems,
+    completedItems,
+    completionPercent: percent(completedItems, totalItems),
+    complete: totalItems > 0 && completedItems >= totalItems,
+  }
+}
+
+const issueCourseCertificate = async (req, res) => {
+  const { userId, courseId, title } = req.body || {}
+  const numericUserId = Number(userId)
+  const courseIdValue = String(courseId || '').trim()
+
+  if (!Number.isInteger(numericUserId) || !courseIdValue) {
+    res.status(400).json({ message: 'User ID and course ID are required.' })
+    return
+  }
+
+  const course = await rowOf('SELECT course_id, course_name FROM courses WHERE course_id = ? LIMIT 1', [courseIdValue])
+  if (!course) {
+    res.status(404).json({ message: 'Course not found.' })
+    return
+  }
+
+  const completion = await getCourseCompletionForUser(numericUserId, courseIdValue)
+  if (!completion.complete) {
+    res.status(400).json({
+      message: 'Course certificates can only be issued after the full course reaches 100% completion.',
+      completion,
+    })
+    return
+  }
+
+  const certificateTitle = title || `${course.course_name} Certificate`
+  const certificateCode = `SFC-CERT-${Date.now()}-${numericUserId}`
+  const existing = await rowOf(
+    `SELECT cert_id
+     FROM certifications
+     WHERE user_id = ? AND course_id = ? AND module_id IS NULL
+     ORDER BY issue_date DESC, cert_id DESC
+     LIMIT 1`,
+    [numericUserId, courseIdValue]
+  )
+
+  if (existing) {
+    await pool.query(
+      `UPDATE certifications
+       SET title = ?, status = 'Issued', issue_date = NOW(), certificate_code = ?
+       WHERE cert_id = ?`,
+      [certificateTitle, certificateCode, existing.cert_id]
+    )
+    res.json({
+      message: 'Course certificate refreshed successfully.',
+      certification: { cert_id: existing.cert_id, course_id: courseIdValue, certificate_code: certificateCode },
+      completion,
+    })
+    return
+  }
+
+  const [result] = await pool.query(
+    `INSERT INTO certifications (user_id, course_id, module_id, title, status, issue_date, certificate_code)
+     VALUES (?, ?, NULL, ?, 'Issued', NOW(), ?)`,
+    [numericUserId, courseIdValue, certificateTitle, certificateCode]
+  )
+
+  res.status(201).json({
+    message: 'Course certificate issued successfully.',
+    certification: { cert_id: result.insertId, course_id: courseIdValue, certificate_code: certificateCode },
+    completion,
+  })
+}
+
 app.get('/api/admin/badges', asyncRoute(async (_req, res) => {
   const badges = await rowsOf(`
     SELECT badge_id AS id, name, type, require_quiz AS requireQuiz, require_physical AS requirePhysical, created_at
@@ -2234,24 +2385,10 @@ app.delete('/api/admin/badges/:badgeId', asyncRoute(async (req, res) => {
   res.json({ message: 'Badge deleted successfully.' })
 }))
 
+app.post('/api/admin/issue-certificate', asyncRoute(issueCourseCertificate))
+
 app.post('/api/admin/issue-badge', asyncRoute(async (req, res) => {
-  const { userId, moduleId = null, title } = req.body || {}
-  if (!userId || !title) {
-    res.status(400).json({ message: 'User ID and badge title are required.' })
-    return
-  }
-
-  const certificateCode = `SFC-${Date.now()}-${userId}`
-  const [result] = await pool.query(
-    `INSERT INTO certifications (user_id, module_id, title, status, issue_date, certificate_code)
-     VALUES (?, ?, ?, 'Issued', NOW(), ?)`,
-    [Number(userId), moduleId ? Number(moduleId) : null, title, certificateCode]
-  )
-
-  res.status(201).json({
-    message: 'Badge certificate issued successfully.',
-    certification: { cert_id: result.insertId, certificate_code: certificateCode },
-  })
+  await issueCourseCertificate(req, res)
 }))
 
 ensureAdminTrainingSchema()

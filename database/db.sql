@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS progress (
 CREATE TABLE IF NOT EXISTS certifications (
     cert_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
+    course_id VARCHAR(50) NULL,
     module_id INT,
     -- user_page database require
     title VARCHAR(255),

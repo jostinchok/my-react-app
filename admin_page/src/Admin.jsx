@@ -11,7 +11,7 @@ import CourseManagement from "./pages/course.jsx"
 import TrainingModuleSetup from "./pages/training_module.jsx"
 import CourseRequestsPage from "./pages/course_requests.jsx";
 import StudentManagement from "./pages/student_management.jsx";
-import BadgeManagement from "./pages/badge.jsx";
+import CertificateManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
 import {
   AdminAnalyticsDashboard,
@@ -208,9 +208,9 @@ function Dashboard() {
 
 function GuideProgressOverview() {
   const students = [
-    { id: 1, name: "Alice", module: "General", progressPercent: 80, badges: ["General Training"] },
-    { id: 2, name: "Bob", module: "Specific", progressPercent: 100, badges: ["Bako Park Guide"] },
-    { id: 3, name: "Charlie", module: "Physical", progressPercent: 60, badges: [] },
+    { id: 1, name: "Alice", module: "General", progressPercent: 80, certificates: ["General Training"] },
+    { id: 2, name: "Bob", module: "Specific", progressPercent: 100, certificates: ["Bako Park Guide"] },
+    { id: 3, name: "Charlie", module: "Physical", progressPercent: 60, certificates: [] },
   ];
 
   return (
@@ -270,12 +270,12 @@ function GuideProgressOverview() {
 
                 {/* 徽章 */}
                 <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {s.badges.length > 0 ? (
-                    s.badges.map((b, i) => (
+                  {s.certificates.length > 0 ? (
+                    s.certificates.map((b, i) => (
                       <Chip key={i} label={b} color="success" size="medium" variant="outlined" />
                     ))
                   ) : (
-                    <Chip label="No Badge Yet" color="warning" size="medium" variant="outlined" />
+                    <Chip label="No Certificate Yet" color="warning" size="medium" variant="outlined" />
                   )}
                 </Box>
               </CardContent>
@@ -526,7 +526,8 @@ function AdminPage() {
       <Resource name="training" list={TrainingModuleSetup} />
       <Resource name="course-requests" list={CourseRequestsPage} />
       <Resource name="students" list={StudentManagement} options={{ label: "Guides" }} />
-      <Resource name="badge" list={BadgeManagement} />
+      <Resource name="certificates" list={CertificateManagement} />
+      <Resource name="badge" list={CertificateManagement} options={{ label: "Certificates" }} />
       <Resource name="detection" list={AIDetection} />
       <Resource name="analytics" list={AdminAnalyticsDashboard} options={{ label: "Analytics" }} />
       <Resource name="users" list={UserManagementWorkflow} options={{ label: "Users" }} />

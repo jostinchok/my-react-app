@@ -639,7 +639,7 @@ export const roleBoundaries = {
     'Enroll in self-paced modules',
     'Continue lessons and take quizzes',
     'Track progress and quiz results',
-    'View certificates, badges, schedules, notifications, and resources',
+    'View course certificates, schedules, notifications, and resources',
     'Manage own profile details',
   ],
   cannot: [

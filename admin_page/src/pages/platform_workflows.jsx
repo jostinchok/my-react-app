@@ -273,7 +273,7 @@ const initialAnnouncements = [
     channel: "In-app",
     status: "Sent",
     pinned: false,
-    message: "Certificates are generated after module completion, but they are only released after admin evidence review.",
+    message: "Certificates are generated after full course completion, then released after admin evidence review.",
   },
 ];
 

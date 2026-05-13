@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS progress (
 CREATE TABLE IF NOT EXISTS certifications (
     cert_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
+    course_id VARCHAR(50) NULL,
     module_id INT,
     title VARCHAR(255),
     status VARCHAR(100) DEFAULT 'Pending',
@@ -99,6 +100,7 @@ ALTER TABLE lessons ADD COLUMN IF NOT EXISTS lesson_type VARCHAR(50) DEFAULT 'Te
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
 ALTER TABLE progress ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0;
 ALTER TABLE certifications ADD COLUMN IF NOT EXISTS certificate_code VARCHAR(120) NULL;
+ALTER TABLE certifications ADD COLUMN IF NOT EXISTS course_id VARCHAR(50) NULL;
 
 CREATE TABLE IF NOT EXISTS course_resources (
     resource_id INT AUTO_INCREMENT PRIMARY KEY,

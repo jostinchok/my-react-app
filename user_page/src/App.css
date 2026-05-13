@@ -1168,12 +1168,28 @@
 
 .certificate-art {
   position: absolute;
-  inset: 0 0 auto auto;
-  width: 48%;
-  height: 128px;
+  inset: 0;
+  pointer-events: none;
+}
+
+.certificate-art > img:first-child {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  opacity: 0.32;
-  border-bottom-left-radius: 8px;
+  opacity: 0.28;
+}
+
+.certificate-logo {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: rgba(255, 253, 245, 0.86);
+  box-shadow: 0 10px 22px rgba(23, 49, 38, 0.12);
+  opacity: 0.9;
 }
 
 .certificate-stamp {
@@ -1193,7 +1209,7 @@
   filter: grayscale(0.28);
 }
 
-.certificate-card.locked .certificate-art {
+.certificate-card.locked .certificate-art > img:first-child {
   opacity: 0.18;
 }
 
@@ -1208,6 +1224,13 @@
   z-index: 1;
   margin: 12px 0 8px;
   color: var(--forest);
+}
+
+.certificate-card > span,
+.certificate-card > p,
+.certificate-card > button {
+  position: relative;
+  z-index: 1;
 }
 
 .certificate-card dl {

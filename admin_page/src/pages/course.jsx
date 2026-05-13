@@ -37,6 +37,26 @@ import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
+const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const userTrainingBaseUrl = (import.meta.env.VITE_USER_TRAINING_BASE_URL || "http://localhost:5175/user/training").replace(/\/$/, "");
+const TRAINING_IMAGE_FILES = [
+  "visitor-safety.webp",
+  "bako-trail-guiding.webp",
+  "safety-response.webp",
+  "gunung-gading-conservation.webp",
+  "biodiversity-lab.webp",
+  "incident-ai-monitoring.webp",
+  "ecotourism-briefing.webp",
+  "conservation-law.webp",
+  "biodiversity-basics.webp",
+  "ecotourism-communication.webp",
+  "batang-ai-community-protocol.webp",
+  "kubah-rainforest-safety.webp",
+  "protected-areas.webp",
+  "rules-compliance.webp",
+];
 
 const emptyCourseForm = {
   course_id: "",
@@ -55,6 +75,8 @@ const emptyModuleForm = {
   level: "Beginner",
   duration: "45 minutes",
   format: "Blended",
+  image_url: "",
+  imageFile: null,
   badge_name: "",
   objectivesText: "",
   status: "Published",
@@ -150,6 +172,24 @@ const formatCourseDuration = (course) => {
 
 const getItemTypeConfig = (type) => itemTypeMap[type] || itemTypeMap.page;
 
+const trainingImageUrl = (fileName) => `${userTrainingBaseUrl}/${fileName}`;
+
+const formatTrainingImageLabel = (fileName) =>
+  fileName
+    .replace(/\.(webp|png|jpg|jpeg)$/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const resolveAdminImageUrl = (value) => {
+  const imageUrl = String(value || "").trim();
+  if (!imageUrl) return "";
+
+  const trainingMatch = imageUrl.match(/\/(?:user\/)?training\/([^?#]+)/);
+  if (trainingMatch) return `${adminBasePath}training/${trainingMatch[1]}`;
+  if (imageUrl.startsWith("/uploads/")) return `${API_BASE_URL}${imageUrl}`;
+  return imageUrl;
+};
+
 const getItemFileUrl = (item) => {
   if (!item) return "";
   if (item.download_url) return `${API_BASE_URL}${item.download_url}`;
@@ -191,6 +231,10 @@ const CourseManagement = () => {
 
   const totalItems = modules.reduce((sum, module) => sum + (module.items?.length || 0), 0);
   const totalResources = selectedCourse?.resources?.length || 0;
+  const selectedCourseHeroImage = useMemo(() => {
+    const moduleWithImage = modules.find((module) => module.image_url);
+    return resolveAdminImageUrl(moduleWithImage?.image_url);
+  }, [modules]);
   const itemTypeCounts = useMemo(() => {
     const counts = {};
     modules.forEach((module) => {
@@ -388,6 +432,8 @@ const CourseManagement = () => {
       level: module.level || "Beginner",
       duration: module.duration || "45 minutes",
       format: module.format || "Blended",
+      image_url: module.image_url || "",
+      imageFile: null,
       badge_name: module.badge_name || "",
       objectivesText: toObjectivesText(module.objectives),
       status: module.status || "Published",
@@ -404,9 +450,21 @@ const CourseManagement = () => {
 
     setLoading(true);
     try {
+      const imageDataUrl = await toDataUrl(moduleForm.imageFile);
       const body = {
-        ...moduleForm,
+        title: moduleForm.title,
+        description: moduleForm.description,
+        category: moduleForm.category,
+        park: moduleForm.park,
+        level: moduleForm.level,
+        duration: moduleForm.duration,
+        format: moduleForm.format,
+        image_url: moduleForm.image_url,
+        imageFileName: moduleForm.imageFile?.name || "",
+        imageDataUrl,
+        badge_name: moduleForm.badge_name,
         objectives: moduleForm.objectivesText,
+        status: moduleForm.status,
         sort_order: Number(moduleForm.sort_order) || 0,
       };
 
@@ -781,6 +839,21 @@ const CourseManagement = () => {
           <Stack gap={2.2}>
             <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
+                {selectedCourseHeroImage && (
+                  <Box
+                    component="img"
+                    src={selectedCourseHeroImage}
+                    alt=""
+                    sx={{
+                      width: { xs: "100%", sm: 156 },
+                      height: 116,
+                      objectFit: "cover",
+                      borderRadius: "18px",
+                      border: "1px solid #eadfbf",
+                      boxShadow: "0 14px 30px rgba(23, 49, 38, 0.10)",
+                    }}
+                  />
+                )}
                 <Box>
                   <Typography className="admin-dashboard-kicker">Selected course</Typography>
                   <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>
@@ -838,6 +911,7 @@ const CourseManagement = () => {
               <Stack gap={1.2}>
                 {modules.map((module, moduleIndex) => {
                   const active = String(module.module_id) === String(selectedModule?.module_id);
+                  const moduleImage = resolveAdminImageUrl(module.image_url);
                   return (
                     <Paper
                       key={module.module_id}
@@ -852,7 +926,16 @@ const CourseManagement = () => {
                     >
                       <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5}>
                         <Stack direction="row" alignItems="center" gap={1.2} sx={{ minWidth: 0 }}>
-                          <Box sx={{ width: 38, height: 38, borderRadius: "14px", background: "linear-gradient(135deg, #ff8a1d, #f3ffd4)", flexShrink: 0 }} />
+                          {moduleImage ? (
+                            <Box
+                              component="img"
+                              src={moduleImage}
+                              alt=""
+                              sx={{ width: 54, height: 42, borderRadius: "14px", objectFit: "cover", border: "1px solid #eadfbf", flexShrink: 0 }}
+                            />
+                          ) : (
+                            <Box sx={{ width: 38, height: 38, borderRadius: "14px", background: "linear-gradient(135deg, #ff8a1d, #f3ffd4)", flexShrink: 0 }} />
+                          )}
                           <Box sx={{ minWidth: 0 }}>
                             <Typography sx={{ color: "#173126", fontWeight: 950 }}>
                               Module {moduleIndex + 1}: {module.title}
@@ -887,6 +970,21 @@ const CourseManagement = () => {
 
             <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
+                {resolveAdminImageUrl(selectedModule?.image_url) && (
+                  <Box
+                    component="img"
+                    src={resolveAdminImageUrl(selectedModule?.image_url)}
+                    alt=""
+                    sx={{
+                      width: { xs: "100%", sm: 150 },
+                      height: 104,
+                      objectFit: "cover",
+                      borderRadius: "16px",
+                      border: "1px solid #eadfbf",
+                      boxShadow: "0 12px 26px rgba(23, 49, 38, 0.10)",
+                    }}
+                  />
+                )}
                 <Box>
                   <Typography className="admin-dashboard-kicker">Selected module detail</Typography>
                   <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
@@ -1077,7 +1175,59 @@ const CourseManagement = () => {
               </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Badge name" value={moduleForm.badge_name} onChange={(event) => setModuleForm({ ...moduleForm, badge_name: event.target.value })} fullWidth />
+              <TextField
+                label="Hero image"
+                value={moduleForm.image_url}
+                onChange={(event) => setModuleForm({ ...moduleForm, image_url: event.target.value, imageFile: null })}
+                fullWidth
+                select
+                helperText="Uses the same training images shown in the User Portal."
+              >
+                <MenuItem value="">No hero image</MenuItem>
+                {moduleForm.image_url && !TRAINING_IMAGE_FILES.some((fileName) => trainingImageUrl(fileName) === moduleForm.image_url) && (
+                  <MenuItem value={moduleForm.image_url}>Current custom image</MenuItem>
+                )}
+                {TRAINING_IMAGE_FILES.map((fileName) => (
+                  <MenuItem key={fileName} value={trainingImageUrl(fileName)}>
+                    {formatTrainingImageLabel(fileName)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={<UploadFileIcon />}
+                sx={{ ...buttonSx, width: "100%", height: 56, borderColor: "#eadfbf", color: "#173126" }}
+              >
+                Upload hero image
+                <input
+                  hidden
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] || null;
+                    setModuleForm((prev) => ({ ...prev, imageFile: file }));
+                  }}
+                />
+              </Button>
+              <Typography sx={{ mt: 0.8, color: "#607166", fontWeight: 800, fontSize: "0.82rem" }}>
+                {moduleForm.imageFile ? `${moduleForm.imageFile.name} will replace the current hero after saving.` : "Uploads are stored by the Admin API and shown in the User Portal."}
+              </Typography>
+            </Grid>
+            {resolveAdminImageUrl(moduleForm.image_url) && (
+              <Grid item xs={12}>
+                <Box
+                  component="img"
+                  src={resolveAdminImageUrl(moduleForm.image_url)}
+                  alt=""
+                  sx={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: "18px", border: "1px solid #eadfbf" }}
+                />
+              </Grid>
+            )}
+            <Grid item xs={12} md={6}>
+              <TextField label="Certificate title" value={moduleForm.badge_name} onChange={(event) => setModuleForm({ ...moduleForm, badge_name: event.target.value })} fullWidth helperText="Used as a course-completion credential label, not a module certificate." />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField label="Objectives" value={moduleForm.objectivesText} onChange={(event) => setModuleForm({ ...moduleForm, objectivesText: event.target.value })} fullWidth multiline minRows={3} helperText="One objective per line" />

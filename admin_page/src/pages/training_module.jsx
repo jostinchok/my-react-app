@@ -352,7 +352,7 @@ const TrainingModuleSetup = () => {
 
                 {certificateReviewQueue.length === 0 && (
                   <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-                    No certificate-ready learners yet. Completion evidence will appear here after module items are completed.
+                    No certificate-ready learners yet. Completion evidence will appear here after full course items are completed.
                   </Typography>
                 )}
               </Stack>

@@ -12,11 +12,11 @@ This is the active team repository. The completed demo was synced from the local
 
 This project demonstrates the three Project Scope areas:
 
-1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal with course list and selected course shell, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, badges/certificates, notifications, profile, and role boundaries.
+1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal with course list and selected course shell, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, course certificates, notifications, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
 3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger recommendation console, evidence serving, and MySQL-backed monitoring incident persistence.
 
-The Park Guide training platform now has demo MySQL-backed Admin-to-User linkage for Canvas-style courses, modules, module items, resources, guide accounts, enrollment requests, badges, item completion, and quiz attempts. MySQL persistence remains the default for AI/IoT monitoring incidents through the separate monitoring incident API.
+The Park Guide training platform now has demo MySQL-backed Admin-to-User linkage for Canvas-style courses, modules, module hero images, module items, resources, guide accounts, enrollment requests, course certificates, item completion, and quiz attempts. MySQL persistence remains the default for AI/IoT monitoring incidents through the separate monitoring incident API.
 
 ## UI And Asset Status
 
@@ -239,7 +239,7 @@ The Admin training API runs on `http://localhost:4002` and the Park Guide user A
 - course resources
 - guide accounts and course assignments
 - enrollment requests
-- badges and issued certifications
+- course certificates
 - Canvas item completion and quiz-attempt progress
 
 Supported Canvas module item types are:
@@ -266,7 +266,7 @@ http://localhost:5174/admin/course
 http://localhost:5174/admin/training
 http://localhost:5174/admin/course-requests
 http://localhost:5174/admin/students
-http://localhost:5174/admin/badge
+http://localhost:5174/admin/certificates
 ```
 
 Park Guide and mobile surfaces read the same module/resource data when the APIs are running:
@@ -323,7 +323,7 @@ mysql -u root -p cos30049_assignment \
   -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
 ```
 
-AI/IoT monitoring incidents use the monitoring MySQL database and remain separate from training content. The training platform has demo MySQL-backed linkage for Admin-created Canvas courses, modules, module items, resources, guide accounts, enrollment requests, badges, item completion, quiz attempts, and Admin-facing guide progress summaries.
+AI/IoT monitoring incidents use the monitoring MySQL database and remain separate from training content. The training platform has demo MySQL-backed linkage for Admin-created Canvas courses, modules, module hero images, module items, resources, guide accounts, enrollment requests, course certificates, item completion, quiz attempts, and Admin-facing guide progress summaries.
 
 ## AI Camera Runtime
 

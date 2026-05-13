@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS progress (
 CREATE TABLE IF NOT EXISTS certifications (
     cert_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
+    course_id VARCHAR(50) NULL,
     module_id INT,
     title VARCHAR(255),
     status VARCHAR(100) DEFAULT 'Pending',
@@ -143,6 +144,7 @@ CALL add_column_if_missing('quizzes', 'sort_order', 'sort_order INT DEFAULT 0');
 CALL add_column_if_missing('questions', 'sort_order', 'sort_order INT DEFAULT 0');
 CALL add_column_if_missing('options', 'sort_order', 'sort_order INT DEFAULT 0');
 CALL add_column_if_missing('progress', 'progress_percent', 'progress_percent INT DEFAULT 0');
+CALL add_column_if_missing('certifications', 'course_id', 'course_id VARCHAR(50) NULL');
 CALL add_column_if_missing('certifications', 'certificate_code', 'certificate_code VARCHAR(120) NULL');
 
 CREATE TABLE IF NOT EXISTS course_resources (

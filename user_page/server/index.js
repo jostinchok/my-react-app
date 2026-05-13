@@ -149,6 +149,12 @@ const ensureUserBirthdayColumn = async () => {
   await pool.query('ALTER TABLE users ADD COLUMN birthday DATE NULL AFTER email')
 }
 
+const ensureCertificationCourseColumn = async () => {
+  if (!await tableExists('certifications')) return
+  if (await columnExists('certifications', 'course_id')) return
+  await pool.query('ALTER TABLE certifications ADD COLUMN course_id VARCHAR(50) NULL AFTER user_id')
+}
+
 const ensureRole = async (roleName) => {
   await pool.query('INSERT IGNORE INTO roles (role_name) VALUES (?)', [roleName])
   const role = await rowOf('SELECT role_id FROM roles WHERE role_name = ? LIMIT 1', [roleName])
@@ -1151,6 +1157,7 @@ app.post('/api/user-profile/avatar', asyncRoute(async (req, res) => {
 
 app.get('/api/certifications', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
+  await ensureCertificationCourseColumn()
   const certifications = await rowsOf(
     `SELECT
        c.cert_id,

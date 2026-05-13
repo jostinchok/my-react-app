@@ -36,6 +36,8 @@ const userBasePath = import.meta.env.BASE_URL.endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`
 const logoSrc = `${userBasePath}sfc-citrus-logo.webp`
+const certificateLogoSrc = `${userBasePath}sfc-citrus-logo.png`
+const certificateBackgroundSrc = `${userBasePath}certificates/sfc-course-certificate.webp`
 const editableProfileFields = new Set(['displayName', 'birthday', 'email', 'phone', 'yearsExperience', 'address'])
 const TRAINING_IMAGE_FILES = [
   'conservation-law.webp',
@@ -1356,7 +1358,7 @@ function App() {
     addNotification(
       passed ? 'Quiz passed' : 'Quiz needs review',
       passed
-        ? `${module.title} quiz passed. Complete all Canvas items to prepare the badge for admin review.`
+        ? `${module.title} quiz passed. Complete every course item before requesting a certificate.`
         : `Review the Canvas items in ${module.title} and try again.`,
       passed ? 'certificate' : 'training'
     )
@@ -2347,7 +2349,10 @@ function App() {
                   const course = courseList.find((item) => String(item.id) === String(certificate.courseId))
                   return (
                     <article key={certificate.id} className={`certificate-card ${certificate.unlocked ? 'unlocked' : 'locked'}`}>
-                      {course && <img className="certificate-art" src={courseImageSrc(course)} alt="" />}
+                      <div className="certificate-art" aria-hidden="true">
+                        <img src={certificateBackgroundSrc} alt="" />
+                        <img className="certificate-logo" src={certificateLogoSrc} alt="" />
+                      </div>
                       <div className="certificate-stamp">{certificate.unlocked ? initials(course?.name || 'SFC') : 'LOCK'}</div>
                       <span>{certificate.status}</span>
                       <h3>{certificate.title}</h3>

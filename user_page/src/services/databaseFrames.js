@@ -350,7 +350,7 @@ export const normalizeModuleRow = (row, index = 0) => {
     format: asText(row.format, 'Online'),
     image: asText(firstValue(row.image, row.image_url, row.thumbnail_url), placeholderImage),
     accent: asText(firstValue(row.accent, row.accent_color), '#00b894'),
-    badge: asText(firstValue(row.badge, row.badge_name), `${title} Badge`),
+    badge: asText(firstValue(row.badge, row.badge_name), `${title} Certificate`),
     objectives: parseList(row.objectives),
     lessons,
     resources,

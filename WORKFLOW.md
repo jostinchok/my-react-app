@@ -397,7 +397,7 @@ http://localhost:5174/admin/course
 http://localhost:5174/admin/training
 http://localhost:5174/admin/course-requests
 http://localhost:5174/admin/students
-http://localhost:5174/admin/badge
+http://localhost:5174/admin/certificates
 http://localhost:5174/admin/detection
 http://localhost:5174/admin/ranger
 http://localhost:8081
@@ -417,7 +417,7 @@ The demo should now read as one Citrus Energetic system:
 - Hub: rainforest launcher, forest/citrus hero, rounded service cards, live status pills.
 - User/Park Guide: warm citrus learning portal, cream cards, orange actions, lime progress states.
 - Admin Dashboard: command-center view with charcoal/forest structure and citrus monitoring cards.
-- Admin Training Pages: cream/citrus course manager, backend-linked module overview, guide accounts, enrollment requests, and badge issuing.
+- Admin Training Pages: cream/citrus course manager, backend-linked module overview, guide accounts, enrollment requests, module hero images, and course certificate issuing.
 - Admin Incident Detection: consistent filters, table badges, evidence frame, metadata cards, ranger recommendations, and official status controls.
 - Park Ranger Console: forest field-response identity, urgent queue, evidence panel, field notes, and citrus recommendation actions.
 - Mobile Preview: simplified Park Guide palette with cream surfaces and citrus actions.
@@ -435,11 +435,11 @@ Image rule for report/demo assets:
 1. Open `http://localhost:5173` and show the root hub cards and service links.
 2. Open Login/Register/Forgot Password, then Park Guide/User Portal at `http://localhost:5175/user`.
 3. Switch User01/User02/User03.
-4. Show backend course list, selected course shell, internal Overview/Modules/Item Detail/Progress/Files/Completion navigation, item preview, quiz interaction, checklist rendering, persisted completion state with local fallback, certificates/badges, notifications, schedule, admin resources/files, profile, and help/permission guide.
+4. Show backend course list, selected course shell, internal Overview/Modules/Item Detail/Progress/Files/Completion navigation, item preview, quiz interaction, checklist rendering, persisted completion state with local fallback, course certificates, notifications, schedule, admin resources/files, profile, and help/permission guide.
 5. Open mobile preview at `http://localhost:8081` and show backend-loaded modules.
 6. Open Admin Dashboard at `http://localhost:5174/admin`.
 7. Open Admin Course/Training pages and create or review a Canvas course, module, and module item. Confirm page, text, file, image, video, external link, quiz, and checklist item previews as time allows.
-8. Open Admin Course Requests, Students, and Badge pages to show linked guide account and certificate workflows.
+8. Open Admin Course Requests, Students, and Certificates pages to show linked guide account and course certificate workflows.
 9. Open Admin Incident Detection at `http://localhost:5174/admin/detection`.
 10. Show summary cards, filters, AI_CAMERA row, IOT_SENSOR row, evidence image, AI metadata, IoT metadata, ranger recommendations, and Admin official status update.
 11. Open Park Ranger Console at `http://localhost:5174/admin/ranger`.
@@ -458,7 +458,7 @@ Capture:
 1. Root hub with all demo links.
 2. Park Guide dashboard.
 3. Canvas module catalog, item preview, quiz, checklist, and media/resource display.
-4. Local progress view and certificates/badges.
+4. Local progress view and course certificates.
 5. Notifications, resources/files, profile, and permission guide.
 6. Mobile preview.
 7. Admin dashboard.
