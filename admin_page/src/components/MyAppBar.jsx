@@ -68,13 +68,26 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
   const [userAnchor, setUserAnchor] = useState(null);
 
   const currentLabel = useMemo(() => {
-    if (location.pathname.startsWith("/admin/course-requests")) return "REQUESTS";
-    if (location.pathname.startsWith("/admin/course")) return "COURSE";
-    if (location.pathname.startsWith("/admin/training")) return "TRAINING";
-    if (location.pathname.startsWith("/admin/students")) return "GUIDES";
-    if (location.pathname.startsWith("/admin/badge")) return "BADGE";
-    if (location.pathname.startsWith("/admin/detection")) return "DETECTION";
-    return "DASHBOARD";
+    const routeLabels = [
+      ["/admin/analytics", "ANALYTICS"],
+      ["/admin/users", "USERS"],
+      ["/admin/permissions", "PERMISSIONS"],
+      ["/admin/course-requests", "REQUESTS"],
+      ["/admin/course", "COURSE"],
+      ["/admin/training", "TRAINING"],
+      ["/admin/students", "GUIDES"],
+      ["/admin/badge", "BADGE"],
+      ["/admin/detection", "DETECTION"],
+      ["/admin/ranger-review", "RANGER REVIEW"],
+      ["/admin/sensor-rules", "SENSOR RULES"],
+      ["/admin/announcements", "ANNOUNCEMENTS"],
+      ["/admin/inbox", "INBOX"],
+      ["/admin/help-desk", "HELP DESK"],
+      ["/admin/backend-map", "BACKEND MAP"],
+      ["/admin/audit-log", "AUDIT LOG"],
+    ];
+
+    return routeLabels.find(([path]) => location.pathname.startsWith(path))?.[1] || "DASHBOARD";
   }, [location.pathname]);
 
   return (

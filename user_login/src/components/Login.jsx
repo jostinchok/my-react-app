@@ -58,12 +58,14 @@ const Login = ({ onLoginSuccess, onRegister, onForgot }) => {
         className="logo"
       />
       <h1>SFC Digital Portal Login</h1>
+      <label className="field-label">Email</label>
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={e => setEmail(e.target.value)}
       />
+      <label className="field-label">Password</label>
       <div className="pw-field">
         <input
           type={showPassword ? 'text' : 'password'}
@@ -75,6 +77,7 @@ const Login = ({ onLoginSuccess, onRegister, onForgot }) => {
           <EyeIcon open={showPassword} />
         </button>
       </div>
+      <label className="field-label">Login As</label>
       <select value={role} onChange={e => setRole(e.target.value)}>
         <option value="guide">Park Guide</option>
         <option value="admin">Admin</option>

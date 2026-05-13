@@ -12,7 +12,7 @@ This is the active team repository. The completed demo was synced from the local
 
 This project demonstrates the three Project Scope areas:
 
-1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, badges/certificates, notifications, profile, and role boundaries.
+1. Interactive Digital Training Platform: backend-linked Admin Canvas-style course/module/item management, Park Guide web portal with course list and selected course shell, Expo mobile preview, training modules, item previews, quiz interaction, checklist rendering, media/resources, persisted completion state with local fallback, badges/certificates, notifications, profile, and role boundaries.
 2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
 3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger recommendation console, evidence serving, and MySQL-backed monitoring incident persistence.
 
@@ -45,7 +45,7 @@ Image optimization status:
 /Users/chiayuenkai/Desktop/GitHub/my-react-app/
 ├── .venv/
 ├── artifacts/clip_2class_touching_species.pt
-├── datasets/touching-plants/
+├── datasets/<plant-class dataset folder>/
 ├── datasets/touching-wildlife/
 ├── models/hand_landmarker.task
 ├── alerts/ai/
@@ -100,7 +100,7 @@ my-react-app/
 ├── models/
 │   └── hand_landmarker.task
 ├── datasets/
-│   ├── touching-plants/
+│   ├── <plant-class dataset folder>/
 │   └── touching-wildlife/
 ├── alerts/
 │   ├── ai/
@@ -154,6 +154,8 @@ mysql -u root -p park_guide_database < user_login/server/migrations/002_training
 mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/004_canvas_learning_progress.sql
 npm run dev
+# In a second terminal after the Admin API at :4002 is healthy:
+npm run seed:canvas-demo
 ```
 
 AI dataset improvement remains future work and is not part of this merge.
@@ -213,6 +215,21 @@ cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 ```
 
+
+## Canvas Demo Course SQL Records
+
+The three presentation courses are stored as real MySQL records through `database/demo_canvas_courses.sql`.
+
+Preferred setup path:
+
+~~~bash
+mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+~~~
+
+This inserts records into `courses`, `training_modules`, `lessons`, and `course_module_items`.
+
+Admin and User pages read the same records through the backend APIs. The older `npm run seed:canvas-demo` command is kept only as an optional developer helper.
+
 ## Training Platform Persistence
 
 The Admin training API runs on `http://localhost:4002` and the Park Guide user API runs on `http://localhost:4001`. They share the training database tables for:
@@ -263,6 +280,23 @@ http://localhost:4001/api/canvas-progress/summary?userId=1
 http://localhost:4002/api/courses
 http://localhost:4002/api/courses/<COURSE_ID>/canvas
 http://localhost:4002/api/admin/canvas-progress-summary
+```
+
+Preferred presentation setup: insert the Canvas demo courses directly into MySQL:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm run dev
+# In a second terminal after http://localhost:4002/api/health is online:
+npm run seed:canvas-demo
+```
+
+The SQL insert file creates these course records:
+
+```text
+SFC Field Response Essentials
+Sarawak Protected Wildlife Awareness
+SFC Park Guide Orientation
 ```
 
 Check stored incidents:
@@ -509,7 +543,7 @@ EMAIL_SECURE=false
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-16-char-app-password
 EMAIL_FROM="SFC Digital Park Guide <your-email@gmail.com>"
-APP_BASE_URL=http://localhost:5176/login
+APP_BASE_URL=http://localhost:5176/login/
 VITE_LOGIN_URL=http://localhost:5173/login/
 VITE_USER_URL=http://localhost:5175/user
 VITE_ADMIN_URL=http://localhost:5174/admin

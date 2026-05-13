@@ -1,5 +1,99 @@
 # Project Notes
 
+## Final Presentation Status - 2026-05-13
+
+This checkpoint is for final presentation and real-time demo readiness only. Sprint #2 has already been submitted, so this branch should only receive documentation continuity updates and small demo-blocking admin/backend/AI-IoT fixes.
+
+Current branch and remote state:
+
+- Active branch: `shared-default-style-v12`
+- Repository: `jostinchok/my-react-app`
+- Pre-promotion checkpoint: `81101f68f` (`Update final demo evidence verification notes`)
+- `origin/shared-default-style-v12` pointed to the same checkpoint before the final promotion pass.
+- The final login/demo-readiness and CSS touch-up changes are included in the final demo promotion commit.
+- The branch has no upstream configured locally, but the remote branch exists.
+- Do not switch to or edit `main` for future final-demo work unless the user explicitly asks. On 2026-05-13, the user explicitly requested pushing the final work to `main`.
+
+Verified live system status on 2026-05-13:
+
+- Admin page loads at `http://localhost:5174/admin`.
+- Admin API health works at `http://localhost:4002/api/health`.
+- Main backend health works at `http://localhost:4000/api/health`.
+- Main backend incident persistence is active in MySQL with 51 incidents.
+- Incident storage reports `requested=mysql`, `active=mysql`, `fallback=none`, and database status `connected`.
+- MQTT is enabled and connected to `mqtt://broker.hivemq.com:1883` on topic `ctip/sensor/plant-zone-01/proximity`.
+- Evidence routes are exposed at `/evidence/ai` and `/evidence/iot`; the backend redirects those root paths to trailing-slash static routes.
+- Security flags report `deviceTokenAuthEnabled=true` and `roleCheckEnabled=true`.
+- Official incident status updates are Admin-only through `statusUpdateRoles=["admin"]`.
+- Ranger recommendation submission is enabled for Ranger roles through the recommendation endpoint; it must not mutate official incident status.
+
+Latest evidence capture on 2026-05-13:
+
+- Local screenshots were captured under `docs/demo-evidence/2026-05-13/` for backend health, Admin API health, Admin dashboard, Admin Incident Detection, Park Ranger Console, Ranger Review, Sensor Rules, Backend Map, Guide Account Management, and the Edit Guide Account modal.
+- `git status --short --branch` confirmed `shared-default-style-v12`; before screenshot capture the only untracked path was `user_login/server/data/`.
+- Main backend health returned `status=ok`, `persistence=mysql`, 51 incidents, MQTT connected, `deviceTokenAuthEnabled=true`, `roleCheckEnabled=true`, and `statusUpdateRoles=["admin"]`.
+- Admin API health returned `status=ok` and `Admin backend connected to MySQL`.
+- Admin route probes returned HTTP 200 for `/admin`, `/admin/detection`, `/admin/ranger`, `/admin/ranger-review`, `/admin/sensor-rules`, `/admin/backend-map`, and `/admin/students`.
+- Admin official status update verification returned HTTP 200.
+- Park Ranger official status update verification returned HTTP 403.
+- Park Ranger recommendation verification returned HTTP 201 and the official incident status stayed unchanged.
+- Concrete AI evidence check returned HTTP 200 for `/evidence/ai/2026-04-30_01-06-19_alert_TouchingWildlife.jpg`.
+- Concrete IoT evidence check returned HTTP 200 for `/evidence/iot/IOT-BROWSER-2026-05-01T11-56-58-221Z-1777636623157.jpg`.
+- Admin Incident Detection text verification found the visible plant label `Plucking Plants` and did not find the deprecated plant label.
+- Park Ranger Console text verification found recommendation wording and no official status-change buttons.
+
+Final login/demo-readiness touch-up on 2026-05-13:
+
+- Login UI now has a compact demo account selector for `Admin Demo`, `User 1`, `User 2`, `User 3`, `Ranger 1`, `Ranger 2`, and `Ranger 3`.
+- Demo login password is `1234` for each listed account.
+- Main backend startup now ensures those demo auth accounts exist when the MySQL auth schema is available. No new auth API endpoint was added.
+- Live backend login verification returned HTTP 200 for all seven demo accounts at `POST http://localhost:4000/api/auth/login`.
+- Accepted Ranger recommendation headers are normalized to `park_ranger` for incident audit storage. Park Ranger still cannot officially change incident status.
+- `npm exec vite build` passed from `login/`.
+- Required checks passed: `git diff --check`, `node --check scripts/dev-all.mjs`, `node --check scripts/hub-server.mjs`, `node --check user_login/server/index.js`, and `npm --prefix admin_page run build`.
+- Admin production build completed with Vite's large-chunk warning only.
+
+Final CSS/readability touch-up on 2026-05-13:
+
+- Added safe reusable aliases/utilities to `shared/default_style.css`; no existing `user_page` selectors were edited.
+- Login now consumes the shared default style layer, has stronger focus states, safer small-height behavior, wrapped messages, and a responsive demo-account grid.
+- Admin now has a final readability layer for dense presentation screens: consistent table/header contrast, chip/button sizing, focus rings, form text contrast, horizontal table scrolling, and narrower breakpoint behavior.
+- `scripts/dev-all.mjs` now checks the actual Login route at `http://localhost:5176/login/`.
+- `git diff --check`, `node --check scripts/dev-all.mjs`, `node --check scripts/hub-server.mjs`, `node --check user_login/server/index.js`, `npm --prefix admin_page run build`, and `cd login && npm exec vite build` passed after the CSS pass.
+
+Already pushed:
+
+- The checkpoint through `81101f68f` is already present on `origin/shared-default-style-v12`; the final promotion commit is intended for `main`.
+- Sprint #2 project claims are preserved as prototype-level AI/IoT incident workflow, MySQL incident persistence, MQTT support, device-token security, and role-based Admin/Ranger incident handling.
+- Admin can perform official incident status updates.
+- Park Ranger can view incidents, add field notes, and submit recommendations only.
+
+Do not touch:
+
+- `user_page` UI/UX files. Another teammate owns that surface.
+- Stashed user UI or training notebook changes.
+- `main` branch.
+- Local datasets, model artifacts, `.env` secrets, `.venv`, `node_modules`, `dist`, runtime database files, generated incident files, or `user_login/server/data/`.
+- Runtime evidence under `alerts/ai` or `alerts/iot` unless the user explicitly asks.
+- Package upgrades or `npm audit fix` unless a real demo-blocking issue requires it.
+
+Known local issues:
+
+- `user_login/server/data/` remains untracked runtime data and must stay uncommitted.
+- `docs/demo-evidence/` remains untracked local screenshot evidence and must stay uncommitted unless explicitly requested.
+- Existing MySQL/runtime incidents can still contain the legacy raw model event key for the old plant class. UI labels should display this as `Plucking Plants`; do not rewrite runtime database rows during final demo prep.
+- The AI dataset folder still uses a legacy local plant-class folder name; do not rename it unless the code and local assets are intentionally migrated later.
+- Public MQTT, local camera permissions, and MySQL service availability are environment-dependent.
+- Evidence route roots return redirects to `/evidence/ai/` and `/evidence/iot/`; use concrete evidence filenames when demonstrating images.
+
+Remaining final-demo risks:
+
+- MySQL must be running before the backend starts, otherwise the demo cannot prove MySQL incident persistence.
+- HiveMQ public broker availability can vary; have the local IoT API fallback ready.
+- Camera permissions or unavailable AI model assets can block the live camera path; use curated existing evidence as the backup.
+- Device-token and role-check environment variables must match the demo script before running the security smoke test.
+- The User Portal is out of scope for this final readiness pass and should not be changed to fix admin demo issues.
+
 Team repository folder:
 
 ```text
@@ -32,6 +126,8 @@ The training platform now has a demo MySQL integration for Admin-created courses
 - Supported Canvas module item types are `page`, `text`, `file`, `image`, `video`, `link`, `quiz`, and `checklist`.
 - Canvas module items are stored in `course_module_items` through `user_login/server/migrations/003_canvas_module_items.sql`; the Admin training API also ensures the table before Canvas item operations.
 - The Park Guide User Portal reads Canvas-style module items from the user API and renders them as learning items. It supports item preview, media/resource display, quiz interaction, checklist rendering, persisted completion state, and local fallback when the progress API is unavailable.
+- The Park Guide User Portal now groups backend modules into a Canvas-like course shell with global SFC Digital Portal navigation plus course-level Overview, Modules, Item Detail, Progress, Files, and Completion navigation.
+- `npm run seed:canvas-demo` posts to the Admin API seed endpoint and inserts the three presentation courses into MySQL: SFC Field Response Essentials, Sarawak Protected Wildlife Awareness, and SFC Park Guide Orientation.
 - Persistent Canvas learning progress now has a User API and MySQL migration for item completion and quiz attempts. Admin can view persisted guide progress through the Admin training API and `/admin/students`.
 - AI/IoT monitoring incidents remain separate from training content. Admin remains responsible for official incident status changes; Park Ranger can add field notes and recommendations only.
 
@@ -69,7 +165,7 @@ Role identity:
 my-react-app/
 ├── .venv/
 ├── artifacts/clip_2class_touching_species.pt
-├── datasets/touching-plants/
+├── datasets/<plant-class dataset folder>/
 ├── datasets/touching-wildlife/
 ├── models/hand_landmarker.task
 ├── alerts/ai/
@@ -196,3 +292,18 @@ IoT browser capture contract:
 - Completed IoT browser-camera evidence integration: `/api/incidents/iot-capture` saves compressed captures to `alerts/iot`, serves `/evidence/iot/<filename>`, writes through memory/MySQL incident storage, and deduplicates browser/backend MQTT triggers.
 - Updated run instructions so `/api/health` should show `persistence=mysql`, `requested=mysql`, `active=mysql`, and `fallback=none` for the lecturer demo.
 - Added local asset setup and verification scripts for teammates: `scripts/download_assets_gdrive.py` and `scripts/check_required_assets.py`.
+
+
+## V16 SQL-Based Canvas Demo Records
+
+The Canvas-style demo courses are now available through `database/demo_canvas_courses.sql`.
+
+Official setup:
+
+~~~bash
+mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+~~~
+
+This creates real MySQL records for `courses`, `training_modules`, `lessons`, and `course_module_items`.
+
+The Admin Course Builder, Admin Training Overview, and User Portal read these records through backend APIs. `npm run seed:canvas-demo` remains only as an optional developer helper.

@@ -2,6 +2,7 @@ body, html {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -11,6 +12,7 @@ body, html {
     radial-gradient(circle at bottom right, rgba(6, 44, 30, 0.18), transparent 30%),
     linear-gradient(135deg, var(--bg-light) 0%, #dcedc1 100%);
   color: var(--text-main);
+  overflow-y: auto;
 }
 
 #root {
@@ -18,13 +20,13 @@ body, html {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 24px;
+  padding: clamp(14px, 4vw, 28px);
 }
 
 .login-container {
   width: 100%;
-  max-width: 430px;
-  padding: 40px 32px;
+  max-width: 460px;
+  padding: clamp(28px, 5vw, 40px) clamp(20px, 4vw, 32px);
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border-soft);
@@ -42,11 +44,11 @@ body, html {
 
 h1 {
   margin: 0 0 24px;
-  font-size: 30px;
+  font-size: clamp(1.5rem, 5vw, 1.9rem);
   line-height: 1.2;
   font-weight: 800;
   color: var(--primary-dark);
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .demo-auth-note {
@@ -63,8 +65,12 @@ h1 {
 input[type="text"],
 input[type="email"],
 input[type="password"],
+input[type="tel"],
+input[type="date"],
+input[type="number"],
 select {
   width: 100%;
+  min-height: 50px;
   padding: 14px 16px;
   margin: 10px 0;
   border-radius: 14px;
@@ -72,6 +78,7 @@ select {
   background: #f8fbf8;
   color: var(--text-main);
   font-size: 15px;
+  line-height: 1.35;
   outline: none;
   transition: 0.25s ease;
 }
@@ -79,10 +86,19 @@ select {
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
 select:focus {
   border-color: var(--accent-green);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(55, 146, 55, 0.12);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #718275;
+  opacity: 1;
 }
 
 /* Password field with toggle eye */
@@ -126,6 +142,7 @@ select:focus {
 button {
   width: 100%;
   margin-top: 18px;
+  min-height: 48px;
   padding: 14px 18px;
   border: none;
   border-radius: 14px;
@@ -142,6 +159,20 @@ button {
 button:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 24px rgba(22, 81, 50, 0.22);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--citrus-orange);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
 }
 
 .login-links {
@@ -163,6 +194,87 @@ button:hover {
 .login-links a:hover {
   color: var(--accent-green);
   text-decoration: underline;
+}
+
+.demo-account-panel {
+  margin: 14px 0 4px;
+  padding: 12px;
+  border: 1px solid #dce9df;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fffdf5 0%, #f2f9ed 100%);
+  text-align: left;
+}
+
+.demo-account-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.demo-account-title {
+  color: var(--primary-dark);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.demo-account-password {
+  color: #627367;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.demo-account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.demo-account-button {
+  width: 100%;
+  min-height: 58px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #d5e4d9;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+  color: var(--text-main);
+  font-size: 0.86rem;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.demo-account-button:hover,
+.demo-account-button.active {
+  border-color: var(--primary-mid);
+  background: #f7fff0;
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(22, 81, 50, 0.12);
+}
+
+.account-name,
+.account-role {
+  display: block;
+}
+
+.account-name {
+  font-weight: 800;
+}
+
+.account-role {
+  margin-top: 2px;
+  color: #627367;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.msg-success,
+.msg-error,
+.form-hint {
+  overflow-wrap: anywhere;
 }
 
 .register {
@@ -189,6 +301,32 @@ button:hover {
 
   h1 {
     font-size: 24px;
+  }
+
+  .demo-account-header,
+  .login-links {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .demo-account-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 481px) {
+  body,
+  html {
+    align-items: flex-start;
+  }
+
+  .logo {
+    width: 178px;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    margin-bottom: 16px;
   }
 }
 
@@ -220,6 +358,16 @@ button:hover {
   font-size: 0.88rem;
   text-align: left;
   line-height: 1.45;
+}
+
+.field-label {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #5d7166;
+  margin: 14px 0 2px;
 }
 
 /* Hide browser-native password reveal/clear icons.

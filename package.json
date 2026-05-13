@@ -12,6 +12,7 @@
     "dev:admin": "npm --prefix admin_page run dev",
     "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",
     "dev:server": "npm --prefix user_login/server start",
+    "seed:canvas-demo": "node scripts/seed-canvas-demo.mjs",
     "build:user": "npm --prefix user_page run build",
     "build:admin": "npm --prefix admin_page run build",
     "check:assets": "python3 scripts/check_required_assets.py",

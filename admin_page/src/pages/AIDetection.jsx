@@ -865,7 +865,7 @@ const AIDetection = () => {
           </Box>
           <Typography className="incident-eyebrow">AI / IoT Monitoring</Typography>
           <Typography component="h1" className="incident-title">
-            Admin Incident Detection
+            Incidents: AI / IoT Operations
           </Typography>
           <Typography className="incident-subtitle">
             Command-center review for AI camera alerts, IoT proximity alerts, evidence metadata,

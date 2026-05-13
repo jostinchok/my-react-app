@@ -109,3 +109,13 @@ button:disabled {
   font-weight: 850;
   text-decoration: none;
 }
+
+.field-label {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #607166;
+  margin: 14px 0 2px;
+}

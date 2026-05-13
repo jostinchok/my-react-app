@@ -4,10 +4,7 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
-  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -29,8 +26,6 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ChecklistIcon from "@mui/icons-material/Checklist";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import ImageIcon from "@mui/icons-material/Image";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
@@ -84,19 +79,27 @@ const emptyItemForm = {
 const itemTypeMap = {
   page: { label: "Page", icon: <ArticleIcon />, helper: "Rich text learning page" },
   text: { label: "Text", icon: <ArticleIcon />, helper: "Short text lesson" },
-  file: { label: "File", icon: <InsertDriveFileIcon />, helper: "PDF, document, slides, or resource" },
-  image: { label: "Image", icon: <ImageIcon />, helper: "Screenshot, diagram, or evidence image" },
-  video: { label: "Video", icon: <VideoLibraryIcon />, helper: "MP4 or training walkthrough" },
-  link: { label: "External Link", icon: <LinkIcon />, helper: "Website, Canvas page, or reference" },
+  file: { label: "File", icon: <InsertDriveFileIcon />, helper: "PDF, worksheet, or downloadable resource" },
+  image: { label: "Image", icon: <ImageIcon />, helper: "Evidence image, diagram, or screenshot" },
+  video: { label: "Video", icon: <VideoLibraryIcon />, helper: "Training walkthrough or demonstration" },
+  link: { label: "External Link", icon: <LinkIcon />, helper: "Reference page or external resource" },
   quiz: { label: "Quiz", icon: <QuizIcon />, helper: "Scenario question with answer choices" },
   checklist: { label: "Checklist", icon: <ChecklistIcon />, helper: "Step-by-step completion list" },
 };
 
+const itemTypeOptions = Object.keys(itemTypeMap);
+
 const panelSx = {
   borderRadius: "22px",
-  border: "1px solid #EADFBF",
-  background: "linear-gradient(145deg, #FFFFFF 0%, #FFFCF2 100%)",
+  border: "1px solid #eadfbf",
+  background: "linear-gradient(145deg, #ffffff 0%, #fffaf0 100%)",
   boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
+};
+
+const softCardSx = {
+  borderRadius: "18px",
+  border: "1px solid #eadfbf",
+  background: "rgba(255, 253, 245, 0.92)",
 };
 
 const buttonSx = {
@@ -105,8 +108,20 @@ const buttonSx = {
   fontWeight: 900,
 };
 
+const statusChipSx = {
+  bgcolor: "#dcf8c6",
+  color: "#173126",
+  fontWeight: 950,
+};
+
 const toObjectivesText = (objectives) =>
   Array.isArray(objectives) ? objectives.join("\n") : String(objectives || "");
+
+const splitLines = (value) =>
+  String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
 const toDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -120,18 +135,6 @@ const toDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
-const splitLines = (value) =>
-  String(value || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-const formatCourseDuration = (course) => {
-  if (!course?.start_date && !course?.end_date) return "Date not set";
-  if (course.start_date && course.end_date) return `${course.start_date} to ${course.end_date}`;
-  return course.start_date || course.end_date;
-};
-
 const normalizeItem = (item) => ({
   ...item,
   item_type: item.item_type || item.itemType || "page",
@@ -139,12 +142,26 @@ const normalizeItem = (item) => ({
   checklist: item.checklist || [],
 });
 
+const formatCourseDuration = (course) => {
+  if (!course?.start_date && !course?.end_date) return "Date not set";
+  if (course.start_date && course.end_date) return `${course.start_date} to ${course.end_date}`;
+  return course.start_date || course.end_date;
+};
+
+const getItemTypeConfig = (type) => itemTypeMap[type] || itemTypeMap.page;
+
+const getItemFileUrl = (item) => {
+  if (!item) return "";
+  if (item.download_url) return `${API_BASE_URL}${item.download_url}`;
+  return item.file_url || "";
+};
+
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [expandedModules, setExpandedModules] = useState({});
-  const [selectedPreview, setSelectedPreview] = useState(null);
+  const [selectedModuleId, setSelectedModuleId] = useState(null);
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
@@ -162,15 +179,28 @@ const CourseManagement = () => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  const modules = selectedCourse?.modules || [];
+  const modules = useMemo(() => selectedCourse?.modules || [], [selectedCourse]);
+  const selectedModule = useMemo(
+    () => modules.find((module) => String(module.module_id) === String(selectedModuleId)) || modules[0] || null,
+    [modules, selectedModuleId]
+  );
+  const selectedItem = useMemo(() => {
+    const items = selectedModule?.items || [];
+    return items.find((item) => String(item.item_id) === String(selectedItemId)) || items[0] || null;
+  }, [selectedModule, selectedItemId]);
+
   const totalItems = modules.reduce((sum, module) => sum + (module.items?.length || 0), 0);
   const totalResources = selectedCourse?.resources?.length || 0;
-
-  const activePreviewItem = useMemo(() => {
-    if (selectedPreview?.item) return selectedPreview.item;
-    const firstModule = modules[0];
-    return firstModule?.items?.[0] || null;
-  }, [modules, selectedPreview]);
+  const itemTypeCounts = useMemo(() => {
+    const counts = {};
+    modules.forEach((module) => {
+      (module.items || []).forEach((item) => {
+        const type = item.item_type || "page";
+        counts[type] = (counts[type] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [modules]);
 
   const showMessage = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -194,23 +224,22 @@ const CourseManagement = () => {
   const loadCanvasCourse = async (courseId) => {
     if (!courseId) {
       setSelectedCourse(null);
+      setSelectedModuleId(null);
+      setSelectedItemId(null);
       return;
     }
+
     const data = await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/canvas`);
     const course = data.course || null;
+
     if (course) {
       course.modules = (course.modules || []).map((module) => ({
         ...module,
         items: (module.items || []).map(normalizeItem),
       }));
     }
+
     setSelectedCourse(course);
-    setExpandedModules((prev) => {
-      if (Object.keys(prev).length) return prev;
-      const firstId = course?.modules?.[0]?.module_id;
-      return firstId ? { [firstId]: true } : {};
-    });
-    setSelectedPreview(null);
   };
 
   const refreshAll = async () => {
@@ -236,12 +265,32 @@ const CourseManagement = () => {
     }
   }, [selectedCourseId]);
 
+  useEffect(() => {
+    if (!selectedCourse) return;
+    const moduleExists = modules.some((module) => String(module.module_id) === String(selectedModuleId));
+    if (!moduleExists) {
+      setSelectedModuleId(modules[0]?.module_id || null);
+    }
+  }, [selectedCourse, modules, selectedModuleId]);
+
+  useEffect(() => {
+    if (!selectedModule) {
+      setSelectedItemId(null);
+      return;
+    }
+
+    const itemExists = (selectedModule.items || []).some((item) => String(item.item_id) === String(selectedItemId));
+    if (!itemExists) {
+      setSelectedItemId(selectedModule.items?.[0]?.item_id || null);
+    }
+  }, [selectedModule, selectedItemId]);
+
   const seedTemplates = async () => {
-    if (!window.confirm("Insert demo Canvas-style SFC course templates? Existing demo template IDs will be replaced.")) return;
+    if (!window.confirm("Load the three Canvas-style SFC demo course records through the backend insert helper? Existing demo course IDs will be replaced.")) return;
     setLoading(true);
     try {
       const data = await requestJson(`${API_BASE_URL}/api/demo/canvas-seed`, { method: "POST" });
-      showMessage(data.message || "Demo templates inserted.");
+      showMessage(data.message || "Demo course records loaded.");
       const loadedCourses = await loadCourses();
       setSelectedCourseId(loadedCourses.find((course) => course.course_id === "SFC-FIELD-2026")?.course_id || loadedCourses[0]?.course_id || "");
     } catch (error) {
@@ -398,7 +447,11 @@ const CourseManagement = () => {
     }
   };
 
-  const openCreateItem = (module) => {
+  const openCreateItem = (module = selectedModule) => {
+    if (!module) {
+      showMessage("Select a module first.", "warning");
+      return;
+    }
     setActiveModule(module);
     setEditingItem(null);
     setItemForm({
@@ -497,77 +550,83 @@ const CourseManagement = () => {
     }
   };
 
-  const toggleModule = (moduleId) => {
-    setExpandedModules((prev) => ({ ...prev, [moduleId]: !prev[moduleId] }));
-  };
+  const renderItemIcon = (type) => <Box className="canvas-item-icon">{getItemTypeConfig(type).icon}</Box>;
 
   const renderPreview = () => {
-    if (!activePreviewItem) {
+    if (!selectedItem) {
       return (
         <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-          Select a module item to preview what Park Guides will see.
+          Select an item from the selected module to preview the learner-facing content.
         </Typography>
       );
     }
 
-    const type = activePreviewItem.item_type || "page";
-    const config = itemTypeMap[type] || itemTypeMap.page;
+    const type = selectedItem.item_type || "page";
+    const config = getItemTypeConfig(type);
+    const fileUrl = getItemFileUrl(selectedItem);
 
     return (
       <Stack gap={1.5}>
-        <Stack direction="row" alignItems="center" gap={1}>
-          <Box className="canvas-item-icon">{config.icon}</Box>
-          <Box>
-            <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.15rem" }}>
-              {activePreviewItem.title}
+        <Stack direction="row" alignItems="center" gap={1.2}>
+          {renderItemIcon(type)}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.12rem" }}>
+              {selectedItem.title}
             </Typography>
             <Typography sx={{ color: "#607166", fontWeight: 800 }}>{config.label}</Typography>
           </Box>
         </Stack>
 
-        {activePreviewItem.description && (
-          <Typography sx={{ color: "#53685a", fontWeight: 800 }}>{activePreviewItem.description}</Typography>
+        {selectedItem.description && (
+          <Typography sx={{ color: "#53685a", fontWeight: 800 }}>{selectedItem.description}</Typography>
         )}
 
         {(type === "page" || type === "text") && (
-          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+          <Paper sx={{ ...softCardSx, p: 2, maxHeight: 320, overflow: "auto" }}>
             <Typography sx={{ color: "#173126", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
-              {activePreviewItem.content || "No page content yet."}
+              {selectedItem.content || "No page content yet."}
             </Typography>
           </Paper>
         )}
 
         {type === "link" && (
-          <Button
-            component="a"
-            href={activePreviewItem.external_url}
-            target="_blank"
-            rel="noreferrer"
-            startIcon={<LinkIcon />}
-            sx={{ ...buttonSx, justifyContent: "flex-start", color: "#173126" }}
-          >
-            {activePreviewItem.external_url || "No URL provided"}
-          </Button>
+          <Paper sx={{ ...softCardSx, p: 2 }}>
+            <Typography sx={{ color: "#607166", fontWeight: 800, mb: 1 }}>External learner resource</Typography>
+            <Button
+              component="a"
+              href={selectedItem.external_url || undefined}
+              target="_blank"
+              rel="noreferrer"
+              startIcon={<LinkIcon />}
+              disabled={!selectedItem.external_url}
+              sx={{ ...buttonSx, justifyContent: "flex-start", color: "#173126" }}
+            >
+              {selectedItem.external_url || "No URL provided"}
+            </Button>
+          </Paper>
         )}
 
         {["file", "image", "video"].includes(type) && (
-          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Box>
+          <Paper sx={{ ...softCardSx, p: 2 }}>
+            {type === "image" && fileUrl && (
+              <Box
+                component="img"
+                src={fileUrl}
+                alt={selectedItem.title}
+                sx={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: "14px", border: "1px solid #eadfbf", mb: 1.5 }}
+              />
+            )}
+            <Stack direction="row" justifyContent="space-between" gap={1.5} alignItems="center">
+              <Box sx={{ minWidth: 0 }}>
                 <Typography sx={{ color: "#173126", fontWeight: 950 }}>
-                  {activePreviewItem.file_name || "No uploaded file yet"}
+                  {selectedItem.file_name || selectedItem.title || "No uploaded file yet"}
                 </Typography>
                 <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-                  {activePreviewItem.mime_type || "File"} · {activePreviewItem.size || "0 B"}
+                  {selectedItem.mime_type || config.label} {selectedItem.size ? `· ${selectedItem.size}` : ""}
                 </Typography>
               </Box>
-              {activePreviewItem.download_url && (
-                <IconButton
-                  component="a"
-                  href={`${API_BASE_URL}${activePreviewItem.download_url}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+              {fileUrl && (
+                <IconButton component="a" href={fileUrl} target="_blank" rel="noreferrer">
                   <FileDownloadIcon />
                 </IconButton>
               )}
@@ -576,18 +635,18 @@ const CourseManagement = () => {
         )}
 
         {type === "quiz" && (
-          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+          <Paper sx={{ ...softCardSx, p: 2 }}>
             <Typography sx={{ color: "#173126", fontWeight: 950 }}>
-              {activePreviewItem.quiz?.question || "No quiz question yet."}
+              {selectedItem.quiz?.question || "No quiz question yet."}
             </Typography>
             <Stack gap={1} sx={{ mt: 1.4 }}>
-              {(activePreviewItem.quiz?.choices || []).map((choice, index) => (
+              {(selectedItem.quiz?.choices || []).map((choice, index) => (
                 <Box
                   key={`${choice}-${index}`}
                   sx={{
                     p: 1.2,
                     borderRadius: "12px",
-                    bgcolor: index === Number(activePreviewItem.quiz?.answer) ? "#dcf8c6" : "#ffffff",
+                    bgcolor: index === Number(selectedItem.quiz?.answer) ? "#dcf8c6" : "#ffffff",
                     border: "1px solid #eadfbf",
                     color: "#173126",
                     fontWeight: 800,
@@ -601,14 +660,17 @@ const CourseManagement = () => {
         )}
 
         {type === "checklist" && (
-          <Paper sx={{ p: 2, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+          <Paper sx={{ ...softCardSx, p: 2 }}>
             <Stack gap={1}>
-              {(activePreviewItem.checklist || []).map((step, index) => (
+              {(selectedItem.checklist || []).map((step, index) => (
                 <Stack key={`${step}-${index}`} direction="row" gap={1} alignItems="center">
                   <Chip label={String(index + 1).padStart(2, "0")} size="small" sx={{ bgcolor: "#ffd84d", color: "#173126", fontWeight: 950 }} />
                   <Typography sx={{ color: "#173126", fontWeight: 800 }}>{step}</Typography>
                 </Stack>
               ))}
+              {(!selectedItem.checklist || selectedItem.checklist.length === 0) && (
+                <Typography sx={{ color: "#607166", fontWeight: 800 }}>No checklist steps yet.</Typography>
+              )}
             </Stack>
           </Paper>
         )}
@@ -631,11 +693,10 @@ const CourseManagement = () => {
           <Box>
             <Typography className="admin-dashboard-kicker">Canvas-style training builder</Typography>
             <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1 }}>
-              Course modules
+              Course Builder
             </Typography>
-            <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 850, maxWidth: 820 }}>
-              Build SFC training like Canvas: courses contain modules, and modules contain pages, files, images,
-              videos, links, quizzes, and checklists.
+            <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 850, maxWidth: 880 }}>
+              Build complete SFC learning paths. Select a course, organize its modules, inspect the active module, and preview each learning item before it appears in the User Portal.
             </Typography>
           </Box>
 
@@ -644,7 +705,7 @@ const CourseManagement = () => {
               Refresh
             </Button>
             <Button onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={{ ...buttonSx, bgcolor: "#dcf8c6", color: "#173126" }}>
-              Insert Templates
+              Load Demo Course Records
             </Button>
             <Button
               variant="contained"
@@ -658,23 +719,30 @@ const CourseManagement = () => {
         </Stack>
       </Box>
 
-      <Grid container spacing={2.4}>
-        <Grid item xs={12} lg={3.2}>
-          <Box sx={{ ...panelSx, p: 2.2 }}>
-            <Typography className="admin-dashboard-kicker">Courses</Typography>
-            <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 2 }}>
-              Course list
-            </Typography>
+      {loading && <LinearProgress sx={{ mb: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
 
-            <Stack gap={1.2}>
+      <Grid container spacing={2.2} alignItems="flex-start">
+        <Grid item xs={12} lg={3}>
+          <Box sx={{ ...panelSx, p: 2.2, position: { lg: "sticky" }, top: { lg: 18 } }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
+              <Box>
+                <Typography className="admin-dashboard-kicker">Courses</Typography>
+                <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
+                  Course list
+                </Typography>
+              </Box>
+              <Chip label={String(courses.length).padStart(2, "0")} sx={{ ...statusChipSx, bgcolor: "#f3ffd4" }} />
+            </Stack>
+
+            <Stack gap={1.1} sx={{ maxHeight: { lg: "calc(100vh - 310px)" }, overflow: "auto", pr: 0.3 }}>
               {courses.map((course) => {
                 const active = selectedCourseId === course.course_id;
                 return (
-                  <Box
+                  <Paper
                     key={course.course_id}
                     onClick={() => setSelectedCourseId(course.course_id)}
                     sx={{
-                      p: 1.6,
+                      p: 1.5,
                       borderRadius: "16px",
                       cursor: "pointer",
                       border: active ? "2px solid #ff7a1a" : "1px solid #eadfbf",
@@ -693,296 +761,424 @@ const CourseManagement = () => {
                       </Stack>
                     </Stack>
                     <Typography sx={{ color: "#173126", fontWeight: 950, mt: 1 }}>{course.course_name}</Typography>
-                    <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.86rem", mt: 0.4 }}>
+                    <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.84rem", mt: 0.4 }}>
                       {course.description || "No description yet."}
                     </Typography>
-                  </Box>
+                  </Paper>
                 );
               })}
 
               {courses.length === 0 && (
                 <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-                  No courses yet. Create one or insert the demo templates.
+                  No courses yet. Create one or load the demo course records.
                 </Typography>
               )}
             </Stack>
           </Box>
         </Grid>
 
-        <Grid item xs={12} lg={5.8}>
-          <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
-            <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={2}>
-              <Box>
-                <Typography className="admin-dashboard-kicker">Selected course</Typography>
-                <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>
-                  {selectedCourse?.course_name || "No course selected"}
-                </Typography>
-                {selectedCourse && (
-                  <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.5 }}>
-                    {formatCourseDuration(selectedCourse)}
+        <Grid item xs={12} lg={5.5}>
+          <Stack gap={2.2}>
+            <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
+                <Box>
+                  <Typography className="admin-dashboard-kicker">Selected course</Typography>
+                  <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>
+                    {selectedCourse?.course_name || "No course selected"}
                   </Typography>
-                )}
-              </Box>
-
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={openCreateModule}
-                disabled={!selectedCourse}
-                sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
-              >
-                Add Module
-              </Button>
-            </Stack>
-
-            <Grid container spacing={1.4} sx={{ mt: 2 }}>
-              {[
-                ["Modules", modules.length],
-                ["Items", totalItems],
-                ["Resources", totalResources],
-                ["Hours", selectedCourse?.total_contact_hours || 0],
-              ].map(([label, value]) => (
-                <Grid item xs={6} md={3} key={label}>
-                  <Box sx={{ p: 1.4, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
-                    <Typography className="admin-dashboard-kicker">{label}</Typography>
-                    <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.55rem" }}>{value}</Typography>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-
-            {loading && <LinearProgress sx={{ my: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
-
-            <Stack gap={1.6} sx={{ mt: 2.4 }}>
-              {modules.map((module, moduleIndex) => {
-                const expanded = Boolean(expandedModules[module.module_id]);
-                return (
-                  <Box key={module.module_id} className="canvas-module-card">
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.4}>
-                      <Stack direction="row" alignItems="center" gap={1.4} sx={{ minWidth: 0 }}>
-                        <IconButton onClick={() => toggleModule(module.module_id)} className="canvas-module-toggle">
-                          {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </IconButton>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.08rem" }}>
-                            Module {moduleIndex + 1}: {module.title}
-                          </Typography>
-                          <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mt: 0.8 }}>
-                            <Chip label={module.status || "Published"} size="small" sx={{ bgcolor: "#dcf8c6", color: "#173126", fontWeight: 950 }} />
-                            <Chip label={module.level || "Beginner"} size="small" sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }} />
-                            <Chip label={module.duration || "45 minutes"} size="small" sx={{ bgcolor: "#edf4ff", color: "#173126", fontWeight: 950 }} />
-                            <Chip label={`${module.items?.length || 0} items`} size="small" sx={{ bgcolor: "#ffe2cf", color: "#173126", fontWeight: 950 }} />
-                          </Stack>
-                        </Box>
-                      </Stack>
-
-                      <Stack direction="row" gap={0.6}>
-                        <Button size="small" startIcon={<AddIcon />} onClick={() => openCreateItem(module)} sx={{ ...buttonSx, bgcolor: "#ffcf45", color: "#173126" }}>
-                          Item
-                        </Button>
-                        <IconButton size="small" onClick={() => openEditModule(module)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="error" onClick={() => deleteModule(module.module_id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Stack>
-
-                    <Collapse in={expanded}>
-                      <Divider sx={{ my: 1.4 }} />
-                      <Typography sx={{ color: "#607166", fontWeight: 800, mb: 1.3 }}>
-                        {module.description || "No module description yet."}
-                      </Typography>
-
-                      <Stack gap={1}>
-                        {(module.items || []).map((item) => {
-                          const type = item.item_type || "page";
-                          const config = itemTypeMap[type] || itemTypeMap.page;
-                          return (
-                            <Box
-                              key={item.item_id}
-                              className="canvas-item-row"
-                              onClick={() => setSelectedPreview({ module, item })}
-                            >
-                              <Stack direction="row" alignItems="center" gap={1.2} sx={{ minWidth: 0 }}>
-                                <Box className="canvas-item-icon">{config.icon}</Box>
-                                <Box sx={{ minWidth: 0 }}>
-                                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>{item.title}</Typography>
-                                  <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.86rem" }}>
-                                    {config.label} · {item.description || item.external_url || item.file_name || "No description"}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-
-                              <Stack direction="row" alignItems="center" gap={0.6}>
-                                <Chip label={item.status || "published"} size="small" sx={{ bgcolor: item.status === "draft" ? "#ffe2cf" : "#dcf8c6", color: "#173126", fontWeight: 900 }} />
-                                <IconButton size="small" onClick={(event) => { event.stopPropagation(); setSelectedPreview({ module, item }); }}>
-                                  <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" onClick={(event) => { event.stopPropagation(); openEditItem(module, item); }}>
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" color="error" onClick={(event) => { event.stopPropagation(); deleteItem(module, item); }}>
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Stack>
-                            </Box>
-                          );
-                        })}
-
-                        {(module.items || []).length === 0 && (
-                          <Box sx={{ p: 2, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                            <Typography sx={{ color: "#607166", fontWeight: 850 }}>
-                              No module items yet. Add a page, file, video, link, quiz, or checklist.
-                            </Typography>
-                          </Box>
-                        )}
-                      </Stack>
-                    </Collapse>
-                  </Box>
-                );
-              })}
-
-              {selectedCourse && modules.length === 0 && (
-                <Box sx={{ p: 3, borderRadius: "18px", bgcolor: "#fffaf0", border: "1px dashed #e8c777" }}>
-                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>This course has no modules yet.</Typography>
-                  <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.6 }}>
-                    Add a module first, then place learning items inside it like Canvas.
+                  <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.5 }}>
+                    {selectedCourse ? formatCourseDuration(selectedCourse) : "Choose a course from the list."}
                   </Typography>
                 </Box>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={openCreateModule}
+                  disabled={!selectedCourse}
+                  sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126", alignSelf: { xs: "stretch", sm: "center" } }}
+                >
+                  Add Module
+                </Button>
+              </Stack>
+
+              {selectedCourse?.description && (
+                <Typography sx={{ color: "#53685a", fontWeight: 800, mt: 1.3 }}>
+                  {selectedCourse.description}
+                </Typography>
               )}
-            </Stack>
-          </Box>
+
+              <Grid container spacing={1.2} sx={{ mt: 2 }}>
+                {[
+                  ["Modules", modules.length],
+                  ["Items", totalItems],
+                  ["Resources", totalResources],
+                  ["Hours", selectedCourse?.total_contact_hours || 0],
+                ].map(([label, value]) => (
+                  <Grid item xs={6} md={3} key={label}>
+                    <Box sx={{ p: 1.35, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
+                      <Typography className="admin-dashboard-kicker">{label}</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.45rem" }}>{value}</Typography>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+
+            <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1.5} sx={{ mb: 2 }}>
+                <Box>
+                  <Typography className="admin-dashboard-kicker">Module outline</Typography>
+                  <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
+                    Course flow
+                  </Typography>
+                </Box>
+                <Chip label="Click a module to edit items" sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }} />
+              </Stack>
+
+              <Stack gap={1.2}>
+                {modules.map((module, moduleIndex) => {
+                  const active = String(module.module_id) === String(selectedModule?.module_id);
+                  return (
+                    <Paper
+                      key={module.module_id}
+                      onClick={() => setSelectedModuleId(module.module_id)}
+                      sx={{
+                        p: 1.6,
+                        borderRadius: "16px",
+                        cursor: "pointer",
+                        border: active ? "2px solid #ff7a1a" : "1px solid #eadfbf",
+                        bgcolor: active ? "#fff3c4" : "#fffaf0",
+                      }}
+                    >
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5}>
+                        <Stack direction="row" alignItems="center" gap={1.2} sx={{ minWidth: 0 }}>
+                          <Box sx={{ width: 38, height: 38, borderRadius: "14px", background: "linear-gradient(135deg, #ff8a1d, #f3ffd4)", flexShrink: 0 }} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ color: "#173126", fontWeight: 950 }}>
+                              Module {moduleIndex + 1}: {module.title}
+                            </Typography>
+                            <Stack direction="row" flexWrap="wrap" gap={0.6} sx={{ mt: 0.7 }}>
+                              <Chip label={module.level || "Beginner"} size="small" sx={statusChipSx} />
+                              <Chip label={module.duration || "45 minutes"} size="small" sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }} />
+                              <Chip label={`${module.items?.length || 0} items`} size="small" sx={{ bgcolor: "#ffe2cf", color: "#173126", fontWeight: 950 }} />
+                            </Stack>
+                          </Box>
+                        </Stack>
+                        <Stack direction="row" gap={0.4} onClick={(event) => event.stopPropagation()}>
+                          <IconButton size="small" onClick={() => openEditModule(module)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" color="error" onClick={() => deleteModule(module.module_id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+
+                {modules.length === 0 && (
+                  <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                    No modules yet. Add the first module to start the course flow.
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+
+            <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
+                <Box>
+                  <Typography className="admin-dashboard-kicker">Selected module detail</Typography>
+                  <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950 }}>
+                    {selectedModule ? selectedModule.title : "No module selected"}
+                  </Typography>
+                  {selectedModule?.description && (
+                    <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.7 }}>
+                      {selectedModule.description}
+                    </Typography>
+                  )}
+                </Box>
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={() => openCreateItem(selectedModule)}
+                  disabled={!selectedModule}
+                  sx={{ ...buttonSx, bgcolor: "#ffcf45", color: "#173126", alignSelf: { xs: "stretch", sm: "flex-start" } }}
+                >
+                  Add Item
+                </Button>
+              </Stack>
+
+              {selectedModule && (
+                <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mb: 1.8 }}>
+                  <Chip label={selectedModule.status || "Published"} sx={statusChipSx} />
+                  <Chip label={selectedModule.park || "All Parks"} sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }} />
+                  <Chip label={selectedModule.category || "Field Readiness"} sx={{ bgcolor: "#edf4ff", color: "#173126", fontWeight: 950 }} />
+                </Stack>
+              )}
+
+              <Stack gap={1.1} sx={{ maxHeight: { md: 520 }, overflow: "auto", pr: 0.3 }}>
+                {(selectedModule?.items || []).map((item, itemIndex) => {
+                  const active = String(item.item_id) === String(selectedItem?.item_id);
+                  const config = getItemTypeConfig(item.item_type);
+                  return (
+                    <Paper
+                      key={item.item_id || `${item.title}-${itemIndex}`}
+                      onClick={() => setSelectedItemId(item.item_id)}
+                      sx={{
+                        p: 1.25,
+                        borderRadius: "15px",
+                        cursor: "pointer",
+                        border: active ? "2px solid #ff7a1a" : "1px solid #eadfbf",
+                        bgcolor: active ? "#fff3c4" : "#fffdf5",
+                      }}
+                    >
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.2}>
+                        <Stack direction="row" alignItems="center" gap={1.1} sx={{ minWidth: 0 }}>
+                          {renderItemIcon(item.item_type)}
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ color: "#173126", fontWeight: 950 }}>
+                              {String(itemIndex + 1).padStart(2, "0")}. {item.title}
+                            </Typography>
+                            <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.84rem" }}>
+                              {config.label} · {item.description || config.helper}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        <Stack direction="row" gap={0.4} onClick={(event) => event.stopPropagation()}>
+                          <IconButton size="small" onClick={() => setSelectedItemId(item.item_id)}>
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => openEditItem(selectedModule, item)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" color="error" onClick={() => deleteItem(selectedModule, item)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+
+                {selectedModule && (!selectedModule.items || selectedModule.items.length === 0) && (
+                  <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                    No items in this module yet. Add a page, file, quiz, or checklist.
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+          </Stack>
         </Grid>
 
-        <Grid item xs={12} lg={3}>
-          <Box sx={{ ...panelSx, p: 2.2, position: { lg: "sticky" }, top: 100 }}>
-            <Typography className="admin-dashboard-kicker">Park Guide Preview</Typography>
-            <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1.6 }}>
-              Preview
-            </Typography>
-            {renderPreview()}
-          </Box>
+        <Grid item xs={12} lg={3.5}>
+          <Stack gap={2.2} sx={{ position: { lg: "sticky" }, top: { lg: 18 } }}>
+            <Box sx={{ ...panelSx, p: 2.2 }}>
+              <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
+              <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
+                Course structure
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mb: 1.5 }}>
+                {itemTypeOptions.map((type) => (
+                  <Chip
+                    key={type}
+                    icon={getItemTypeConfig(type).icon}
+                    label={`${getItemTypeConfig(type).label}: ${itemTypeCounts[type] || 0}`}
+                    sx={{ bgcolor: itemTypeCounts[type] ? "#dcf8c6" : "#fffaf0", color: "#173126", fontWeight: 850 }}
+                  />
+                ))}
+              </Stack>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                This builder reads the same MySQL course records that the User Portal displays. Keep the demo data in SQL, not hardcoded frontend arrays.
+              </Typography>
+            </Box>
+
+            <Box sx={{ ...panelSx, p: 2.2 }}>
+              <Typography className="admin-dashboard-kicker">Park guide preview</Typography>
+              <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1.6 }}>
+                Item preview
+              </Typography>
+              {renderPreview()}
+            </Box>
+
+            <Box sx={{ ...panelSx, p: 2.2, bgcolor: "#fff3c4" }}>
+              <Typography className="admin-dashboard-kicker">Admin guardrail</Typography>
+              <Typography sx={{ color: "#173126", fontWeight: 900 }}>
+                Course Builder controls course content only. Incident decisions, Ranger recommendations, and IoT grouping stay in their own Admin pages.
+              </Typography>
+            </Box>
+          </Stack>
         </Grid>
       </Grid>
 
-      <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} fullWidth maxWidth="sm" className="canvas-builder-dialog">
-        <DialogTitle>{editingCourseId ? "Edit Course" : "Create Course"}</DialogTitle>
-        <DialogContent className="canvas-dialog-grid">
-          <TextField label="Course ID" value={courseForm.course_id} disabled={Boolean(editingCourseId)} onChange={(event) => setCourseForm((prev) => ({ ...prev, course_id: event.target.value }))} fullWidth />
-          <TextField label="Course Name" value={courseForm.course_name} onChange={(event) => setCourseForm((prev) => ({ ...prev, course_name: event.target.value }))} fullWidth />
-          <TextField label="Description" value={courseForm.description} onChange={(event) => setCourseForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={3} />
-          <TextField label="Start Date" type="date" value={courseForm.start_date} onChange={(event) => setCourseForm((prev) => ({ ...prev, start_date: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
-          <TextField label="End Date" type="date" value={courseForm.end_date} onChange={(event) => setCourseForm((prev) => ({ ...prev, end_date: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
-          <TextField label="Total Contact Hours" type="number" value={courseForm.total_contact_hours} onChange={(event) => setCourseForm((prev) => ({ ...prev, total_contact_hours: event.target.value }))} fullWidth />
+      <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>{editingCourseId ? "Edit Course" : "Create Course"}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={4}>
+              <TextField label="Course ID" value={courseForm.course_id} disabled={Boolean(editingCourseId)} onChange={(event) => setCourseForm({ ...courseForm, course_id: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <TextField label="Course name" value={courseForm.course_name} onChange={(event) => setCourseForm({ ...courseForm, course_name: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="Description" value={courseForm.description} onChange={(event) => setCourseForm({ ...courseForm, description: event.target.value })} fullWidth multiline minRows={3} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Start date" type="date" value={courseForm.start_date} onChange={(event) => setCourseForm({ ...courseForm, start_date: event.target.value })} fullWidth InputLabelProps={{ shrink: true }} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="End date" type="date" value={courseForm.end_date} onChange={(event) => setCourseForm({ ...courseForm, end_date: event.target.value })} fullWidth InputLabelProps={{ shrink: true }} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Contact hours" type="number" value={courseForm.total_contact_hours} onChange={(event) => setCourseForm({ ...courseForm, total_contact_hours: event.target.value })} fullWidth />
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setCourseDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveCourse} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
-            Save Course
-          </Button>
+          <Button variant="contained" onClick={saveCourse} sx={{ ...buttonSx, bgcolor: "#ff8a1d", color: "#173126" }}>Save Course</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} fullWidth maxWidth="md" className="canvas-builder-dialog">
-        <DialogTitle>{editingModuleId ? "Edit Module" : "Add Module"}</DialogTitle>
-        <DialogContent className="canvas-dialog-grid">
-          <TextField label="Module Title" value={moduleForm.title} onChange={(event) => setModuleForm((prev) => ({ ...prev, title: event.target.value }))} fullWidth />
-          <TextField label="Short Description" value={moduleForm.description} onChange={(event) => setModuleForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={3} />
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}><TextField label="Category" value={moduleForm.category} onChange={(event) => setModuleForm((prev) => ({ ...prev, category: event.target.value }))} fullWidth /></Grid>
-            <Grid item xs={12} md={4}><TextField label="Park" value={moduleForm.park} onChange={(event) => setModuleForm((prev) => ({ ...prev, park: event.target.value }))} fullWidth /></Grid>
-            <Grid item xs={12} md={4}><TextField label="Level" value={moduleForm.level} onChange={(event) => setModuleForm((prev) => ({ ...prev, level: event.target.value }))} fullWidth /></Grid>
-            <Grid item xs={12} md={4}><TextField label="Duration" value={moduleForm.duration} onChange={(event) => setModuleForm((prev) => ({ ...prev, duration: event.target.value }))} fullWidth /></Grid>
-            <Grid item xs={12} md={4}><TextField label="Badge Name" value={moduleForm.badge_name} onChange={(event) => setModuleForm((prev) => ({ ...prev, badge_name: event.target.value }))} fullWidth /></Grid>
-            <Grid item xs={12} md={4}><TextField label="Sort Order" type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((prev) => ({ ...prev, sort_order: event.target.value }))} fullWidth /></Grid>
-          </Grid>
-          <TextField label="Learning objectives, one per line" value={moduleForm.objectivesText} onChange={(event) => setModuleForm((prev) => ({ ...prev, objectivesText: event.target.value }))} fullWidth multiline minRows={4} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModuleDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveModule} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
-            Save Module
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={itemDialogOpen} onClose={() => setItemDialogOpen(false)} fullWidth maxWidth="md" className="canvas-builder-dialog">
-        <DialogTitle>{editingItem ? "Edit Module Item" : "Add Module Item"}</DialogTitle>
-        <DialogContent className="canvas-dialog-grid">
-          <Grid container spacing={1.4}>
-            {Object.entries(itemTypeMap).map(([type, config]) => (
-              <Grid item xs={6} md={3} key={type}>
-                <Box
-                  onClick={() => setItemForm((prev) => ({ ...prev, item_type: type }))}
-                  className={`canvas-type-card ${itemForm.item_type === type ? "active" : ""}`}
-                >
-                  <Box className="canvas-item-icon">{config.icon}</Box>
-                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>{config.label}</Typography>
-                  <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.78rem" }}>{config.helper}</Typography>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-
-          <TextField label="Item Title" value={itemForm.title} onChange={(event) => setItemForm((prev) => ({ ...prev, title: event.target.value }))} fullWidth />
-          <TextField label="Description" value={itemForm.description} onChange={(event) => setItemForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth multiline minRows={2} />
-
-          {(itemForm.item_type === "page" || itemForm.item_type === "text") && (
-            <TextField label="Page / text content" value={itemForm.content} onChange={(event) => setItemForm((prev) => ({ ...prev, content: event.target.value }))} fullWidth multiline minRows={8} />
-          )}
-
-          {itemForm.item_type === "link" && (
-            <TextField label="External URL" value={itemForm.external_url} onChange={(event) => setItemForm((prev) => ({ ...prev, external_url: event.target.value }))} fullWidth />
-          )}
-
-          {["file", "image", "video"].includes(itemForm.item_type) && (
-            <Box sx={{ p: 2, borderRadius: "16px", border: "1px dashed #e8c777", bgcolor: "#fffaf0" }}>
-              <Button component="label" startIcon={<UploadFileIcon />} sx={{ ...buttonSx, bgcolor: "#fff3c4", color: "#173126" }}>
-                Choose {itemTypeMap[itemForm.item_type].label}
-                <input hidden type="file" onChange={(event) => setItemForm((prev) => ({ ...prev, file: event.target.files?.[0] || null }))} />
-              </Button>
-              <Typography sx={{ mt: 1, color: "#607166", fontWeight: 800 }}>
-                {itemForm.file ? itemForm.file.name : editingItem?.file_name || "No file selected"}
-              </Typography>
-            </Box>
-          )}
-
-          {itemForm.item_type === "quiz" && (
-            <>
-              <TextField label="Question" value={itemForm.question} onChange={(event) => setItemForm((prev) => ({ ...prev, question: event.target.value }))} fullWidth multiline minRows={2} />
-              <TextField label="Choices, one per line" value={itemForm.choicesText} onChange={(event) => setItemForm((prev) => ({ ...prev, choicesText: event.target.value }))} fullWidth multiline minRows={4} />
-              <TextField label="Correct answer index, starting from 0" type="number" value={itemForm.correctAnswer} onChange={(event) => setItemForm((prev) => ({ ...prev, correctAnswer: event.target.value }))} fullWidth />
-            </>
-          )}
-
-          {itemForm.item_type === "checklist" && (
-            <TextField label="Checklist items, one per line" value={itemForm.checklistText} onChange={(event) => setItemForm((prev) => ({ ...prev, checklistText: event.target.value }))} fullWidth multiline minRows={6} />
-          )}
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField select label="Status" value={itemForm.status} onChange={(event) => setItemForm((prev) => ({ ...prev, status: event.target.value }))} fullWidth>
-                <MenuItem value="published">Published</MenuItem>
-                <MenuItem value="draft">Draft</MenuItem>
+      <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>{editingModuleId ? "Edit Module" : "Add Module"}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={8}>
+              <TextField label="Module title" value={moduleForm.title} onChange={(event) => setModuleForm({ ...moduleForm, title: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Sort order" type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm({ ...moduleForm, sort_order: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="Description" value={moduleForm.description} onChange={(event) => setModuleForm({ ...moduleForm, description: event.target.value })} fullWidth multiline minRows={3} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Category" value={moduleForm.category} onChange={(event) => setModuleForm({ ...moduleForm, category: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Park" value={moduleForm.park} onChange={(event) => setModuleForm({ ...moduleForm, park: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Level" value={moduleForm.level} onChange={(event) => setModuleForm({ ...moduleForm, level: event.target.value })} fullWidth select>
+                {['Beginner', 'Intermediate', 'Advanced'].map((level) => <MenuItem key={level} value={level}>{level}</MenuItem>)}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Duration" value={moduleForm.duration} onChange={(event) => setModuleForm({ ...moduleForm, duration: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Format" value={moduleForm.format} onChange={(event) => setModuleForm({ ...moduleForm, format: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField label="Status" value={moduleForm.status} onChange={(event) => setModuleForm({ ...moduleForm, status: event.target.value })} fullWidth select>
+                {['Published', 'Draft', 'Archived'].map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Sort Order" type="number" value={itemForm.sort_order} onChange={(event) => setItemForm((prev) => ({ ...prev, sort_order: event.target.value }))} fullWidth />
+              <TextField label="Badge name" value={moduleForm.badge_name} onChange={(event) => setModuleForm({ ...moduleForm, badge_name: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField label="Objectives" value={moduleForm.objectivesText} onChange={(event) => setModuleForm({ ...moduleForm, objectivesText: event.target.value })} fullWidth multiline minRows={3} helperText="One objective per line" />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setItemDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveItem} sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}>
-            Save Item
-          </Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setModuleDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveModule} sx={{ ...buttonSx, bgcolor: "#ff8a1d", color: "#173126" }}>Save Module</Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={snackbar.open} autoHideDuration={3200} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+      <Dialog open={itemDialogOpen} onClose={() => setItemDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>{editingItem ? "Edit Module Item" : "Add Module Item"}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={4}>
+              <TextField label="Item type" value={itemForm.item_type} onChange={(event) => setItemForm({ ...itemForm, item_type: event.target.value })} fullWidth select>
+                {itemTypeOptions.map((type) => (
+                  <MenuItem key={type} value={type}>{getItemTypeConfig(type).label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField label="Title" value={itemForm.title} onChange={(event) => setItemForm({ ...itemForm, title: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <TextField label="Order" type="number" value={itemForm.sort_order} onChange={(event) => setItemForm({ ...itemForm, sort_order: event.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="Description" value={itemForm.description} onChange={(event) => setItemForm({ ...itemForm, description: event.target.value })} fullWidth />
+            </Grid>
+
+            {(itemForm.item_type === "page" || itemForm.item_type === "text") && (
+              <Grid item xs={12}>
+                <TextField label="Content" value={itemForm.content} onChange={(event) => setItemForm({ ...itemForm, content: event.target.value })} fullWidth multiline minRows={6} />
+              </Grid>
+            )}
+
+            {itemForm.item_type === "link" && (
+              <>
+                <Grid item xs={12}>
+                  <TextField label="External URL" value={itemForm.external_url} onChange={(event) => setItemForm({ ...itemForm, external_url: event.target.value })} fullWidth />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Link instructions" value={itemForm.content} onChange={(event) => setItemForm({ ...itemForm, content: event.target.value })} fullWidth multiline minRows={3} />
+                </Grid>
+              </>
+            )}
+
+            {["file", "image", "video"].includes(itemForm.item_type) && (
+              <Grid item xs={12}>
+                <Paper sx={{ ...softCardSx, p: 2 }}>
+                  <Stack gap={1.2}>
+                    <Button component="label" startIcon={<UploadFileIcon />} sx={{ ...buttonSx, bgcolor: "#fff3c4", color: "#173126", alignSelf: "flex-start" }}>
+                      Choose file
+                      <input hidden type="file" onChange={(event) => setItemForm({ ...itemForm, file: event.target.files?.[0] || null })} />
+                    </Button>
+                    <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                      {itemForm.file ? itemForm.file.name : "No new file selected. Existing uploaded file will remain if backend preserves it."}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              </Grid>
+            )}
+
+            {itemForm.item_type === "quiz" && (
+              <>
+                <Grid item xs={12}>
+                  <TextField label="Question" value={itemForm.question} onChange={(event) => setItemForm({ ...itemForm, question: event.target.value })} fullWidth multiline minRows={3} />
+                </Grid>
+                <Grid item xs={12} md={8}>
+                  <TextField label="Choices" value={itemForm.choicesText} onChange={(event) => setItemForm({ ...itemForm, choicesText: event.target.value })} fullWidth multiline minRows={4} helperText="One answer choice per line" />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField label="Correct answer index" type="number" value={itemForm.correctAnswer} onChange={(event) => setItemForm({ ...itemForm, correctAnswer: event.target.value })} fullWidth helperText="0 means first choice" />
+                </Grid>
+              </>
+            )}
+
+            {itemForm.item_type === "checklist" && (
+              <Grid item xs={12}>
+                <TextField label="Checklist steps" value={itemForm.checklistText} onChange={(event) => setItemForm({ ...itemForm, checklistText: event.target.value })} fullWidth multiline minRows={5} helperText="One step per line" />
+              </Grid>
+            )}
+
+            <Grid item xs={12} md={6}>
+              <TextField label="Status" value={itemForm.status} onChange={(event) => setItemForm({ ...itemForm, status: event.target.value })} fullWidth select>
+                {['published', 'draft', 'archived'].map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
+              </TextField>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setItemDialogOpen(false)} sx={buttonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveItem} sx={{ ...buttonSx, bgcolor: "#ff8a1d", color: "#173126" }}>Save Item</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert severity={snackbar.severity} variant="filled" onClose={() => setSnackbar({ ...snackbar, open: false })}>
           {snackbar.message}
         </Alert>
       </Snackbar>

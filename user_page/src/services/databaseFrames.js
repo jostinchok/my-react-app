@@ -129,10 +129,10 @@ export const DATABASE_TABLE_TEMPLATE = {
 }
 
 export const PROFILE_FIELD_RULES = {
-  readOnlyFromDatabase: ['birthday', 'assignedPark', 'position', 'guideId', 'role'],
-  editableAndSavedToDatabase: ['displayName', 'email', 'phone', 'yearsExperience', 'address'],
+  readOnlyFromDatabase: ['assignedPark', 'position', 'guideId', 'role'],
+  editableAndSavedToDatabase: ['displayName', 'birthday', 'email', 'phone', 'yearsExperience', 'address'],
   dbSqlReadyFields: {
-    birthday: 'not included in database/db.sql',
+    birthday: 'users.birthday',
     phone: 'guide_profiles.phone',
     displayName: 'users.name',
     email: 'users.email',
@@ -145,7 +145,7 @@ export const PROFILE_FIELD_RULES = {
   },
 }
 
-const placeholderImage = '/training/protected-areas.png'
+const placeholderImage = ''
 
 export const MYSQL_ENDPOINT_QUERY_TEMPLATE = {
   modules: `
@@ -262,6 +262,14 @@ const parseList = (value) => {
 
 const asText = (value, fallback = '') => String(firstValue(value, fallback))
 
+const asBoolean = (value) => {
+  const raw = firstValue(value, false)
+  if (typeof raw === 'boolean') return raw
+  if (typeof raw === 'number') return raw !== 0
+  const text = String(raw).trim().toLowerCase()
+  return text === '1' || text === 'true' || text === 'yes'
+}
+
 const normalizeOptions = (value) =>
   parseList(value).map((option, index) =>
     typeof option === 'string'
@@ -287,6 +295,14 @@ export const normalizeModuleRow = (row, index = 0) => {
   return {
     id,
     courseId: asText(row.course_id, ''),
+    courseName: asText(firstValue(row.courseName, row.course_name, row.course_title), ''),
+    courseTitle: asText(firstValue(row.courseTitle, row.course_name, row.course_title), ''),
+    courseDescription: asText(firstValue(row.courseDescription, row.course_description), ''),
+    courseStartDate: asText(firstValue(row.courseStartDate, row.course_start_date), ''),
+    courseEndDate: asText(firstValue(row.courseEndDate, row.course_end_date), ''),
+    courseContactHours: Number(firstValue(row.courseContactHours, row.course_contact_hours, 0)) || 0,
+    sortOrder: Number(firstValue(row.sortOrder, row.sort_order, row.moduleSortOrder, row.module_sort_order, index + 1)) || index + 1,
+    sort_order: Number(firstValue(row.sortOrder, row.sort_order, row.moduleSortOrder, row.module_sort_order, index + 1)) || index + 1,
     title,
     subtitle: asText(firstValue(row.subtitle, row.description), 'Module description will appear here after database data is loaded.'),
     category: asText(firstValue(row.category, row.type), 'Database Module'),
@@ -339,6 +355,7 @@ export const normalizeCourseFileRow = (row = {}) => ({
 
 export const normalizeCertificateRow = (row = {}) => ({
   id: asText(firstValue(row.id, row.cert_id)),
+  courseId: asText(firstValue(row.courseId, row.course_id)),
   moduleId: asText(firstValue(row.moduleId, row.module_id)),
   title: asText(firstValue(row.title, row.module_title), 'Training credential'),
   status: asText(row.status, row.issue_date ? 'Issued' : 'Pending'),
@@ -351,7 +368,7 @@ export const normalizeNotificationRow = (row = {}) => ({
   title: asText(row.title, 'Notification'),
   body: asText(firstValue(row.body, row.message)),
   type: asText(row.type, 'training'),
-  read: Boolean(firstValue(row.read, row.is_read, false)),
+  read: asBoolean(firstValue(row.read, row.is_read, false)),
   createdAt: asText(firstValue(row.createdAt, row.created_at), new Date().toISOString()),
 })
 
@@ -462,6 +479,49 @@ export const saveProfileField = async (field, value, userId) => {
 
   if (!response.ok) {
     throw new Error(payload.message || `Unable to save ${field}.`)
+  }
+
+  return payload
+}
+
+export const saveNotificationRead = async (notificationId, userId, read = true) => {
+  const response = await fetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}/read`, userId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ read }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to update notification.')
+  }
+
+  return payload
+}
+
+export const saveAllNotificationsRead = async (userId) => {
+  const response = await fetch(withUserId(`${API_LINKS.notifications}/read-all`, userId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ read: true }),
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to update notifications.')
+  }
+
+  return payload
+}
+
+export const deleteNotification = async (notificationId, userId) => {
+  const response = await fetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}`, userId), {
+    method: 'DELETE',
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'Unable to delete notification.')
   }
 
   return payload

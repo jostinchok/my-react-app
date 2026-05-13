@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     role_id INT,
     name VARCHAR(100),
     email VARCHAR(100) UNIQUE,
+    birthday DATE NULL,
     password_hash VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES roles(role_id)
@@ -32,8 +33,10 @@ CREATE TABLE IF NOT EXISTS guide_profiles (
     phone VARCHAR(20),
     organization VARCHAR(100),
     -- user_page database require
+    birthday DATE,
     years_experience INT DEFAULT 0,
     address VARCHAR(255),
+    assigned_park VARCHAR(100),
     avatar_url VARCHAR(255),
     -- until here
     status ENUM('active', 'inactive') DEFAULT 'active',
@@ -278,7 +281,7 @@ CREATE TABLE IF NOT EXISTS monitoring_incident_evidence_files (
         ON DELETE CASCADE
 );
 
-INSERT IGNORE INTO roles (role_id, role_name) VALUES (1, 'admin'), (2, 'guide');
+INSERT IGNORE INTO roles (role_id, role_name) VALUES (1, 'admin'), (2, 'guide'), (3, 'ranger');
 
 -- Test password for seeded users: 1234
 INSERT INTO users (role_id, name, email, password_hash)
@@ -297,6 +300,51 @@ ON DUPLICATE KEY UPDATE
 
 INSERT IGNORE INTO guide_profiles (guide_id, phone, organization)
 VALUES ((SELECT user_id FROM users WHERE email = 'guide@test.com'), '0123456789', 'Sarawak Forestry');
+
+-- Presentation demo login accounts. Password for each account: 1234
+INSERT INTO users (role_id, name, email, password_hash)
+VALUES
+    ((SELECT role_id FROM roles WHERE role_name = 'admin'), 'Admin Demo', 'admin@example.com', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6'),
+    ((SELECT role_id FROM roles WHERE role_name = 'guide'), 'User 1', 'user1@demo.local', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6'),
+    ((SELECT role_id FROM roles WHERE role_name = 'guide'), 'User 2', 'user2@demo.local', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6'),
+    ((SELECT role_id FROM roles WHERE role_name = 'guide'), 'User 3', 'user3@demo.local', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6'),
+    ((SELECT role_id FROM roles WHERE role_name = 'ranger'), 'Ranger 1', 'ranger1@demo.local', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6'),
+    ((SELECT role_id FROM roles WHERE role_name = 'ranger'), 'Ranger 2', 'ranger2@demo.local', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6'),
+    ((SELECT role_id FROM roles WHERE role_name = 'ranger'), 'Ranger 3', 'ranger3@demo.local', '$2b$10$bf7s79R/uXOcXtMqY3S36.d/pgJs14Nob9Kkls4a93in/uY9vmOa6')
+ON DUPLICATE KEY UPDATE
+    role_id = VALUES(role_id),
+    name = VALUES(name),
+    password_hash = VALUES(password_hash);
+
+INSERT INTO guide_profiles (guide_id, phone, organization, years_experience, address, status)
+SELECT user_id, '', 'Sarawak Forestry Corporation', 2, 'Bako National Park demo profile', 'active'
+FROM users
+WHERE email = 'user1@demo.local'
+ON DUPLICATE KEY UPDATE
+    organization = VALUES(organization),
+    years_experience = VALUES(years_experience),
+    address = VALUES(address),
+    status = VALUES(status);
+
+INSERT INTO guide_profiles (guide_id, phone, organization, years_experience, address, status)
+SELECT user_id, '', 'Sarawak Forestry Corporation', 2, 'Semenggoh Nature Reserve demo profile', 'active'
+FROM users
+WHERE email = 'user2@demo.local'
+ON DUPLICATE KEY UPDATE
+    organization = VALUES(organization),
+    years_experience = VALUES(years_experience),
+    address = VALUES(address),
+    status = VALUES(status);
+
+INSERT INTO guide_profiles (guide_id, phone, organization, years_experience, address, status)
+SELECT user_id, '', 'Sarawak Forestry Corporation', 2, 'Gunung Mulu National Park demo profile', 'active'
+FROM users
+WHERE email = 'user3@demo.local'
+ON DUPLICATE KEY UPDATE
+    organization = VALUES(organization),
+    years_experience = VALUES(years_experience),
+    address = VALUES(address),
+    status = VALUES(status);
 
 INSERT INTO training_modules
     (title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, created_by)

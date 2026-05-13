@@ -75,9 +75,9 @@ const services = [
     command: nodeCommand,
     args: [resolve(loginPageDir, 'node_modules', 'vite', 'bin', 'vite.js')],
     cwd: loginPageDir,
-    url: 'http://localhost:5176/login',
+    url: 'http://localhost:5176/login/',
     port: 5176,
-    healthUrl: 'http://localhost:5176/login',
+    healthUrl: 'http://localhost:5176/login/',
   },
   {
     name: 'user',

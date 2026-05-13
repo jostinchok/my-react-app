@@ -115,7 +115,7 @@ const seededIncidentRecords = [
     location: "Demo Camera Zone - Plant Walkway",
     status: "New",
     evidence: {
-      image_path: publicAsset("incidents/ai-touching-plants.jpg"),
+      image_path: publicAsset("incidents/ai-plucking-plants.jpg"),
       json_path: "alerts/ai/2026-04-27_10-30-00_alert_PluckingPlants.json",
     },
     ai: {
@@ -191,7 +191,7 @@ const seededIncidentRecords = [
     location: "Gunung Gading - Sensitive Viewing Platform",
     status: "False Alarm",
     evidence: {
-      image_path: publicAsset("incidents/ai-touching-plants.jpg"),
+      image_path: publicAsset("incidents/ai-plucking-plants.jpg"),
       json_path: "alerts/ai/2026-04-27_12-05-33_alert_PluckingPlants.json",
     },
     ai: {
