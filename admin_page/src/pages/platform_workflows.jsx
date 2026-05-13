@@ -16,11 +16,12 @@ import {
   Typography,
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
+import { authFetch } from "../utils/authFetch";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
 
 const requestJson = async (url, options = {}) => {
-  const response = await fetch(url, options);
+  const response = await authFetch(url, options);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.message || "Request failed.");

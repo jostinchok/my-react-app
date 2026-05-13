@@ -74,7 +74,7 @@ const TrainingModuleSetup = () => {
 
   const loadAdminProgressSummary = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/canvas-progress-summary`);
+      const response = await authFetch(`${API_BASE_URL}/api/admin/canvas-progress-summary`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || "Progress summary unavailable.");
 

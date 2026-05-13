@@ -64,20 +64,27 @@ const Login = ({ onRegister, onForgot }) => {
 
       const user = data.user;
 
-      localStorage.setItem('sfc_token', data.token);
-
-      localStorage.setItem('sfc_session', JSON.stringify({
+      const session = {
         user_id: user.user_id,
         name: user.name,
         email: user.email,
         role: user.role_name,
         token: data.token,
         loginAt: new Date().toISOString(),
-      }));
+      };
+
+      localStorage.setItem('sfc_token', data.token);
+      localStorage.setItem('sfc_session', JSON.stringify(session));
 
       setMessage({ text: 'Login successful. Redirecting…', type: 'success' });
       const redirect = ROLE_REDIRECTS[user.role_name] || '/user';
-      setTimeout(() => { window.location.href = redirect; }, 600);
+      const redirectUrl = new URL(redirect, window.location.origin);
+      redirectUrl.hash = new URLSearchParams({
+        sfc_token: data.token,
+        sfc_session: JSON.stringify(session),
+      }).toString();
+
+      setTimeout(() => { window.location.href = redirectUrl.toString(); }, 600);
     } catch {
       setMessage({ text: 'Unable to connect to server. Please try again.', type: 'error' });
     } finally {

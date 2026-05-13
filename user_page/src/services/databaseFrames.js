@@ -33,7 +33,45 @@ export const API_LINKS = {
     `${USER_API_BASE_URL}/api/canvas-progress`,
 }
 
+export const consumeAuthHandoff = () => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return
+
+  const rawHash = window.location.hash?.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash || ''
+  if (!rawHash) return
+
+  const params = new URLSearchParams(rawHash)
+  const token = params.get('sfc_token') || ''
+  const sessionText = params.get('sfc_session') || ''
+  if (!token && !sessionText) return
+
+  if (token) localStorage.setItem('sfc_token', token)
+
+  if (sessionText) {
+    try {
+      const session = JSON.parse(sessionText)
+      localStorage.setItem('sfc_session', JSON.stringify({
+        ...session,
+        token: session.token || token,
+      }))
+    } catch {
+      localStorage.setItem('sfc_session', sessionText)
+    }
+  }
+
+  window.history.replaceState(
+    window.history.state,
+    document.title,
+    `${window.location.pathname}${window.location.search}`
+  )
+}
+
+consumeAuthHandoff()
+
 export const getAuthToken = () => {
+  consumeAuthHandoff()
+
   try {
     const session = JSON.parse(localStorage.getItem('sfc_session') || '{}')
     return session.token || localStorage.getItem('sfc_token') || ''
@@ -485,7 +523,7 @@ export const saveProfileField = async (field, value, userId) => {
 }
 
 export const saveNotificationRead = async (notificationId, userId, read = true) => {
-  const response = await fetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}/read`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}/read`, userId), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ read }),
@@ -500,7 +538,7 @@ export const saveNotificationRead = async (notificationId, userId, read = true) 
 }
 
 export const saveAllNotificationsRead = async (userId) => {
-  const response = await fetch(withUserId(`${API_LINKS.notifications}/read-all`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.notifications}/read-all`, userId), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ read: true }),
@@ -515,7 +553,7 @@ export const saveAllNotificationsRead = async (userId) => {
 }
 
 export const deleteNotification = async (notificationId, userId) => {
-  const response = await fetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}`, userId), {
+  const response = await authFetch(withUserId(`${API_LINKS.notifications}/${encodeURIComponent(notificationId)}`, userId), {
     method: 'DELETE',
   })
   const payload = await response.json().catch(() => ({}))

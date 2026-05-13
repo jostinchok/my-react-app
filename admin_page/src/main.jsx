@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import './index.css'
 import AdminPage from './Admin';
 import ParkRangerConsole from "./pages/ParkRangerConsole.jsx";
+import { consumeAuthHandoff } from './utils/authFetch.js'
+
+consumeAuthHandoff()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
