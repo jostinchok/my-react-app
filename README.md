@@ -45,7 +45,7 @@ Image optimization status:
 /Users/chiayuenkai/Desktop/GitHub/my-react-app/
 ├── .venv/
 ├── artifacts/clip_2class_touching_species.pt
-├── datasets/touching-plants/
+├── datasets/<plant-class dataset folder>/
 ├── datasets/touching-wildlife/
 ├── models/hand_landmarker.task
 ├── alerts/ai/
@@ -100,7 +100,7 @@ my-react-app/
 ├── models/
 │   └── hand_landmarker.task
 ├── datasets/
-│   ├── touching-plants/
+│   ├── <plant-class dataset folder>/
 │   └── touching-wildlife/
 ├── alerts/
 │   ├── ai/

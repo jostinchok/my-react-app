@@ -349,7 +349,7 @@ const validateIncidentInput = (payload = {}) => {
 
   const eventType = eventTypeFromPayload(payload, source)
   if (!VALID_EVENT_TYPES.has(eventType)) {
-    return { valid: false, message: 'Invalid event type. Use TouchingPlants, TouchingWildlife, or ObjectCloseToPlant.' }
+    return { valid: false, message: 'Invalid event type. Use PluckingPlants, TouchingWildlife, or ObjectCloseToPlant. Legacy plant-class aliases are accepted for older AI model output.' }
   }
 
   const severity = typeof payload.severity === 'string' ? payload.severity.toLowerCase() : null

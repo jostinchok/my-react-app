@@ -68,7 +68,7 @@ Required local-only assets:
 ```text
 artifacts/clip_2class_touching_species.pt
 models/hand_landmarker.task
-datasets/touching-plants/
+datasets/<plant-class dataset folder>/
 datasets/touching-wildlife/
 alerts/ai/
 alerts/iot/

@@ -1,5 +1,63 @@
 # Project Notes
 
+## Final Presentation Status - 2026-05-13
+
+This checkpoint is for final presentation and real-time demo readiness only. Sprint #2 has already been submitted, so this branch should only receive documentation continuity updates and small demo-blocking admin/backend/AI-IoT fixes.
+
+Current branch and remote state:
+
+- Active branch: `shared-default-style-v12`
+- Repository: `jostinchok/my-react-app`
+- Current local HEAD: `1acf59e2e` (`Polish admin sidebar for final demo`)
+- `origin/shared-default-style-v12` points to the same commit as local HEAD.
+- The branch has no upstream configured locally, but the remote branch exists.
+- Do not switch to or edit `main` for final-demo work.
+
+Verified live system status on 2026-05-13:
+
+- Admin page loads at `http://localhost:5174/admin`.
+- Admin API health works at `http://localhost:4002/api/health`.
+- Main backend health works at `http://localhost:4000/api/health`.
+- Main backend incident persistence is active in MySQL with 51 incidents.
+- Incident storage reports `requested=mysql`, `active=mysql`, `fallback=none`, and database status `connected`.
+- MQTT is enabled and connected to `mqtt://broker.hivemq.com:1883` on topic `ctip/sensor/plant-zone-01/proximity`.
+- Evidence routes are exposed at `/evidence/ai` and `/evidence/iot`; the backend redirects those root paths to trailing-slash static routes.
+- Security flags report `deviceTokenAuthEnabled=true` and `roleCheckEnabled=true`.
+- Official incident status updates are Admin-only through `statusUpdateRoles=["admin"]`.
+- Ranger recommendation submission is enabled for Ranger roles through the recommendation endpoint; it must not mutate official incident status.
+
+Already pushed:
+
+- The current branch state through `1acf59e2e` is already present on `origin/shared-default-style-v12`.
+- Sprint #2 project claims are preserved as prototype-level AI/IoT incident workflow, MySQL incident persistence, MQTT support, device-token security, and role-based Admin/Ranger incident handling.
+- Admin can perform official incident status updates.
+- Park Ranger can view incidents, add field notes, and submit recommendations only.
+
+Do not touch:
+
+- `user_page` UI/UX files. Another teammate owns that surface.
+- Stashed user UI or training notebook changes.
+- `main` branch.
+- Local datasets, model artifacts, `.env` secrets, `.venv`, `node_modules`, `dist`, runtime database files, generated incident files, or `user_login/server/data/`.
+- Runtime evidence under `alerts/ai` or `alerts/iot` unless the user explicitly asks.
+- Package upgrades or `npm audit fix` unless a real demo-blocking issue requires it.
+
+Known local issues:
+
+- `user_login/server/data/` remains untracked runtime data and must stay uncommitted.
+- Existing MySQL/runtime incidents can still contain the legacy raw model event key for the old plant class. UI labels should display this as `Plucking Plants`; do not rewrite runtime database rows during final demo prep.
+- The AI dataset folder still uses a legacy local plant-class folder name; do not rename it unless the code and local assets are intentionally migrated later.
+- Public MQTT, local camera permissions, and MySQL service availability are environment-dependent.
+- Evidence route roots return redirects to `/evidence/ai/` and `/evidence/iot/`; use concrete evidence filenames when demonstrating images.
+
+Remaining final-demo risks:
+
+- MySQL must be running before the backend starts, otherwise the demo cannot prove MySQL incident persistence.
+- HiveMQ public broker availability can vary; have the local IoT API fallback ready.
+- Camera permissions or unavailable AI model assets can block the live camera path; use curated existing evidence as the backup.
+- Device-token and role-check environment variables must match the demo script before running the security smoke test.
+- The User Portal is out of scope for this final readiness pass and should not be changed to fix admin demo issues.
+
 Team repository folder:
 
 ```text
@@ -71,7 +129,7 @@ Role identity:
 my-react-app/
 ├── .venv/
 ├── artifacts/clip_2class_touching_species.pt
-├── datasets/touching-plants/
+├── datasets/<plant-class dataset folder>/
 ├── datasets/touching-wildlife/
 ├── models/hand_landmarker.task
 ├── alerts/ai/

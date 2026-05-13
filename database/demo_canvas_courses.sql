@@ -326,7 +326,7 @@ VALUES
 INSERT INTO training_modules
   (course_id, title, description, category, park, level, duration, format, image_url, accent_color, badge_name, objectives, status, sort_order, criteria)
 VALUES
-  ('SFC-FIELD-2026', 'AI Camera Review and Plucking Plants Detection', 'Review AI camera evidence for possible plant plucking, wildlife handling, false alarms, and confidence-based escalation.', 'AI Camera Evidence', 'Demo Camera Zone', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'AI Evidence Reviewer', '["Recognize possible plant plucking evidence", "Read predicted class, confidence, margin, and bounding-box metadata", "Avoid changing user-facing wording back to Touching Plants", "Record false alarm notes clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
+  ('SFC-FIELD-2026', 'AI Camera Review and Plucking Plants Detection', 'Review AI camera evidence for possible plant plucking, wildlife handling, false alarms, and confidence-based escalation.', 'AI Camera Evidence', 'Demo Camera Zone', 'Intermediate', '1 hour 10 minutes', 'Blended', '', '#ff7a1a', 'AI Evidence Reviewer', '["Recognize possible plant plucking evidence", "Read predicted class, confidence, margin, and bounding-box metadata", "Keep user-facing wording as Plucking Plants", "Record false alarm notes clearly"]', 'Published', 2, 'Complete all required module items and pass the scenario check.');
 
 SET @m_field_ai = LAST_INSERT_ID();
 

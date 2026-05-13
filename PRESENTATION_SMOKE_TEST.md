@@ -99,7 +99,7 @@ Demo checks:
 
 1. Trigger or capture an AI camera incident.
 2. Verify the visible label is `Plucking Plants` for plant-related alerts.
-3. Keep `TouchingPlants` only as an internal/backward-compatible model alias until retraining.
+3. Keep the old plant-class key only as an internal/backward-compatible model alias until retraining.
 4. Confirm evidence is served through the backend route when available.
 
 ## 7. Admin Official Status
@@ -124,7 +124,7 @@ Demo checks:
 
 Run the required old plant-wording scan from the final verification checklist.
 
-Expected result: no matches for the old user-facing wording. Internal `TouchingPlants` class aliases may remain only where needed for the old AI model compatibility layer.
+Expected result: no matches for the old user-facing wording. Internal plant-class aliases may remain only where needed for the old AI model compatibility layer.
 
 
 ## V11 User Portal polish checks
