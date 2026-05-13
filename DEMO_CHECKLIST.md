@@ -1,6 +1,6 @@
 # Final Presentation Demo Checklist
 
-This checklist is for final demo readiness on `shared-default-style-v12`. It does not add project scope.
+This checklist is for final demo readiness on `main`. It does not add project scope.
 
 ## 1. Preflight
 
@@ -12,8 +12,8 @@ git status --short --branch
 
 Expected:
 
-- Branch is `shared-default-style-v12`.
-- Do not switch to `main`.
+- Branch is `main`.
+- Do not switch branches during the final-demo hotfix unless the user explicitly asks.
 - `user_login/server/data/` may exist as untracked runtime data and must stay uncommitted.
 - No local datasets, model artifacts, `.env`, runtime database files, or generated incident files should be staged.
 
@@ -104,21 +104,24 @@ Demo login accounts:
 
 The main backend seeds these presentation accounts on startup when the MySQL auth schema is available. The login page also provides quick-pick buttons for the same account list.
 
+If Login shows `Unable to connect to server` after repeated account switching, restart `npm run dev` so the backend loads the latest auth limiter settings. The source default is `AUTH_RATE_LIMIT_MAX=60`, CORS is applied before auth rate limiting, and `OPTIONS` preflight requests are not counted.
+
 ## 5. Demo Order
 
 1. Open the hub and state that Sprint #2 is a prototype demo, not a production release.
 2. Open Login UI only if you want to show role-specific entry points; use `Admin Demo`, `User 1`, or `Ranger 1`.
-3. Open Admin Dashboard and show monitoring/training overview only at the level already reported.
-4. Open Admin Incidents and show AI/IoT Incident Operations.
-5. Select a plant-related AI incident and confirm the visible label says `Plucking Plants`.
-6. Show evidence and metadata from AI camera or IoT sensor rows.
-7. Change an official incident status as Admin.
-8. Open Park Ranger Console and add a field note.
-9. Submit a Ranger recommendation.
-10. Return to Admin Incidents and show Ranger recommendations are visible for Admin review.
-11. Open Ranger Review, Sensor Rules, Backend Map, and Guide Account Management to show the supporting admin surfaces.
-12. Open the Edit Guide Account modal from Guide Account Management only to prove visibility.
-13. Open backend health and explain MySQL, MQTT, evidence routes, device-token security, and role checks.
+3. For User Portal training content, open `Item Detail`; it now lands on the learning-item list, then use `Start first item` to show the first item body.
+4. Open Admin Dashboard and show monitoring/training overview only at the level already reported.
+5. Open Admin Incidents and show AI/IoT Incident Operations.
+6. Select a plant-related AI incident and confirm the visible label says `Plucking Plants`.
+7. Show evidence and metadata from AI camera or IoT sensor rows.
+8. Change an official incident status as Admin.
+9. Open Park Ranger Console and add a field note.
+10. Submit a Ranger recommendation.
+11. Return to Admin Incidents and show Ranger recommendations are visible for Admin review.
+12. Open Ranger Review, Sensor Rules, Backend Map, and Guide Account Management to show the supporting admin surfaces.
+13. Open the Edit Guide Account modal from Guide Account Management only to prove visibility.
+14. Open backend health and explain MySQL, MQTT, evidence routes, device-token security, and role checks.
 
 Presentation UI check:
 

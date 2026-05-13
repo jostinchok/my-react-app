@@ -1069,7 +1069,7 @@ function App() {
       setCourseSubView(section)
       setActiveTab('modules')
     } else if (section === 'item') {
-      setModuleDetailStep('intro')
+      setModuleDetailStep('items')
       setActiveTab('module')
     } else if (section === 'completion') {
       setActiveTab('certificates')
@@ -1980,7 +1980,7 @@ function App() {
                       </div>
                       <ProgressBar value={getProgress(selectedModule)} />
                       <div className="guided-action-row">
-                        <button type="button" onClick={beginGuidedModule}>Next</button>
+                        <button type="button" onClick={beginGuidedModule}>View learning items</button>
                         <button type="button" className="secondary-button" onClick={() => goToCourseSection('modules')}>Back to modules</button>
                       </div>
                     </div>
@@ -2026,7 +2026,7 @@ function App() {
                       )}
                     </div>
                     <div className="guided-action-row">
-                      <button type="button" onClick={startGuidedItems}>Next</button>
+                      <button type="button" onClick={startGuidedItems}>Start first item</button>
                       <button type="button" className="secondary-button" onClick={() => setModuleDetailStep('intro')}>Previous</button>
                     </div>
                   </div>

@@ -6,13 +6,14 @@ This checkpoint is for final presentation and real-time demo readiness only. Spr
 
 Current branch and remote state:
 
-- Active branch: `shared-default-style-v12`
+- Active branch: `main`
 - Repository: `jostinchok/my-react-app`
 - Pre-promotion checkpoint: `81101f68f` (`Update final demo evidence verification notes`)
+- Latest pushed main checkpoint before this hotfix: `04a73968f` (`Add course certificates and admin module hero images`)
 - `origin/shared-default-style-v12` pointed to the same checkpoint before the final promotion pass.
-- The final login/demo-readiness and CSS touch-up changes are included in the final demo promotion commit.
-- The branch has no upstream configured locally, but the remote branch exists.
-- Do not switch to or edit `main` for future final-demo work unless the user explicitly asks. On 2026-05-13, the user explicitly requested pushing the final work to `main`.
+- `main` tracks `origin/main`.
+- The final login/demo-readiness, CSS touch-up, course certificate, and module hero-image changes are included in pushed main history.
+- Current final-demo hotfix work is on `main` because the user explicitly moved the final presentation branch to `main`.
 
 Verified live system status on 2026-05-13:
 
@@ -61,18 +62,27 @@ Final CSS/readability touch-up on 2026-05-13:
 - `scripts/dev-all.mjs` now checks the actual Login route at `http://localhost:5176/login/`.
 - `git diff --check`, `node --check scripts/dev-all.mjs`, `node --check scripts/hub-server.mjs`, `node --check user_login/server/index.js`, `npm --prefix admin_page run build`, and `cd login && npm exec vite build` passed after the CSS pass.
 
+Final demo login and User Portal hotfix on 2026-05-13:
+
+- The live login issue after switching demo accounts was traced to the auth rate limiter returning `429 Too Many Requests` after only five attempts per hour.
+- The backend now applies CORS before auth rate limiting, skips rate limiting for `OPTIONS` preflight requests, and defaults `AUTH_RATE_LIMIT_MAX` to 60 attempts per hour for presentation account switching.
+- JWT protection and backend role checks remain enabled; this change does not allow Park Ranger official status updates.
+- The User Portal course shell now opens the `Item Detail` tab at the learning-item list, and guided buttons use clearer labels so Park Guides can reach item content during the demo.
+- Restart `npm run dev` after pulling this hotfix so the running backend picks up the new rate-limit behavior.
+
 Already pushed:
 
-- The checkpoint through `81101f68f` is already present on `origin/shared-default-style-v12`; the final promotion commit is intended for `main`.
+- The checkpoint through `81101f68f` is already present on `origin/shared-default-style-v12`.
+- `main` is pushed through `04a73968f` before this local login/item-detail hotfix.
 - Sprint #2 project claims are preserved as prototype-level AI/IoT incident workflow, MySQL incident persistence, MQTT support, device-token security, and role-based Admin/Ranger incident handling.
 - Admin can perform official incident status updates.
 - Park Ranger can view incidents, add field notes, and submit recommendations only.
 
 Do not touch:
 
-- `user_page` UI/UX files. Another teammate owns that surface.
+- `user_page` UI/UX files unless the user explicitly asks for a final-demo blocker on that surface. Another teammate owns general User Portal design work.
 - Stashed user UI or training notebook changes.
-- `main` branch.
+- Branch changes unless the user explicitly asks.
 - Local datasets, model artifacts, `.env` secrets, `.venv`, `node_modules`, `dist`, runtime database files, generated incident files, or `user_login/server/data/`.
 - Runtime evidence under `alerts/ai` or `alerts/iot` unless the user explicitly asks.
 - Package upgrades or `npm audit fix` unless a real demo-blocking issue requires it.

@@ -46,12 +46,19 @@ const app = express()
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
+app.use(cors())
+
+const configuredAuthRateLimit = Number.parseInt(process.env.AUTH_RATE_LIMIT_MAX || '', 10)
+const authRateLimitMax = Number.isFinite(configuredAuthRateLimit) && configuredAuthRateLimit > 0
+  ? configuredAuthRateLimit
+  : 60
 
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  limit: 5,
+  limit: authRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: { message: 'Too many attempts. Please try again later.' },
 })
 
@@ -59,7 +66,6 @@ app.use('/api/auth/login', authLimiter)
 app.use('/api/auth/register', authLimiter)
 app.use('/api/auth/forgot-password', authLimiter)
 app.use('/api/auth/reset-password', authLimiter)
-app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 app.use('/evidence/ai', express.static(aiEvidenceDir))
 app.use('/evidence/iot', express.static(iotEvidenceDir))

@@ -4,9 +4,9 @@ This repo is in final presentation readiness mode for Sprint #2. Keep scope tigh
 
 ## Hard Rules
 
-- Work only on `shared-default-style-v12` unless the user explicitly changes the branch instruction.
-- Do not touch `main`.
-- Do not touch `user_page` UI/UX. Another teammate owns that surface.
+- Work only on the branch explicitly requested by the user. Current final-demo hotfix work is on `main`.
+- Do not switch branches unless the user explicitly asks.
+- Do not touch `user_page` UI/UX unless the user explicitly reports a final-demo blocker on that surface. Another teammate owns general User Portal design work.
 - Do not add new features.
 - Do not redesign the system.
 - Do not restore stashed User Portal or training notebook changes.
@@ -22,7 +22,7 @@ This repo is in final presentation readiness mode for Sprint #2. Keep scope tigh
 
 - Run `git status --short --branch`.
 - Read `PROJECT_NOTES.md`, `TODO.md`, `DEMO_CHECKLIST.md`, and this file.
-- Confirm the branch is `shared-default-style-v12`.
+- Confirm the branch matches the user's latest instruction; for the current final-demo hotfix this is `main`.
 - Confirm whether MySQL and the backend health endpoints are already running before editing code.
 
 ## Required Documentation Sync
