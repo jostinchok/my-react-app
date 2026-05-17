@@ -1,0 +1,24 @@
+# Core notebook support
+jupyter
+ipykernel
+ipywidgets
+
+# Deep learning / model loading
+torch
+torchvision
+transformers
+safetensors
+
+# Image and CV
+pillow
+opencv-python
+mediapipe
+
+# Data / metrics / utilities
+numpy
+scikit-learn
+tqdm
+matplotlib
+
+# HTTP posting in scripts/run_ai_camera_monitor.py uses Python standard library urllib.
+# MySQL persistence is handled by the Node/Express backend, not Python.

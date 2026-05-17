@@ -1,0 +1,27 @@
+{
+  "name": "sfc-review-launcher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "npm --prefix login install && npm --prefix user_page install && npm --prefix admin_page install && npm --prefix mobile_app install && npm --prefix user_login/server install",
+    "dev": "node scripts/dev-all.mjs",
+    "dev:hub": "node scripts/hub-server.mjs",
+    "dev:login": "npm --prefix login run dev",
+    "dev:user": "npm --prefix user_page run dev",
+    "dev:admin": "npm --prefix admin_page run dev",
+    "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",
+    "dev:server": "npm --prefix user_login/server start",
+    "seed:canvas-demo": "node scripts/seed-canvas-demo.mjs",
+    "build:user": "npm --prefix user_page run build",
+    "build:admin": "npm --prefix admin_page run build",
+    "check:assets": "python3 scripts/check_required_assets.py",
+    "download:assets": "python3 scripts/download_assets_gdrive.py",
+    "check:mobile": "npm --prefix mobile_app exec expo config -- --type public"
+  },
+  "dependencies": {
+    "express-rate-limit": "^8.5.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

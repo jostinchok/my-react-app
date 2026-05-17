@@ -1,0 +1,22 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import './index.css'
+import AdminPage from './Admin';
+import ParkRangerConsole from "./pages/ParkRangerConsole.jsx";
+import { consumeAuthHandoff } from './utils/authFetch.js'
+
+consumeAuthHandoff()
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Navigate to="/admin" />} />
+      <Route path="/admin/ranger/*" element={<ParkRangerConsole />} />
+      <Route path="/admin/park-ranger/*" element={<Navigate to="/admin/ranger" replace />} />
+      <Route path="/admin/*" element={<AdminPage />} />
+    </Routes>
+    </BrowserRouter>
+  </StrictMode>
+)

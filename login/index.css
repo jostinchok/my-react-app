@@ -1,0 +1,28 @@
+@import "../shared/default_style.css";
+
+:root {
+  --primary-dark: var(--sfc-forest);
+  --primary-mid: var(--sfc-forest-2);
+  --accent-green: #a8e64a;
+  --citrus-orange: var(--sfc-citrus);
+  --citrus-yellow: var(--sfc-sun);
+  --citrus-cream: #fff8e6;
+  --bg-light: #fff8e6;
+  --text-main: var(--sfc-charcoal);
+  --border-soft: #eadfbd;
+}
+
+html, body, #root {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+}
+
+body {
+  display: block;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 210, 63, 0.28), transparent 26rem),
+    radial-gradient(circle at 88% 12%, rgba(168, 230, 74, 0.22), transparent 28rem),
+    var(--bg-light);
+}

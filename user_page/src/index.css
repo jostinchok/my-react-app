@@ -1,0 +1,7 @@
+@import "../../shared/default_style.css";
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}

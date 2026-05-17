@@ -1,0 +1,5 @@
+@import "../../shared/default_style.css";
+
+body {
+  background: linear-gradient(135deg, #fffdf5 0%, #fff9e8 48%, #f6ffe8 100%);
+}
