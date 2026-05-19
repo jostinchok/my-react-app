@@ -912,6 +912,58 @@
   overflow-wrap: anywhere;
 }
 
+.incident-role-boundary-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 0 0 18px;
+  padding: 13px 16px;
+  border: 1px solid #eadfbf;
+  border-left: 5px solid #ff7a1a;
+  border-radius: 10px;
+  background: #fffdf5;
+  color: var(--incident-ink, #153326);
+  box-shadow: 0 10px 26px rgba(255, 122, 26, 0.08);
+}
+
+.incident-role-boundary-note strong {
+  font-weight: 950;
+}
+
+.incident-role-boundary-note span,
+.incident-admin-action-note {
+  color: var(--incident-muted, #5b6d63);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.incident-evidence-link.MuiButton-root {
+  margin: 0 12px 12px;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #173126;
+  font-weight: 900;
+}
+
+.incident-ranger-recommendation.empty {
+  border-style: dashed;
+  background: #fffaf0;
+}
+
+.incident-utility-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #eadfbf;
+}
+
+.incident-utility-section > h2 {
+  margin: 4px 0 14px;
+  color: var(--incident-ink, #153326);
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
 .ranger-recommendation-form .MuiTextField-root {
   background: #ffffff;
 }

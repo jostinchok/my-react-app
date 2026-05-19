@@ -41,6 +41,36 @@ const statusFilters = [
   { key: "rejected", label: "Rejected" },
 ];
 
+const demoCourseRequests = [
+  {
+    id: "REQ-DEMO-001",
+    student_name: "Aiden Tan",
+    email: "aiden.tan@example.com",
+    course_id: "SFC-FIELD-2026",
+    course_name: "SFC Field Response Essentials",
+    requested_at: "2026-05-14T09:15:00+08:00",
+    status: "pending",
+  },
+  {
+    id: "REQ-DEMO-002",
+    student_name: "Maya Ling",
+    email: "maya.ling@example.com",
+    course_id: "SFC-WILDLIFE-2026",
+    course_name: "Sarawak Protected Wildlife Awareness",
+    requested_at: "2026-05-14T10:25:00+08:00",
+    status: "approved",
+  },
+  {
+    id: "REQ-DEMO-003",
+    student_name: "Daniel Chai",
+    email: "daniel.chai@example.com",
+    course_id: "SFC-ORIENTATION-2026",
+    course_name: "SFC Park Guide Orientation",
+    requested_at: "2026-05-14T11:40:00+08:00",
+    status: "pending",
+  },
+];
+
 const normalizeStatus = (status) => String(status || "pending").toLowerCase();
 
 const statusLabel = (status) => {
@@ -84,6 +114,7 @@ const formatRequestedDate = (value) => {
 const CourseRequestsPage = () => {
   const [requests, setRequests] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const showMessage = (message, severity = "success") => {
@@ -101,8 +132,11 @@ const CourseRequestsPage = () => {
     try {
       const data = await requestJson(`${API_BASE_URL}/api/enrollments/requests`);
       setRequests(data.requests || []);
+      setFallbackMessage("");
     } catch (error) {
-      showMessage(error.message, "error");
+      setRequests(demoCourseRequests);
+      setFallbackMessage("Demo fallback request records are displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo course requests.", "warning");
     }
   };
 
@@ -142,6 +176,12 @@ const CourseRequestsPage = () => {
   };
 
   const updateRequest = async (requestId, status) => {
+    if (fallbackMessage) {
+      setRequests((items) => items.map((item) => (item.id === requestId ? { ...item, status } : item)));
+      showMessage(`Demo fallback request marked ${status}.`, "info");
+      return;
+    }
+
     try {
       await requestJson(`${API_BASE_URL}/api/enrollments/${requestId}`, {
         method: "PATCH",
@@ -194,6 +234,12 @@ const CourseRequestsPage = () => {
           </Button>
         </Stack>
       </Box>
+
+      {fallbackMessage && (
+        <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
+          {fallbackMessage}
+        </Alert>
+      )}
 
       <Grid container spacing={2} sx={{ mb: 2.4 }}>
         {statCards.map((card) => (

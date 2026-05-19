@@ -13,36 +13,42 @@ const menuGroups = [
   {
     title: "Overview",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: "📊", to: "/admin" },
-      { id: "analytics", label: "Analytics", icon: "📈", to: "/admin/analytics" },
+      { id: "dashboard", label: "Dashboard", icon: "D", to: "/admin" },
     ],
   },
   {
     title: "Training",
     items: [
-      { id: "course", label: "Course", icon: "📚", to: "/admin/course" },
-      { id: "training", label: "Training", icon: "📖", to: "/admin/training" },
-      { id: "course-requests", label: "Requests", icon: "📝", to: "/admin/course-requests" },
-      { id: "students", label: "Guides", icon: "👥", to: "/admin/students" },
-      { id: "certificates", label: "Certificates", icon: "🎓", to: "/admin/certificates" },
+      { id: "course", label: "Courses", icon: "C", to: "/admin/course" },
+      { id: "training", label: "Training Modules", icon: "M", to: "/admin/training" },
+      { id: "course-requests", label: "Course Requests", icon: "R", to: "/admin/course-requests" },
+      { id: "students", label: "Guides", icon: "G", to: "/admin/students" },
+      { id: "certificates", label: "Certificates", icon: "C", to: "/admin/certificates" },
     ],
   },
   {
     title: "Operations",
     items: [
-      { id: "detection", label: "Incidents", icon: "⚠️", to: "/admin/detection" },
-      { id: "ranger-review", label: "Ranger Review", icon: "🧭", to: "/admin/ranger-review" },
-      { id: "sensor-rules", label: "Sensor Rules", icon: "📡", to: "/admin/sensor-rules" },
+      { id: "detection", label: "Incident Detection", icon: "I", to: "/admin/detection" },
+      { id: "ranger-review", label: "Ranger Review", icon: "R", to: "/admin/ranger-review" },
+      { id: "sensor-rules", label: "Sensor Rules", icon: "S", to: "/admin/sensor-rules" },
+    ],
+  },
+  {
+    title: "Access",
+    items: [
+      { id: "users", label: "Users", icon: "U", to: "/admin/users" },
+      { id: "permissions", label: "Permissions", icon: "P", to: "/admin/permissions" },
     ],
   },
   {
     title: "System",
     items: [
-      { id: "announcements", label: "Announcements", icon: "📣", to: "/admin/announcements" },
-      { id: "inbox", label: "Inbox", icon: "💬", to: "/admin/inbox" },
-      { id: "help-desk", label: "Help Desk", icon: "🛟", to: "/admin/help-desk" },
-      { id: "backend-map", label: "Backend Map", icon: "🗺️", to: "/admin/backend-map" },
-      { id: "audit-log", label: "Audit Log", icon: "🔎", to: "/admin/audit-log" },
+      { id: "announcements", label: "Announcements", icon: "A", to: "/admin/announcements" },
+      { id: "inbox", label: "Inbox", icon: "N", to: "/admin/inbox" },
+      { id: "help-desk", label: "Help Desk", icon: "H", to: "/admin/help-desk" },
+      { id: "backend-map", label: "Backend Map", icon: "B", to: "/admin/backend-map" },
+      { id: "audit-log", label: "Audit Log", icon: "L", to: "/admin/audit-log" },
     ],
   },
 ];

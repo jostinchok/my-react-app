@@ -78,6 +78,42 @@ const emptyCanvasProgress = {
   latestQuizAt: null,
 };
 
+const demoGuideCourses = [
+  { course_id: "SFC-FIELD-2026", course_name: "SFC Field Response Essentials" },
+  { course_id: "SFC-WILDLIFE-2026", course_name: "Sarawak Protected Wildlife Awareness" },
+  { course_id: "SFC-ORIENTATION-2026", course_name: "SFC Park Guide Orientation" },
+];
+
+const demoStudents = [
+  {
+    id: 1,
+    name: "Aiden Tan",
+    phone: "+60 16-901 1111",
+    email: "aiden.tan@example.com",
+    module: "SFC Field Response Essentials",
+    eligibility: "Approved",
+    canvasProgress: { completedCanvasItems: 3, totalAvailableItems: 3, completionPercent: 100, quizAttempts: 2, latestQuizScore: 92, modules: [{ moduleTitle: "Incident response overview" }] },
+  },
+  {
+    id: 2,
+    name: "Maya Ling",
+    phone: "+60 12-661 8821",
+    email: "maya.ling@example.com",
+    module: "Sarawak Protected Wildlife Awareness",
+    eligibility: "Approved",
+    canvasProgress: { completedCanvasItems: 2, totalAvailableItems: 3, completionPercent: 67, quizAttempts: 1, latestQuizScore: 84, modules: [{ moduleTitle: "Wildlife disturbance signals" }] },
+  },
+  {
+    id: 3,
+    name: "Daniel Chai",
+    phone: "+60 17-220 7711",
+    email: "daniel.chai@example.com",
+    module: "SFC Park Guide Orientation",
+    eligibility: "Approved",
+    canvasProgress: { completedCanvasItems: 0, totalAvailableItems: 3, completionPercent: 0, quizAttempts: 0, latestQuizScore: null, modules: [{ moduleTitle: "Portal and certification basics" }] },
+  },
+];
+
 const normalizeCanvasProgress = (progress = {}) => {
   const latestScoreValue = progress.latestQuizScore ?? progress.latest_quiz_score ?? null;
   const latestQuizScore = latestScoreValue === null || latestScoreValue === undefined ? null : Number(latestScoreValue);
@@ -117,6 +153,7 @@ const StudentManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [studentForm, setStudentForm] = useState(emptyStudentForm);
   const [loading, setLoading] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const showMessage = (message, severity = "success") => {
@@ -148,8 +185,22 @@ const StudentManagement = () => {
       setStudents(attachCanvasProgress(studentData.students || [], progressData));
       setCourses(courseData.courses || []);
       setCanvasProgressSummary(progressData);
+      setFallbackMessage("");
     } catch (error) {
-      showMessage(error.message, "error");
+      setStudents(demoStudents);
+      setCourses(demoGuideCourses);
+      setCanvasProgressSummary({
+        fallback: true,
+        message: "Demo fallback guide progress is displayed because the Admin training API is unavailable.",
+        summary: {
+          averageCompletionPercent: 56,
+          totalCompletedItems: 5,
+          totalAvailableItems: 9,
+        },
+        guides: demoStudents,
+      });
+      setFallbackMessage("Demo fallback guide records are displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo guide progress.", "warning");
     } finally {
       setLoading(false);
     }
@@ -365,7 +416,7 @@ const StudentManagement = () => {
 
       {canvasProgressSummary?.fallback && (
         <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
-          {canvasProgressSummary.message || "Canvas progress summary is using a safe empty fallback."}
+          {fallbackMessage || canvasProgressSummary.message || "Canvas progress summary is using a safe empty fallback."}
         </Alert>
       )}
 
@@ -432,6 +483,11 @@ const StudentManagement = () => {
             ? "No quiz attempts"
             : `Latest quiz ${Math.round(Number(latestQuizScore))}%`;
           const topModule = canvasProgress.modules?.[0];
+          const certificateStatus = canvasProgress.completionPercent >= 100
+            ? "Certified"
+            : canvasProgress.completionPercent > 0
+              ? "Needs Review"
+              : "In Progress";
           return (
             <Grid item xs={12} md={6} xl={4} key={student.id}>
               <Card
@@ -502,6 +558,16 @@ const StudentManagement = () => {
                       label={`Canvas ${canvasProgress.completionPercent}%`}
                       size="small"
                       sx={{ bgcolor: "#edf7ff", color: "#1a4e8a", fontWeight: 900 }}
+                    />
+                    <Chip
+                      label={certificateStatus}
+                      size="small"
+                      sx={{
+                        bgcolor: certificateStatus === "Certified" ? "#DDFBD2" : "#FFF3C4",
+                        color: "#173126",
+                        border: "1px solid #EADFBF",
+                        fontWeight: 900,
+                      }}
                     />
                     {student.phone && (
                       <Chip label={student.phone} size="small" sx={{ bgcolor: "#fffaf0", color: "#173126", fontWeight: 900 }} />

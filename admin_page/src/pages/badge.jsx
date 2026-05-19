@@ -61,6 +61,41 @@ const percent = (completed, total) => {
 
 const sameId = (left, right) => String(left || "") === String(right || "");
 
+const demoCertificateStudents = [
+  { id: 1, name: "Aiden Tan", email: "aiden.tan@example.com" },
+  { id: 2, name: "Maya Ling", email: "maya.ling@example.com" },
+  { id: 3, name: "Daniel Chai", email: "daniel.chai@example.com" },
+];
+
+const demoCertificateProgress = {
+  fallback: true,
+  courses: [
+    { courseId: "SFC-FIELD-2026", courseName: "SFC Field Response Essentials", totalItems: 3 },
+    { courseId: "SFC-WILDLIFE-2026", courseName: "Sarawak Protected Wildlife Awareness", totalItems: 3 },
+    { courseId: "SFC-ORIENTATION-2026", courseName: "SFC Park Guide Orientation", totalItems: 3 },
+  ],
+  guides: [
+    {
+      userId: 1,
+      name: "Aiden Tan",
+      email: "aiden.tan@example.com",
+      modules: [{ courseId: "SFC-FIELD-2026", completedItems: 3 }],
+    },
+    {
+      userId: 2,
+      name: "Maya Ling",
+      email: "maya.ling@example.com",
+      modules: [{ courseId: "SFC-WILDLIFE-2026", completedItems: 2 }],
+    },
+    {
+      userId: 3,
+      name: "Daniel Chai",
+      email: "daniel.chai@example.com",
+      modules: [{ courseId: "SFC-ORIENTATION-2026", completedItems: 0 }],
+    },
+  ],
+};
+
 const getGuideCourseProgress = (guide, course) => {
   const courseId = course.courseId || course.course_id;
   const totalItems = Number(course.totalItems || course.total_items || 0);
@@ -82,6 +117,7 @@ const CertificateManagement = () => {
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const showMessage = (message, severity = "success") => {
@@ -104,8 +140,12 @@ const CertificateManagement = () => {
       ]);
       setStudents(studentData.students || []);
       setProgressSummary(progressData || null);
+      setFallbackMessage("");
     } catch (error) {
-      showMessage(error.message, "error");
+      setStudents(demoCertificateStudents);
+      setProgressSummary(demoCertificateProgress);
+      setFallbackMessage("Demo fallback certificate records are displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo certificates.", "warning");
     } finally {
       setLoading(false);
     }
@@ -183,6 +223,11 @@ const CertificateManagement = () => {
 
     if (!selectedRow.ready) {
       showMessage("Certificate is locked until the full course reaches 100%.", "warning");
+      return;
+    }
+
+    if (fallbackMessage) {
+      showMessage("Demo fallback certificate preview is ready for presentation.", "info");
       return;
     }
 
@@ -276,6 +321,11 @@ const CertificateManagement = () => {
       </Box>
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
+      {fallbackMessage && (
+        <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
+          {fallbackMessage}
+        </Alert>
+      )}
 
       <Grid container spacing={2} sx={{ mb: 2.4 }}>
         {statCards.map((card) => (
@@ -425,11 +475,16 @@ const CertificateManagement = () => {
           {certificateRows.map((row) => (
             <Grid item xs={12} md={6} xl={4} key={row.id}>
               <Paper
+                onClick={() => {
+                  setSelectedStudentId(String(row.userId));
+                  setSelectedCourseId(String(row.courseId));
+                }}
                 sx={{
                   p: 1.8,
                   borderRadius: "16px",
                   border: row.ready ? "1px solid #A7E957" : "1px solid #EADFBF",
                   bgcolor: row.ready ? "#F3FFD4" : "#FFFDF5",
+                  cursor: "pointer",
                 }}
               >
                 <Stack direction="row" justifyContent="space-between" gap={1.4}>
@@ -437,12 +492,23 @@ const CertificateManagement = () => {
                     <Typography sx={{ color: "#173126", fontWeight: 950 }}>{row.guideName}</Typography>
                     <Typography sx={{ color: "#607166", fontWeight: 800, fontSize: "0.86rem" }}>{row.courseName}</Typography>
                   </Box>
-                  <Chip label={row.ready ? "Ready" : `${row.completionPercent}%`} sx={{ bgcolor: row.ready ? "#DDFBD2" : "#fff3c4", color: "#173126", fontWeight: 950 }} />
+                  <Chip label={row.ready ? "Certified" : `${row.completionPercent}%`} sx={{ bgcolor: row.ready ? "#DDFBD2" : "#fff3c4", color: "#173126", fontWeight: 950 }} />
                 </Stack>
                 <Divider sx={{ my: 1.2 }} />
-                <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-                  {row.completedItems}/{row.totalItems} course items complete
-                </Typography>
+                <Stack direction="row" justifyContent="space-between" gap={1} flexWrap="wrap">
+                  <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                    {row.completedItems}/{row.totalItems} course items complete
+                  </Typography>
+                  <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                    Issued date: {row.ready ? "2026-05-14" : "Pending"}
+                  </Typography>
+                  <Button size="small" onClick={() => {
+                    setSelectedStudentId(String(row.userId));
+                    setSelectedCourseId(String(row.courseId));
+                  }}>
+                    Preview
+                  </Button>
+                </Stack>
               </Paper>
             </Grid>
           ))}

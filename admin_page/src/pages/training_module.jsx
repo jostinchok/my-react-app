@@ -52,6 +52,78 @@ const itemTypeMap = {
   checklist: { label: "Checklist", icon: <ChecklistIcon /> },
 };
 
+const demoTrainingCourses = [
+  {
+    course_id: "SFC-FIELD-2026",
+    course_name: "SFC Field Response Essentials",
+    description: "Core field-response training for protected flora incidents, wildlife interaction, evidence handling, and visitor safety.",
+    total_contact_hours: 12,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-FIELD-1" }],
+    modules: [
+      {
+        module_id: "DEMO-FIELD-M1",
+        title: "Incident response overview",
+        description: "How guides recognize, document, and escalate protected-area incidents.",
+        level: "Beginner",
+        duration: "45 minutes",
+        items: [
+          { item_id: "DEMO-FIELD-I1", item_type: "page", title: "Protected-area response policy", description: "Page", status: "published" },
+          { item_id: "DEMO-FIELD-I2", item_type: "checklist", title: "Evidence capture checklist", description: "Checklist", status: "published" },
+          { item_id: "DEMO-FIELD-I3", item_type: "quiz", title: "Response priority quiz", description: "Quiz", status: "published" },
+        ],
+      },
+    ],
+  },
+  {
+    course_id: "SFC-WILDLIFE-2026",
+    course_name: "Sarawak Protected Wildlife Awareness",
+    description: "Awareness training for protected wildlife handling, visitor boundaries, and field reporting.",
+    total_contact_hours: 10,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-WILD-1" }],
+    modules: [
+      {
+        module_id: "DEMO-WILD-M1",
+        title: "Wildlife disturbance signals",
+        description: "Recognize risky visitor behavior without disturbing wildlife.",
+        level: "Beginner",
+        duration: "40 minutes",
+        items: [
+          { item_id: "DEMO-WILD-I1", item_type: "video", title: "Wildlife handling scenario", description: "Video", status: "published" },
+          { item_id: "DEMO-WILD-I2", item_type: "text", title: "Visitor boundary script", description: "Text", status: "published" },
+          { item_id: "DEMO-WILD-I3", item_type: "link", title: "Protected wildlife reference", description: "Link", status: "published" },
+        ],
+      },
+    ],
+  },
+  {
+    course_id: "SFC-ORIENTATION-2026",
+    course_name: "SFC Park Guide Orientation",
+    description: "Orientation for new park guides covering SFC portal use, route safety, and certification flow.",
+    total_contact_hours: 8,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-ORI-1" }],
+    modules: [
+      {
+        module_id: "DEMO-ORI-M1",
+        title: "Portal and certification basics",
+        description: "Understand training requests, module completion, quizzes, and certificate release.",
+        level: "Beginner",
+        duration: "35 minutes",
+        items: [
+          { item_id: "DEMO-ORI-I1", item_type: "image", title: "Portal navigation map", description: "Image", status: "published" },
+          { item_id: "DEMO-ORI-I2", item_type: "file", title: "Orientation PDF", description: "File", status: "published" },
+          { item_id: "DEMO-ORI-I3", item_type: "page", title: "Certificate release rules", description: "Page", status: "published" },
+        ],
+      },
+    ],
+  },
+];
+
 const TrainingModuleSetup = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
@@ -112,7 +184,29 @@ const TrainingModuleSetup = () => {
 
       await loadAdminProgressSummary();
     } catch (error) {
-      showMessage(error.message, "error");
+      setCourses(demoTrainingCourses);
+      setExpanded({ [demoTrainingCourses[0].modules[0].module_id]: true });
+      setProgressSummary({
+        fallback: true,
+        summary: {
+          totalGuides: 3,
+          totalAvailableItems: 9,
+          totalCompletedItems: 5,
+          totalQuizAttempts: 4,
+          averageCompletionPercent: 56,
+        },
+        guides: [
+          { name: "Aiden Tan", course_name: "SFC Field Response Essentials", completionPercent: 100, completedItems: 3, availableItems: 3 },
+          { name: "Maya Ling", course_name: "Sarawak Protected Wildlife Awareness", completionPercent: 67, completedItems: 2, availableItems: 3 },
+        ],
+        courses: [
+          { course_id: "SFC-FIELD-2026", course_name: "SFC Field Response Essentials", completionPercent: 100, completedItems: 3, availableItems: 3 },
+          { course_id: "SFC-WILDLIFE-2026", course_name: "Sarawak Protected Wildlife Awareness", completionPercent: 67, completedItems: 2, availableItems: 3 },
+          { course_id: "SFC-ORIENTATION-2026", course_name: "SFC Park Guide Orientation", completionPercent: 0, completedItems: 0, availableItems: 3 },
+        ],
+      });
+      setProgressFallbackMessage("Demo fallback training records are displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo fallback modules.", "warning");
     } finally {
       setLoading(false);
     }
@@ -375,8 +469,10 @@ const TrainingModuleSetup = () => {
                 <Typography sx={{ color: "#607166", fontWeight: 800 }}>{course.description || "No description yet."}</Typography>
               </Box>
               <Stack direction="row" flexWrap="wrap" gap={1} alignSelf={{ xs: "flex-start", md: "center" }}>
+                <Chip label={course.status || "Published"} sx={{ bgcolor: "#dcf8c6", color: "#173126", fontWeight: 950 }} />
                 <Chip label={`${course.modules?.length || 0} modules`} sx={{ bgcolor: "#dcf8c6", color: "#173126", fontWeight: 950 }} />
                 <Chip label={`${course.resources?.length || 0} resources`} sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }} />
+                <Chip label={`Updated ${course.updated_at || "not set"}`} sx={{ bgcolor: "#ffe2cf", color: "#173126", fontWeight: 950 }} />
               </Stack>
             </Stack>
 

@@ -98,6 +98,102 @@ const emptyItemForm = {
   file: null,
 };
 
+const demoCanvasCourses = [
+  {
+    course_id: "SFC-FIELD-2026",
+    course_name: "SFC Field Response Essentials",
+    description: "Core field-response training for protected flora incidents, wildlife interaction, evidence handling, and visitor safety.",
+    start_date: "2026-05-01",
+    end_date: "2026-06-30",
+    total_contact_hours: 12,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-FIELD-1", title: "Field checklist" }],
+    modules: [
+      {
+        module_id: "DEMO-FIELD-M1",
+        title: "Incident response overview",
+        description: "How guides recognize, document, and escalate protected-area incidents.",
+        category: "Field Readiness",
+        park: "All Parks",
+        level: "Beginner",
+        duration: "45 minutes",
+        format: "Blended",
+        status: "Published",
+        sort_order: 1,
+        image_url: `${userTrainingBaseUrl}/safety-response.webp`,
+        items: [
+          { item_id: "DEMO-FIELD-I1", item_type: "page", title: "Protected-area response policy", description: "Page", content: "Admin-ready response steps for visitor incidents.", status: "published" },
+          { item_id: "DEMO-FIELD-I2", item_type: "checklist", title: "Evidence capture checklist", description: "Checklist", checklist: ["Confirm safety", "Record time and location", "Attach evidence", "Notify Admin"], status: "published" },
+          { item_id: "DEMO-FIELD-I3", item_type: "quiz", title: "Response priority quiz", description: "Quiz", quiz: { question: "Who makes the official incident status decision?", choices: ["Park Ranger", "Admin", "Visitor"], answer: 1 }, status: "published" },
+        ],
+      },
+    ],
+  },
+  {
+    course_id: "SFC-WILDLIFE-2026",
+    course_name: "Sarawak Protected Wildlife Awareness",
+    description: "Awareness training for protected wildlife handling, visitor boundaries, and field reporting.",
+    start_date: "2026-05-01",
+    end_date: "2026-07-15",
+    total_contact_hours: 10,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-WILD-1", title: "Wildlife briefing" }],
+    modules: [
+      {
+        module_id: "DEMO-WILD-M1",
+        title: "Wildlife disturbance signals",
+        description: "Recognize risky visitor behavior without disturbing wildlife.",
+        category: "Wildlife Awareness",
+        park: "Bako National Park",
+        level: "Beginner",
+        duration: "40 minutes",
+        format: "Online",
+        status: "Published",
+        sort_order: 1,
+        image_url: `${userTrainingBaseUrl}/biodiversity-basics.webp`,
+        items: [
+          { item_id: "DEMO-WILD-I1", item_type: "video", title: "Wildlife handling scenario", description: "Video", status: "published" },
+          { item_id: "DEMO-WILD-I2", item_type: "text", title: "Visitor boundary script", description: "Text", content: "Use calm language and escalate repeated boundary breaches.", status: "published" },
+          { item_id: "DEMO-WILD-I3", item_type: "link", title: "Protected wildlife reference", description: "Link", external_url: "https://sarawakforestry.com", status: "published" },
+        ],
+      },
+    ],
+  },
+  {
+    course_id: "SFC-ORIENTATION-2026",
+    course_name: "SFC Park Guide Orientation",
+    description: "Orientation for new park guides covering SFC portal use, route safety, and certification flow.",
+    start_date: "2026-05-01",
+    end_date: "2026-06-15",
+    total_contact_hours: 8,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-ORI-1", title: "Guide orientation pack" }],
+    modules: [
+      {
+        module_id: "DEMO-ORI-M1",
+        title: "Portal and certification basics",
+        description: "Understand training requests, module completion, quizzes, and certificate release.",
+        category: "Orientation",
+        park: "All Parks",
+        level: "Beginner",
+        duration: "35 minutes",
+        format: "Online",
+        status: "Published",
+        sort_order: 1,
+        image_url: `${userTrainingBaseUrl}/ecotourism-briefing.webp`,
+        items: [
+          { item_id: "DEMO-ORI-I1", item_type: "image", title: "Portal navigation map", description: "Image", status: "published" },
+          { item_id: "DEMO-ORI-I2", item_type: "file", title: "Orientation PDF", description: "File", file_name: "orientation-pack.pdf", status: "published" },
+          { item_id: "DEMO-ORI-I3", item_type: "page", title: "Certificate release rules", description: "Page", content: "Certificates are released after full course completion and Admin review.", status: "published" },
+        ],
+      },
+    ],
+  },
+];
+
 const itemTypeMap = {
   page: { label: "Page", icon: <ArticleIcon />, helper: "Rich text learning page" },
   text: { label: "Text", icon: <ArticleIcon />, helper: "Short text lesson" },
@@ -217,6 +313,7 @@ const CourseManagement = () => {
   const [itemForm, setItemForm] = useState(emptyItemForm);
 
   const [loading, setLoading] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const modules = useMemo(() => selectedCourse?.modules || [], [selectedCourse]);
@@ -261,6 +358,7 @@ const CourseManagement = () => {
     const data = await requestJson(`${API_BASE_URL}/api/courses`);
     const loadedCourses = data.courses || [];
     setCourses(loadedCourses);
+    setFallbackMessage("");
     setSelectedCourseId((prev) => prev || loadedCourses[0]?.course_id || "");
     return loadedCourses;
   };
@@ -273,8 +371,16 @@ const CourseManagement = () => {
       return;
     }
 
-    const data = await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/canvas`);
-    const course = data.course || null;
+    let course = null;
+    try {
+      const data = await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/canvas`);
+      course = data.course || null;
+      setFallbackMessage("");
+    } catch (error) {
+      course = demoCanvasCourses.find((item) => item.course_id === courseId) || null;
+      if (!course) throw error;
+      setFallbackMessage("Demo fallback course data is displayed because the Admin training API is unavailable.");
+    }
 
     if (course) {
       course.modules = (course.modules || []).map((module) => ({
@@ -293,7 +399,12 @@ const CourseManagement = () => {
       const courseId = selectedCourseId || loadedCourses[0]?.course_id || "";
       await loadCanvasCourse(courseId);
     } catch (error) {
-      showMessage(error.message, "error");
+      setCourses(demoCanvasCourses);
+      const courseId = demoCanvasCourses[0].course_id;
+      setSelectedCourseId(courseId);
+      setSelectedCourse(demoCanvasCourses[0]);
+      setFallbackMessage("Demo fallback course data is displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo fallback courses.", "warning");
     } finally {
       setLoading(false);
     }
@@ -778,6 +889,11 @@ const CourseManagement = () => {
       </Box>
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
+      {fallbackMessage && (
+        <Alert severity="warning" sx={{ mb: 2, borderRadius: "14px", border: "1px solid #EADFBF" }}>
+          {fallbackMessage}
+        </Alert>
+      )}
 
       <Grid container spacing={2.2} alignItems="flex-start">
         <Grid item xs={12} xl={3}>
@@ -822,6 +938,14 @@ const CourseManagement = () => {
                     <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.84rem", mt: 0.4 }}>
                       {course.description || "No description yet."}
                     </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.6} sx={{ mt: 1 }}>
+                      <Chip label={course.status || "Published"} size="small" sx={statusChipSx} />
+                      <Chip
+                        label={`Updated ${course.updated_at || course.updatedAt || "not set"}`}
+                        size="small"
+                        sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }}
+                      />
+                    </Stack>
                   </Paper>
                 );
               })}
@@ -862,6 +986,16 @@ const CourseManagement = () => {
                   <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.5 }}>
                     {selectedCourse ? formatCourseDuration(selectedCourse) : "Choose a course from the list."}
                   </Typography>
+                  {selectedCourse && (
+                    <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mt: 1.1 }}>
+                      <Chip label={selectedCourse.status || "Published"} size="small" sx={statusChipSx} />
+                      <Chip
+                        label={`Last updated ${selectedCourse.updated_at || selectedCourse.updatedAt || "not set"}`}
+                        size="small"
+                        sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }}
+                      />
+                    </Stack>
+                  )}
                 </Box>
                 <Button
                   variant="contained"
