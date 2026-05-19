@@ -1,15 +1,14 @@
-import React, { useState } from "react";
-import { Layout } from "react-admin";
-import { Drawer } from "@mui/material";
+import React from "react";
+import { Layout, useSidebarState } from "react-admin";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import MyAppBar from "./MyAppBar";
 
 const SIDEBAR_WIDTH = 304;
-const REACT_ADMIN_MENU_OFFSET = 240;
+const COLLAPSED_SIDEBAR_WIDTH = 72;
 
 const MyLayout = (props) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useSidebarState();
   const location = useLocation();
   const isIncidentSurface =
     location.pathname.startsWith("/admin/detection");
@@ -26,11 +25,30 @@ const MyLayout = (props) => {
           {...appBarProps}
           open={open}
           sidebarWidth={SIDEBAR_WIDTH}
-          onToggleSidebar={() => setOpen((prev) => !prev)}
+          collapsedSidebarWidth={COLLAPSED_SIDEBAR_WIDTH}
+          onToggleSidebar={() => setOpen(!open)}
         />
       )}
       sx={{
         background: shellBackground,
+
+        "& .RaLayout-contentWithSidebar": {
+          background: shellBackground,
+          alignItems: "stretch",
+        },
+
+        "& .RaSidebar-paper": {
+          width: open ? `${SIDEBAR_WIDTH}px !important` : `${COLLAPSED_SIDEBAR_WIDTH}px !important`,
+          minWidth: open ? `${SIDEBAR_WIDTH}px !important` : `${COLLAPSED_SIDEBAR_WIDTH}px !important`,
+          transition: "width 0.28s ease, min-width 0.28s ease !important",
+          overflow: "hidden",
+        },
+
+        "& .RaSidebar-fixed": {
+          width: open ? `${SIDEBAR_WIDTH}px !important` : `${COLLAPSED_SIDEBAR_WIDTH}px !important`,
+          transition: "width 0.28s ease !important",
+          overflow: "hidden",
+        },
 
         "& .RaLayout-appFrame": {
           marginTop: "86px",
@@ -42,8 +60,8 @@ const MyLayout = (props) => {
           "--incident-shell-max-width": isIncidentSurface ? "1440px" : undefined,
           background: isIncidentSurface ? incidentBackground : shellBackground,
           minHeight: "calc(100vh - 86px)",
-          width: open ? `calc(100% - ${SIDEBAR_WIDTH}px)` : "100%",
-          marginLeft: open ? `${SIDEBAR_WIDTH - REACT_ADMIN_MENU_OFFSET}px` : "0px",
+          width: "100%",
+          marginLeft: "0px",
           padding: {
             xs: "18px 14px",
             md: "26px 22px",
@@ -57,32 +75,7 @@ const MyLayout = (props) => {
           transition: "padding 0.25s ease, margin-left 0.35s ease, width 0.35s ease",
         },
       }}
-      menu={() => (
-        <Drawer
-          variant="persistent"
-          anchor="left"
-          open={open}
-          sx={{
-            width: open ? `${SIDEBAR_WIDTH}px` : 0,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": {
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: `${SIDEBAR_WIDTH}px`,
-              height: "100vh",
-              background: "transparent",
-              borderRight: "none",
-              paddingTop: 0,
-              boxShadow: "none",
-              overflowX: "hidden",
-              zIndex: 1200,
-            },
-          }}
-        >
-          <Sidebar />
-        </Drawer>
-      )}
+      menu={() => <Sidebar />}
     />
   );
 };

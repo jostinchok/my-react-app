@@ -4028,3 +4028,246 @@ body {
     width: 100%;
   }
 }
+
+/* V30 final-nav-refinement: keep the rail and content aligned in both open and compact modes. */
+.RaSidebar-paper,
+.RaSidebar-fixed {
+  overflow: hidden !important;
+}
+
+.admin-command-rail {
+  transition:
+    width 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+  box-shadow: 14px 0 34px rgba(6, 47, 32, 0.16);
+}
+
+.admin-command-item,
+.nav-item.admin-command-item {
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease !important;
+}
+
+.admin-command-item:hover,
+.nav-item.admin-command-item:hover {
+  transform: translateX(2px);
+}
+
+.admin-command-rail.is-collapsed .admin-command-brand {
+  justify-content: center;
+  min-height: 78px !important;
+  padding: 16px 10px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-sidebar-badge {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+
+.admin-command-rail.is-collapsed .admin-command-brand-copy,
+.admin-command-rail.is-collapsed .admin-nav-group-title,
+.admin-command-rail.is-collapsed .admin-command-footer {
+  display: none !important;
+}
+
+.admin-command-rail.is-collapsed .admin-command-menu {
+  padding: 12px 8px 18px !important;
+  gap: 10px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-nav-group {
+  gap: 8px;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item,
+.admin-command-rail.is-collapsed .nav-item.admin-command-item {
+  min-height: 46px !important;
+  padding: 8px !important;
+  grid-template-columns: 1fr !important;
+  justify-items: center;
+  gap: 0 !important;
+  border-radius: 14px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item .nav-icon {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item .nav-label {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item.active {
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 63, 0.45), 0 10px 22px rgba(0, 0, 0, 0.16);
+  transform: none;
+}
+
+.admin-command-rail.is-open .admin-command-item.active {
+  transform: translateX(2px);
+}
+
+@media (max-width: 900px) {
+  .admin-command-rail.is-collapsed .admin-sidebar-badge {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+}
+
+/* V30 incident queue refinement: avoid horizontal table overflow in demo viewports. */
+.incident-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.incident-record-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #eadfbd;
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 8px 22px rgba(11, 59, 40, 0.05);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.incident-record-card:hover,
+.incident-record-card:focus-visible {
+  border-color: #a7e957;
+  background: #fbfff0;
+  box-shadow: 0 14px 30px rgba(11, 59, 40, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.incident-record-card.is-selected {
+  border-color: #a7e957;
+  background: linear-gradient(135deg, #f0ffe5 0%, #fffaf0 100%);
+  box-shadow: inset 4px 0 0 #ff9f1c, 0 14px 30px rgba(11, 59, 40, 0.08);
+}
+
+.incident-record-card-top,
+.incident-record-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.incident-record-card-top {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.incident-record-id,
+.incident-record-field,
+.incident-record-actions {
+  display: grid;
+  gap: 5px;
+}
+
+.incident-record-id span,
+.incident-record-field span,
+.incident-record-actions > span {
+  color: #6e7b70;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.incident-record-id strong,
+.incident-record-field strong {
+  color: #102419;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.incident-record-event {
+  margin: 0 !important;
+  color: #173126 !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  line-height: 1.25 !important;
+}
+
+.incident-record-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.incident-record-grid {
+  grid-template-columns: 0.72fr minmax(0, 1.25fr) minmax(112px, 0.9fr) auto;
+  align-items: end;
+}
+
+.incident-record-actions .incident-row-actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 1180px) {
+  .incident-record-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .incident-record-card-top,
+  .incident-record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .incident-record-chip-row {
+    justify-content: flex-start;
+  }
+}
+
+.ranger-review-card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ranger-review-card {
+  padding: 16px !important;
+  border: 1px solid #eadfbd !important;
+  border-radius: 16px !important;
+  background: #fffdf8 !important;
+  box-shadow: 0 8px 22px rgba(11, 59, 40, 0.05) !important;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ranger-review-card:hover,
+.ranger-review-card.is-selected {
+  border-color: #a7e957 !important;
+  background: linear-gradient(135deg, #f0ffe5 0%, #fffaf0 100%) !important;
+  box-shadow: inset 4px 0 0 #ff9f1c, 0 14px 30px rgba(11, 59, 40, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.ranger-review-card .MuiChip-root {
+  max-width: 100%;
+}

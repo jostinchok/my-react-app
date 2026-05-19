@@ -1025,28 +1025,50 @@ export function RangerReviewWorkflow() {
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <DataPanel title="Recommendation queue" subtitle="Ranger recommendation is advisory. It does not resolve the incident.">
-            <RowGrid columns="1.05fr 1fr 1.2fr 1.6fr 1fr 1.1fr">
-              {["Incident", "Ranger", "Recommendation", "Note", "Official Status", "Admin Decision"].map((label) => (
-                <Typography key={label} sx={tableHeaderSx}>{label}</Typography>
+            <Box className="ranger-review-card-list">
+              {recommendationQueue.map((incident) => (
+                <Paper
+                  key={incident.id}
+                  className={`ranger-review-card ${incident.id === selectedId ? "is-selected" : ""}`}
+                  onClick={() => setSelectedId(incident.id)}
+                >
+                  <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={1.4}>
+                    <Box>
+                      <Typography sx={tableHeaderSx}>Incident</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 950 }}>{incident.id}</Typography>
+                      <Typography sx={{ ...mutedSx, fontSize: "0.82rem" }}>{incident.title}</Typography>
+                    </Box>
+                    <Stack direction="row" flexWrap="wrap" gap={1}>
+                      <Chip label={incident.status} color={statusColor(incident.status)} size="small" />
+                      <Chip
+                        label={incident.adminDecisionNeeded ? "Admin decision needed" : "Reviewed by Admin"}
+                        color={incident.adminDecisionNeeded ? "warning" : "success"}
+                        size="small"
+                      />
+                    </Stack>
+                  </Stack>
+
+                  <Grid container spacing={1.4} sx={{ mt: 1.2 }}>
+                    <Grid item xs={12} sm={4} md={2.4}>
+                      <Typography sx={tableHeaderSx}>Ranger</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 900 }}>{incident.assigned}</Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4} md={2.6}>
+                      <Typography sx={tableHeaderSx}>Recommendation</Typography>
+                      <Chip label={incident.rangerRecommendation} color={statusColor(incident.rangerRecommendation)} size="small" />
+                    </Grid>
+                    <Grid item xs={12} sm={4} md={2.2}>
+                      <Typography sx={tableHeaderSx}>Official Status</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 900 }}>{incident.status}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4.8}>
+                      <Typography sx={tableHeaderSx}>Note</Typography>
+                      <Typography sx={{ color: "#56685d", fontWeight: 780 }}>{incident.note || "No field note yet."}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               ))}
-            </RowGrid>
-            {recommendationQueue.map((incident) => (
-              <RowGrid key={incident.id} columns="1.05fr 1fr 1.2fr 1.6fr 1fr 1.1fr" selected={incident.id === selectedId}>
-                <Box onClick={() => setSelectedId(incident.id)} sx={{ cursor: "pointer" }}>
-                  <Typography sx={{ color: "#173126", fontWeight: 950 }}>{incident.id}</Typography>
-                  <Typography sx={{ ...mutedSx, fontSize: "0.78rem" }}>{incident.title}</Typography>
-                </Box>
-                <Typography sx={{ fontWeight: 850 }}>{incident.assigned}</Typography>
-                <Chip label={incident.rangerRecommendation} color={statusColor(incident.rangerRecommendation)} size="small" />
-                <Typography sx={{ color: "#56685d", fontWeight: 780 }}>{incident.note || "No field note yet."}</Typography>
-                <Chip label={incident.status} color={statusColor(incident.status)} size="small" />
-                <Chip
-                  label={incident.adminDecisionNeeded ? "Decision needed" : "Reviewed"}
-                  color={incident.adminDecisionNeeded ? "warning" : "success"}
-                  size="small"
-                />
-              </RowGrid>
-            ))}
+            </Box>
           </DataPanel>
         </Grid>
 

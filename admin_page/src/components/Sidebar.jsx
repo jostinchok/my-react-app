@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { useSidebarState } from "react-admin";
 
 const SIDEBAR_WIDTH = 304;
+const COLLAPSED_SIDEBAR_WIDTH = 72;
 const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
@@ -59,16 +60,16 @@ const Sidebar = () => {
   return (
     <Box
       sx={{
-        width: open ? `${SIDEBAR_WIDTH}px` : "0px",
-        minWidth: open ? `${SIDEBAR_WIDTH}px` : "0px",
+        width: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,
+        minWidth: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,
         transition: "width 0.35s ease, min-width 0.35s ease",
         overflow: "hidden",
       }}
     >
       <Box
-        className="admin-sidebar admin-command-rail"
+        className={`admin-sidebar admin-command-rail ${open ? "is-open" : "is-collapsed"}`}
         sx={{
-          width: `${SIDEBAR_WIDTH}px`,
+          width: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,
           height: "calc(100vh + 86px)",
           marginTop: "-86px",
           paddingTop: "86px",
@@ -106,6 +107,8 @@ const Sidebar = () => {
                   key={item.id}
                   to={item.to}
                   end={item.id === "dashboard"}
+                  title={item.label}
+                  aria-label={item.label}
                   className={({ isActive }) => `nav-item admin-command-item ${isActive ? "active" : ""}`}
                 >
                   <span className="nav-icon">{item.icon}</span>

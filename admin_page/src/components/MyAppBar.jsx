@@ -63,9 +63,10 @@ const NotificationButton = () => {
   );
 };
 
-const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
+const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304, collapsedSidebarWidth = 72 }) => {
   const location = useLocation();
   const [userAnchor, setUserAnchor] = useState(null);
+  const appBarOffset = open ? sidebarWidth : collapsedSidebarWidth;
 
   const currentLabel = useMemo(() => {
     const routeLabels = [
@@ -103,9 +104,9 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304 }) => {
         borderBottom: "1px solid #EADFBF",
         backdropFilter: "blur(18px)",
         justifyContent: "center",
-        ml: open ? `${sidebarWidth}px` : "0px",
-        width: open ? `calc(100% - ${sidebarWidth}px)` : "100%",
-        transition: "margin-left 0.35s ease, width 0.35s ease",
+        ml: `${appBarOffset}px`,
+        width: `calc(100% - ${appBarOffset}px)`,
+        transition: "margin-left 0.28s ease, width 0.28s ease",
       }}
     >
       <Toolbar

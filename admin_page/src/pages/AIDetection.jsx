@@ -8,12 +8,6 @@ import {
   Chip,
   Paper,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from "@mui/material";
 import {
@@ -935,76 +929,18 @@ const AIDetection = () => {
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table className="incident-table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Incident ID</TableCell>
-                    <TableCell>Source</TableCell>
-                    <TableCell>Event Type</TableCell>
-                    <TableCell>Severity</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Timestamp</TableCell>
-                    <TableCell>Official Status</TableCell>
-                    <TableCell align="right">Admin Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredIncidents.map((incident) => (
-                    <TableRow
-                      key={incident.id}
-                      hover
-                      selected={selectedIncidentId === incident.id}
-                      className={`incident-table-row ${selectedIncidentId === incident.id ? "is-selected" : ""}`}
-                      onClick={() => setSelectedIncidentId(incident.id)}
-                    >
-                      <TableCell className="incident-id-cell">{incident.id}</TableCell>
-                      <TableCell>
-                        <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
-                          {sourceLabel[incident.source] || incident.source}
-                        </span>
-                      </TableCell>
-                      <TableCell>{incident.eventType}</TableCell>
-                      <TableCell>
-                        <span className={`severity-chip ${incident.severity}`}>
-                          {incident.severity}
-                        </span>
-                      </TableCell>
-                      <TableCell>{incident.location}</TableCell>
-                      <TableCell>{formatDateTime(incident.timestamp)}</TableCell>
-                      <TableCell>
-                        <span className={`status-chip ${statusClassName(incident.status)}`}>
-                          {incident.status}
-                        </span>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box className="incident-row-actions">
-                          <Button
-                            className="incident-detail-button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setSelectedIncidentId(incident.id);
-                            }}
-                          >
-                            Details
-                          </Button>
-                          <Button
-                            className="incident-delete-button"
-                            disabled={deletingIncidentId === incident.id}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteIncident(incident.id);
-                            }}
-                          >
-                            {deletingIncidentId === incident.id ? "Deleting..." : "Delete"}
-                          </Button>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Box className="incident-record-list">
+              {filteredIncidents.map((incident) => (
+                <IncidentRecordCard
+                  key={incident.id}
+                  incident={incident}
+                  isSelected={selectedIncidentId === incident.id}
+                  isDeleting={deletingIncidentId === incident.id}
+                  onSelect={() => setSelectedIncidentId(incident.id)}
+                  onDelete={() => deleteIncident(incident.id)}
+                />
+              ))}
+            </Box>
           )}
         </Paper>
 
@@ -1130,6 +1066,90 @@ const AIDetection = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+    </Box>
+  );
+};
+
+const IncidentRecordCard = ({
+  incident,
+  isSelected,
+  isDeleting,
+  onSelect,
+  onDelete,
+}) => {
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect();
+    }
+  };
+
+  return (
+    <Box
+      component="article"
+      role="button"
+      tabIndex={0}
+      className={`incident-record-card ${isSelected ? "is-selected" : ""}`}
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+    >
+      <Box className="incident-record-card-top">
+        <Box className="incident-record-id">
+          <span>Incident ID</span>
+          <strong>{incident.id}</strong>
+        </Box>
+        <Box className="incident-record-chip-row">
+          <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
+            {sourceLabel[incident.source] || incident.source}
+          </span>
+          <span className={`status-chip ${statusClassName(incident.status)}`}>
+            {incident.status}
+          </span>
+        </Box>
+      </Box>
+
+      <Typography component="h3" className="incident-record-event">
+        {incident.eventType}
+      </Typography>
+
+      <Box className="incident-record-grid">
+        <Box className="incident-record-field">
+          <span>Severity</span>
+          <strong className={`severity-chip ${incident.severity}`}>{incident.severity}</strong>
+        </Box>
+        <Box className="incident-record-field">
+          <span>Location</span>
+          <strong>{incident.location}</strong>
+        </Box>
+        <Box className="incident-record-field">
+          <span>Timestamp</span>
+          <strong>{formatDateTime(incident.timestamp)}</strong>
+        </Box>
+        <Box className="incident-record-actions">
+          <span>Admin Action</span>
+          <Box className="incident-row-actions">
+            <Button
+              className="incident-detail-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect();
+              }}
+            >
+              Details
+            </Button>
+            <Button
+              className="incident-delete-button"
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };
