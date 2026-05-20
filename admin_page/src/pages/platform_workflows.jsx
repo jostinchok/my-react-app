@@ -15,6 +15,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
+import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
+import CrisisAlertOutlinedIcon from "@mui/icons-material/CrisisAlertOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";
+import LocalLibraryOutlinedIcon from "@mui/icons-material/LocalLibraryOutlined";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import ReviewsOutlinedIcon from "@mui/icons-material/ReviewsOutlined";
+import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
+import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
+import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import { Link as RouterLink } from "react-router-dom";
 import { authFetch } from "../utils/authFetch";
 import { seededIncidents, summarizeIncidents } from "../data/incidents";
@@ -73,15 +87,15 @@ const tableHeaderSx = {
 };
 
 const navTargets = [
-  { label: "Manage Courses", path: "/admin/course", icon: "CO", detail: "Create courses, modules, and items" },
-  { label: "Training Modules", path: "/admin/training", icon: "TM", detail: "Review Canvas-style course structure" },
-  { label: "Course Requests", path: "/admin/course-requests", icon: "CR", detail: "Approve or reject guide enrollment" },
-  { label: "Guide Progress", path: "/admin/students", icon: "GP", detail: "Completion, quiz attempts, and assignments" },
-  { label: "Certificates", path: "/admin/certificates", icon: "CE", detail: "Issue course-level certificates" },
-  { label: "Incident Detection", path: "/admin/detection", icon: "AI", detail: "Official AI/IoT incident queue" },
-  { label: "Ranger Review", path: "/admin/ranger-review", icon: "RR", detail: "Recommendation-only field workflow" },
-  { label: "Backend Map", path: "/admin/backend-map", icon: "DB", detail: "Tables, APIs, and integration order" },
-  { label: "Audit Log", path: "/admin/audit-log", icon: "AL", detail: "Security traceability events" },
+  { label: "Manage Courses", path: "/admin/course", icon: <SchoolOutlinedIcon />, detail: "Create courses, modules, and items" },
+  { label: "Training Modules", path: "/admin/training", icon: <ViewModuleOutlinedIcon />, detail: "Review Canvas-style course structure" },
+  { label: "Course Requests", path: "/admin/course-requests", icon: <AssignmentTurnedInOutlinedIcon />, detail: "Approve or reject guide enrollment" },
+  { label: "Guide Progress", path: "/admin/students", icon: <RouteOutlinedIcon />, detail: "Completion, quiz attempts, and assignments" },
+  { label: "Certificates", path: "/admin/certificates", icon: <WorkspacePremiumOutlinedIcon />, detail: "Issue course-level certificates" },
+  { label: "Incident Detection", path: "/admin/detection", icon: <CrisisAlertOutlinedIcon />, detail: "Official AI/IoT incident queue" },
+  { label: "Ranger Review", path: "/admin/ranger-review", icon: <ReviewsOutlinedIcon />, detail: "Recommendation-only field workflow" },
+  { label: "Backend Map", path: "/admin/backend-map", icon: <AccountTreeOutlinedIcon />, detail: "Tables, APIs, and integration order" },
+  { label: "Audit Log", path: "/admin/audit-log", icon: <FactCheckOutlinedIcon />, detail: "Security traceability events" },
 ];
 
 const initialAccounts = [
@@ -349,7 +363,7 @@ function PageShell({ title, subtitle, children, action }) {
 
 function StatCard({ label, value, detail, icon }) {
   return (
-    <Card sx={panelSx}>
+    <Card className="admin-stat-card" sx={panelSx}>
       <CardContent>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
@@ -357,7 +371,7 @@ function StatCard({ label, value, detail, icon }) {
             <Typography variant="h4" sx={headingSx}>{value}</Typography>
             <Typography sx={{ ...mutedSx, fontSize: "0.78rem" }}>{detail}</Typography>
           </Box>
-          <Box sx={{ width: 48, height: 48, borderRadius: 3, display: "grid", placeItems: "center", background: "#fff4d0", fontSize: "1.6rem" }}>{icon}</Box>
+          <Box className="admin-stat-icon">{icon}</Box>
         </Stack>
       </CardContent>
     </Card>
@@ -489,17 +503,23 @@ function MiniNavCard({ item }) {
     <Paper
       component={RouterLink}
       to={item.path}
+      className="admin-mini-nav-card"
       sx={{
         ...panelSx,
         display: "block",
         p: 2.2,
         textDecoration: "none",
         color: "inherit",
-        transition: "transform 0.15s ease, border-color 0.15s ease",
-        "&:hover": { transform: "translateY(-2px)", borderColor: "#ff9f1c" },
+        transition: "transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease",
+        "&:hover": {
+          transform: "translateY(-3px)",
+          borderColor: "#ff9f1c",
+          background: "linear-gradient(135deg, #fff8e6 0%, #f0ffe5 100%)",
+          boxShadow: "0 18px 38px rgba(255, 122, 26, 0.16)",
+        },
       }}
     >
-      <Typography sx={{ fontSize: "1.5rem" }}>{item.icon}</Typography>
+      <Box className="admin-mini-nav-icon">{item.icon}</Box>
       <Typography sx={{ color: "#173126", fontWeight: 950 }}>{item.label}</Typography>
       <Typography sx={{ ...mutedSx, fontSize: "0.82rem" }}>{item.detail}</Typography>
     </Paper>
@@ -585,19 +605,29 @@ export function AdminPrototypeDashboard() {
   }, []);
 
   const stats = [
-    { label: "Training Courses", value: metrics.trainingCourses, detail: "Canvas-style course records", icon: "CO" },
-    { label: "Active Park Guides", value: metrics.activeGuides, detail: "Approved guide accounts", icon: "GP" },
-    { label: "Open Incidents", value: metrics.openIncidents, detail: "Awaiting official Admin status", icon: "AI" },
-    { label: "Pending Course Requests", value: metrics.pendingCourseRequests, detail: "Needs enrollment decision", icon: "CR" },
-    { label: "Certificates", value: `${metrics.certificatesIssued}/${metrics.certificatesPending}`, detail: "Issued / pending review", icon: "CE" },
-    { label: "System Health", value: metrics.systemHealth, detail: "Backend, training API, and fallback state", icon: "OK" },
+    { label: "Training Courses", value: metrics.trainingCourses, detail: "Canvas-style course records", icon: <LocalLibraryOutlinedIcon /> },
+    { label: "Active Park Guides", value: metrics.activeGuides, detail: "Approved guide accounts", icon: <GroupsOutlinedIcon /> },
+    { label: "Open Incidents", value: metrics.openIncidents, detail: "Awaiting official Admin status", icon: <CrisisAlertOutlinedIcon /> },
+    { label: "Pending Course Requests", value: metrics.pendingCourseRequests, detail: "Needs enrollment decision", icon: <PendingActionsOutlinedIcon /> },
+    { label: "Certificates", value: `${metrics.certificatesIssued}/${metrics.certificatesPending}`, detail: "Issued / pending review", icon: <VerifiedOutlinedIcon /> },
+    { label: "System Health", value: metrics.systemHealth, detail: "Backend, training API, and fallback state", icon: <HealthAndSafetyOutlinedIcon /> },
   ];
 
   return (
     <PageShell
       title="Admin Command Center"
       subtitle="Final presentation view for training operations, guide readiness, course approvals, AI/IoT incidents, Ranger recommendations, certificates, and system traceability."
-      action={<Button component={RouterLink} to="/admin/detection" variant="outlined">Open incident detection</Button>}
+      action={
+        <Button
+          component={RouterLink}
+          to="/admin/detection"
+          variant="contained"
+          startIcon={<CrisisAlertOutlinedIcon />}
+          className="admin-header-primary-action"
+        >
+          Open incident detection
+        </Button>
+      }
     >
       <StatsGrid items={stats} />
 
@@ -1015,10 +1045,10 @@ export function RangerReviewWorkflow() {
     >
       <StatsGrid
         items={[
-          { label: "Recommendations", value: incidents.length, detail: "Ranger notes awaiting Admin review", icon: "RR" },
-          { label: "High Risk", value: incidents.filter((item) => item.severity === "High").length, detail: "Review quickly", icon: "HI" },
-          { label: "Admin Needed", value: recommendationQueue.filter((item) => item.adminDecisionNeeded).length, detail: "Official status not finalized", icon: "AD" },
-          { label: "Resolved by Ranger", value: "0", detail: "Not allowed by design", icon: "RB" },
+          { label: "Recommendations", value: incidents.length, detail: "Ranger notes awaiting Admin review", icon: <ReviewsOutlinedIcon /> },
+          { label: "High Risk", value: incidents.filter((item) => item.severity === "High").length, detail: "Review quickly", icon: <CrisisAlertOutlinedIcon /> },
+          { label: "Admin Needed", value: recommendationQueue.filter((item) => item.adminDecisionNeeded).length, detail: "Official status not finalized", icon: <PendingActionsOutlinedIcon /> },
+          { label: "Resolved by Ranger", value: "0", detail: "Not allowed by design", icon: <VerifiedOutlinedIcon /> },
         ]}
       />
 

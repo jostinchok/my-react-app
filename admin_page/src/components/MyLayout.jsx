@@ -70,7 +70,7 @@ const MyLayout = (props) => {
           overflowX: "hidden",
           boxSizing: "border-box",
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "flex-start",
           alignItems: "flex-start",
           transition: "padding 0.25s ease, margin-left 0.35s ease, width 0.35s ease",
         },

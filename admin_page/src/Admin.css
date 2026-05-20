@@ -4271,3 +4271,335 @@ body {
 .ranger-review-card .MuiChip-root {
   max-width: 100%;
 }
+
+/* V31 final interaction polish: icon nav, command cards, and course-builder dialogs. */
+.admin-dashboard-shell,
+.admin-linked-page {
+  width: 100% !important;
+  max-width: var(--admin-polish-wide, 1440px) !important;
+  margin-inline: 0 auto !important;
+  align-self: stretch;
+  flex: 1 1 auto;
+}
+
+.canvas-builder-page {
+  max-width: var(--admin-polish-wide, 1440px) !important;
+}
+
+.admin-command-item .nav-icon svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.18s ease;
+}
+
+.admin-command-item:hover,
+.nav-item.admin-command-item:hover {
+  background: rgba(255, 248, 230, 0.13) !important;
+  border-color: rgba(255, 216, 77, 0.34) !important;
+  color: #fffdf5 !important;
+  box-shadow: inset 4px 0 0 rgba(255, 138, 31, 0.86), 0 12px 26px rgba(6, 47, 32, 0.18) !important;
+}
+
+.admin-command-item:hover .nav-icon,
+.nav-item.admin-command-item:hover .nav-icon {
+  background: linear-gradient(135deg, #fff8e6, #a8e64a) !important;
+  color: #102419 !important;
+  box-shadow: 0 8px 18px rgba(255, 122, 26, 0.22);
+}
+
+.admin-command-item:hover .nav-icon svg {
+  transform: scale(1.05);
+}
+
+.admin-command-rail.is-collapsed .admin-command-item .nav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item:hover,
+.admin-command-rail.is-collapsed .nav-item.admin-command-item:hover {
+  transform: translateY(-1px);
+}
+
+.admin-stat-card {
+  min-height: 128px;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #ff9f1c !important;
+  background: linear-gradient(135deg, #fffdf8 0%, #f6ffe8 100%) !important;
+  box-shadow: 0 20px 46px rgba(255, 122, 26, 0.14) !important;
+}
+
+.admin-stat-icon,
+.admin-mini-nav-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff3c4 0%, #dcf8c6 100%);
+  color: #102419;
+  box-shadow: 0 10px 22px rgba(255, 122, 26, 0.12);
+}
+
+.admin-stat-icon {
+  margin-bottom: 0;
+  flex: 0 0 50px;
+}
+
+.admin-stat-icon svg,
+.admin-mini-nav-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.admin-mini-nav-card:hover .admin-mini-nav-icon {
+  background: linear-gradient(135deg, #ff8a1f 0%, #ffd66b 100%);
+  border-color: #ff8a1f;
+  transform: translateY(-1px);
+}
+
+.admin-header-primary-action.MuiButton-root {
+  min-height: 46px;
+  padding-inline: 18px;
+  border: 1px solid #ff9f1c;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #ff8a1f 0%, #ffd66b 100%) !important;
+  color: #102419 !important;
+  font-weight: 950 !important;
+  text-transform: none;
+  box-shadow: 0 14px 30px rgba(255, 122, 26, 0.22) !important;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease !important;
+}
+
+.admin-header-primary-action.MuiButton-root:hover,
+.admin-header-primary-action.MuiButton-root:focus-visible {
+  transform: translateY(-2px);
+  filter: saturate(1.05);
+  box-shadow: 0 18px 38px rgba(255, 122, 26, 0.28) !important;
+}
+
+.course-fallback-alert.MuiAlert-root {
+  margin-bottom: 16px;
+  border: 1px solid #ffb347;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fff4d0 0%, #fffaf0 100%);
+  color: #102419;
+  box-shadow: 0 12px 28px rgba(255, 122, 26, 0.10);
+}
+
+.course-fallback-alert .MuiAlert-icon,
+.course-fallback-alert .MuiSvgIcon-root {
+  color: #c65d00 !important;
+}
+
+.course-fallback-alert .MuiAlert-message {
+  color: #102419 !important;
+  font-weight: 900;
+}
+
+.canvas-builder-page .MuiButton-root,
+.admin-dashboard-shell .MuiButton-root,
+.admin-linked-page .MuiButton-root {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.canvas-builder-page .MuiButton-root:hover,
+.admin-dashboard-shell .MuiButton-root:hover,
+.admin-linked-page .MuiButton-root:hover {
+  transform: translateY(-2px);
+}
+
+.canvas-builder-page .MuiIconButton-root,
+.admin-dashboard-shell .MuiIconButton-root,
+.admin-linked-page .MuiIconButton-root {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.canvas-builder-page .MuiIconButton-root:hover,
+.admin-dashboard-shell .MuiIconButton-root:hover,
+.admin-linked-page .MuiIconButton-root:hover {
+  background: #fff3c4 !important;
+  color: #c65d00 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(255, 122, 26, 0.12);
+}
+
+.course-builder-dialog-paper.MuiDialog-paper {
+  width: min(920px, calc(100vw - 32px));
+  max-width: min(920px, calc(100vw - 32px)) !important;
+  overflow: hidden;
+  border: 1px solid #eadfbd !important;
+  border-radius: 22px !important;
+  background: #fffdf5 !important;
+  box-shadow: 0 30px 86px rgba(16, 36, 25, 0.32) !important;
+}
+
+.course-builder-dialog-title.MuiDialogTitle-root {
+  padding: 24px 28px 16px !important;
+  border-bottom: 1px solid #eadfbd;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(168, 230, 74, 0.24), transparent 16rem),
+    linear-gradient(135deg, #fff8e6 0%, #fffdf5 100%);
+}
+
+.course-builder-dialog-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff8a1f 0%, #ffd66b 100%);
+  color: #102419 !important;
+  box-shadow: 0 10px 22px rgba(255, 122, 26, 0.16);
+}
+
+.course-builder-dialog-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.course-builder-dialog-kicker {
+  display: inline-flex;
+  margin-bottom: 3px;
+  color: #9a5414 !important;
+  font-size: 0.68rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+}
+
+.course-builder-dialog-title h2 {
+  margin: 0 !important;
+  color: #102419 !important;
+  font-size: 1.28rem !important;
+  font-weight: 950 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0 !important;
+}
+
+.course-builder-dialog-title p {
+  max-width: 680px;
+  margin: 5px 0 0 !important;
+  color: #4f6257 !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+}
+
+.course-builder-dialog-paper .MuiDialogContent-root {
+  padding: 22px 28px !important;
+  background: #fffdf8;
+}
+
+.course-builder-dialog-paper .MuiGrid-container {
+  align-items: flex-start;
+}
+
+.course-builder-dialog-paper .MuiInputLabel-root,
+.course-builder-dialog-paper .MuiFormLabel-root {
+  color: #40594c !important;
+  font-weight: 900 !important;
+}
+
+.course-builder-dialog-paper .MuiInputLabel-root.Mui-focused,
+.course-builder-dialog-paper .MuiFormLabel-root.Mui-focused {
+  color: #0b3b28 !important;
+}
+
+.course-builder-dialog-paper .MuiInputBase-root,
+.course-builder-dialog-paper .MuiOutlinedInput-root,
+.course-builder-dialog-paper .MuiSelect-select {
+  min-height: 52px;
+  border: 1px solid #d8c99c;
+  border-radius: 14px !important;
+  background: #fffaf0 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.course-builder-dialog-paper .MuiInputBase-input,
+.course-builder-dialog-paper textarea {
+  color: #102419 !important;
+  font-weight: 850 !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-notchedOutline {
+  border-color: #d8c99c !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #ff9f1c !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root:hover {
+  border-color: #ff9f1c;
+  background: #fff8e6 !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #ff7a1a !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.14);
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root.Mui-focused {
+  border-color: #ff7a1a;
+}
+
+.course-builder-dialog-paper .MuiFormHelperText-root {
+  margin-left: 0 !important;
+  color: #4f6257 !important;
+  font-weight: 750 !important;
+}
+
+.course-builder-dialog-paper .MuiDialogActions-root {
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 28px 22px !important;
+  border-top: 1px solid #eadfbd;
+  background: #fffaf0;
+}
+
+.course-builder-dialog-paper .MuiButton-root {
+  min-height: 42px;
+  padding-inline: 18px;
+}
+
+.course-builder-dialog-paper .MuiPaper-root {
+  border-color: #eadfbd !important;
+  background: #fffaf0 !important;
+}
+
+@media (max-width: 720px) {
+  .course-builder-dialog-title.MuiDialogTitle-root,
+  .course-builder-dialog-paper .MuiDialogContent-root,
+  .course-builder-dialog-paper .MuiDialogActions-root {
+    padding-inline: 18px !important;
+  }
+
+  .course-builder-dialog-title .MuiStack-root {
+    align-items: flex-start;
+  }
+}
