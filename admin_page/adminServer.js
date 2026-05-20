@@ -18,11 +18,18 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
 
+const configuredApiRateLimit = Number(process.env.ADMIN_API_RATE_LIMIT_MAX)
+const apiRateLimitMax =
+  Number.isFinite(configuredApiRateLimit) && configuredApiRateLimit > 0
+    ? configuredApiRateLimit
+    : 5000
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  limit: 300,
+  limit: apiRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
 })
 app.use('/api', apiLimiter)
 
