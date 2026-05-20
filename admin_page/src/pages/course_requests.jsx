@@ -236,7 +236,11 @@ const CourseRequestsPage = () => {
       </Box>
 
       {fallbackMessage && (
-        <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
+        <Alert
+          severity="warning"
+          className="course-fallback-alert"
+          sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}
+        >
           {fallbackMessage}
         </Alert>
       )}

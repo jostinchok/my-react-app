@@ -4633,22 +4633,25 @@ body {
 }
 
 .course-fallback-alert.MuiAlert-root {
-  margin-bottom: 16px;
-  border: 1px solid #ffb347;
+  margin-bottom: 16px !important;
+  border: 1px solid #ff9f1c !important;
   border-radius: 15px;
-  background: linear-gradient(135deg, #fff4d0 0%, #fffaf0 100%);
-  color: #102419;
-  box-shadow: 0 12px 28px rgba(255, 122, 26, 0.10);
+  background: linear-gradient(135deg, #fff0c2 0%, #fffaf0 100%) !important;
+  color: #102419 !important;
+  box-shadow: 0 12px 28px rgba(255, 122, 26, 0.12) !important;
 }
 
 .course-fallback-alert .MuiAlert-icon,
 .course-fallback-alert .MuiSvgIcon-root {
   color: #c65d00 !important;
+  opacity: 1 !important;
 }
 
 .course-fallback-alert .MuiAlert-message {
   color: #102419 !important;
-  font-weight: 900;
+  font-weight: 950;
+  opacity: 1 !important;
+  text-shadow: none !important;
 }
 
 .canvas-builder-page .MuiButton-root,
