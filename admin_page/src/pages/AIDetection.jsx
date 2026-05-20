@@ -873,86 +873,6 @@ const AIDetection = () => {
         </Box>
       </Box>
 
-      <Box className={`incident-state-banner ${backendOnline ? "online" : "fallback"}`}>
-        <strong>{backendOnline ? "Backend incident API connected" : "Using seeded fallback incidents"}</strong>
-        <span>
-          {backendOnline
-            ? "Live memory/MySQL incident data is being rendered from /api/incidents."
-            : "Start the backend to switch this dashboard from seeded evidence to live runtime incidents."}
-        </span>
-      </Box>
-
-      <Box className="incident-role-boundary-note">
-        <strong>Role boundary</strong>
-        <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
-      </Box>
-
-      <Box className="incident-stat-grid">
-        {statusCards.map((card) => (
-          <Paper className="incident-stat-card" key={card.label}>
-            <span>{card.label}</span>
-            <strong>{String(card.value).padStart(2, "0")}</strong>
-            <p>{card.detail}</p>
-          </Paper>
-        ))}
-      </Box>
-
-      <Box className="incident-filter-row">
-        {INCIDENT_FILTERS.map((filter) => (
-          <Button
-            key={filter.id}
-            className={activeFilter === filter.id ? "active" : ""}
-            onClick={() => setActiveFilter(filter.id)}
-            type="button"
-          >
-            {filter.label}
-            <span>{filterCounts[filter.id] ?? 0}</span>
-          </Button>
-        ))}
-      </Box>
-
-      <Box className="incident-workspace">
-        <Paper className="incident-table-panel">
-          <Box className="incident-section-head">
-            <Box>
-              <Typography className="incident-eyebrow">Review queue</Typography>
-              <Typography component="h2">Incident records</Typography>
-            </Box>
-            <Typography>{isLoading ? "Loading..." : visibleCountLabel}</Typography>
-          </Box>
-
-          {emptyState ? (
-            <Box className="incident-empty-state">
-              <Typography component="h3">No matching incidents</Typography>
-              <Typography>
-                Change the filter, post an AI incident, or publish an IoT MQTT payload to populate this queue.
-              </Typography>
-            </Box>
-          ) : (
-            <Box className="incident-record-list">
-              {filteredIncidents.map((incident) => (
-                <IncidentRecordCard
-                  key={incident.id}
-                  incident={incident}
-                  isSelected={selectedIncidentId === incident.id}
-                  isDeleting={deletingIncidentId === incident.id}
-                  onSelect={() => setSelectedIncidentId(incident.id)}
-                  onDelete={() => deleteIncident(incident.id)}
-                />
-              ))}
-            </Box>
-          )}
-        </Paper>
-
-        <IncidentDetailPanel
-          incident={selectedIncident}
-          savingIncidentId={savingIncidentId}
-          deletingIncidentId={deletingIncidentId}
-          onStatusChange={updateIncidentStatus}
-          onDeleteIncident={deleteIncident}
-        />
-      </Box>
-
       <Box className="incident-utility-section">
         <Typography className="incident-eyebrow">Live capture utilities</Typography>
         <Typography component="h2">MQTT and camera controls</Typography>
@@ -1054,6 +974,86 @@ const AIDetection = () => {
             </Box>
           )}
         </Paper>
+      </Box>
+
+      <Box className={`incident-state-banner ${backendOnline ? "online" : "fallback"}`}>
+        <strong>{backendOnline ? "Backend incident API connected" : "Using seeded fallback incidents"}</strong>
+        <span>
+          {backendOnline
+            ? "Live memory/MySQL incident data is being rendered from /api/incidents."
+            : "Start the backend to switch this dashboard from seeded evidence to live runtime incidents."}
+        </span>
+      </Box>
+
+      <Box className="incident-role-boundary-note">
+        <strong>Role boundary</strong>
+        <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
+      </Box>
+
+      <Box className="incident-stat-grid">
+        {statusCards.map((card) => (
+          <Paper className="incident-stat-card" key={card.label}>
+            <span>{card.label}</span>
+            <strong>{String(card.value).padStart(2, "0")}</strong>
+            <p>{card.detail}</p>
+          </Paper>
+        ))}
+      </Box>
+
+      <Box className="incident-filter-row">
+        {INCIDENT_FILTERS.map((filter) => (
+          <Button
+            key={filter.id}
+            className={activeFilter === filter.id ? "active" : ""}
+            onClick={() => setActiveFilter(filter.id)}
+            type="button"
+          >
+            {filter.label}
+            <span>{filterCounts[filter.id] ?? 0}</span>
+          </Button>
+        ))}
+      </Box>
+
+      <Box className="incident-workspace">
+        <Paper className="incident-table-panel">
+          <Box className="incident-section-head">
+            <Box>
+              <Typography className="incident-eyebrow">Review queue</Typography>
+              <Typography component="h2">Incident records</Typography>
+            </Box>
+            <Typography>{isLoading ? "Loading..." : visibleCountLabel}</Typography>
+          </Box>
+
+          {emptyState ? (
+            <Box className="incident-empty-state">
+              <Typography component="h3">No matching incidents</Typography>
+              <Typography>
+                Change the filter, post an AI incident, or publish an IoT MQTT payload to populate this queue.
+              </Typography>
+            </Box>
+          ) : (
+            <Box className="incident-record-list">
+              {filteredIncidents.map((incident) => (
+                <IncidentRecordCard
+                  key={incident.id}
+                  incident={incident}
+                  isSelected={selectedIncidentId === incident.id}
+                  isDeleting={deletingIncidentId === incident.id}
+                  onSelect={() => setSelectedIncidentId(incident.id)}
+                  onDelete={() => deleteIncident(incident.id)}
+                />
+              ))}
+            </Box>
+          )}
+        </Paper>
+
+        <IncidentDetailPanel
+          incident={selectedIncident}
+          savingIncidentId={savingIncidentId}
+          deletingIncidentId={deletingIncidentId}
+          onStatusChange={updateIncidentStatus}
+          onDeleteIncident={deleteIncident}
+        />
       </Box>
 
       <Snackbar

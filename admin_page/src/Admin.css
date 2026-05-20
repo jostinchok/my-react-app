@@ -4236,6 +4236,22 @@ body {
   }
 }
 
+/* V32 detection top-order fix: live capture controls must lead the page, then the incident queue follows. */
+.incident-dashboard {
+  align-self: center;
+}
+
+.incident-utility-section {
+  order: -2;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+.incident-hero {
+  order: -1;
+}
+
 @media (max-width: 640px) {
   .incident-record-card-top,
   .incident-record-grid {
