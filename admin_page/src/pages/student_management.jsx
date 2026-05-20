@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
   LinearProgress,
   MenuItem,
   Snackbar,
@@ -380,9 +379,9 @@ const StudentManagement = () => {
         </Stack>
       </Box>
 
-      <Grid container spacing={2} sx={{ mb: 2.4 }}>
+      <Box className="guide-stat-fit-grid">
         {statCards.map((card) => (
-          <Grid item xs={12} sm={6} lg={3} key={card.label}>
+          <Box className="guide-fit-cell" key={card.label}>
             <Card sx={{ ...panelSx, minHeight: 146, background: "#fffdf7" }}>
               <CardContent sx={{ height: "100%", display: "grid", gap: 1 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -410,9 +409,9 @@ const StudentManagement = () => {
                 <Typography sx={{ color: "#607166", fontWeight: 800 }}>{card.detail}</Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {canvasProgressSummary?.fallback && (
         <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
@@ -472,7 +471,7 @@ const StudentManagement = () => {
         {loading && <LinearProgress sx={{ mt: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
       </Box>
 
-      <Grid container spacing={2.4}>
+      <Box className="guide-card-fit-grid">
         {filteredStudents.map((student) => {
           const isRejected = student.eligibility === "Rejected";
           const assigned = assignedToCourse(student);
@@ -489,7 +488,7 @@ const StudentManagement = () => {
               ? "Needs Review"
               : "In Progress";
           return (
-            <Grid item xs={12} md={6} xl={4} key={student.id}>
+            <Box className="guide-fit-cell" key={student.id}>
               <Card
                 sx={{
                   ...panelSx,
@@ -692,10 +691,10 @@ const StudentManagement = () => {
                   </Stack>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           );
         })}
-      </Grid>
+      </Box>
 
       {filteredStudents.length === 0 && (
         <Box sx={{ ...panelSx, p: 4, mt: 2.4, textAlign: "center", background: "#fffdf7" }}>
