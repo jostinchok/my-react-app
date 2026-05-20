@@ -78,6 +78,7 @@ const Sidebar = () => {
       sx={{
         width: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,
         minWidth: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,
+        height: "100vh",
         transition: "width 0.35s ease, min-width 0.35s ease",
         overflow: "hidden",
       }}
@@ -86,9 +87,9 @@ const Sidebar = () => {
         className={`admin-sidebar admin-command-rail ${open ? "is-open" : "is-collapsed"}`}
         sx={{
           width: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,
-          height: "calc(100vh + 86px)",
-          marginTop: "-86px",
-          paddingTop: "86px",
+          height: "100vh",
+          marginTop: 0,
+          paddingTop: 0,
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",

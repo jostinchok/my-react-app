@@ -380,13 +380,11 @@ function StatCard({ label, value, detail, icon }) {
 
 function StatsGrid({ items }) {
   return (
-    <Grid container spacing={2.2} sx={{ mb: 3 }}>
+    <Box className="admin-stat-fit-grid">
       {items.map((item) => (
-        <Grid item xs={12} sm={6} lg={3} key={item.label}>
-          <StatCard {...item} />
-        </Grid>
+        <StatCard key={item.label} {...item} />
       ))}
-    </Grid>
+    </Box>
   );
 }
 
@@ -663,13 +661,11 @@ export function AdminPrototypeDashboard() {
 
         <Grid item xs={12} lg={8}>
           <DataPanel title="Quick actions" subtitle="One-click Admin routes for the screenshot-ready final demo.">
-            <Grid container spacing={2}>
+            <Box className="admin-action-fit-grid">
               {navTargets.map((item) => (
-                <Grid item xs={12} sm={6} md={4} key={item.path}>
-                  <MiniNavCard item={item} />
-                </Grid>
+                <MiniNavCard key={item.path} item={item} />
               ))}
-            </Grid>
+            </Box>
           </DataPanel>
         </Grid>
       </Grid>

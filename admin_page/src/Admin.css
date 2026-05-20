@@ -4275,15 +4275,57 @@ body {
 /* V31 final interaction polish: icon nav, command cards, and course-builder dialogs. */
 .admin-dashboard-shell,
 .admin-linked-page {
-  width: 100% !important;
+  width: min(100%, var(--admin-polish-wide, 1440px)) !important;
   max-width: var(--admin-polish-wide, 1440px) !important;
-  margin-inline: 0 auto !important;
-  align-self: stretch;
-  flex: 1 1 auto;
+  margin-inline: auto !important;
+  align-self: flex-start;
+  flex: 0 1 var(--admin-polish-wide, 1440px);
 }
 
 .canvas-builder-page {
   max-width: var(--admin-polish-wide, 1440px) !important;
+}
+
+.RaSidebar-paper,
+.RaSidebar-fixed {
+  top: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.admin-command-rail {
+  min-height: 100vh;
+}
+
+.admin-stat-fit-grid,
+.admin-action-fit-grid {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.admin-stat-fit-grid {
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.admin-stat-fit-grid > * {
+  flex: 1 1 min(100%, 180px);
+  min-width: min(100%, 180px);
+  max-width: 240px;
+}
+
+.admin-action-fit-grid {
+  gap: 16px;
+}
+
+.admin-action-fit-grid .admin-mini-nav-card {
+  flex: 1 1 min(100%, 220px);
+  min-width: min(100%, 220px);
+  max-width: 320px;
+  height: 100%;
 }
 
 .admin-command-item .nav-icon svg {
@@ -4518,6 +4560,50 @@ body {
   align-items: flex-start;
 }
 
+.course-builder-dialog-paper .course-builder-form-grid.MuiGrid-container {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 !important;
+  align-items: start;
+}
+
+.course-builder-dialog-paper .course-builder-form-grid > .MuiGrid-item {
+  width: auto !important;
+  max-width: none !important;
+  flex-basis: auto !important;
+  padding: 0 !important;
+  min-width: 0;
+  grid-column: span 12;
+}
+
+.course-builder-dialog-paper .course-dialog-span-2 {
+  grid-column: span 2;
+}
+
+.course-builder-dialog-paper .course-dialog-span-4 {
+  grid-column: span 4;
+}
+
+.course-builder-dialog-paper .course-dialog-span-6 {
+  grid-column: span 6;
+}
+
+.course-builder-dialog-paper .course-dialog-span-8 {
+  grid-column: span 8;
+}
+
+.course-builder-dialog-paper .course-dialog-span-12 {
+  grid-column: 1 / -1;
+}
+
+.course-builder-dialog-paper .MuiTextField-root,
+.course-builder-dialog-paper .MuiFormControl-root,
+.course-builder-dialog-paper .MuiButton-root {
+  max-width: 100%;
+}
+
 .course-builder-dialog-paper .MuiInputLabel-root,
 .course-builder-dialog-paper .MuiFormLabel-root {
   color: #40594c !important;
@@ -4601,5 +4687,17 @@ body {
 
   .course-builder-dialog-title .MuiStack-root {
     align-items: flex-start;
+  }
+
+  .course-builder-dialog-paper .course-builder-form-grid.MuiGrid-container {
+    grid-template-columns: 1fr;
+  }
+
+  .course-builder-dialog-paper .course-dialog-span-2,
+  .course-builder-dialog-paper .course-dialog-span-4,
+  .course-builder-dialog-paper .course-dialog-span-6,
+  .course-builder-dialog-paper .course-dialog-span-8,
+  .course-builder-dialog-paper .course-dialog-span-12 {
+    grid-column: 1 / -1;
   }
 }
