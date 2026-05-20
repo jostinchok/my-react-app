@@ -5,12 +5,6 @@ import {
   Box,
   Button,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -196,6 +190,19 @@ const ParkRangerConsole = () => {
     ["New", "Acknowledged", "In Review"].includes(incident.status)
   ).length;
   const urgentCount = incidents.filter((incident) => incident.status === "New").length;
+  const recommendationCount = incidents.reduce(
+    (total, incident) => total + (incident.rangerRecommendations?.length || 0),
+    0
+  );
+  const feedStatusLabel = backendOnline ? "Live backend connected" : "Demo fallback active";
+  const feedStatusDetail = backendOnline
+    ? `${responseQueue.length} incident records are syncing from the local monitoring API.`
+    : "Seeded response data is shown so the Ranger workflow remains demo-ready.";
+  const feedStatusMeta = isLoading
+    ? "Loading incident queue"
+    : backendOnline
+      ? "Polling every 2.5 seconds"
+      : apiError || "Local seeded incidents loaded";
   const rangerIdentityRows = [
     ["Ranger ID", parkRangerProfile.rangerId],
     ["Staff ID", parkRangerProfile.staffId],
@@ -218,6 +225,7 @@ const ParkRangerConsole = () => {
     { label: "Urgent / New", value: urgentCount, detail: "Needs field acknowledgement" },
     { label: "AI Camera", value: summary.ai, detail: "Image evidence available when captured" },
     { label: "IoT Sensor", value: summary.iot, detail: "Distance-threshold proximity alerts" },
+    { label: "Recommendations", value: recommendationCount, detail: "Advisory notes waiting for Admin review" },
   ];
 
   const appendLocalRecommendation = (incidentId, recommendation, note) => {
@@ -275,8 +283,8 @@ const ParkRangerConsole = () => {
     }
 
     try {
-    const response = await authFetch(
-      `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/ranger-recommendation`,
+      const response = await authFetch(
+        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/ranger-recommendation`,
         {
           method: "POST",
           headers: {
@@ -326,8 +334,9 @@ const ParkRangerConsole = () => {
           </Box>
         </Box>
         <Box className="ranger-standalone-links">
-          <Button href="/admin/detection">Admin incident review</Button>
           <Button href="/admin">Admin dashboard</Button>
+          <Button href="/admin/ranger-review">Admin review queue</Button>
+          <Button href="/admin/detection">Incident detection</Button>
         </Box>
       </Box>
 
@@ -363,15 +372,15 @@ const ParkRangerConsole = () => {
           </Box>
         </Box>
         <Box className="ranger-live-card">
-          <span>{backendOnline ? "Live backend" : "Seeded fallback"}</span>
-          <strong>{apiError || "GET /api/incidents"}</strong>
-          <small>{isLoading ? "Loading incident queue" : "Polling every 2.5 seconds"}</small>
+          <span>{feedStatusLabel}</span>
+          <strong>{feedStatusDetail}</strong>
+          <small>{feedStatusMeta}</small>
         </Box>
       </Box>
 
       <Box className="ranger-boundary-card">
         <strong>Role boundary</strong>
-        <span>Park Ranger response scope only: recommendations and field notes are sent for Admin review.</span>
+        <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
       </Box>
 
       <Box className="ranger-stat-grid">
@@ -391,7 +400,7 @@ const ParkRangerConsole = () => {
               <Typography className="incident-eyebrow">Response queue</Typography>
               <Typography component="h2">AI / IoT incidents</Typography>
             </Box>
-            <Typography>{isLoading ? "Loading..." : `${responseQueue.length} records`}</Typography>
+            <Typography>{isLoading ? "Loading queue..." : `${responseQueue.length} visible records`}</Typography>
           </Box>
 
           {responseQueue.length === 0 ? (
@@ -402,68 +411,57 @@ const ParkRangerConsole = () => {
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table className="incident-table ranger-table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Source</TableCell>
-                    <TableCell>Event Type</TableCell>
-                    <TableCell>Severity</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Time</TableCell>
-                    <TableCell>Official Status</TableCell>
-                    <TableCell align="right">Open</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {responseQueue.map((incident) => (
-                    <TableRow
-                      key={incident.id}
-                      hover
-                      selected={selectedIncidentId === incident.id}
-                      className={`incident-table-row ${incident.status === "New" ? "is-urgent" : ""} ${
-                        selectedIncidentId === incident.id ? "is-selected" : ""
-                      }`}
-                      onClick={() => setSelectedIncidentId(incident.id)}
-                    >
-                      <TableCell>
-                        <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
-                          {sourceLabel[incident.source] || incident.source}
-                        </span>
-                      </TableCell>
-                      <TableCell className="ranger-event-cell">{displayValue(incident.eventType)}</TableCell>
-                      <TableCell>
-                        <span className={`severity-chip ${incident.severity}`}>
-                          {displayValue(incident.severity)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="ranger-location-cell" title={incident.location}>
-                        {displayValue(incident.location)}
-                      </TableCell>
-                      <TableCell className="ranger-time-cell" title={formatDateTime(incident.timestamp)}>
-                        {formatTableTime(incident.timestamp)}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`status-chip ${statusClassName(incident.status)}`}>
-                          {displayValue(incident.status)}
-                        </span>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          className="incident-detail-button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedIncidentId(incident.id);
-                          }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Box className="ranger-response-list">
+              {responseQueue.map((incident) => (
+                <Box
+                  key={incident.id}
+                  component="button"
+                  type="button"
+                  className={`ranger-response-card ${incident.status === "New" ? "is-urgent" : ""} ${
+                    selectedIncidentId === incident.id ? "is-selected" : ""
+                  }`}
+                  onClick={() => setSelectedIncidentId(incident.id)}
+                >
+                  <Box className="ranger-response-card-top">
+                    <Box className="ranger-response-id">
+                      <span>Incident ID</span>
+                      <strong>{incident.id}</strong>
+                    </Box>
+                    <Box className="ranger-response-chip-row">
+                      <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
+                        {sourceLabel[incident.source] || incident.source}
+                      </span>
+                      <span className={`status-chip ${statusClassName(incident.status)}`}>
+                        {displayValue(incident.status)}
+                      </span>
+                    </Box>
+                  </Box>
+                  <Typography className="ranger-response-event">
+                    {displayValue(incident.eventType)}
+                  </Typography>
+                  <Box className="ranger-response-grid">
+                    <Box>
+                      <span>Severity</span>
+                      <strong className={`severity-chip ${incident.severity}`}>
+                        {displayValue(incident.severity)}
+                      </strong>
+                    </Box>
+                    <Box>
+                      <span>Location</span>
+                      <strong>{displayValue(incident.location)}</strong>
+                    </Box>
+                    <Box>
+                      <span>Timestamp</span>
+                      <strong>{formatTableTime(incident.timestamp)}</strong>
+                    </Box>
+                    <Box>
+                      <span>Ranger Action</span>
+                      <strong>Open recommendation</strong>
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
           )}
         </Paper>
 
@@ -546,6 +544,7 @@ const RangerIncidentDetail = ({
         <DetailItem label="Location" value={incident.location} />
         <DetailItem label="Timestamp" value={formatDateTime(incident.timestamp)} />
         <DetailItem label="Official Status" value={incident.status} />
+        <DetailItem label="Ranger Role" value="Recommendation only" />
       </Box>
 
       {incident.source === "AI_CAMERA" && incident.ai ? (
@@ -597,6 +596,9 @@ const RangerIncidentDetail = ({
 
       <Box className="ranger-recommendation-form">
         <Typography component="h3">Field note</Typography>
+        <Typography className="ranger-form-helper">
+          Add field observations for Admin review. This does not change the official incident status.
+        </Typography>
         <TextField
           value={fieldNote}
           onChange={(event) => onFieldNoteChange(incident.id, event.target.value)}
@@ -616,6 +618,7 @@ const RangerIncidentDetail = ({
           {rangerRecommendations.map((action) => (
             <Button
               key={action.recommendation}
+              type="button"
               disabled={isSaving || !fieldNote.trim()}
               onClick={() => onRecommendationSubmit(incident.id, action.recommendation)}
             >
