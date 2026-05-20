@@ -23,6 +23,20 @@ const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
 const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
+const loginUrl = import.meta.env.VITE_LOGIN_URL || "http://localhost:5176/login/";
+
+const clearAuthAndReturnToLogin = () => {
+  try {
+    localStorage.removeItem("sfc_token");
+    localStorage.removeItem("sfc_session");
+    sessionStorage.removeItem("sfc_token");
+    sessionStorage.removeItem("sfc_session");
+  } catch {
+    // Storage can be unavailable in hardened browser modes; still navigate out.
+  }
+
+  window.location.assign(loginUrl);
+};
 
 const NotificationButton = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -303,7 +317,7 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304, collapsedSidebarW
             <MenuItem
               onClick={() => {
                 setUserAnchor(null);
-                window.location.href = "/";
+                clearAuthAndReturnToLogin();
               }}
               sx={{ color: "#e74c3c", fontWeight: 600 }}
             >
