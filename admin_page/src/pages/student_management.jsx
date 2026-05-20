@@ -708,11 +708,13 @@ const StudentManagement = () => {
       )}
 
       <Dialog
+        className="guide-account-dialog"
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         fullWidth
         maxWidth="sm"
         PaperProps={{
+          className: "guide-account-dialog-paper",
           sx: {
             borderRadius: "22px",
             border: "1px solid rgba(234, 214, 167, 0.9)",
@@ -722,6 +724,7 @@ const StudentManagement = () => {
         }}
       >
         <DialogTitle
+          className="guide-account-dialog-title"
           sx={{
             color: "#173126",
             fontWeight: 950,
@@ -732,11 +735,12 @@ const StudentManagement = () => {
         >
           {studentForm.id ? "Edit Guide Account" : "Add Guide Account"}
         </DialogTitle>
-        <DialogContent sx={{ display: "grid", gap: 2, pt: "20px !important" }}>
-          <TextField label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
-          <TextField label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
-          <TextField label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
+        <DialogContent className="guide-account-dialog-content" sx={{ display: "grid", gap: 2, pt: "20px !important" }}>
+          <TextField className="guide-account-dialog-field" label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
           <TextField
+            className="guide-account-dialog-field"
             label="Assigned Course"
             select
             value={studentForm.module}
@@ -751,6 +755,7 @@ const StudentManagement = () => {
             ))}
           </TextField>
           <TextField
+            className="guide-account-dialog-field"
             label="Eligibility"
             select
             value={studentForm.eligibility}
@@ -762,7 +767,7 @@ const StudentManagement = () => {
             <MenuItem value="Rejected">Rejected</MenuItem>
           </TextField>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+        <DialogActions className="guide-account-dialog-actions" sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button onClick={() => setDialogOpen(false)} sx={{ ...buttonSx, color: "#173126" }}>
             Cancel
           </Button>
