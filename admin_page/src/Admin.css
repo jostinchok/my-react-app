@@ -3028,6 +3028,64 @@ body {
   min-width: 0;
 }
 
+.guide-filter-toolbar {
+  border: 2px solid rgba(255, 159, 28, 0.42) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 216, 77, 0.24), transparent 12rem),
+    linear-gradient(135deg, #fffdf7 0%, #fff7dd 100%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+    0 18px 42px rgba(255, 122, 26, 0.12) !important;
+}
+
+.guide-filter-toolbar-inner {
+  width: 100%;
+}
+
+.guide-filter-control .MuiOutlinedInput-root {
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(216, 234, 199, 0.9);
+}
+
+.guide-filter-control .MuiOutlinedInput-root:hover {
+  background: #f6ffe8 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 159, 28, 0.5);
+}
+
+.guide-filter-control .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+}
+
+.guide-filter-control .MuiOutlinedInput-root fieldset {
+  border-color: #b9dba5 !important;
+  border-width: 1.5px !important;
+}
+
+.guide-filter-control .MuiOutlinedInput-root:hover fieldset,
+.guide-filter-control .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: #ff9f1c !important;
+}
+
+.guide-filter-control .MuiInputLabel-root,
+.guide-filter-control .MuiInputBase-input,
+.guide-filter-control .MuiSelect-select {
+  color: #173126 !important;
+  font-weight: 900 !important;
+}
+
+.guide-visible-count {
+  width: fit-content;
+  justify-self: end;
+  padding: 9px 13px;
+  border: 1px solid #d8eac7;
+  border-radius: 999px;
+  background: #f6ffe8;
+  color: #173126 !important;
+  font-weight: 950 !important;
+  text-align: center;
+}
+
 @media (max-width: 860px) {
   .ranger-standalone-shell {
     padding: 14px;

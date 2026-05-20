@@ -419,10 +419,11 @@ const StudentManagement = () => {
         </Alert>
       )}
 
-      <Box sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4, background: "rgba(255, 253, 247, 0.96)" }}>
-        <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ xs: "stretch", md: "center" }}>
+      <Box className="guide-filter-toolbar" sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4 }}>
+        <Stack className="guide-filter-toolbar-inner" direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ xs: "stretch", md: "center" }}>
           <TextField
             label="Search guides"
+            className="guide-filter-control"
             size="small"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -438,6 +439,7 @@ const StudentManagement = () => {
           />
           <TextField
             label="Filter"
+            className="guide-filter-control"
             select
             size="small"
             value={filter}
@@ -464,7 +466,7 @@ const StudentManagement = () => {
               </MenuItem>
             ))}
           </TextField>
-          <Typography sx={{ color: "#607166", fontWeight: 900, minWidth: { md: 150 } }}>
+          <Typography className="guide-visible-count" sx={{ minWidth: { md: 150 } }}>
             {filteredStudents.length} visible
           </Typography>
         </Stack>
