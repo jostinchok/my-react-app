@@ -32,9 +32,11 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import LinkIcon from "@mui/icons-material/Link";
 import QuizIcon from "@mui/icons-material/Quiz";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
 const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
@@ -98,6 +100,102 @@ const emptyItemForm = {
   file: null,
 };
 
+const demoCanvasCourses = [
+  {
+    course_id: "SFC-FIELD-2026",
+    course_name: "SFC Field Response Essentials",
+    description: "Core field-response training for protected flora incidents, wildlife interaction, evidence handling, and visitor safety.",
+    start_date: "2026-05-01",
+    end_date: "2026-06-30",
+    total_contact_hours: 12,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-FIELD-1", title: "Field checklist" }],
+    modules: [
+      {
+        module_id: "DEMO-FIELD-M1",
+        title: "Incident response overview",
+        description: "How guides recognize, document, and escalate protected-area incidents.",
+        category: "Field Readiness",
+        park: "All Parks",
+        level: "Beginner",
+        duration: "45 minutes",
+        format: "Blended",
+        status: "Published",
+        sort_order: 1,
+        image_url: `${userTrainingBaseUrl}/safety-response.webp`,
+        items: [
+          { item_id: "DEMO-FIELD-I1", item_type: "page", title: "Protected-area response policy", description: "Page", content: "Admin-ready response steps for visitor incidents.", status: "published" },
+          { item_id: "DEMO-FIELD-I2", item_type: "checklist", title: "Evidence capture checklist", description: "Checklist", checklist: ["Confirm safety", "Record time and location", "Attach evidence", "Notify Admin"], status: "published" },
+          { item_id: "DEMO-FIELD-I3", item_type: "quiz", title: "Response priority quiz", description: "Quiz", quiz: { question: "Who makes the official incident status decision?", choices: ["Park Ranger", "Admin", "Visitor"], answer: 1 }, status: "published" },
+        ],
+      },
+    ],
+  },
+  {
+    course_id: "SFC-WILDLIFE-2026",
+    course_name: "Sarawak Protected Wildlife Awareness",
+    description: "Awareness training for protected wildlife handling, visitor boundaries, and field reporting.",
+    start_date: "2026-05-01",
+    end_date: "2026-07-15",
+    total_contact_hours: 10,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-WILD-1", title: "Wildlife briefing" }],
+    modules: [
+      {
+        module_id: "DEMO-WILD-M1",
+        title: "Wildlife disturbance signals",
+        description: "Recognize risky visitor behavior without disturbing wildlife.",
+        category: "Wildlife Awareness",
+        park: "Bako National Park",
+        level: "Beginner",
+        duration: "40 minutes",
+        format: "Online",
+        status: "Published",
+        sort_order: 1,
+        image_url: `${userTrainingBaseUrl}/biodiversity-basics.webp`,
+        items: [
+          { item_id: "DEMO-WILD-I1", item_type: "video", title: "Wildlife handling scenario", description: "Video", status: "published" },
+          { item_id: "DEMO-WILD-I2", item_type: "text", title: "Visitor boundary script", description: "Text", content: "Use calm language and escalate repeated boundary breaches.", status: "published" },
+          { item_id: "DEMO-WILD-I3", item_type: "link", title: "Protected wildlife reference", description: "Link", external_url: "https://sarawakforestry.com", status: "published" },
+        ],
+      },
+    ],
+  },
+  {
+    course_id: "SFC-ORIENTATION-2026",
+    course_name: "SFC Park Guide Orientation",
+    description: "Orientation for new park guides covering SFC portal use, route safety, and certification flow.",
+    start_date: "2026-05-01",
+    end_date: "2026-06-15",
+    total_contact_hours: 8,
+    status: "Published",
+    updated_at: "2026-05-14",
+    resources: [{ id: "RES-ORI-1", title: "Guide orientation pack" }],
+    modules: [
+      {
+        module_id: "DEMO-ORI-M1",
+        title: "Portal and certification basics",
+        description: "Understand training requests, module completion, quizzes, and certificate release.",
+        category: "Orientation",
+        park: "All Parks",
+        level: "Beginner",
+        duration: "35 minutes",
+        format: "Online",
+        status: "Published",
+        sort_order: 1,
+        image_url: `${userTrainingBaseUrl}/ecotourism-briefing.webp`,
+        items: [
+          { item_id: "DEMO-ORI-I1", item_type: "image", title: "Portal navigation map", description: "Image", status: "published" },
+          { item_id: "DEMO-ORI-I2", item_type: "file", title: "Orientation PDF", description: "File", file_name: "orientation-pack.pdf", status: "published" },
+          { item_id: "DEMO-ORI-I3", item_type: "page", title: "Certificate release rules", description: "Page", content: "Certificates are released after full course completion and Admin review.", status: "published" },
+        ],
+      },
+    ],
+  },
+];
+
 const itemTypeMap = {
   page: { label: "Page", icon: <ArticleIcon />, helper: "Rich text learning page" },
   text: { label: "Text", icon: <ArticleIcon />, helper: "Short text lesson" },
@@ -128,12 +226,69 @@ const buttonSx = {
   borderRadius: "12px",
   textTransform: "none",
   fontWeight: 900,
+  minHeight: 42,
+  px: 1.8,
+  transition: "transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: "0 12px 24px rgba(255, 122, 26, 0.16)",
+  },
+  "&:focus-visible": {
+    outline: "3px solid rgba(255, 122, 26, 0.35)",
+    outlineOffset: 3,
+  },
+};
+
+const primaryButtonSx = {
+  ...buttonSx,
+  background: "linear-gradient(135deg, #ff7a1a 0%, #ffd84d 100%)",
+  color: "#173126",
+  boxShadow: "0 10px 22px rgba(255, 122, 26, 0.18)",
+  "&:hover": {
+    ...buttonSx["&:hover"],
+    background: "linear-gradient(135deg, #f06f0f 0%, #ffc928 100%)",
+  },
+};
+
+const secondaryButtonSx = {
+  ...buttonSx,
+  bgcolor: "#fffdf5",
+  color: "#173126",
+  border: "1px solid #eadfbf",
+  "&:hover": {
+    ...buttonSx["&:hover"],
+    bgcolor: "#f0ffe5",
+    borderColor: "#a7e957",
+  },
+};
+
+const demoButtonSx = {
+  ...buttonSx,
+  bgcolor: "#dcf8c6",
+  color: "#173126",
+  border: "1px solid #b9df84",
+  "&:hover": {
+    ...buttonSx["&:hover"],
+    bgcolor: "#c9f08f",
+    borderColor: "#7dbb32",
+  },
 };
 
 const statusChipSx = {
   bgcolor: "#dcf8c6",
   color: "#173126",
   fontWeight: 950,
+};
+
+const dialogActionSx = {
+  px: 3,
+  py: 2,
+  borderTop: "1px solid #eadfbf",
+  background: "#fffaf0",
+};
+
+const dialogPaperProps = {
+  className: "course-builder-dialog-paper",
 };
 
 const toObjectivesText = (objectives) =>
@@ -144,6 +299,23 @@ const splitLines = (value) =>
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+
+function CourseDialogTitle({ title, subtitle, icon }) {
+  return (
+    <DialogTitle className="course-builder-dialog-title">
+      <Stack direction="row" alignItems="center" gap={1.3}>
+        <Box className="course-builder-dialog-icon">{icon}</Box>
+        <Box>
+          <Typography component="span" className="course-builder-dialog-kicker">
+            Admin content builder
+          </Typography>
+          <Typography component="h2">{title}</Typography>
+          <Typography component="p">{subtitle}</Typography>
+        </Box>
+      </Stack>
+    </DialogTitle>
+  );
+}
 
 const toDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -217,6 +389,7 @@ const CourseManagement = () => {
   const [itemForm, setItemForm] = useState(emptyItemForm);
 
   const [loading, setLoading] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const modules = useMemo(() => selectedCourse?.modules || [], [selectedCourse]);
@@ -261,6 +434,7 @@ const CourseManagement = () => {
     const data = await requestJson(`${API_BASE_URL}/api/courses`);
     const loadedCourses = data.courses || [];
     setCourses(loadedCourses);
+    setFallbackMessage("");
     setSelectedCourseId((prev) => prev || loadedCourses[0]?.course_id || "");
     return loadedCourses;
   };
@@ -273,8 +447,16 @@ const CourseManagement = () => {
       return;
     }
 
-    const data = await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/canvas`);
-    const course = data.course || null;
+    let course = null;
+    try {
+      const data = await requestJson(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/canvas`);
+      course = data.course || null;
+      setFallbackMessage("");
+    } catch (error) {
+      course = demoCanvasCourses.find((item) => item.course_id === courseId) || null;
+      if (!course) throw error;
+      setFallbackMessage("Demo fallback course data is displayed because the Admin training API is unavailable.");
+    }
 
     if (course) {
       course.modules = (course.modules || []).map((module) => ({
@@ -293,7 +475,12 @@ const CourseManagement = () => {
       const courseId = selectedCourseId || loadedCourses[0]?.course_id || "";
       await loadCanvasCourse(courseId);
     } catch (error) {
-      showMessage(error.message, "error");
+      setCourses(demoCanvasCourses);
+      const courseId = demoCanvasCourses[0].course_id;
+      setSelectedCourseId(courseId);
+      setSelectedCourse(demoCanvasCourses[0]);
+      setFallbackMessage("Demo fallback course data is displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo fallback courses.", "warning");
     } finally {
       setLoading(false);
     }
@@ -759,17 +946,17 @@ const CourseManagement = () => {
           </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", md: "center" }}>
-            <Button onClick={refreshAll} startIcon={<RefreshIcon />} sx={{ ...buttonSx, bgcolor: "#fffdf5", color: "#173126" }}>
+            <Button onClick={refreshAll} startIcon={<RefreshIcon />} sx={secondaryButtonSx}>
               Refresh
             </Button>
-            <Button onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={{ ...buttonSx, bgcolor: "#dcf8c6", color: "#173126" }}>
+            <Button onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={demoButtonSx}>
               Load Demo Course Records
             </Button>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={openCreateCourse}
-              sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
+              sx={primaryButtonSx}
             >
               Create Course
             </Button>
@@ -778,9 +965,14 @@ const CourseManagement = () => {
       </Box>
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
+      {fallbackMessage && (
+        <Alert severity="warning" className="course-fallback-alert">
+          {fallbackMessage}
+        </Alert>
+      )}
 
       <Grid container spacing={2.2} alignItems="flex-start">
-        <Grid item xs={12} xl={3}>
+        <Grid item xs={12} md={3}>
           <Box sx={{ ...panelSx, p: 2.2, position: { lg: "sticky" }, top: { lg: 18 } }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
               <Box>
@@ -822,6 +1014,14 @@ const CourseManagement = () => {
                     <Typography sx={{ color: "#607166", fontWeight: 750, fontSize: "0.84rem", mt: 0.4 }}>
                       {course.description || "No description yet."}
                     </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.6} sx={{ mt: 1 }}>
+                      <Chip label={course.status || "Published"} size="small" sx={statusChipSx} />
+                      <Chip
+                        label={`Updated ${course.updated_at || course.updatedAt || "not set"}`}
+                        size="small"
+                        sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 900 }}
+                      />
+                    </Stack>
                   </Paper>
                 );
               })}
@@ -835,7 +1035,7 @@ const CourseManagement = () => {
           </Box>
         </Grid>
 
-        <Grid item xs={12} xl={5.5}>
+        <Grid item xs={12} md={5.5}>
           <Stack gap={2.2}>
             <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
@@ -862,13 +1062,23 @@ const CourseManagement = () => {
                   <Typography sx={{ color: "#607166", fontWeight: 800, mt: 0.5 }}>
                     {selectedCourse ? formatCourseDuration(selectedCourse) : "Choose a course from the list."}
                   </Typography>
+                  {selectedCourse && (
+                    <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mt: 1.1 }}>
+                      <Chip label={selectedCourse.status || "Published"} size="small" sx={statusChipSx} />
+                      <Chip
+                        label={`Last updated ${selectedCourse.updated_at || selectedCourse.updatedAt || "not set"}`}
+                        size="small"
+                        sx={{ bgcolor: "#fff3c4", color: "#173126", fontWeight: 950 }}
+                      />
+                    </Stack>
+                  )}
                 </Box>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={openCreateModule}
                   disabled={!selectedCourse}
-                  sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126", alignSelf: { xs: "stretch", sm: "center" } }}
+                  sx={{ ...primaryButtonSx, alignSelf: { xs: "stretch", sm: "center" } }}
                 >
                   Add Module
                 </Button>
@@ -1000,7 +1210,7 @@ const CourseManagement = () => {
                   startIcon={<AddIcon />}
                   onClick={() => openCreateItem(selectedModule)}
                   disabled={!selectedModule}
-                  sx={{ ...buttonSx, bgcolor: "#ffcf45", color: "#173126", alignSelf: { xs: "stretch", sm: "flex-start" } }}
+                  sx={{ ...primaryButtonSx, alignSelf: { xs: "stretch", sm: "flex-start" } }}
                 >
                   Add Item
                 </Button>
@@ -1068,7 +1278,7 @@ const CourseManagement = () => {
           </Stack>
         </Grid>
 
-        <Grid item xs={12} xl={3.5}>
+        <Grid item xs={12} md={3.5}>
           <Stack gap={2.2} sx={{ position: { lg: "sticky" }, top: { lg: 18 } }}>
             <Box sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
@@ -1109,72 +1319,80 @@ const CourseManagement = () => {
         </Grid>
       </Grid>
 
-      <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>{editingCourseId ? "Edit Course" : "Create Course"}</DialogTitle>
+      <Dialog open={courseDialogOpen} onClose={() => setCourseDialogOpen(false)} maxWidth="md" fullWidth PaperProps={dialogPaperProps}>
+        <CourseDialogTitle
+          title={editingCourseId ? "Edit Course" : "Create Course"}
+          subtitle="Keep the course shell short, searchable, and ready for module sequencing."
+          icon={<SchoolOutlinedIcon />}
+        />
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={4}>
+          <Grid container className="course-builder-form-grid" spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Course ID" value={courseForm.course_id} disabled={Boolean(editingCourseId)} onChange={(event) => setCourseForm({ ...courseForm, course_id: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={8} className="course-dialog-span-8">
               <TextField label="Course name" value={courseForm.course_name} onChange={(event) => setCourseForm({ ...courseForm, course_name: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} className="course-dialog-span-12">
               <TextField label="Description" value={courseForm.description} onChange={(event) => setCourseForm({ ...courseForm, description: event.target.value })} fullWidth multiline minRows={3} />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Start date" type="date" value={courseForm.start_date} onChange={(event) => setCourseForm({ ...courseForm, start_date: event.target.value })} fullWidth InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="End date" type="date" value={courseForm.end_date} onChange={(event) => setCourseForm({ ...courseForm, end_date: event.target.value })} fullWidth InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Contact hours" type="number" value={courseForm.total_contact_hours} onChange={(event) => setCourseForm({ ...courseForm, total_contact_hours: event.target.value })} fullWidth />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setCourseDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveCourse} sx={{ ...buttonSx, bgcolor: "#ff8a1d", color: "#173126" }}>Save Course</Button>
+        <DialogActions sx={dialogActionSx}>
+          <Button onClick={() => setCourseDialogOpen(false)} sx={secondaryButtonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveCourse} sx={primaryButtonSx}>Save Course</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>{editingModuleId ? "Edit Module" : "Add Module"}</DialogTitle>
+      <Dialog open={moduleDialogOpen} onClose={() => setModuleDialogOpen(false)} maxWidth="md" fullWidth PaperProps={dialogPaperProps}>
+        <CourseDialogTitle
+          title={editingModuleId ? "Edit Module" : "Add Module"}
+          subtitle="Align the module label, hero image, learning level, and certificate metadata before saving."
+          icon={<ViewModuleOutlinedIcon />}
+        />
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={8}>
+          <Grid container className="course-builder-form-grid" spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={8} className="course-dialog-span-8">
               <TextField label="Module title" value={moduleForm.title} onChange={(event) => setModuleForm({ ...moduleForm, title: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Sort order" type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm({ ...moduleForm, sort_order: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} className="course-dialog-span-12">
               <TextField label="Description" value={moduleForm.description} onChange={(event) => setModuleForm({ ...moduleForm, description: event.target.value })} fullWidth multiline minRows={3} />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Category" value={moduleForm.category} onChange={(event) => setModuleForm({ ...moduleForm, category: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Park" value={moduleForm.park} onChange={(event) => setModuleForm({ ...moduleForm, park: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Level" value={moduleForm.level} onChange={(event) => setModuleForm({ ...moduleForm, level: event.target.value })} fullWidth select>
                 {['Beginner', 'Intermediate', 'Advanced'].map((level) => <MenuItem key={level} value={level}>{level}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Duration" value={moduleForm.duration} onChange={(event) => setModuleForm({ ...moduleForm, duration: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Format" value={moduleForm.format} onChange={(event) => setModuleForm({ ...moduleForm, format: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Status" value={moduleForm.status} onChange={(event) => setModuleForm({ ...moduleForm, status: event.target.value })} fullWidth select>
                 {['Published', 'Draft', 'Archived'].map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} className="course-dialog-span-6">
               <TextField
                 label="Hero image"
                 value={moduleForm.image_url}
@@ -1194,12 +1412,12 @@ const CourseManagement = () => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} className="course-dialog-span-6">
               <Button
                 component="label"
                 variant="outlined"
                 startIcon={<UploadFileIcon />}
-                sx={{ ...buttonSx, width: "100%", height: 56, borderColor: "#eadfbf", color: "#173126" }}
+                sx={{ ...secondaryButtonSx, width: "100%", height: 56 }}
               >
                 Upload hero image
                 <input
@@ -1217,7 +1435,7 @@ const CourseManagement = () => {
               </Typography>
             </Grid>
             {resolveAdminImageUrl(moduleForm.image_url) && (
-              <Grid item xs={12}>
+              <Grid item xs={12} className="course-dialog-span-12">
                 <Box
                   component="img"
                   src={resolveAdminImageUrl(moduleForm.image_url)}
@@ -1226,63 +1444,67 @@ const CourseManagement = () => {
                 />
               </Grid>
             )}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} className="course-dialog-span-6">
               <TextField label="Certificate title" value={moduleForm.badge_name} onChange={(event) => setModuleForm({ ...moduleForm, badge_name: event.target.value })} fullWidth helperText="Used as a course-completion credential label, not a module certificate." />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} className="course-dialog-span-6">
               <TextField label="Objectives" value={moduleForm.objectivesText} onChange={(event) => setModuleForm({ ...moduleForm, objectivesText: event.target.value })} fullWidth multiline minRows={3} helperText="One objective per line" />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setModuleDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveModule} sx={{ ...buttonSx, bgcolor: "#ff8a1d", color: "#173126" }}>Save Module</Button>
+        <DialogActions sx={dialogActionSx}>
+          <Button onClick={() => setModuleDialogOpen(false)} sx={secondaryButtonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveModule} sx={primaryButtonSx}>Save Module</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={itemDialogOpen} onClose={() => setItemDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ color: "#173126", fontWeight: 950 }}>{editingItem ? "Edit Module Item" : "Add Module Item"}</DialogTitle>
+      <Dialog open={itemDialogOpen} onClose={() => setItemDialogOpen(false)} maxWidth="md" fullWidth PaperProps={dialogPaperProps}>
+        <CourseDialogTitle
+          title={editingItem ? "Edit Module Item" : "Add Module Item"}
+          subtitle="Choose a clear item type first, then fill only the fields needed for that learning item."
+          icon={getItemTypeConfig(itemForm.item_type).icon}
+        />
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={4}>
+          <Grid container className="course-builder-form-grid" spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={4} className="course-dialog-span-4">
               <TextField label="Item type" value={itemForm.item_type} onChange={(event) => setItemForm({ ...itemForm, item_type: event.target.value })} fullWidth select>
                 {itemTypeOptions.map((type) => (
                   <MenuItem key={type} value={type}>{getItemTypeConfig(type).label}</MenuItem>
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} className="course-dialog-span-6">
               <TextField label="Title" value={itemForm.title} onChange={(event) => setItemForm({ ...itemForm, title: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} md={2} className="course-dialog-span-2">
               <TextField label="Order" type="number" value={itemForm.sort_order} onChange={(event) => setItemForm({ ...itemForm, sort_order: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} className="course-dialog-span-12">
               <TextField label="Description" value={itemForm.description} onChange={(event) => setItemForm({ ...itemForm, description: event.target.value })} fullWidth />
             </Grid>
 
             {(itemForm.item_type === "page" || itemForm.item_type === "text") && (
-              <Grid item xs={12}>
+              <Grid item xs={12} className="course-dialog-span-12">
                 <TextField label="Content" value={itemForm.content} onChange={(event) => setItemForm({ ...itemForm, content: event.target.value })} fullWidth multiline minRows={6} />
               </Grid>
             )}
 
             {itemForm.item_type === "link" && (
               <>
-                <Grid item xs={12}>
+                <Grid item xs={12} className="course-dialog-span-12">
                   <TextField label="External URL" value={itemForm.external_url} onChange={(event) => setItemForm({ ...itemForm, external_url: event.target.value })} fullWidth />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid item xs={12} className="course-dialog-span-12">
                   <TextField label="Link instructions" value={itemForm.content} onChange={(event) => setItemForm({ ...itemForm, content: event.target.value })} fullWidth multiline minRows={3} />
                 </Grid>
               </>
             )}
 
             {["file", "image", "video"].includes(itemForm.item_type) && (
-              <Grid item xs={12}>
+              <Grid item xs={12} className="course-dialog-span-12">
                 <Paper sx={{ ...softCardSx, p: 2 }}>
                   <Stack gap={1.2}>
-                    <Button component="label" startIcon={<UploadFileIcon />} sx={{ ...buttonSx, bgcolor: "#fff3c4", color: "#173126", alignSelf: "flex-start" }}>
+                    <Button component="label" startIcon={<UploadFileIcon />} sx={{ ...secondaryButtonSx, alignSelf: "flex-start" }}>
                       Choose file
                       <input hidden type="file" onChange={(event) => setItemForm({ ...itemForm, file: event.target.files?.[0] || null })} />
                     </Button>
@@ -1296,34 +1518,34 @@ const CourseManagement = () => {
 
             {itemForm.item_type === "quiz" && (
               <>
-                <Grid item xs={12}>
+                <Grid item xs={12} className="course-dialog-span-12">
                   <TextField label="Question" value={itemForm.question} onChange={(event) => setItemForm({ ...itemForm, question: event.target.value })} fullWidth multiline minRows={3} />
                 </Grid>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} md={8} className="course-dialog-span-8">
                   <TextField label="Choices" value={itemForm.choicesText} onChange={(event) => setItemForm({ ...itemForm, choicesText: event.target.value })} fullWidth multiline minRows={4} helperText="One answer choice per line" />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={4} className="course-dialog-span-4">
                   <TextField label="Correct answer index" type="number" value={itemForm.correctAnswer} onChange={(event) => setItemForm({ ...itemForm, correctAnswer: event.target.value })} fullWidth helperText="0 means first choice" />
                 </Grid>
               </>
             )}
 
             {itemForm.item_type === "checklist" && (
-              <Grid item xs={12}>
+              <Grid item xs={12} className="course-dialog-span-12">
                 <TextField label="Checklist steps" value={itemForm.checklistText} onChange={(event) => setItemForm({ ...itemForm, checklistText: event.target.value })} fullWidth multiline minRows={5} helperText="One step per line" />
               </Grid>
             )}
 
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} className="course-dialog-span-6">
               <TextField label="Status" value={itemForm.status} onChange={(event) => setItemForm({ ...itemForm, status: event.target.value })} fullWidth select>
                 {['published', 'draft', 'archived'].map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
               </TextField>
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setItemDialogOpen(false)} sx={buttonSx}>Cancel</Button>
-          <Button variant="contained" onClick={saveItem} sx={{ ...buttonSx, bgcolor: "#ff8a1d", color: "#173126" }}>Save Item</Button>
+        <DialogActions sx={dialogActionSx}>
+          <Button onClick={() => setItemDialogOpen(false)} sx={secondaryButtonSx}>Cancel</Button>
+          <Button variant="contained" onClick={saveItem} sx={primaryButtonSx}>Save Item</Button>
         </DialogActions>
       </Dialog>
 

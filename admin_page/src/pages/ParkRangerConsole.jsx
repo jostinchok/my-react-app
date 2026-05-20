@@ -411,7 +411,7 @@ const ParkRangerConsole = () => {
                     <TableCell>Severity</TableCell>
                     <TableCell>Location</TableCell>
                     <TableCell>Time</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell>Official Status</TableCell>
                     <TableCell align="right">Open</TableCell>
                   </TableRow>
                 </TableHead>
@@ -545,7 +545,7 @@ const RangerIncidentDetail = ({
         <DetailItem label="Severity" value={incident.severity} />
         <DetailItem label="Location" value={incident.location} />
         <DetailItem label="Timestamp" value={formatDateTime(incident.timestamp)} />
-        <DetailItem label="Status" value={incident.status} />
+        <DetailItem label="Official Status" value={incident.status} />
       </Box>
 
       {incident.source === "AI_CAMERA" && incident.ai ? (
@@ -557,7 +557,7 @@ const RangerIncidentDetail = ({
           <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
-            value={`Plucking Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
+            value={`Protected plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       ) : incident.source === "AI_CAMERA" ? (

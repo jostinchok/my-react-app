@@ -912,6 +912,58 @@
   overflow-wrap: anywhere;
 }
 
+.incident-role-boundary-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 0 0 18px;
+  padding: 13px 16px;
+  border: 1px solid #eadfbf;
+  border-left: 5px solid #ff7a1a;
+  border-radius: 10px;
+  background: #fffdf5;
+  color: var(--incident-ink, #153326);
+  box-shadow: 0 10px 26px rgba(255, 122, 26, 0.08);
+}
+
+.incident-role-boundary-note strong {
+  font-weight: 950;
+}
+
+.incident-role-boundary-note span,
+.incident-admin-action-note {
+  color: var(--incident-muted, #5b6d63);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.incident-evidence-link.MuiButton-root {
+  margin: 0 12px 12px;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #173126;
+  font-weight: 900;
+}
+
+.incident-ranger-recommendation.empty {
+  border-style: dashed;
+  background: #fffaf0;
+}
+
+.incident-utility-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #eadfbf;
+}
+
+.incident-utility-section > h2 {
+  margin: 4px 0 14px;
+  color: var(--incident-ink, #153326);
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
 .ranger-recommendation-form .MuiTextField-root {
   background: #ffffff;
 }
@@ -2945,6 +2997,196 @@ body {
   margin-bottom: 16px;
 }
 
+.guide-stat-fit-grid,
+.guide-card-fit-grid {
+  width: 100%;
+  display: grid;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.guide-stat-fit-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin-bottom: 19px;
+}
+
+.guide-card-fit-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 19px;
+}
+
+.guide-fit-cell,
+.guide-fit-cell > .MuiCard-root {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.guide-fit-cell .MuiCardContent-root {
+  min-width: 0;
+}
+
+.guide-filter-toolbar {
+  border: 2px solid rgba(255, 159, 28, 0.42) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 216, 77, 0.24), transparent 12rem),
+    linear-gradient(135deg, #fffdf7 0%, #fff7dd 100%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+    0 18px 42px rgba(255, 122, 26, 0.12) !important;
+}
+
+.guide-filter-toolbar-inner {
+  width: 100%;
+}
+
+.guide-filter-control .MuiOutlinedInput-root {
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(216, 234, 199, 0.9);
+}
+
+.guide-filter-control .MuiOutlinedInput-root:hover {
+  background: #f6ffe8 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 159, 28, 0.5);
+}
+
+.guide-filter-control .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+}
+
+.guide-filter-control .MuiOutlinedInput-root fieldset {
+  border-color: #b9dba5 !important;
+  border-width: 1.5px !important;
+}
+
+.guide-filter-control .MuiOutlinedInput-root:hover fieldset,
+.guide-filter-control .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: #ff9f1c !important;
+}
+
+.guide-filter-control .MuiInputLabel-root,
+.guide-filter-control .MuiInputBase-input,
+.guide-filter-control .MuiSelect-select {
+  color: #173126 !important;
+  font-weight: 900 !important;
+}
+
+.guide-visible-count {
+  width: fit-content;
+  justify-self: end;
+  padding: 9px 13px;
+  border: 1px solid #d8eac7;
+  border-radius: 999px;
+  background: #f6ffe8;
+  color: #173126 !important;
+  font-weight: 950 !important;
+  text-align: center;
+}
+
+.guide-account-dialog-paper.MuiDialog-paper {
+  width: min(720px, calc(100vw - 32px)) !important;
+  max-width: min(720px, calc(100vw - 32px)) !important;
+  overflow: hidden !important;
+  border: 2px solid rgba(255, 159, 28, 0.42) !important;
+  background: #fffdf7 !important;
+  box-shadow: 0 30px 90px rgba(16, 36, 25, 0.34) !important;
+}
+
+.guide-account-dialog-title.MuiDialogTitle-root {
+  padding: 22px 24px 18px !important;
+  border-bottom: 1px solid #eadfbf !important;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(167, 233, 87, 0.3), transparent 10rem),
+    linear-gradient(135deg, #fff8d6 0%, #f3ffd4 100%) !important;
+  color: #173126 !important;
+  font-size: 1.14rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+}
+
+.guide-account-dialog-content.MuiDialogContent-root {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px !important;
+  padding: 22px 24px 18px !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 216, 77, 0.14), transparent 12rem),
+    #fffdf7 !important;
+}
+
+.guide-account-dialog-field {
+  min-width: 0;
+}
+
+.guide-account-dialog-field:nth-of-type(3) {
+  grid-column: 1 / -1;
+}
+
+.guide-account-dialog-field .MuiInputBase-root,
+.guide-account-dialog-field .MuiOutlinedInput-root {
+  min-height: 56px !important;
+  border-radius: 15px !important;
+  background: #ffffff !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(216, 234, 199, 0.9),
+    0 10px 20px rgba(11, 59, 40, 0.04) !important;
+}
+
+.guide-account-dialog-field .MuiOutlinedInput-notchedOutline {
+  border-color: #b9dba5 !important;
+  border-width: 1.5px !important;
+}
+
+.guide-account-dialog-field .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline,
+.guide-account-dialog-field .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #ff9f1c !important;
+  border-width: 2px !important;
+}
+
+.guide-account-dialog-field .MuiInputLabel-root,
+.guide-account-dialog-field .MuiFormLabel-root {
+  color: #496154 !important;
+  font-weight: 950 !important;
+}
+
+.guide-account-dialog-field .MuiInputLabel-root.Mui-focused,
+.guide-account-dialog-field .MuiFormLabel-root.Mui-focused {
+  color: #c65d00 !important;
+}
+
+.guide-account-dialog-field input,
+.guide-account-dialog-field .MuiSelect-select {
+  color: #173126 !important;
+  -webkit-text-fill-color: #173126 !important;
+  font-weight: 900 !important;
+}
+
+.guide-account-dialog-actions.MuiDialogActions-root {
+  padding: 16px 24px 22px !important;
+  border-top: 1px solid #eadfbf !important;
+  background: #fffaf0 !important;
+}
+
+.guide-account-dialog-actions .MuiButton-root {
+  min-width: 128px;
+  min-height: 42px;
+  border-radius: 13px !important;
+}
+
+.guide-account-dialog-actions .MuiButton-text {
+  border: 1px solid #eadfbf !important;
+  background: #ffffff !important;
+}
+
+.guide-account-dialog-actions .MuiButton-text:hover,
+.guide-account-dialog-actions .MuiButton-text:focus-visible {
+  border-color: #ff9f1c !important;
+  background: #f6ffe8 !important;
+}
+
 @media (max-width: 860px) {
   .ranger-standalone-shell {
     padding: 14px;
@@ -3327,7 +3569,13 @@ body {
   flex: 1;
   padding: 12px 12px 18px !important;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   gap: 14px !important;
+}
+
+.admin-command-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-nav-group {
@@ -3974,5 +4222,874 @@ body {
   .admin-page-header .MuiButton-root,
   .admin-linked-page > .MuiBox-root:first-child .MuiButton-root {
     width: 100%;
+  }
+}
+
+/* V30 final-nav-refinement: keep the rail and content aligned in both open and compact modes. */
+.RaSidebar-paper,
+.RaSidebar-fixed {
+  overflow: hidden !important;
+}
+
+.admin-command-rail {
+  transition:
+    width 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+  box-shadow: 14px 0 34px rgba(6, 47, 32, 0.16);
+}
+
+.admin-command-item,
+.nav-item.admin-command-item {
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease !important;
+}
+
+.admin-command-item:hover,
+.nav-item.admin-command-item:hover {
+  transform: translateX(2px);
+}
+
+.admin-command-rail.is-collapsed .admin-command-brand {
+  justify-content: center;
+  min-height: 78px !important;
+  padding: 16px 10px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-sidebar-badge {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+
+.admin-command-rail.is-collapsed .admin-command-brand-copy,
+.admin-command-rail.is-collapsed .admin-nav-group-title,
+.admin-command-rail.is-collapsed .admin-command-footer {
+  display: none !important;
+}
+
+.admin-command-rail.is-collapsed .admin-command-menu {
+  padding: 12px 8px 18px !important;
+  gap: 10px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-nav-group {
+  gap: 8px;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item,
+.admin-command-rail.is-collapsed .nav-item.admin-command-item {
+  min-height: 46px !important;
+  padding: 8px !important;
+  grid-template-columns: 1fr !important;
+  justify-items: center;
+  gap: 0 !important;
+  border-radius: 14px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item .nav-icon {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item .nav-label {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item.active {
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 63, 0.45), 0 10px 22px rgba(0, 0, 0, 0.16);
+  transform: none;
+}
+
+.admin-command-rail.is-open .admin-command-item.active {
+  transform: translateX(2px);
+}
+
+/* V33 notification center: replace placeholder menu rows with a readable Admin action queue. */
+.admin-notification-paper {
+  color: #173126 !important;
+}
+
+.admin-notification-menu {
+  padding: 0 !important;
+}
+
+.admin-notification-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 15px;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(167, 233, 87, 0.3), transparent 8rem),
+    linear-gradient(135deg, #fffdf5 0%, #fff6dc 100%);
+}
+
+.admin-notification-header h2 {
+  margin: 0 !important;
+  color: #173126 !important;
+  font-size: 1.05rem !important;
+  font-weight: 950 !important;
+  line-height: 1.15 !important;
+}
+
+.admin-notification-header p {
+  margin: 4px 0 0 !important;
+  color: #56685d !important;
+  font-size: 0.82rem !important;
+  font-weight: 750 !important;
+  line-height: 1.4 !important;
+}
+
+.notification-status {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid #d8eac7;
+  border-radius: 999px;
+  background: #f6ffe8;
+  color: #1f6f44;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.notification-status.live {
+  border-color: #ffd889;
+  background: linear-gradient(135deg, #ff9f1c, #ffd84d);
+  color: #173126;
+}
+
+.admin-notification-item {
+  min-height: 92px !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  padding: 14px 18px !important;
+  border-left: 4px solid transparent !important;
+  white-space: normal !important;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease !important;
+}
+
+.admin-notification-item:hover,
+.admin-notification-item:focus-visible {
+  background: #f6ffe8 !important;
+  border-left-color: #ff9f1c !important;
+  transform: translateX(2px);
+}
+
+.admin-notification-item.is-unread {
+  background: #fffaf0 !important;
+}
+
+.notification-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #eadfbf;
+  border-radius: 13px;
+  background: #fffdf5;
+  color: #173126;
+}
+
+.notification-icon.request {
+  background: #eafbdd;
+  color: #1f6f44;
+}
+
+.notification-icon.incident {
+  background: #fff0cf;
+  color: #a65500;
+}
+
+.notification-icon.training {
+  background: #edf8ff;
+  color: #1f5d84;
+}
+
+.notification-icon.certificate {
+  background: #f2efff;
+  color: #4f3b8f;
+}
+
+.notification-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.notification-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notification-title-row strong {
+  color: #173126 !important;
+  font-size: 0.9rem !important;
+  font-weight: 950 !important;
+  line-height: 1.25 !important;
+}
+
+.notification-title-row span {
+  flex: 0 0 auto;
+  color: #c65d00 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  line-height: 1.3 !important;
+}
+
+.notification-copy p {
+  margin: 0 !important;
+  color: #56685d !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1.42 !important;
+}
+
+.admin-notification-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 18px 16px;
+  background: #fffdf5;
+}
+
+.admin-notification-footer button {
+  min-height: 40px;
+  border: 1px solid #eadfbf;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #173126;
+  cursor: pointer;
+  font-weight: 950;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.admin-notification-footer button:hover,
+.admin-notification-footer button:focus-visible {
+  border-color: #ff9f1c;
+  background: linear-gradient(135deg, #ff7a1a, #ffd84d);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .admin-command-rail.is-collapsed .admin-sidebar-badge {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+}
+
+/* V30 incident queue refinement: avoid horizontal table overflow in demo viewports. */
+.incident-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.incident-record-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #eadfbd;
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 8px 22px rgba(11, 59, 40, 0.05);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.incident-record-card:hover,
+.incident-record-card:focus-visible {
+  border-color: #a7e957;
+  background: #fbfff0;
+  box-shadow: 0 14px 30px rgba(11, 59, 40, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.incident-record-card.is-selected {
+  border-color: #a7e957;
+  background: linear-gradient(135deg, #f0ffe5 0%, #fffaf0 100%);
+  box-shadow: inset 4px 0 0 #ff9f1c, 0 14px 30px rgba(11, 59, 40, 0.08);
+}
+
+.incident-record-card-top,
+.incident-record-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.incident-record-card-top {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.incident-record-id,
+.incident-record-field,
+.incident-record-actions {
+  display: grid;
+  gap: 5px;
+}
+
+.incident-record-id span,
+.incident-record-field span,
+.incident-record-actions > span {
+  color: #6e7b70;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.incident-record-id strong,
+.incident-record-field strong {
+  color: #102419;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.incident-record-event {
+  margin: 0 !important;
+  color: #173126 !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  line-height: 1.25 !important;
+}
+
+.incident-record-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.incident-record-grid {
+  grid-template-columns: 0.72fr minmax(0, 1.25fr) minmax(112px, 0.9fr) auto;
+  align-items: end;
+}
+
+.incident-record-actions .incident-row-actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 1180px) {
+  .incident-record-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* V32 detection top-order fix: live capture controls must lead the page, then the incident queue follows. */
+.incident-dashboard {
+  align-self: center;
+}
+
+.incident-utility-section {
+  order: -2;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+.incident-hero {
+  order: -1;
+}
+
+@media (max-width: 640px) {
+  .incident-record-card-top,
+  .incident-record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .incident-record-chip-row {
+    justify-content: flex-start;
+  }
+}
+
+.ranger-review-card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ranger-review-card {
+  padding: 16px !important;
+  border: 1px solid #eadfbd !important;
+  border-radius: 16px !important;
+  background: #fffdf8 !important;
+  box-shadow: 0 8px 22px rgba(11, 59, 40, 0.05) !important;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ranger-review-card:hover,
+.ranger-review-card.is-selected {
+  border-color: #a7e957 !important;
+  background: linear-gradient(135deg, #f0ffe5 0%, #fffaf0 100%) !important;
+  box-shadow: inset 4px 0 0 #ff9f1c, 0 14px 30px rgba(11, 59, 40, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.ranger-review-card .MuiChip-root {
+  max-width: 100%;
+}
+
+/* V31 final interaction polish: icon nav, command cards, and course-builder dialogs. */
+.admin-dashboard-shell,
+.admin-linked-page {
+  width: min(100%, var(--admin-polish-wide, 1440px)) !important;
+  max-width: var(--admin-polish-wide, 1440px) !important;
+  margin-inline: auto !important;
+  align-self: flex-start;
+  flex: 0 1 var(--admin-polish-wide, 1440px);
+}
+
+.canvas-builder-page {
+  max-width: var(--admin-polish-wide, 1440px) !important;
+}
+
+.RaSidebar-paper,
+.RaSidebar-fixed {
+  top: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.admin-command-rail {
+  min-height: 100vh;
+}
+
+.admin-stat-fit-grid,
+.admin-action-fit-grid {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.admin-stat-fit-grid {
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.admin-stat-fit-grid > * {
+  flex: 1 1 min(100%, 180px);
+  min-width: min(100%, 180px);
+  max-width: 240px;
+}
+
+.admin-action-fit-grid {
+  gap: 16px;
+}
+
+.admin-action-fit-grid .admin-mini-nav-card {
+  flex: 1 1 min(100%, 220px);
+  min-width: min(100%, 220px);
+  max-width: 320px;
+  height: 100%;
+}
+
+.admin-command-item .nav-icon svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.18s ease;
+}
+
+.admin-command-item:hover,
+.nav-item.admin-command-item:hover {
+  background: rgba(255, 248, 230, 0.13) !important;
+  border-color: rgba(255, 216, 77, 0.34) !important;
+  color: #fffdf5 !important;
+  box-shadow: inset 4px 0 0 rgba(255, 138, 31, 0.86), 0 12px 26px rgba(6, 47, 32, 0.18) !important;
+}
+
+.admin-command-item:hover .nav-icon,
+.nav-item.admin-command-item:hover .nav-icon {
+  background: linear-gradient(135deg, #fff8e6, #a8e64a) !important;
+  color: #102419 !important;
+  box-shadow: 0 8px 18px rgba(255, 122, 26, 0.22);
+}
+
+.admin-command-item:hover .nav-icon svg {
+  transform: scale(1.05);
+}
+
+.admin-command-rail.is-collapsed .admin-command-item .nav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-command-rail.is-collapsed .admin-command-item:hover,
+.admin-command-rail.is-collapsed .nav-item.admin-command-item:hover {
+  transform: translateY(-1px);
+}
+
+.admin-stat-card {
+  min-height: 128px;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #ff9f1c !important;
+  background: linear-gradient(135deg, #fffdf8 0%, #f6ffe8 100%) !important;
+  box-shadow: 0 20px 46px rgba(255, 122, 26, 0.14) !important;
+}
+
+.admin-stat-icon,
+.admin-mini-nav-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff3c4 0%, #dcf8c6 100%);
+  color: #102419;
+  box-shadow: 0 10px 22px rgba(255, 122, 26, 0.12);
+}
+
+.admin-stat-icon {
+  margin-bottom: 0;
+  flex: 0 0 50px;
+}
+
+.admin-stat-icon svg,
+.admin-mini-nav-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.admin-mini-nav-card:hover .admin-mini-nav-icon {
+  background: linear-gradient(135deg, #ff8a1f 0%, #ffd66b 100%);
+  border-color: #ff8a1f;
+  transform: translateY(-1px);
+}
+
+.admin-header-primary-action.MuiButton-root {
+  min-height: 46px;
+  padding-inline: 18px;
+  border: 1px solid #ff9f1c;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #ff8a1f 0%, #ffd66b 100%) !important;
+  color: #102419 !important;
+  font-weight: 950 !important;
+  text-transform: none;
+  box-shadow: 0 14px 30px rgba(255, 122, 26, 0.22) !important;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease !important;
+}
+
+.admin-header-primary-action.MuiButton-root:hover,
+.admin-header-primary-action.MuiButton-root:focus-visible {
+  transform: translateY(-2px);
+  filter: saturate(1.05);
+  box-shadow: 0 18px 38px rgba(255, 122, 26, 0.28) !important;
+}
+
+.course-fallback-alert.MuiAlert-root {
+  margin-bottom: 16px !important;
+  border: 1px solid #ff9f1c !important;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fff0c2 0%, #fffaf0 100%) !important;
+  color: #102419 !important;
+  box-shadow: 0 12px 28px rgba(255, 122, 26, 0.12) !important;
+}
+
+.course-fallback-alert .MuiAlert-icon,
+.course-fallback-alert .MuiSvgIcon-root {
+  color: #c65d00 !important;
+  opacity: 1 !important;
+}
+
+.course-fallback-alert .MuiAlert-message {
+  color: #102419 !important;
+  font-weight: 950;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.canvas-builder-page .MuiButton-root,
+.admin-dashboard-shell .MuiButton-root,
+.admin-linked-page .MuiButton-root {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.canvas-builder-page .MuiButton-root:hover,
+.admin-dashboard-shell .MuiButton-root:hover,
+.admin-linked-page .MuiButton-root:hover {
+  transform: translateY(-2px);
+}
+
+.canvas-builder-page .MuiIconButton-root,
+.admin-dashboard-shell .MuiIconButton-root,
+.admin-linked-page .MuiIconButton-root {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.canvas-builder-page .MuiIconButton-root:hover,
+.admin-dashboard-shell .MuiIconButton-root:hover,
+.admin-linked-page .MuiIconButton-root:hover {
+  background: #fff3c4 !important;
+  color: #c65d00 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(255, 122, 26, 0.12);
+}
+
+.course-builder-dialog-paper.MuiDialog-paper {
+  width: min(920px, calc(100vw - 32px));
+  max-width: min(920px, calc(100vw - 32px)) !important;
+  overflow: hidden;
+  border: 1px solid #eadfbd !important;
+  border-radius: 22px !important;
+  background: #fffdf5 !important;
+  box-shadow: 0 30px 86px rgba(16, 36, 25, 0.32) !important;
+}
+
+.course-builder-dialog-title.MuiDialogTitle-root {
+  padding: 24px 28px 16px !important;
+  border-bottom: 1px solid #eadfbd;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(168, 230, 74, 0.24), transparent 16rem),
+    linear-gradient(135deg, #fff8e6 0%, #fffdf5 100%);
+}
+
+.course-builder-dialog-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff8a1f 0%, #ffd66b 100%);
+  color: #102419 !important;
+  box-shadow: 0 10px 22px rgba(255, 122, 26, 0.16);
+}
+
+.course-builder-dialog-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.course-builder-dialog-kicker {
+  display: inline-flex;
+  margin-bottom: 3px;
+  color: #9a5414 !important;
+  font-size: 0.68rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+}
+
+.course-builder-dialog-title h2 {
+  margin: 0 !important;
+  color: #102419 !important;
+  font-size: 1.28rem !important;
+  font-weight: 950 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0 !important;
+}
+
+.course-builder-dialog-title p {
+  max-width: 680px;
+  margin: 5px 0 0 !important;
+  color: #4f6257 !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+}
+
+.course-builder-dialog-paper .MuiDialogContent-root {
+  padding: 22px 28px !important;
+  background: #fffdf8;
+}
+
+.course-builder-dialog-paper .MuiGrid-container {
+  align-items: flex-start;
+}
+
+.course-builder-dialog-paper .course-builder-form-grid.MuiGrid-container {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 !important;
+  align-items: start;
+}
+
+.course-builder-dialog-paper .course-builder-form-grid > .MuiGrid-item {
+  width: auto !important;
+  max-width: none !important;
+  flex-basis: auto !important;
+  padding: 0 !important;
+  min-width: 0;
+  grid-column: span 12;
+}
+
+.course-builder-dialog-paper .course-dialog-span-2 {
+  grid-column: span 2;
+}
+
+.course-builder-dialog-paper .course-dialog-span-4 {
+  grid-column: span 4;
+}
+
+.course-builder-dialog-paper .course-dialog-span-6 {
+  grid-column: span 6;
+}
+
+.course-builder-dialog-paper .course-dialog-span-8 {
+  grid-column: span 8;
+}
+
+.course-builder-dialog-paper .course-dialog-span-12 {
+  grid-column: 1 / -1;
+}
+
+.course-builder-dialog-paper .MuiTextField-root,
+.course-builder-dialog-paper .MuiFormControl-root,
+.course-builder-dialog-paper .MuiButton-root {
+  max-width: 100%;
+}
+
+.course-builder-dialog-paper .MuiInputLabel-root,
+.course-builder-dialog-paper .MuiFormLabel-root {
+  color: #40594c !important;
+  font-weight: 900 !important;
+}
+
+.course-builder-dialog-paper .MuiInputLabel-root.Mui-focused,
+.course-builder-dialog-paper .MuiFormLabel-root.Mui-focused {
+  color: #0b3b28 !important;
+}
+
+.course-builder-dialog-paper .MuiInputBase-root,
+.course-builder-dialog-paper .MuiOutlinedInput-root,
+.course-builder-dialog-paper .MuiSelect-select {
+  min-height: 52px;
+  border: 1px solid #d8c99c;
+  border-radius: 14px !important;
+  background: #fffaf0 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.course-builder-dialog-paper .MuiInputBase-input,
+.course-builder-dialog-paper textarea {
+  color: #102419 !important;
+  font-weight: 850 !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-notchedOutline {
+  border-color: #d8c99c !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #ff9f1c !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root:hover {
+  border-color: #ff9f1c;
+  background: #fff8e6 !important;
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #ff7a1a !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.14);
+}
+
+.course-builder-dialog-paper .MuiOutlinedInput-root.Mui-focused {
+  border-color: #ff7a1a;
+}
+
+.course-builder-dialog-paper .MuiFormHelperText-root {
+  margin-left: 0 !important;
+  color: #4f6257 !important;
+  font-weight: 750 !important;
+}
+
+.course-builder-dialog-paper .MuiDialogActions-root {
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 28px 22px !important;
+  border-top: 1px solid #eadfbd;
+  background: #fffaf0;
+}
+
+.course-builder-dialog-paper .MuiButton-root {
+  min-height: 42px;
+  padding-inline: 18px;
+}
+
+.course-builder-dialog-paper .MuiPaper-root {
+  border-color: #eadfbd !important;
+  background: #fffaf0 !important;
+}
+
+@media (max-width: 720px) {
+  .course-builder-dialog-title.MuiDialogTitle-root,
+  .course-builder-dialog-paper .MuiDialogContent-root,
+  .course-builder-dialog-paper .MuiDialogActions-root {
+    padding-inline: 18px !important;
+  }
+
+  .course-builder-dialog-title .MuiStack-root {
+    align-items: flex-start;
+  }
+
+  .course-builder-dialog-paper .course-builder-form-grid.MuiGrid-container {
+    grid-template-columns: 1fr;
+  }
+
+  .course-builder-dialog-paper .course-dialog-span-2,
+  .course-builder-dialog-paper .course-dialog-span-4,
+  .course-builder-dialog-paper .course-dialog-span-6,
+  .course-builder-dialog-paper .course-dialog-span-8,
+  .course-builder-dialog-paper .course-dialog-span-12 {
+    grid-column: 1 / -1;
   }
 }

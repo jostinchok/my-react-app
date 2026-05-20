@@ -8,12 +8,6 @@ import {
   Chip,
   Paper,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from "@mui/material";
 import {
@@ -840,8 +834,8 @@ const AIDetection = () => {
   const statusMode = backendOnline ? "Live backend" : "Seeded fallback";
   const statusCards = [
     { label: "Total", value: summary.total, detail: backendOnline ? "Backend incidents" : "Demo incidents" },
-    { label: "AI Camera", value: summary.ai, detail: "Plucking Plants / Touching Wildlife" },
-    { label: "IoT Sensor", value: summary.iot, detail: "ObjectCloseToPlant readings" },
+    { label: "AI Camera", value: summary.ai, detail: "Protected plant / wildlife evidence" },
+    { label: "IoT Sensor", value: summary.iot, detail: "Object approaching protected flora" },
     { label: "New", value: summary.new, detail: "Needs review" },
     { label: "In Review", value: summary.inReview, detail: "Being investigated" },
     { label: "Resolved", value: summary.resolved, detail: "Closed response" },
@@ -853,7 +847,7 @@ const AIDetection = () => {
   const lastUpdatedLabel = lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "Not connected yet";
   const connectionDetail = backendOnline
     ? `Polling every 2.5 seconds. Last update: ${lastUpdatedLabel}`
-    : `Backend offline, showing seeded fallback${apiError ? ` (${apiError})` : ""}`;
+    : "Live API unavailable, showing seeded fallback demo incidents";
 
   return (
     <Box className="incident-dashboard">
@@ -868,8 +862,8 @@ const AIDetection = () => {
             Incidents: AI / IoT Operations
           </Typography>
           <Typography className="incident-subtitle">
-            Command-center review for AI camera alerts, IoT proximity alerts, evidence metadata,
-            and incident status decisions.
+            Command-center review for AI Camera alerts, IoT Sensor proximity alerts, evidence metadata,
+            Ranger recommendations, and Admin official status decisions.
           </Typography>
         </Box>
         <Box className="incident-contract-card">
@@ -877,6 +871,109 @@ const AIDetection = () => {
           <strong>AI_CAMERA + IOT_SENSOR</strong>
           <small>{connectionDetail}</small>
         </Box>
+      </Box>
+
+      <Box className="incident-utility-section">
+        <Typography className="incident-eyebrow">Live capture utilities</Typography>
+        <Typography component="h2">MQTT and camera controls</Typography>
+
+        <Paper className="incident-telemetry-card" sx={{ p: 2, mb: 2 }}>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+            <Typography sx={{ fontWeight: "bold" }}>MQTT:</Typography>
+            <Chip
+              label={mqttStatus}
+              color={mqttStatus === "Connected" ? "success" : "warning"}
+              variant="outlined"
+            />
+
+            <Typography sx={{ fontWeight: "bold" }}>Camera:</Typography>
+            <Chip
+              label={cameraStatus}
+              color={cameraStatus === "On" ? "success" : "default"}
+              variant="outlined"
+            />
+
+            <Typography variant="body2" color="text.secondary">
+              Topic: {MQTT_TOPIC}
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary">
+              Last message: {lastMqttMessage}
+            </Typography>
+
+            <Button variant="outlined" size="small" onClick={testTrigger}>
+              Test Trigger
+            </Button>
+
+            <Button variant="outlined" size="small" onClick={startCamera}>
+              Start Camera
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={isCapturing}
+              onClick={() => captureOneShot("Manual evidence capture")}
+            >
+              Capture 720p Shot
+            </Button>
+
+            <Button variant="outlined" size="small" color="error" onClick={stopCamera}>
+              Stop Camera
+            </Button>
+          </Box>
+        </Paper>
+
+        {mqttStatus !== "Connected" && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            MQTT websocket is not connected yet. Use the seeded incident queue for presentation if the public broker is unavailable.
+          </Alert>
+        )}
+
+        <Paper className="incident-camera-card" sx={{ p: 2, mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Live Camera Preview
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            This browser preview opens on IoT triggers and captures one compressed 720p JPEG for local review. Stop it before running the standalone Python AI camera on the same physical camera.
+          </Typography>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              borderRadius: "12px",
+              backgroundColor: "#FFF9E8",
+              border: "1px solid #EADFBF",
+            }}
+          />
+          <Box sx={{ mt: 1.5 }}>
+            <Chip
+              label={captureStatus}
+              color={capturedShot ? "success" : "default"}
+              variant="outlined"
+            />
+          </Box>
+          {capturedShot && (
+            <Box sx={{ mt: 2, display: "grid", gap: 1, maxWidth: 500 }}>
+              <img
+                src={capturedShot.url}
+                alt="Compressed local camera capture"
+                style={{
+                  width: "100%",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(15, 76, 58, 0.18)",
+                }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                {capturedShot.label}: {capturedShot.width}x{capturedShot.height}, {formatBytes(capturedShot.sizeBytes)}. IoT-triggered captures are posted to the backend; manual preview shots stay local.
+              </Typography>
+            </Box>
+          )}
+        </Paper>
       </Box>
 
       <Box className={`incident-state-banner ${backendOnline ? "online" : "fallback"}`}>
@@ -888,103 +985,10 @@ const AIDetection = () => {
         </span>
       </Box>
 
-      <Paper className="incident-telemetry-card" sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
-          <Typography sx={{ fontWeight: "bold" }}>MQTT:</Typography>
-          <Chip
-            label={mqttStatus}
-            color={mqttStatus === "Connected" ? "success" : "warning"}
-            variant="outlined"
-          />
-
-          <Typography sx={{ fontWeight: "bold" }}>Camera:</Typography>
-          <Chip
-            label={cameraStatus}
-            color={cameraStatus === "On" ? "success" : "default"}
-            variant="outlined"
-          />
-
-          <Typography variant="body2" color="text.secondary">
-            Topic: {MQTT_TOPIC}
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            Last message: {lastMqttMessage}
-          </Typography>
-
-          <Button variant="outlined" size="small" onClick={testTrigger}>
-            Test Trigger
-          </Button>
-
-          <Button variant="outlined" size="small" onClick={startCamera}>
-            Start Camera
-          </Button>
-
-          <Button
-            variant="outlined"
-            size="small"
-            disabled={isCapturing}
-            onClick={() => captureOneShot("Manual evidence capture")}
-          >
-            Capture 720p Shot
-          </Button>
-
-          <Button variant="outlined" size="small" color="error" onClick={stopCamera}>
-            Stop Camera
-          </Button>
-        </Box>
-      </Paper>
-
-      {mqttStatus !== "Connected" && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          MQTT websocket is not connected yet. Check internet access and HiveMQ websocket availability.
-        </Alert>
-      )}
-
-      <Paper className="incident-camera-card" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          Live Camera Preview
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          This browser preview opens on IoT triggers and captures one compressed 720p JPEG for local review. Stop it before running the standalone Python AI camera on the same physical camera.
-        </Typography>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{
-            width: "100%",
-            maxWidth: "500px",
-            borderRadius: "12px",
-            backgroundColor: "#FFF9E8",
-            border: "1px solid #EADFBF",
-          }}
-        />
-        <Box sx={{ mt: 1.5 }}>
-          <Chip
-            label={captureStatus}
-            color={capturedShot ? "success" : "default"}
-            variant="outlined"
-          />
-        </Box>
-        {capturedShot && (
-          <Box sx={{ mt: 2, display: "grid", gap: 1, maxWidth: 500 }}>
-            <img
-              src={capturedShot.url}
-              alt="Compressed local camera capture"
-              style={{
-                width: "100%",
-                borderRadius: "12px",
-                border: "1px solid rgba(15, 76, 58, 0.18)",
-              }}
-            />
-            <Typography variant="caption" color="text.secondary">
-              {capturedShot.label}: {capturedShot.width}x{capturedShot.height}, {formatBytes(capturedShot.sizeBytes)}. IoT-triggered captures are posted to the backend; manual preview shots stay local.
-            </Typography>
-          </Box>
-        )}
-      </Paper>
+      <Box className="incident-role-boundary-note">
+        <strong>Role boundary</strong>
+        <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
+      </Box>
 
       <Box className="incident-stat-grid">
         {statusCards.map((card) => (
@@ -1028,76 +1032,18 @@ const AIDetection = () => {
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table className="incident-table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Incident ID</TableCell>
-                    <TableCell>Source</TableCell>
-                    <TableCell>Event Type</TableCell>
-                    <TableCell>Severity</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Timestamp</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredIncidents.map((incident) => (
-                    <TableRow
-                      key={incident.id}
-                      hover
-                      selected={selectedIncidentId === incident.id}
-                      className={`incident-table-row ${selectedIncidentId === incident.id ? "is-selected" : ""}`}
-                      onClick={() => setSelectedIncidentId(incident.id)}
-                    >
-                      <TableCell className="incident-id-cell">{incident.id}</TableCell>
-                      <TableCell>
-                        <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
-                          {sourceLabel[incident.source] || incident.source}
-                        </span>
-                      </TableCell>
-                      <TableCell>{incident.eventType}</TableCell>
-                      <TableCell>
-                        <span className={`severity-chip ${incident.severity}`}>
-                          {incident.severity}
-                        </span>
-                      </TableCell>
-                      <TableCell>{incident.location}</TableCell>
-                      <TableCell>{formatDateTime(incident.timestamp)}</TableCell>
-                      <TableCell>
-                        <span className={`status-chip ${statusClassName(incident.status)}`}>
-                          {incident.status}
-                        </span>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box className="incident-row-actions">
-                          <Button
-                            className="incident-detail-button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setSelectedIncidentId(incident.id);
-                            }}
-                          >
-                            Details
-                          </Button>
-                          <Button
-                            className="incident-delete-button"
-                            disabled={deletingIncidentId === incident.id}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteIncident(incident.id);
-                            }}
-                          >
-                            {deletingIncidentId === incident.id ? "Deleting..." : "Delete"}
-                          </Button>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Box className="incident-record-list">
+              {filteredIncidents.map((incident) => (
+                <IncidentRecordCard
+                  key={incident.id}
+                  incident={incident}
+                  isSelected={selectedIncidentId === incident.id}
+                  isDeleting={deletingIncidentId === incident.id}
+                  onSelect={() => setSelectedIncidentId(incident.id)}
+                  onDelete={() => deleteIncident(incident.id)}
+                />
+              ))}
+            </Box>
           )}
         </Paper>
 
@@ -1120,6 +1066,90 @@ const AIDetection = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+    </Box>
+  );
+};
+
+const IncidentRecordCard = ({
+  incident,
+  isSelected,
+  isDeleting,
+  onSelect,
+  onDelete,
+}) => {
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect();
+    }
+  };
+
+  return (
+    <Box
+      component="article"
+      role="button"
+      tabIndex={0}
+      className={`incident-record-card ${isSelected ? "is-selected" : ""}`}
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+    >
+      <Box className="incident-record-card-top">
+        <Box className="incident-record-id">
+          <span>Incident ID</span>
+          <strong>{incident.id}</strong>
+        </Box>
+        <Box className="incident-record-chip-row">
+          <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
+            {sourceLabel[incident.source] || incident.source}
+          </span>
+          <span className={`status-chip ${statusClassName(incident.status)}`}>
+            {incident.status}
+          </span>
+        </Box>
+      </Box>
+
+      <Typography component="h3" className="incident-record-event">
+        {incident.eventType}
+      </Typography>
+
+      <Box className="incident-record-grid">
+        <Box className="incident-record-field">
+          <span>Severity</span>
+          <strong className={`severity-chip ${incident.severity}`}>{incident.severity}</strong>
+        </Box>
+        <Box className="incident-record-field">
+          <span>Location</span>
+          <strong>{incident.location}</strong>
+        </Box>
+        <Box className="incident-record-field">
+          <span>Timestamp</span>
+          <strong>{formatDateTime(incident.timestamp)}</strong>
+        </Box>
+        <Box className="incident-record-actions">
+          <span>Admin Action</span>
+          <Box className="incident-row-actions">
+            <Button
+              className="incident-detail-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect();
+              }}
+            >
+              Details
+            </Button>
+            <Button
+              className="incident-delete-button"
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };
@@ -1155,8 +1185,8 @@ const IncidentDetailPanel = ({
       <Typography className="incident-detail-id">{incident.id}</Typography>
       <Typography className="incident-detail-kicker">
         {incident.source === "AI_CAMERA"
-          ? "Evidence review, classification confidence, and bounding-box metadata"
-          : "Sensor-only proximity alert with MQTT metadata"}
+          ? "Evidence review for plucking / touching protected plants or disturbing / handling wildlife"
+          : "Object approaching protected flora with IoT Sensor metadata"}
       </Typography>
 
       {evidenceImageUrl ? (
@@ -1167,17 +1197,27 @@ const IncidentDetailPanel = ({
               ? "Local compressed browser preview while backend save is pending or unavailable."
               : "Browser-safe evidence URL rendered through the app/backend."}
           </span>
+          <Button
+            className="incident-evidence-link"
+            href={evidenceImageUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open evidence link
+          </Button>
         </Box>
       ) : (
-        <Box className="incident-no-image">No image evidence for sensor-only alert</Box>
+        <Box className="incident-no-image">No evidence image or evidence link is available for this alert</Box>
       )}
 
       <Box className="incident-detail-grid">
+        <DetailItem label="Incident ID" value={incident.id} />
         <DetailItem label="Source" value={sourceLabel[incident.source] || incident.source} />
+        <DetailItem label="Event Type" value={incident.eventType} />
         <DetailItem label="Severity" value={incident.severity} />
         <DetailItem label="Location" value={incident.location} />
         <DetailItem label="Timestamp" value={formatDateTime(incident.timestamp)} />
-        <DetailItem label="Status" value={incident.status} />
+        <DetailItem label="Official Status" value={incident.status} />
       </Box>
 
       {incident.source === "AI_CAMERA" && incident.ai ? (
@@ -1189,7 +1229,7 @@ const IncidentDetailPanel = ({
           <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : NOT_AVAILABLE} />
           <DetailItem
             label="Probabilities"
-            value={`Plucking Plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
+            value={`Protected plants ${formatPercent(probabilities.PluckingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       ) : incident.source === "AI_CAMERA" ? (
@@ -1214,21 +1254,29 @@ const IncidentDetailPanel = ({
         <Typography>{incident.notes || "No notes recorded for this incident."}</Typography>
       </Box>
 
-      {recommendations.length > 0 && (
-        <Box className="incident-ranger-recommendations">
-          <Typography component="h3">Park Ranger recommendations</Typography>
-          {recommendations.slice(0, 4).map((item) => (
+      <Box className="incident-ranger-recommendations">
+        <Typography component="h3">Ranger Recommendation</Typography>
+        {recommendations.length > 0 ? (
+          recommendations.slice(0, 4).map((item) => (
             <Box className="incident-ranger-recommendation" key={item.id || `${item.recommendation}-${item.createdAt}`}>
               <strong>{item.recommendation}</strong>
               <span>{formatDateTime(item.createdAt)}</span>
               <p>{item.note || "No ranger field note supplied."}</p>
             </Box>
-          ))}
-        </Box>
-      )}
+          ))
+        ) : (
+          <Box className="incident-ranger-recommendation empty">
+            <strong>No Ranger recommendation yet</strong>
+            <p>Ranger advice will appear here without changing the official Admin status.</p>
+          </Box>
+        )}
+      </Box>
 
       <Box className="incident-status-actions admin-official-status">
-        <Typography component="h3">Official incident status</Typography>
+        <Typography component="h3">Admin Action: Official Status Update</Typography>
+        <Typography className="incident-admin-action-note">
+          These buttons update the official incident status. Ranger recommendations remain advisory.
+        </Typography>
         {INCIDENT_STATUSES.map((status) => (
           <Button
             key={status}

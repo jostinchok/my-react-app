@@ -15,10 +15,26 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
+import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
+import CrisisAlertOutlinedIcon from "@mui/icons-material/CrisisAlertOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";
+import LocalLibraryOutlinedIcon from "@mui/icons-material/LocalLibraryOutlined";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import ReviewsOutlinedIcon from "@mui/icons-material/ReviewsOutlined";
+import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
+import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
+import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import { Link as RouterLink } from "react-router-dom";
 import { authFetch } from "../utils/authFetch";
+import { seededIncidents, summarizeIncidents } from "../data/incidents";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
+const MONITORING_API_BASE_URL = import.meta.env.VITE_MONITORING_API_BASE_URL || "http://localhost:4000";
 
 const requestJson = async (url, options = {}) => {
   const response = await authFetch(url, options);
@@ -71,17 +87,15 @@ const tableHeaderSx = {
 };
 
 const navTargets = [
-  { label: "Analytics", path: "/admin/analytics", icon: "📈", detail: "Training funnel and risk snapshot" },
-  { label: "Users", path: "/admin/users", icon: "👥", detail: "Account approval and role assignment" },
-  { label: "Permissions", path: "/admin/permissions", icon: "🔐", detail: "Role-based access rules" },
-  { label: "Incidents", path: "/admin/detection", icon: "🚨", detail: "Official AI/IoT incident queue and final Admin decisions" },
-  { label: "Ranger Review", path: "/admin/ranger-review", icon: "🧭", detail: "Recommendation-only ranger console" },
-  { label: "Sensor Rules", path: "/admin/sensor-rules", icon: "📡", detail: "IoT grouping and noise reduction" },
-  { label: "Announcements", path: "/admin/announcements", icon: "📣", detail: "Read-only broadcast notices" },
-  { label: "Inbox", path: "/admin/inbox", icon: "💬", detail: "Focused messages and system alerts" },
-  { label: "Help Desk", path: "/admin/help-desk", icon: "🛟", detail: "Trackable contact-admin tickets" },
-  { label: "Backend Map", path: "/admin/backend-map", icon: "🗺️", detail: "Tables, APIs, and integration order" },
-  { label: "Audit Log", path: "/admin/audit-log", icon: "🔎", detail: "Security traceability events" },
+  { label: "Manage Courses", path: "/admin/course", icon: <SchoolOutlinedIcon />, detail: "Create courses, modules, and items" },
+  { label: "Training Modules", path: "/admin/training", icon: <ViewModuleOutlinedIcon />, detail: "Review Canvas-style course structure" },
+  { label: "Course Requests", path: "/admin/course-requests", icon: <AssignmentTurnedInOutlinedIcon />, detail: "Approve or reject guide enrollment" },
+  { label: "Guide Progress", path: "/admin/students", icon: <RouteOutlinedIcon />, detail: "Completion, quiz attempts, and assignments" },
+  { label: "Certificates", path: "/admin/certificates", icon: <WorkspacePremiumOutlinedIcon />, detail: "Issue course-level certificates" },
+  { label: "Incident Detection", path: "/admin/detection", icon: <CrisisAlertOutlinedIcon />, detail: "Official AI/IoT incident queue" },
+  { label: "Ranger Review", path: "/admin/ranger-review", icon: <ReviewsOutlinedIcon />, detail: "Recommendation-only field workflow" },
+  { label: "Backend Map", path: "/admin/backend-map", icon: <AccountTreeOutlinedIcon />, detail: "Tables, APIs, and integration order" },
+  { label: "Audit Log", path: "/admin/audit-log", icon: <FactCheckOutlinedIcon />, detail: "Security traceability events" },
 ];
 
 const initialAccounts = [
@@ -139,13 +153,13 @@ const initialIncidents = [
     zone: "Trail A",
     status: "New",
     assigned: "Maya Ling",
-    title: "Possible plant plucking",
+    title: "Plucking / touching protected plants",
     location: "Bako National Park",
     evidence: "Frame 12:33, hand near protected plant",
     hash: "sha256:ai91e-plant-2048",
-    rangerRecommendation: "Pending ranger review",
+    rangerRecommendation: "Recommend In Review",
     adminDecision: "Not decided",
-    note: "",
+    note: "Ranger Maya Ling requests Admin review before any official status change.",
   },
   {
     id: "INC-IOT-1182",
@@ -158,7 +172,7 @@ const initialIncidents = [
     location: "Bako National Park",
     evidence: "37 triggers in 20 minutes, latest snapshot saved",
     hash: "sha256:iot-1182-cluster",
-    rangerRecommendation: "Review as one cluster",
+    rangerRecommendation: "Recommend Acknowledged",
     adminDecision: "Not decided",
     note: "Likely repeated visitor movement near the same protected flora zone.",
   },
@@ -169,7 +183,7 @@ const initialIncidents = [
     zone: "River Walk",
     status: "Under Review",
     assigned: "Daniel Chai",
-    title: "Wildlife handling detected",
+    title: "Disturbing / handling wildlife",
     location: "Bako National Park",
     evidence: "Frame 08:12, hand near protected wildlife",
     hash: "sha256:ai37e-wildlife-2037",
@@ -349,7 +363,7 @@ function PageShell({ title, subtitle, children, action }) {
 
 function StatCard({ label, value, detail, icon }) {
   return (
-    <Card sx={panelSx}>
+    <Card className="admin-stat-card" sx={panelSx}>
       <CardContent>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
@@ -357,7 +371,7 @@ function StatCard({ label, value, detail, icon }) {
             <Typography variant="h4" sx={headingSx}>{value}</Typography>
             <Typography sx={{ ...mutedSx, fontSize: "0.78rem" }}>{detail}</Typography>
           </Box>
-          <Box sx={{ width: 48, height: 48, borderRadius: 3, display: "grid", placeItems: "center", background: "#fff4d0", fontSize: "1.6rem" }}>{icon}</Box>
+          <Box className="admin-stat-icon">{icon}</Box>
         </Stack>
       </CardContent>
     </Card>
@@ -366,13 +380,11 @@ function StatCard({ label, value, detail, icon }) {
 
 function StatsGrid({ items }) {
   return (
-    <Grid container spacing={2.2} sx={{ mb: 3 }}>
+    <Box className="admin-stat-fit-grid">
       {items.map((item) => (
-        <Grid item xs={12} sm={6} lg={3} key={item.label}>
-          <StatCard {...item} />
-        </Grid>
+        <StatCard key={item.label} {...item} />
       ))}
-    </Grid>
+    </Box>
   );
 }
 
@@ -489,17 +501,23 @@ function MiniNavCard({ item }) {
     <Paper
       component={RouterLink}
       to={item.path}
+      className="admin-mini-nav-card"
       sx={{
         ...panelSx,
         display: "block",
         p: 2.2,
         textDecoration: "none",
         color: "inherit",
-        transition: "transform 0.15s ease, border-color 0.15s ease",
-        "&:hover": { transform: "translateY(-2px)", borderColor: "#ff9f1c" },
+        transition: "transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease",
+        "&:hover": {
+          transform: "translateY(-3px)",
+          borderColor: "#ff9f1c",
+          background: "linear-gradient(135deg, #fff8e6 0%, #f0ffe5 100%)",
+          boxShadow: "0 18px 38px rgba(255, 122, 26, 0.16)",
+        },
       }}
     >
-      <Typography sx={{ fontSize: "1.5rem" }}>{item.icon}</Typography>
+      <Box className="admin-mini-nav-icon">{item.icon}</Box>
       <Typography sx={{ color: "#173126", fontWeight: 950 }}>{item.label}</Typography>
       <Typography sx={{ ...mutedSx, fontSize: "0.82rem" }}>{item.detail}</Typography>
     </Paper>
@@ -507,30 +525,129 @@ function MiniNavCard({ item }) {
 }
 
 export function AdminPrototypeDashboard() {
+  const incidentSummary = summarizeIncidents(seededIncidents);
+  const fallbackMetrics = {
+    trainingCourses: 3,
+    activeGuides: 3,
+    openIncidents: incidentSummary.new + incidentSummary.acknowledged + incidentSummary.inReview + incidentSummary.reviewed,
+    pendingCourseRequests: 2,
+    certificatesIssued: 1,
+    certificatesPending: 2,
+    systemHealth: "Demo Ready",
+  };
+  const [metrics, setMetrics] = useState(fallbackMetrics);
+  const [dataNote, setDataNote] = useState("Demo fallback data is ready if local APIs are offline.");
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadDashboardMetrics = async () => {
+      const endpoints = await Promise.allSettled([
+        requestJson(`${API_BASE_URL}/api/courses`),
+        requestJson(`${API_BASE_URL}/api/enrollments/requests`),
+        requestJson(`${API_BASE_URL}/api/students`),
+        requestJson(`${API_BASE_URL}/api/admin/canvas-progress-summary`),
+        requestJson(`${MONITORING_API_BASE_URL}/api/incidents`),
+        requestJson(`${MONITORING_API_BASE_URL}/api/health`),
+      ]);
+
+      if (ignore) return;
+
+      const [courseResult, requestResult, studentResult, progressResult, incidentResult, healthResult] = endpoints;
+      const courses = courseResult.status === "fulfilled" ? courseResult.value.courses || [] : null;
+      const requests = requestResult.status === "fulfilled" ? requestResult.value.requests || [] : null;
+      const students = studentResult.status === "fulfilled" ? studentResult.value.students || [] : null;
+      const progressGuides = progressResult.status === "fulfilled" && Array.isArray(progressResult.value.guides)
+        ? progressResult.value.guides
+        : null;
+      const incidents = incidentResult.status === "fulfilled" ? incidentResult.value.incidents || [] : null;
+      const health = healthResult.status === "fulfilled" ? healthResult.value : null;
+
+      const issuedCertificates = progressGuides
+        ? progressGuides.filter((guide) => Number(guide.completionPercent ?? guide.completion_percent ?? 0) >= 100).length
+        : fallbackMetrics.certificatesIssued;
+      const guideCount = students ? students.length : fallbackMetrics.activeGuides;
+
+      setMetrics({
+        trainingCourses: courses ? courses.length : fallbackMetrics.trainingCourses,
+        activeGuides: students ? students.filter((student) => student.eligibility !== "Rejected").length : fallbackMetrics.activeGuides,
+        openIncidents: incidents
+          ? incidents.filter((incident) => !["Resolved", "False Alarm"].includes(incident.status)).length
+          : fallbackMetrics.openIncidents,
+        pendingCourseRequests: requests
+          ? requests.filter((request) => String(request.status || "pending").toLowerCase() === "pending").length
+          : fallbackMetrics.pendingCourseRequests,
+        certificatesIssued: issuedCertificates,
+        certificatesPending: Math.max(0, guideCount - issuedCertificates),
+        systemHealth: health?.status === "ok" ? "Healthy" : fallbackMetrics.systemHealth,
+      });
+
+      const failedCount = endpoints.filter((result) => result.status === "rejected").length;
+      setDataNote(
+        failedCount
+          ? "Demo fallback filled any metrics whose local API was unavailable."
+          : "Live local APIs are connected for this dashboard."
+      );
+    };
+
+    loadDashboardMetrics().catch(() => {
+      if (!ignore) {
+        setMetrics(fallbackMetrics);
+        setDataNote("Demo fallback data is displayed because local APIs are unavailable.");
+      }
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const stats = [
-    { label: "Course Status", value: "Draft", detail: "Conservation Ethics", icon: "📚" },
-    { label: "Pending Accounts", value: "1", detail: "1 account, 2 course approvals", icon: "👥" },
-    { label: "Module Progress", value: "0%", detail: "0/6 evidence records", icon: "🎓" },
-    { label: "Incidents", value: "4", detail: "2 high priority", icon: "🚨" },
+    { label: "Training Courses", value: metrics.trainingCourses, detail: "Canvas-style course records", icon: <LocalLibraryOutlinedIcon /> },
+    { label: "Active Park Guides", value: metrics.activeGuides, detail: "Approved guide accounts", icon: <GroupsOutlinedIcon /> },
+    { label: "Open Incidents", value: metrics.openIncidents, detail: "Awaiting official Admin status", icon: <CrisisAlertOutlinedIcon /> },
+    { label: "Pending Course Requests", value: metrics.pendingCourseRequests, detail: "Needs enrollment decision", icon: <PendingActionsOutlinedIcon /> },
+    { label: "Certificates", value: `${metrics.certificatesIssued}/${metrics.certificatesPending}`, detail: "Issued / pending review", icon: <VerifiedOutlinedIcon /> },
+    { label: "System Health", value: metrics.systemHealth, detail: "Backend, training API, and fallback state", icon: <HealthAndSafetyOutlinedIcon /> },
   ];
 
   return (
     <PageShell
-      title="Platform Dashboard"
-      subtitle="A Canvas-style control surface connecting courses, approvals, training evidence, certificate release, incidents, messaging, and audit tracking."
-      action={<Button component={RouterLink} to="/admin/audit-log" variant="outlined">Open audit log</Button>}
+      title="Admin Command Center"
+      subtitle="Final presentation view for training operations, guide readiness, course approvals, AI/IoT incidents, Ranger recommendations, certificates, and system traceability."
+      action={
+        <Button
+          component={RouterLink}
+          to="/admin/detection"
+          variant="contained"
+          startIcon={<CrisisAlertOutlinedIcon />}
+          className="admin-header-primary-action"
+        >
+          Open incident detection
+        </Button>
+      }
     >
       <StatsGrid items={stats} />
 
+      <Paper sx={{ ...panelSx, p: 2.2, mb: 3, background: "#fffdf5" }}>
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={1.5}>
+          <Box>
+            <Typography sx={{ color: "#173126", fontWeight: 950 }}>Local demo data status</Typography>
+            <Typography sx={mutedSx}>{dataNote}</Typography>
+          </Box>
+          <Chip label={dataNote.includes("Live") ? "Live API" : "Demo fallback"} color={dataNote.includes("Live") ? "success" : "warning"} />
+        </Stack>
+      </Paper>
+
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={5}>
-          <DataPanel title="Next actions" subtitle="The platform shows what each role should do next.">
+        <Grid item xs={12} lg={4}>
+          <DataPanel title="Presentation flow" subtitle="Start here during the final demo.">
             {[
-              "Publish course before users can request it.",
-              "Review pending accounts and course enrollments.",
-              "Check learners who have not completed required module items.",
-              "Review high priority incidents and ranger recommendations.",
-              "Release certificates only after evidence verification.",
+              "Show the command center metrics and local API/fallback status.",
+              "Open Courses and Training Modules to show the Canvas-style structure.",
+              "Review Course Requests, Guide Progress, and Certificates.",
+              "Open Incident Detection and show Admin official status actions.",
+              "Open Ranger Review to show recommendation-only field input.",
             ].map((item, index) => (
               <Paper key={item} sx={{ p: 2, mb: 1.4, borderRadius: 3, background: index === 0 ? "#f0ffe5" : "#fffdf5" }}>
                 <Stack direction="row" gap={2} alignItems="center">
@@ -542,15 +659,13 @@ export function AdminPrototypeDashboard() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
-          <DataPanel title="Workflow shortcuts" subtitle="Dashboard buttons should complement the navigation panel, not replace it.">
-            <Grid container spacing={2}>
-              {navTargets.slice(0, 11).map((item) => (
-                <Grid item xs={12} sm={6} md={4} key={item.path}>
-                  <MiniNavCard item={item} />
-                </Grid>
+        <Grid item xs={12} lg={8}>
+          <DataPanel title="Quick actions" subtitle="One-click Admin routes for the screenshot-ready final demo.">
+            <Box className="admin-action-fit-grid">
+              {navTargets.map((item) => (
+                <MiniNavCard key={item.path} item={item} />
               ))}
-            </Grid>
+            </Box>
           </DataPanel>
         </Grid>
       </Grid>
@@ -888,12 +1003,31 @@ export function RangerReviewWorkflow() {
   const [selectedId, setSelectedId] = useState(initialIncidents[0].id);
   const [note, setNote] = useState("");
   const selected = incidents.find((incident) => incident.id === selectedId) || incidents[0];
+  const recommendationQueue = incidents.map((incident) => ({
+    ...incident,
+    adminDecisionNeeded: ["New", "Under Review", "Clustered", "Grouped"].includes(incident.status)
+      || incident.adminDecision === "Not decided",
+  }));
 
   const recommend = (recommendation) => {
     setIncidents((items) =>
       items.map((item) =>
         item.id === selected.id
-          ? { ...item, rangerRecommendation: recommendation, note: note || `Ranger recommends: ${recommendation}` }
+          ? {
+              ...item,
+              rangerRecommendation: recommendation,
+              note: note || `${selected.assigned} recommends: ${recommendation}`,
+            }
+          : item
+      )
+    );
+  };
+
+  const setAdminDecision = (status, adminDecision) => {
+    setIncidents((items) =>
+      items.map((item) =>
+        item.id === selected.id
+          ? { ...item, status, adminDecision }
           : item
       )
     );
@@ -902,75 +1036,115 @@ export function RangerReviewWorkflow() {
   return (
     <PageShell
       title="Ranger Review Console"
-      subtitle="Ranger can inspect evidence and recommend an outcome. Only Admin can make the final official status update."
+      subtitle="Dr Lee feedback made explicit: Rangers view incidents, submit notes and recommendations, and Admin makes the final official status change."
       action={<Button component={RouterLink} to="/admin/detection" variant="outlined">Open incidents</Button>}
     >
       <StatsGrid
         items={[
-          { label: "Assigned", value: incidents.length, detail: "Active ranger queue", icon: "🧭" },
-          { label: "High Risk", value: incidents.filter((item) => item.severity === "High").length, detail: "Review quickly", icon: "⚠️" },
-          { label: "Clustered IoT", value: incidents.filter((item) => item.source.includes("Cluster")).length, detail: "Grouped sensor alerts", icon: "📡" },
-          { label: "Resolved by Ranger", value: "0", detail: "Not allowed by design", icon: "🔒" },
+          { label: "Recommendations", value: incidents.length, detail: "Ranger notes awaiting Admin review", icon: <ReviewsOutlinedIcon /> },
+          { label: "High Risk", value: incidents.filter((item) => item.severity === "High").length, detail: "Review quickly", icon: <CrisisAlertOutlinedIcon /> },
+          { label: "Admin Needed", value: recommendationQueue.filter((item) => item.adminDecisionNeeded).length, detail: "Official status not finalized", icon: <PendingActionsOutlinedIcon /> },
+          { label: "Resolved by Ranger", value: "0", detail: "Not allowed by design", icon: <VerifiedOutlinedIcon /> },
         ]}
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={5}>
-          <DataPanel title="Assigned incidents">
-            {incidents.map((incident) => (
-              <Paper
-                key={incident.id}
-                onClick={() => setSelectedId(incident.id)}
-                sx={{
-                  p: 2,
-                  mb: 1.2,
-                  borderRadius: 3,
-                  cursor: "pointer",
-                  background: incident.id === selectedId ? "#f0ffe5" : "#fffdf5",
-                  border: incident.id === selectedId ? "1px solid #a7e957" : "1px solid rgba(225, 169, 69, 0.22)",
-                }}
-              >
-                <Stack direction="row" justifyContent="space-between">
-                  <Box>
-                    <Typography sx={{ color: "#173126", fontWeight: 950 }}>{incident.id}</Typography>
-                    <Typography sx={mutedSx}>{incident.title}</Typography>
-                  </Box>
-                  <Chip label={incident.severity} color={statusColor(incident.severity)} size="small" />
-                </Stack>
-              </Paper>
-            ))}
+        <Grid item xs={12}>
+          <DataPanel title="Recommendation queue" subtitle="Ranger recommendation is advisory. It does not resolve the incident.">
+            <Box className="ranger-review-card-list">
+              {recommendationQueue.map((incident) => (
+                <Paper
+                  key={incident.id}
+                  className={`ranger-review-card ${incident.id === selectedId ? "is-selected" : ""}`}
+                  onClick={() => setSelectedId(incident.id)}
+                >
+                  <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={1.4}>
+                    <Box>
+                      <Typography sx={tableHeaderSx}>Incident</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 950 }}>{incident.id}</Typography>
+                      <Typography sx={{ ...mutedSx, fontSize: "0.82rem" }}>{incident.title}</Typography>
+                    </Box>
+                    <Stack direction="row" flexWrap="wrap" gap={1}>
+                      <Chip label={incident.status} color={statusColor(incident.status)} size="small" />
+                      <Chip
+                        label={incident.adminDecisionNeeded ? "Admin decision needed" : "Reviewed by Admin"}
+                        color={incident.adminDecisionNeeded ? "warning" : "success"}
+                        size="small"
+                      />
+                    </Stack>
+                  </Stack>
+
+                  <Grid container spacing={1.4} sx={{ mt: 1.2 }}>
+                    <Grid item xs={12} sm={4} md={2.4}>
+                      <Typography sx={tableHeaderSx}>Ranger</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 900 }}>{incident.assigned}</Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4} md={2.6}>
+                      <Typography sx={tableHeaderSx}>Recommendation</Typography>
+                      <Chip label={incident.rangerRecommendation} color={statusColor(incident.rangerRecommendation)} size="small" />
+                    </Grid>
+                    <Grid item xs={12} sm={4} md={2.2}>
+                      <Typography sx={tableHeaderSx}>Official Status</Typography>
+                      <Typography sx={{ color: "#173126", fontWeight: 900 }}>{incident.status}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4.8}>
+                      <Typography sx={tableHeaderSx}>Note</Typography>
+                      <Typography sx={{ color: "#56685d", fontWeight: 780 }}>{incident.note || "No field note yet."}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              ))}
+            </Box>
           </DataPanel>
         </Grid>
 
         <Grid item xs={12} lg={7}>
-          <DataPanel title="Evidence and recommendation" subtitle="Recommendation is stored for Admin review.">
+          <DataPanel title="Selected recommendation" subtitle="Ranger input stays separate from official Admin status.">
             <Paper sx={{ p: 3, borderRadius: 4, background: "linear-gradient(135deg, #0f5132, #173126)", color: "white", mb: 2 }}>
               <Typography sx={{ color: "#dffff0", fontWeight: 950, letterSpacing: "0.14em" }}>{selected.source.toUpperCase()}</Typography>
               <Typography variant="h4" sx={{ fontWeight: 950 }}>{selected.title}</Typography>
               <Typography>{selected.evidence}</Typography>
               <Stack direction="row" gap={1} sx={{ mt: 2 }}>
                 <Chip label={`${selected.location} · ${selected.zone}`} />
-                <Chip label={selected.hash} />
+                <Chip label={`Official status: ${selected.status}`} />
+                <Chip label={`Ranger: ${selected.assigned}`} />
               </Stack>
             </Paper>
 
             <FormTextArea
-              label="Ranger note"
+              label="Ranger field note"
               value={note}
               onChange={setNote}
               minRows={3}
             />
 
             <Stack direction="row" gap={1.2} flexWrap="wrap">
-              <Button variant="contained" color="success" onClick={() => recommend("Resolve recommended")}>Recommend Resolve</Button>
-              <Button variant="outlined" color="error" onClick={() => recommend("Escalate recommended")}>Recommend Escalate</Button>
-              <Button variant="outlined" color="warning" onClick={() => recommend("False positive suspected")}>Recommend False Positive</Button>
+              <Button variant="contained" color="success" onClick={() => recommend("Recommend Resolved")}>Recommend Resolved</Button>
+              <Button variant="outlined" color="warning" onClick={() => recommend("Recommend In Review")}>Recommend In Review</Button>
+              <Button variant="outlined" color="error" onClick={() => recommend("Recommend False Alarm")}>Recommend False Alarm</Button>
             </Stack>
 
             <Paper sx={{ p: 2, mt: 2, borderRadius: 3, background: "#fff7e0" }}>
               <Typography sx={{ color: "#173126", fontWeight: 950 }}>Guardrail</Typography>
-              <Typography sx={mutedSx}>This page intentionally has no official resolve button. Final closure belongs to Admin.</Typography>
+              <Typography sx={mutedSx}>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</Typography>
             </Paper>
+          </DataPanel>
+        </Grid>
+
+        <Grid item xs={12} lg={5}>
+          <DataPanel title="Admin decision panel" subtitle="This is where the advisory recommendation becomes an official Admin action.">
+            <Typography sx={kickerSx}>Current recommendation</Typography>
+            <Typography variant="h5" sx={headingSx}>{selected.rangerRecommendation}</Typography>
+            <Typography sx={{ ...mutedSx, mb: 2 }}>{selected.note || "No ranger note recorded yet."}</Typography>
+            <Stack direction="row" gap={1.2} flexWrap="wrap">
+              <Button variant="outlined" onClick={() => setAdminDecision("In Review", "Admin accepted ranger review recommendation")}>Mark In Review</Button>
+              <Button variant="contained" color="success" onClick={() => setAdminDecision("Resolved", "Admin officially resolved after ranger review")}>Officially Resolve</Button>
+              <Button variant="outlined" color="warning" onClick={() => setAdminDecision("False Alarm", "Admin closed as false alarm after evidence review")}>False Alarm</Button>
+            </Stack>
+            <Divider sx={{ my: 2 }} />
+            <Typography sx={mutedSx}>
+              Admin decision: {selected.adminDecision}. Ranger recommendation: {selected.rangerRecommendation}.
+            </Typography>
           </DataPanel>
         </Grid>
       </Grid>
@@ -1372,8 +1546,8 @@ export function BackendMappingWorkflow() {
     ["POST /api/enrollments/:id/approve", "Admin approval gate for learning access."],
     ["POST /api/progress/item", "Save item completion evidence."],
     ["POST /api/certificates/:id/release", "Admin releases certificate to learner."],
-    ["POST /api/incidents/:id/recommendation", "Ranger submits recommendation only."],
-    ["POST /api/incidents/:id/decision", "Admin official incident decision."],
+    ["POST /api/incidents/:id/ranger-recommendation", "Park Ranger submits notes and recommendations only."],
+    ["PATCH /api/incidents/:id/status", "Admin official incident status update."],
     ["POST /api/sensor-rules/evaluate", "Group noisy IoT triggers into clusters."],
     ["POST /api/help-tickets", "Create Contact Admin ticket."],
     ["GET /api/audit-events", "Review immutable audit trail."],

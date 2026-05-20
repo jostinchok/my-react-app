@@ -5,10 +5,10 @@ const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
 const publicAsset = (path) => `${adminBasePath}${path}`;
 
 export const EVENT_TYPE_LABELS = {
-  PluckingPlants: "Plucking Plants",
-  TouchingPlants: "Plucking Plants",
-  TouchingWildlife: "Touching Wildlife",
-  ObjectCloseToPlant: "Object Close to Plant",
+  PluckingPlants: "Plucking / touching protected plants",
+  TouchingPlants: "Plucking / touching protected plants",
+  TouchingWildlife: "Disturbing / handling wildlife",
+  ObjectCloseToPlant: "Object approaching protected flora",
 };
 
 export const displayEventType = (eventType = "") =>

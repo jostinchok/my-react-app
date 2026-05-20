@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
   LinearProgress,
   MenuItem,
   Snackbar,
@@ -78,6 +77,42 @@ const emptyCanvasProgress = {
   latestQuizAt: null,
 };
 
+const demoGuideCourses = [
+  { course_id: "SFC-FIELD-2026", course_name: "SFC Field Response Essentials" },
+  { course_id: "SFC-WILDLIFE-2026", course_name: "Sarawak Protected Wildlife Awareness" },
+  { course_id: "SFC-ORIENTATION-2026", course_name: "SFC Park Guide Orientation" },
+];
+
+const demoStudents = [
+  {
+    id: 1,
+    name: "Aiden Tan",
+    phone: "+60 16-901 1111",
+    email: "aiden.tan@example.com",
+    module: "SFC Field Response Essentials",
+    eligibility: "Approved",
+    canvasProgress: { completedCanvasItems: 3, totalAvailableItems: 3, completionPercent: 100, quizAttempts: 2, latestQuizScore: 92, modules: [{ moduleTitle: "Incident response overview" }] },
+  },
+  {
+    id: 2,
+    name: "Maya Ling",
+    phone: "+60 12-661 8821",
+    email: "maya.ling@example.com",
+    module: "Sarawak Protected Wildlife Awareness",
+    eligibility: "Approved",
+    canvasProgress: { completedCanvasItems: 2, totalAvailableItems: 3, completionPercent: 67, quizAttempts: 1, latestQuizScore: 84, modules: [{ moduleTitle: "Wildlife disturbance signals" }] },
+  },
+  {
+    id: 3,
+    name: "Daniel Chai",
+    phone: "+60 17-220 7711",
+    email: "daniel.chai@example.com",
+    module: "SFC Park Guide Orientation",
+    eligibility: "Approved",
+    canvasProgress: { completedCanvasItems: 0, totalAvailableItems: 3, completionPercent: 0, quizAttempts: 0, latestQuizScore: null, modules: [{ moduleTitle: "Portal and certification basics" }] },
+  },
+];
+
 const normalizeCanvasProgress = (progress = {}) => {
   const latestScoreValue = progress.latestQuizScore ?? progress.latest_quiz_score ?? null;
   const latestQuizScore = latestScoreValue === null || latestScoreValue === undefined ? null : Number(latestScoreValue);
@@ -117,6 +152,7 @@ const StudentManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [studentForm, setStudentForm] = useState(emptyStudentForm);
   const [loading, setLoading] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const showMessage = (message, severity = "success") => {
@@ -148,8 +184,22 @@ const StudentManagement = () => {
       setStudents(attachCanvasProgress(studentData.students || [], progressData));
       setCourses(courseData.courses || []);
       setCanvasProgressSummary(progressData);
+      setFallbackMessage("");
     } catch (error) {
-      showMessage(error.message, "error");
+      setStudents(demoStudents);
+      setCourses(demoGuideCourses);
+      setCanvasProgressSummary({
+        fallback: true,
+        message: "Demo fallback guide progress is displayed because the Admin training API is unavailable.",
+        summary: {
+          averageCompletionPercent: 56,
+          totalCompletedItems: 5,
+          totalAvailableItems: 9,
+        },
+        guides: demoStudents,
+      });
+      setFallbackMessage("Demo fallback guide records are displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo guide progress.", "warning");
     } finally {
       setLoading(false);
     }
@@ -329,9 +379,9 @@ const StudentManagement = () => {
         </Stack>
       </Box>
 
-      <Grid container spacing={2} sx={{ mb: 2.4 }}>
+      <Box className="guide-stat-fit-grid">
         {statCards.map((card) => (
-          <Grid item xs={12} sm={6} lg={3} key={card.label}>
+          <Box className="guide-fit-cell" key={card.label}>
             <Card sx={{ ...panelSx, minHeight: 146, background: "#fffdf7" }}>
               <CardContent sx={{ height: "100%", display: "grid", gap: 1 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -359,20 +409,21 @@ const StudentManagement = () => {
                 <Typography sx={{ color: "#607166", fontWeight: 800 }}>{card.detail}</Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {canvasProgressSummary?.fallback && (
         <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
-          {canvasProgressSummary.message || "Canvas progress summary is using a safe empty fallback."}
+          {fallbackMessage || canvasProgressSummary.message || "Canvas progress summary is using a safe empty fallback."}
         </Alert>
       )}
 
-      <Box sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4, background: "rgba(255, 253, 247, 0.96)" }}>
-        <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ xs: "stretch", md: "center" }}>
+      <Box className="guide-filter-toolbar" sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4 }}>
+        <Stack className="guide-filter-toolbar-inner" direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ xs: "stretch", md: "center" }}>
           <TextField
             label="Search guides"
+            className="guide-filter-control"
             size="small"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -388,6 +439,7 @@ const StudentManagement = () => {
           />
           <TextField
             label="Filter"
+            className="guide-filter-control"
             select
             size="small"
             value={filter}
@@ -414,14 +466,14 @@ const StudentManagement = () => {
               </MenuItem>
             ))}
           </TextField>
-          <Typography sx={{ color: "#607166", fontWeight: 900, minWidth: { md: 150 } }}>
+          <Typography className="guide-visible-count" sx={{ minWidth: { md: 150 } }}>
             {filteredStudents.length} visible
           </Typography>
         </Stack>
         {loading && <LinearProgress sx={{ mt: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
       </Box>
 
-      <Grid container spacing={2.4}>
+      <Box className="guide-card-fit-grid">
         {filteredStudents.map((student) => {
           const isRejected = student.eligibility === "Rejected";
           const assigned = assignedToCourse(student);
@@ -432,8 +484,13 @@ const StudentManagement = () => {
             ? "No quiz attempts"
             : `Latest quiz ${Math.round(Number(latestQuizScore))}%`;
           const topModule = canvasProgress.modules?.[0];
+          const certificateStatus = canvasProgress.completionPercent >= 100
+            ? "Certified"
+            : canvasProgress.completionPercent > 0
+              ? "Needs Review"
+              : "In Progress";
           return (
-            <Grid item xs={12} md={6} xl={4} key={student.id}>
+            <Box className="guide-fit-cell" key={student.id}>
               <Card
                 sx={{
                   ...panelSx,
@@ -502,6 +559,16 @@ const StudentManagement = () => {
                       label={`Canvas ${canvasProgress.completionPercent}%`}
                       size="small"
                       sx={{ bgcolor: "#edf7ff", color: "#1a4e8a", fontWeight: 900 }}
+                    />
+                    <Chip
+                      label={certificateStatus}
+                      size="small"
+                      sx={{
+                        bgcolor: certificateStatus === "Certified" ? "#DDFBD2" : "#FFF3C4",
+                        color: "#173126",
+                        border: "1px solid #EADFBF",
+                        fontWeight: 900,
+                      }}
                     />
                     {student.phone && (
                       <Chip label={student.phone} size="small" sx={{ bgcolor: "#fffaf0", color: "#173126", fontWeight: 900 }} />
@@ -626,10 +693,10 @@ const StudentManagement = () => {
                   </Stack>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           );
         })}
-      </Grid>
+      </Box>
 
       {filteredStudents.length === 0 && (
         <Box sx={{ ...panelSx, p: 4, mt: 2.4, textAlign: "center", background: "#fffdf7" }}>
@@ -641,11 +708,13 @@ const StudentManagement = () => {
       )}
 
       <Dialog
+        className="guide-account-dialog"
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         fullWidth
         maxWidth="sm"
         PaperProps={{
+          className: "guide-account-dialog-paper",
           sx: {
             borderRadius: "22px",
             border: "1px solid rgba(234, 214, 167, 0.9)",
@@ -655,6 +724,7 @@ const StudentManagement = () => {
         }}
       >
         <DialogTitle
+          className="guide-account-dialog-title"
           sx={{
             color: "#173126",
             fontWeight: 950,
@@ -665,11 +735,12 @@ const StudentManagement = () => {
         >
           {studentForm.id ? "Edit Guide Account" : "Add Guide Account"}
         </DialogTitle>
-        <DialogContent sx={{ display: "grid", gap: 2, pt: "20px !important" }}>
-          <TextField label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
-          <TextField label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
-          <TextField label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
+        <DialogContent className="guide-account-dialog-content" sx={{ display: "grid", gap: 2, pt: "20px !important" }}>
+          <TextField className="guide-account-dialog-field" label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
           <TextField
+            className="guide-account-dialog-field"
             label="Assigned Course"
             select
             value={studentForm.module}
@@ -684,6 +755,7 @@ const StudentManagement = () => {
             ))}
           </TextField>
           <TextField
+            className="guide-account-dialog-field"
             label="Eligibility"
             select
             value={studentForm.eligibility}
@@ -695,7 +767,7 @@ const StudentManagement = () => {
             <MenuItem value="Rejected">Rejected</MenuItem>
           </TextField>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+        <DialogActions className="guide-account-dialog-actions" sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button onClick={() => setDialogOpen(false)} sx={{ ...buttonSx, color: "#173126" }}>
             Cancel
           </Button>
