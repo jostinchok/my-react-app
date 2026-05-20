@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Layout, useSidebarState } from "react-admin";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
@@ -17,6 +17,10 @@ const MyLayout = (props) => {
   const shellBackground =
     "radial-gradient(circle at 8% 0%, rgba(255, 216, 77, 0.22), transparent 24rem), radial-gradient(circle at 94% 10%, rgba(167, 233, 87, 0.18), transparent 20rem), linear-gradient(135deg, #fffdf5 0%, #fff9e8 48%, #f6ffe8 100%)";
 
+  useEffect(() => {
+    document.querySelector(".RaLayout-content")?.scrollTo({ top: 0, left: 0 });
+  }, [location.pathname]);
+
   return (
     <Layout
       {...props}
@@ -30,11 +34,17 @@ const MyLayout = (props) => {
         />
       )}
       sx={{
+        height: "100vh",
+        minHeight: "100vh",
+        overflow: "hidden",
         background: shellBackground,
 
         "& .RaLayout-contentWithSidebar": {
           background: shellBackground,
           alignItems: "stretch",
+          height: "100%",
+          minHeight: 0,
+          overflow: "hidden",
         },
 
         "& .RaSidebar-paper": {
@@ -60,14 +70,17 @@ const MyLayout = (props) => {
 
         "& .RaLayout-appFrame": {
           marginTop: "86px",
-          minHeight: "calc(100vh - 86px)",
+          height: "calc(100vh - 86px)",
+          minHeight: 0,
+          overflow: "hidden",
           background: shellBackground,
         },
 
         "& .RaLayout-content": {
           "--incident-shell-max-width": isIncidentSurface ? "1440px" : undefined,
           background: isIncidentSurface ? incidentBackground : shellBackground,
-          minHeight: "calc(100vh - 86px)",
+          height: "100%",
+          minHeight: 0,
           width: "100%",
           marginLeft: "0px",
           padding: {
@@ -76,6 +89,8 @@ const MyLayout = (props) => {
             lg: "30px 28px",
           },
           overflowX: "hidden",
+          overflowY: "auto",
+          scrollbarGutter: "stable",
           boxSizing: "border-box",
           display: "flex",
           justifyContent: "center",

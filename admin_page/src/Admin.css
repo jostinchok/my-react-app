@@ -3379,7 +3379,13 @@ body {
   flex: 1;
   padding: 12px 12px 18px !important;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   gap: 14px !important;
+}
+
+.admin-command-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-nav-group {
