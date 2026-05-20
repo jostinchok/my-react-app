@@ -6,11 +6,17 @@ import {
   Badge,
   Menu,
   MenuItem,
+  Divider,
+  Typography,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import { useLocation } from "react-router-dom";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import SchoolIcon from "@mui/icons-material/School";
+import SensorsIcon from "@mui/icons-material/Sensors";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../Admin.css";
 
 const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
@@ -20,13 +26,64 @@ const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
 
 const NotificationButton = () => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const notifications = [
-    { id: 1, message: "New user registered" },
-    { id: 2, message: "New post created" },
-    { id: 3, message: "New course added" },
-  ];
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([
+    {
+      id: "guide-request",
+      title: "Course request needs review",
+      detail: "A park guide is waiting for an enrolment decision.",
+      time: "Just now",
+      route: "/admin/course-requests",
+      type: "request",
+      icon: PersonAddAlt1Icon,
+      unread: true,
+    },
+    {
+      id: "incident-alert",
+      title: "AI / IoT incident queued",
+      detail: "Protected flora alert is ready for Admin official status review.",
+      time: "5 min ago",
+      route: "/admin/detection",
+      type: "incident",
+      icon: SensorsIcon,
+      unread: true,
+    },
+    {
+      id: "training-update",
+      title: "Training module updated",
+      detail: "SFC Field Response Essentials has new module content.",
+      time: "18 min ago",
+      route: "/admin/training",
+      type: "training",
+      icon: SchoolIcon,
+      unread: true,
+    },
+    {
+      id: "certificate-ready",
+      title: "Certificate ready to issue",
+      detail: "A completed guide record is waiting for certificate action.",
+      time: "Today",
+      route: "/admin/certificates",
+      type: "certificate",
+      icon: VerifiedIcon,
+      unread: false,
+    },
+  ]);
 
   const open = Boolean(anchorEl);
+  const unreadCount = notifications.filter((note) => note.unread).length;
+
+  const markAllReviewed = () => {
+    setNotifications((current) => current.map((note) => ({ ...note, unread: false })));
+  };
+
+  const openNotification = (note) => {
+    setNotifications((current) =>
+      current.map((item) => (item.id === note.id ? { ...item, unread: false } : item))
+    );
+    setAnchorEl(null);
+    navigate(note.route);
+  };
 
   return (
     <Box>
@@ -34,8 +91,9 @@ const NotificationButton = () => {
         component="button"
         className="admin-top-icon-btn"
         onClick={(e) => setAnchorEl(e.currentTarget)}
+        aria-label={`${unreadCount} unread admin notifications`}
       >
-        <Badge badgeContent={notifications.length} color="error" className="admin-top-badge">
+        <Badge badgeContent={unreadCount} color="error" className="admin-top-badge">
           <NotificationsIcon />
         </Badge>
       </Box>
@@ -44,20 +102,78 @@ const NotificationButton = () => {
         anchorEl={anchorEl}
         open={open}
         onClose={() => setAnchorEl(null)}
+        MenuListProps={{
+          className: "admin-notification-menu",
+          "aria-label": "Admin notifications",
+        }}
         PaperProps={{
+          className: "admin-notification-paper",
           sx: {
-            width: 240,
+            width: 390,
+            maxWidth: "calc(100vw - 32px)",
             mt: 1.2,
-            borderRadius: "18px",
+            overflow: "hidden",
+            borderRadius: "20px",
             border: "1px solid #EADFBF",
             background: "#FFFDF5",
-            boxShadow: "0 18px 45px rgba(255, 122, 26, 0.10)",
+            boxShadow: "0 24px 60px rgba(11, 59, 40, 0.18)",
           },
         }}
       >
-        {notifications.map((note) => (
-          <MenuItem key={note.id}>{note.message}</MenuItem>
-        ))}
+        <Box className="admin-notification-header">
+          <Box>
+            <Typography component="h2">Notifications</Typography>
+            <Typography component="p">
+              {unreadCount ? `${unreadCount} item${unreadCount === 1 ? "" : "s"} need attention` : "All admin updates reviewed"}
+            </Typography>
+          </Box>
+          <Box component="span" className={unreadCount ? "notification-status live" : "notification-status"}>
+            {unreadCount ? "Action needed" : "Reviewed"}
+          </Box>
+        </Box>
+
+        <Divider />
+
+        {notifications.map((note) => {
+          const Icon = note.icon;
+
+          return (
+            <MenuItem
+              key={note.id}
+              className={`admin-notification-item ${note.unread ? "is-unread" : ""}`}
+              onClick={() => openNotification(note)}
+            >
+              <Box className={`notification-icon ${note.type}`}>
+                <Icon fontSize="small" />
+              </Box>
+              <Box className="notification-copy">
+                <Box className="notification-title-row">
+                  <Typography component="strong">{note.title}</Typography>
+                  <Typography component="span">{note.time}</Typography>
+                </Box>
+                <Typography component="p">{note.detail}</Typography>
+              </Box>
+            </MenuItem>
+          );
+        })}
+
+        <Divider />
+
+        <Box className="admin-notification-footer">
+          <Box component="button" type="button" onClick={markAllReviewed}>
+            Mark all reviewed
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => {
+              setAnchorEl(null);
+              navigate("/admin/audit-log");
+            }}
+          >
+            Open audit log
+          </Box>
+        </Box>
       </Menu>
     </Box>
   );
