@@ -11,7 +11,6 @@ import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
-import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import ReviewsOutlinedIcon from "@mui/icons-material/ReviewsOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SensorsOutlinedIcon from "@mui/icons-material/SensorsOutlined";
@@ -39,7 +38,6 @@ const menuGroups = [
       { id: "course", label: "Courses", icon: <SchoolOutlinedIcon />, to: "/admin/course" },
       { id: "training", label: "Training Modules", icon: <ViewModuleOutlinedIcon />, to: "/admin/training" },
       { id: "course-requests", label: "Course Requests", icon: <AssignmentTurnedInOutlinedIcon />, to: "/admin/course-requests" },
-      { id: "students", label: "Guides", icon: <PersonSearchOutlinedIcon />, to: "/admin/students" },
       { id: "certificates", label: "Certificates", icon: <WorkspacePremiumOutlinedIcon />, to: "/admin/certificates" },
     ],
   },
@@ -54,7 +52,7 @@ const menuGroups = [
   {
     title: "Access",
     items: [
-      { id: "users", label: "Users", icon: <ManageAccountsOutlinedIcon />, to: "/admin/users" },
+      { id: "students", label: "User Management", icon: <ManageAccountsOutlinedIcon />, to: "/admin/students" },
       { id: "permissions", label: "Permissions", icon: <AdminPanelSettingsOutlinedIcon />, to: "/admin/permissions" },
     ],
   },

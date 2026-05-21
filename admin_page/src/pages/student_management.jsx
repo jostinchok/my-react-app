@@ -28,6 +28,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import GroupsIcon from "@mui/icons-material/Groups";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { Link as RouterLink } from "react-router-dom";
 import { buildGuideIdentity } from "../data/roleProfiles";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
@@ -110,6 +111,39 @@ const demoStudents = [
     module: "SFC Park Guide Orientation",
     eligibility: "Approved",
     canvasProgress: { completedCanvasItems: 0, totalAvailableItems: 3, completionPercent: 0, quizAttempts: 0, latestQuizScore: null, modules: [{ moduleTitle: "Portal and certification basics" }] },
+  },
+];
+
+const demoStaffAccounts = [
+  {
+    key: "ranger-rgr-sfc-014",
+    type: "staff",
+    roleLabel: "Park Ranger",
+    name: "Ranger Daniel Ling",
+    email: "daniel.ling@sfc.demo",
+    phone: "+60 16-442 7714",
+    uniqueUserId: "RGR-SFC-014",
+    secondaryId: "SFC-RANGER-014",
+    status: "Approved",
+    location: "Bako National Park Field Station",
+    assignment: "Incident review and field recommendations",
+    accountNote: "Receives high severity and Admin-escalated incident notifications.",
+    managementNote: "Login, logout, profile, and recommendation history are handled in the Ranger portal.",
+  },
+  {
+    key: "admin-adm-sfc-001",
+    type: "staff",
+    roleLabel: "Admin",
+    name: "SFC Admin Desk",
+    email: "admin@sfc.demo",
+    phone: "+60 82-555 010",
+    uniqueUserId: "ADM-SFC-001",
+    secondaryId: "SFC-OPS-ADMIN",
+    status: "Approved",
+    location: "SFC Operations Office",
+    assignment: "Official incident status, course approvals, certificates, and access control",
+    accountNote: "Admin remains responsible for official status and account decisions.",
+    managementNote: "Protected system account. Identity is unique and should not be duplicated.",
   },
 ];
 
@@ -198,8 +232,8 @@ const StudentManagement = () => {
         },
         guides: demoStudents,
       });
-      setFallbackMessage("Demo fallback guide records are displayed because the Admin training API is unavailable.");
-      showMessage("Admin training API unavailable. Showing demo guide progress.", "warning");
+      setFallbackMessage("Demo fallback user account records are displayed because the Admin training API is unavailable.");
+      showMessage("Admin training API unavailable. Showing demo account progress.", "warning");
     } finally {
       setLoading(false);
     }
@@ -211,38 +245,67 @@ const StudentManagement = () => {
 
   const moduleOptions = useMemo(() => ["None", ...courses.map((course) => course.course_name)], [courses]);
 
+  const accountRecords = useMemo(
+    () => [
+      ...students.map((student) => {
+        const identity = buildGuideIdentity(student);
+        return {
+          key: `guide-${student.id}`,
+          type: "guide",
+          roleLabel: "Park Guide",
+          name: student.name || "Unnamed guide",
+          email: student.email || "No email recorded",
+          phone: student.phone || "",
+          uniqueUserId: identity.guideId,
+          secondaryId: identity.trainingId,
+          status: student.eligibility || "Approved",
+          location: student.module && student.module !== "None" ? student.module : "Unassigned",
+          assignment: student.module && student.module !== "None" ? student.module : "No course assigned",
+          accountNote: "Course assignment, Canvas progress, quiz attempts, and certificate readiness are managed here.",
+          managementNote: "Guide account fields can be edited, but the generated User ID stays unique for this person.",
+          student,
+          identity,
+        };
+      }),
+      ...demoStaffAccounts,
+    ],
+    [students]
+  );
+
   const summary = useMemo(
     () => ({
-      total: students.length,
-      approved: students.filter((student) => student.eligibility === "Approved").length,
-      rejected: students.filter((student) => student.eligibility === "Rejected").length,
+      total: accountRecords.length,
+      approved: accountRecords.filter((account) => account.status === "Approved").length,
+      rejected: accountRecords.filter((account) => account.status === "Rejected").length,
       assigned: students.filter(assignedToCourse).length,
+      rangers: accountRecords.filter((account) => account.roleLabel === "Park Ranger").length,
     }),
-    [students]
+    [accountRecords, students]
   );
   const canvasTotals = canvasProgressSummary?.summary || {};
 
-  const filteredStudents = useMemo(
+  const filteredAccounts = useMemo(
     () =>
-      students.filter((student) => {
+      accountRecords.filter((account) => {
         const matchesFilter =
           filter === "all" ||
-          student.module === filter ||
-          student.eligibility === filter ||
-          (filter === "assigned" && assignedToCourse(student)) ||
-          (filter === "unassigned" && !assignedToCourse(student));
-        const identity = buildGuideIdentity(student);
-        const text = `${student.name || ""} ${student.email || ""} ${student.phone || ""} ${student.module || ""} ${identity.guideId} ${identity.trainingId}`.toLowerCase();
+          account.roleLabel === filter ||
+          account.status === filter ||
+          account.assignment === filter ||
+          account.location === filter ||
+          (filter === "assigned" && account.type === "guide" && assignedToCourse(account.student)) ||
+          (filter === "unassigned" && account.type === "guide" && !assignedToCourse(account.student));
+        const text = `${account.name || ""} ${account.email || ""} ${account.phone || ""} ${account.roleLabel || ""} ${account.status || ""} ${account.assignment || ""} ${account.location || ""} ${account.uniqueUserId || ""} ${account.secondaryId || ""}`.toLowerCase();
         return matchesFilter && text.includes(searchTerm.toLowerCase());
       }),
-    [filter, searchTerm, students]
+    [accountRecords, filter, searchTerm]
   );
 
   const statCards = [
-    { label: "Total guides", value: summary.total, detail: "Guide account records", icon: <GroupsIcon />, tone: "linear-gradient(135deg, #FF7A1A, #FFD84D)" },
-    { label: "Approved / active", value: summary.approved, detail: "Ready for course access", icon: <CheckCircleIcon />, tone: "linear-gradient(135deg, #DDFBD2, #A7E957)" },
-    { label: "Rejected / inactive", value: summary.rejected, detail: "Not eligible for issue", icon: <CancelIcon />, tone: "#b53421" },
-    { label: "Assigned to course", value: summary.assigned, detail: "Has a linked course", icon: <AssignmentTurnedInIcon />, tone: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
+    { label: "Total accounts", value: summary.total, detail: "Guides, rangers, and admins", icon: <GroupsIcon />, tone: "linear-gradient(135deg, #FF7A1A, #FFD84D)" },
+    { label: "Active accounts", value: summary.approved, detail: "Approved for portal access", icon: <CheckCircleIcon />, tone: "linear-gradient(135deg, #DDFBD2, #A7E957)" },
+    { label: "Inactive accounts", value: summary.rejected, detail: "Rejected or disabled records", icon: <CancelIcon />, tone: "#b53421" },
+    { label: "Park ranger profiles", value: summary.rangers, detail: "Incident review and recommendation role", icon: <AssignmentTurnedInIcon />, tone: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
     {
       label: "Canvas average",
       value: `${Number(canvasTotals.averageCompletionPercent || 0)}%`,
@@ -337,12 +400,12 @@ const StudentManagement = () => {
       >
         <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
           <Box>
-            <Typography className="admin-dashboard-kicker">Guide management</Typography>
+            <Typography className="admin-dashboard-kicker">User management</Typography>
             <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1 }}>
-              Park Guide accounts
+              User Accounts
             </Typography>
             <Typography sx={{ mt: 1.4, color: "#173126", fontWeight: 800, maxWidth: 760 }}>
-              Manage guide records, course assignments, and account readiness from the shared training database.
+              Manage one clear account surface for Park Guides, Park Rangers, and Admins. Each person keeps one unique User ID; roles and profile details can be reviewed without duplicating the user.
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", md: "center" }}>
@@ -373,7 +436,7 @@ const StudentManagement = () => {
                 "&:hover": { background: "linear-gradient(135deg, #FF9F1C, #FFD84D)" },
               }}
             >
-              Add Guide
+              Add Guide Account
             </Button>
           </Stack>
         </Stack>
@@ -413,8 +476,40 @@ const StudentManagement = () => {
         ))}
       </Box>
 
+      <Box sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4, background: "linear-gradient(135deg, #FFFFFF 0%, #F6FFE8 100%)" }}>
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={1.5} alignItems={{ xs: "flex-start", md: "center" }}>
+          <Box>
+            <Typography sx={{ color: "#173126", fontWeight: 950 }}>Unique user identity rule</Typography>
+            <Typography sx={{ color: "#56685D", fontWeight: 800 }}>
+              One person should appear once in this page. The User ID is treated as the stable identity; use role, assignment, and permission fields to manage access.
+            </Typography>
+          </Box>
+          <Chip
+            label="Unique IDs"
+            sx={{
+              flexShrink: 0,
+              bgcolor: "#DDFBD2",
+              color: "#173126",
+              border: "1px solid #BDE58D",
+              fontWeight: 950,
+            }}
+          />
+        </Stack>
+      </Box>
+
       {canvasProgressSummary?.fallback && (
-        <Alert severity="warning" sx={{ mb: 2.4, borderRadius: "16px", border: "1px solid #EADFBF" }}>
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 2.4,
+            borderRadius: "16px",
+            border: "1px solid #EADFBF",
+            bgcolor: "#fffaf0",
+            color: "#173126",
+            "& .MuiAlert-icon": { color: "#C65D00" },
+            "& .MuiAlert-message": { color: "#173126", fontWeight: 850 },
+          }}
+        >
           {fallbackMessage || canvasProgressSummary.message || "Canvas progress summary is using a safe empty fallback."}
         </Alert>
       )}
@@ -422,7 +517,7 @@ const StudentManagement = () => {
       <Box className="guide-filter-toolbar" sx={{ ...panelSx, p: { xs: 2, md: 2.4 }, mb: 2.4 }}>
         <Stack className="guide-filter-toolbar-inner" direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ xs: "stretch", md: "center" }}>
           <TextField
-            label="Search guides"
+            label="Search accounts"
             className="guide-filter-control"
             size="small"
             value={searchTerm}
@@ -455,7 +550,10 @@ const StudentManagement = () => {
               },
             }}
           >
-            <MenuItem value="all">All records</MenuItem>
+            <MenuItem value="all">All accounts</MenuItem>
+            <MenuItem value="Park Guide">Park Guides</MenuItem>
+            <MenuItem value="Park Ranger">Park Rangers</MenuItem>
+            <MenuItem value="Admin">Admins</MenuItem>
             <MenuItem value="Approved">Approved / active</MenuItem>
             <MenuItem value="Rejected">Rejected / inactive</MenuItem>
             <MenuItem value="assigned">Assigned to course</MenuItem>
@@ -467,17 +565,141 @@ const StudentManagement = () => {
             ))}
           </TextField>
           <Typography className="guide-visible-count" sx={{ minWidth: { md: 150 } }}>
-            {filteredStudents.length} visible
+            {filteredAccounts.length} visible
           </Typography>
         </Stack>
         {loading && <LinearProgress sx={{ mt: 2, borderRadius: 999, "& .MuiLinearProgress-bar": { bgcolor: "#ff7a1a" } }} />}
       </Box>
 
       <Box className="guide-card-fit-grid">
-        {filteredStudents.map((student) => {
+        {filteredAccounts.map((account) => {
+          if (account.type !== "guide") {
+            const isRanger = account.roleLabel === "Park Ranger";
+            return (
+              <Box className="guide-fit-cell" key={account.key}>
+                <Card
+                  sx={{
+                    ...panelSx,
+                    minHeight: 326,
+                    borderColor: isRanger ? "rgba(255, 159, 28, 0.48)" : "rgba(122, 181, 66, 0.54)",
+                    background: isRanger
+                      ? "linear-gradient(145deg, #fffdf7 0%, #fff3c4 100%)"
+                      : "linear-gradient(145deg, #fffdf7 0%, #f3fbdf 100%)",
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2.2, md: 2.6 } }}>
+                    <Stack direction="row" justifyContent="space-between" gap={2} alignItems="flex-start">
+                      <Stack direction="row" gap={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+                        <Avatar
+                          sx={{
+                            width: 50,
+                            height: 50,
+                            background: isRanger
+                              ? "linear-gradient(135deg, #FF9F1C, #FFD84D)"
+                              : "linear-gradient(135deg, #DDFBD2, #A7E957)",
+                            color: "#173126",
+                            fontWeight: 950,
+                            boxShadow: "0 12px 24px rgba(63, 174, 90, 0.10)",
+                          }}
+                        >
+                          {(account.name || "U").slice(0, 1).toUpperCase()}
+                        </Avatar>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.08rem" }}>
+                            {account.name}
+                          </Typography>
+                          <Typography sx={{ color: "#53685a", fontWeight: 800, wordBreak: "break-word" }}>
+                            {account.email}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Chip
+                        label={account.status}
+                        size="small"
+                        sx={{
+                          bgcolor: "#e8f8d9",
+                          color: "#173126",
+                          border: "1px solid #bde58d",
+                          fontWeight: 950,
+                        }}
+                      />
+                    </Stack>
+
+                    <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
+                      <Chip label={account.roleLabel} size="small" sx={{ bgcolor: "#FFF3C4", color: "#173126", border: "1px solid #EADFBF", fontWeight: 900 }} />
+                      <Chip label={account.uniqueUserId} size="small" sx={{ bgcolor: "#DDFBD2", color: "#173126", border: "1px solid #BDE58D", fontWeight: 900 }} />
+                      <Chip label={account.secondaryId} size="small" sx={{ bgcolor: "#edf7ff", color: "#1a4e8a", border: "1px solid #cde4f6", fontWeight: 900 }} />
+                      <Chip label={account.phone} size="small" sx={{ bgcolor: "#fffaf0", color: "#173126", fontWeight: 900 }} />
+                    </Stack>
+
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 1.6,
+                        borderRadius: "16px",
+                        border: "1px solid #D8EAC7",
+                        background: "linear-gradient(135deg, #FFFFFF 0%, #F6FFE8 100%)",
+                      }}
+                    >
+                      <Typography sx={{ color: "#173126", fontWeight: 950 }}>Account responsibility</Typography>
+                      <Typography sx={{ mt: 0.8, color: "#56685D", fontWeight: 850 }}>{account.assignment}</Typography>
+                      <Typography sx={{ mt: 1, color: "#173126", fontWeight: 850 }}>{account.accountNote}</Typography>
+                    </Box>
+
+                    <Divider sx={{ my: 2, borderColor: "rgba(234, 214, 167, 0.86)" }} />
+
+                    <Box className="guide-identity-grid">
+                      <Box>
+                        <span>User name</span>
+                        <strong>{account.name}</strong>
+                      </Box>
+                      <Box>
+                        <span>Unique User ID</span>
+                        <strong>{account.uniqueUserId}</strong>
+                      </Box>
+                      <Box>
+                        <span>Role</span>
+                        <strong>{account.roleLabel}</strong>
+                      </Box>
+                      <Box>
+                        <span>Location</span>
+                        <strong>{account.location}</strong>
+                      </Box>
+                    </Box>
+
+                    <Alert severity="info" sx={{ borderRadius: "14px", border: "1px solid #cde4f6", bgcolor: "#f5fbff", color: "#173126" }}>
+                      {account.managementNote}
+                    </Alert>
+
+                    <Stack direction="row" gap={1} sx={{ mt: 2 }}>
+                      <Button
+                        component={RouterLink}
+                        to="/admin/permissions"
+                        variant="outlined"
+                        sx={{ ...buttonSx, flex: 1, borderColor: "#D8EAC7", color: "#173126", bgcolor: "#FFFFFF" }}
+                      >
+                        Permissions
+                      </Button>
+                      {isRanger && (
+                        <Button
+                          component={RouterLink}
+                          to="/ranger"
+                          variant="outlined"
+                          sx={{ ...buttonSx, flex: 1, bgcolor: "#fff7ef", borderColor: "#ff9f1c", color: "#173126" }}
+                        >
+                          Ranger portal
+                        </Button>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Box>
+            );
+          }
+          const student = account.student;
           const isRejected = student.eligibility === "Rejected";
           const assigned = assignedToCourse(student);
-          const identity = buildGuideIdentity(student);
+          const identity = account.identity;
           const canvasProgress = normalizeCanvasProgress(student.canvasProgress);
           const latestQuizScore = canvasProgress.latestQuizScore;
           const latestQuizText = latestQuizScore === null || latestQuizScore === undefined
@@ -490,7 +712,7 @@ const StudentManagement = () => {
               ? "Needs Review"
               : "In Progress";
           return (
-            <Box className="guide-fit-cell" key={student.id}>
+            <Box className="guide-fit-cell" key={account.key}>
               <Card
                 sx={{
                   ...panelSx,
@@ -630,11 +852,11 @@ const StudentManagement = () => {
 
                   <Box className="guide-identity-grid">
                     <Box>
-                      <span>Guide name</span>
+                      <span>User name</span>
                       <strong>{identity.name}</strong>
                     </Box>
                     <Box>
-                      <span>Guide ID</span>
+                      <span>Unique User ID</span>
                       <strong>{identity.guideId}</strong>
                     </Box>
                     <Box>
@@ -698,9 +920,9 @@ const StudentManagement = () => {
         })}
       </Box>
 
-      {filteredStudents.length === 0 && (
+      {filteredAccounts.length === 0 && (
         <Box sx={{ ...panelSx, p: 4, mt: 2.4, textAlign: "center", background: "#fffdf7" }}>
-          <Typography sx={{ color: "#173126", fontWeight: 950 }}>No guide accounts found</Typography>
+          <Typography sx={{ color: "#173126", fontWeight: 950 }}>No user accounts found</Typography>
           <Typography sx={{ mt: 1, color: "#607166", fontWeight: 800 }}>
             Add a guide account or clear the current search and filter.
           </Typography>

@@ -201,12 +201,12 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304, collapsedSidebarW
   const currentLabel = useMemo(() => {
     const routeLabels = [
       ["/admin/analytics", "ANALYTICS"],
-      ["/admin/users", "USERS"],
+      ["/admin/users", "USER MANAGEMENT"],
       ["/admin/permissions", "PERMISSIONS"],
       ["/admin/course-requests", "REQUESTS"],
       ["/admin/course", "COURSE"],
       ["/admin/training", "TRAINING"],
-      ["/admin/students", "GUIDES"],
+      ["/admin/students", "USER MANAGEMENT"],
       ["/admin/badge", "CERTIFICATES"],
       ["/admin/certificates", "CERTIFICATES"],
       ["/admin/detection", "DETECTION"],

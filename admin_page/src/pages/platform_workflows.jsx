@@ -90,7 +90,7 @@ const navTargets = [
   { label: "Manage Courses", path: "/admin/course", icon: <SchoolOutlinedIcon />, detail: "Create courses, modules, and items" },
   { label: "Training Modules", path: "/admin/training", icon: <ViewModuleOutlinedIcon />, detail: "Review Canvas-style course structure" },
   { label: "Course Requests", path: "/admin/course-requests", icon: <AssignmentTurnedInOutlinedIcon />, detail: "Approve or reject guide enrollment" },
-  { label: "Guide Progress", path: "/admin/students", icon: <RouteOutlinedIcon />, detail: "Completion, quiz attempts, and assignments" },
+  { label: "User Management", path: "/admin/students", icon: <RouteOutlinedIcon />, detail: "Guides, rangers, roles, and progress" },
   { label: "Certificates", path: "/admin/certificates", icon: <WorkspacePremiumOutlinedIcon />, detail: "Issue course-level certificates" },
   { label: "Incident Detection", path: "/admin/detection", icon: <CrisisAlertOutlinedIcon />, detail: "Official AI/IoT incident queue" },
   { label: "Ranger Review", path: "/admin/ranger-review", icon: <ReviewsOutlinedIcon />, detail: "Recommendation-only field workflow" },
@@ -645,7 +645,7 @@ export function AdminPrototypeDashboard() {
             {[
               "Show the command center metrics and local API/fallback status.",
               "Open Courses and Training Modules to show the Canvas-style structure.",
-              "Review Course Requests, Guide Progress, and Certificates.",
+              "Review Course Requests, User Management, and Certificates.",
               "Open Incident Detection and show Admin official status actions.",
               "Open Ranger Review to show recommendation-only field input.",
             ].map((item, index) => (

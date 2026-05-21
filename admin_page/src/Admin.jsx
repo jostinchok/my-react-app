@@ -20,7 +20,6 @@ import {
   PermissionsMatrix,
   RangerReviewWorkflow,
   SensorRulesWorkflow,
-  UserManagementWorkflow,
 } from "./pages/platform_workflows.jsx";
 
 const dataProvider = simpleRestProvider("https://jsonplaceholder.typicode.com");
@@ -31,12 +30,12 @@ function AdminPage() {
       <Resource name="course" list={CourseManagement} options={{ label: "Courses" }} />
       <Resource name="training" list={TrainingModuleSetup} options={{ label: "Training Modules" }} />
       <Resource name="course-requests" list={CourseRequestsPage} options={{ label: "Course Requests" }} />
-      <Resource name="students" list={StudentManagement} options={{ label: "Guides" }} />
+      <Resource name="students" list={StudentManagement} options={{ label: "User Management" }} />
       <Resource name="certificates" list={CertificateManagement} options={{ label: "Certificates" }} />
       <Resource name="badge" list={CertificateManagement} options={{ label: "Certificates" }} />
       <Resource name="detection" list={AIDetection} options={{ label: "Incident Detection" }} />
       <Resource name="analytics" list={AdminAnalyticsDashboard} options={{ label: "Analytics" }} />
-      <Resource name="users" list={UserManagementWorkflow} options={{ label: "Users" }} />
+      <Resource name="users" list={StudentManagement} options={{ label: "User Management" }} />
       <Resource name="permissions" list={PermissionsMatrix} options={{ label: "Permissions" }} />
       <Resource name="ranger-review" list={RangerReviewWorkflow} options={{ label: "Ranger Review" }} />
       <Resource name="sensor-rules" list={SensorRulesWorkflow} options={{ label: "Sensor Rules" }} />
