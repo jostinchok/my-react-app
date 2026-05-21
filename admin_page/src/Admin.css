@@ -6029,10 +6029,10 @@ body {
   }
 }
 
-/* V36 ranger-sidebar: keep the incident console focused and move support panels aside. */
+/* V37 ranger-navigation: keep the sidebar as navigation and the main view incident-first. */
 .ranger-shell-layout {
   display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   gap: clamp(18px, 2vw, 28px);
   align-items: start;
 }
@@ -6046,69 +6046,172 @@ body {
 
 .ranger-sidebar {
   align-self: start;
-}
-
-.ranger-sidebar-card {
-  display: grid;
-  gap: 8px;
-  padding: 18px;
-  border: 1px solid #eadfbf;
-  border-radius: 18px;
+  position: sticky;
+  top: 100px;
+  padding: 16px;
+  border: 1px solid rgba(234, 223, 191, 0.9);
+  border-radius: 22px;
   background:
-    radial-gradient(circle at 88% 0%, rgba(167, 233, 87, 0.2), transparent 10rem),
-    #fffdf8;
-  box-shadow: 0 14px 32px rgba(11, 59, 40, 0.08);
-  color: #173126;
+    radial-gradient(circle at 0% 0%, rgba(255, 216, 77, 0.16), transparent 10rem),
+    linear-gradient(180deg, #0b3b28 0%, #07351f 100%);
+  box-shadow: 0 18px 42px rgba(11, 59, 40, 0.18);
+  color: #fffdf5;
 }
 
-.ranger-sidebar-kicker {
-  color: #c65d00;
+.ranger-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 2px 14px;
+  border-bottom: 1px solid rgba(255, 253, 245, 0.16);
+}
+
+.ranger-nav-brand img {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #fffdf5;
+  border: 1px solid rgba(255, 253, 245, 0.5);
+}
+
+.ranger-nav-brand span,
+.ranger-nav-brand strong,
+.ranger-nav-note span,
+.ranger-nav-note strong,
+.ranger-nav-note small {
+  display: block;
+}
+
+.ranger-nav-brand span {
+  color: #ffd84d;
   font-size: 0.72rem;
   font-weight: 950;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.ranger-sidebar-card h2 {
-  margin: 0;
-  color: #173126;
-  font-size: 1.25rem;
+.ranger-nav-brand strong {
+  color: #fffdf5;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.ranger-nav-list {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+}
+
+.ranger-nav-list button {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  color: #fffdf5;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ranger-nav-list button strong {
+  color: inherit;
+  font-size: 0.94rem;
   font-weight: 950;
   line-height: 1.1;
 }
 
-.ranger-sidebar-card p {
-  margin: 0;
-  color: #56685d;
-  font-weight: 800;
-  line-height: 1.45;
+.ranger-nav-list button span {
+  color: rgba(255, 253, 245, 0.72);
+  font-size: 0.78rem;
+  font-weight: 760;
+  line-height: 1.25;
 }
 
-.ranger-sidebar .ranger-boundary-card {
-  grid-template-columns: 1fr !important;
-  gap: 8px;
+.ranger-nav-list button:hover,
+.ranger-nav-list button:focus-visible,
+.ranger-nav-list button.is-active {
+  border-color: rgba(255, 216, 77, 0.7);
+  background: linear-gradient(135deg, rgba(255, 138, 31, 0.92), rgba(255, 216, 77, 0.92));
+  color: #102419;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+  outline: none;
 }
 
-.ranger-sidebar .incident-section-head {
-  align-items: start;
-  grid-template-columns: 1fr;
+.ranger-nav-list button:hover span,
+.ranger-nav-list button:focus-visible span,
+.ranger-nav-list button.is-active span {
+  color: #173126;
 }
 
-.ranger-sidebar .ranger-profile-form {
-  grid-template-columns: 1fr;
+.ranger-nav-note {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid rgba(255, 253, 245, 0.16);
+  border-radius: 15px;
+  background: rgba(255, 253, 245, 0.08);
 }
 
-.ranger-sidebar .ranger-identity-grid {
-  grid-template-columns: 1fr;
-  gap: 14px;
+.ranger-nav-note span {
+  color: #ffd84d;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.ranger-sidebar .ranger-identity-card {
-  min-height: auto;
+.ranger-nav-note strong {
+  color: #fffdf5;
+  font-weight: 950;
 }
 
-.ranger-sidebar .ranger-sent-list {
-  max-height: none;
+.ranger-nav-note small {
+  color: rgba(255, 253, 245, 0.72);
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.ranger-nav-logout.MuiButton-root {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(255, 216, 77, 0.6) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 253, 245, 0.08) !important;
+  color: #fffdf5 !important;
+  font-weight: 950 !important;
+}
+
+.ranger-nav-logout.MuiButton-root:hover {
+  background: linear-gradient(135deg, #ff8a1f, #ffd84d) !important;
+  color: #102419 !important;
+}
+
+.ranger-support-view {
+  display: grid;
+  gap: clamp(16px, 1.6vw, 22px);
+}
+
+.ranger-support-view .ranger-profile-panel,
+.ranger-support-view .ranger-sent-panel,
+.ranger-support-view .ranger-boundary-card {
+  max-width: 920px;
+}
+
+.ranger-support-view .ranger-profile-form {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+.ranger-support-view .ranger-identity-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
 }
 
 .ranger-incident-main .ranger-header {
@@ -6125,16 +6228,16 @@ body {
   }
 
   .ranger-sidebar {
-    order: 2;
+    position: static;
+    order: 0;
   }
 
   .ranger-incident-main {
     order: 1;
   }
 
-  .ranger-sidebar .ranger-profile-form,
-  .ranger-sidebar .ranger-identity-grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  .ranger-nav-list {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   }
 }
 
