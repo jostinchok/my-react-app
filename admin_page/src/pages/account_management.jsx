@@ -33,7 +33,7 @@ import { buildGuideIdentity } from "../data/roleProfiles";
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:4002";
 
-const emptyStudentForm = {
+const emptyAccountForm = {
   id: "",
   name: "",
   phone: "",
@@ -66,7 +66,7 @@ const menuProps = {
   },
 };
 
-const assignedToCourse = (student) => Boolean(student.module && student.module !== "None");
+const assignedToCourse = (guideAccount) => Boolean(guideAccount.module && guideAccount.module !== "None");
 
 const emptyCanvasProgress = {
   completedCanvasItems: 0,
@@ -84,7 +84,7 @@ const demoGuideCourses = [
   { course_id: "SFC-ORIENTATION-2026", course_name: "SFC Park Guide Orientation" },
 ];
 
-const demoStudents = [
+const demoGuideAccounts = [
   {
     id: 1,
     name: "Aiden Tan",
@@ -163,7 +163,7 @@ const normalizeCanvasProgress = (progress = {}) => {
   };
 };
 
-const attachCanvasProgress = (students, progressPayload = {}) => {
+const attachCanvasProgress = (guideAccounts, progressPayload = {}) => {
   const progressByGuide = new Map(
     (progressPayload.guides || []).map((guide) => [
       String(guide.userId ?? guide.user_id ?? guide.guideId ?? guide.guide_id ?? ""),
@@ -171,20 +171,20 @@ const attachCanvasProgress = (students, progressPayload = {}) => {
     ])
   );
 
-  return students.map((student) => ({
-    ...student,
-    canvasProgress: progressByGuide.get(String(student.id)) || { ...emptyCanvasProgress },
+  return guideAccounts.map((guideAccount) => ({
+    ...guideAccount,
+    canvasProgress: progressByGuide.get(String(guideAccount.id)) || { ...emptyCanvasProgress },
   }));
 };
 
-const StudentManagement = () => {
-  const [students, setStudents] = useState([]);
+const AccountManagement = () => {
+  const [guideAccounts, setGuideAccounts] = useState([]);
   const [courses, setCourses] = useState([]);
   const [canvasProgressSummary, setCanvasProgressSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [studentForm, setStudentForm] = useState(emptyStudentForm);
+  const [accountForm, setAccountForm] = useState(emptyAccountForm);
   const [loading, setLoading] = useState(false);
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -210,17 +210,17 @@ const StudentManagement = () => {
         summary: {},
         guides: [],
       }));
-      const [studentData, courseData, progressData] = await Promise.all([
+      const [accountData, courseData, progressData] = await Promise.all([
         requestJson(`${API_BASE_URL}/api/students`),
         requestJson(`${API_BASE_URL}/api/courses`),
         progressRequest,
       ]);
-      setStudents(attachCanvasProgress(studentData.students || [], progressData));
+      setGuideAccounts(attachCanvasProgress(accountData.students || [], progressData));
       setCourses(courseData.courses || []);
       setCanvasProgressSummary(progressData);
       setFallbackMessage("");
     } catch (error) {
-      setStudents(demoStudents);
+      setGuideAccounts(demoGuideAccounts);
       setCourses(demoGuideCourses);
       setCanvasProgressSummary({
         fallback: true,
@@ -230,7 +230,7 @@ const StudentManagement = () => {
           totalCompletedItems: 5,
           totalAvailableItems: 9,
         },
-        guides: demoStudents,
+        guides: demoGuideAccounts,
       });
       setFallbackMessage("Demo fallback user account records are displayed because the Admin training API is unavailable.");
       showMessage("Admin training API unavailable. Showing demo account progress.", "warning");
@@ -247,29 +247,29 @@ const StudentManagement = () => {
 
   const accountRecords = useMemo(
     () => [
-      ...students.map((student) => {
-        const identity = buildGuideIdentity(student);
+      ...guideAccounts.map((guideAccount) => {
+        const identity = buildGuideIdentity(guideAccount);
         return {
-          key: `guide-${student.id}`,
+          key: `guide-${guideAccount.id}`,
           type: "guide",
           roleLabel: "Park Guide",
-          name: student.name || "Unnamed guide",
-          email: student.email || "No email recorded",
-          phone: student.phone || "",
+          name: guideAccount.name || "Unnamed guide",
+          email: guideAccount.email || "No email recorded",
+          phone: guideAccount.phone || "",
           uniqueUserId: identity.guideId,
           secondaryId: identity.trainingId,
-          status: student.eligibility || "Approved",
-          location: student.module && student.module !== "None" ? student.module : "Unassigned",
-          assignment: student.module && student.module !== "None" ? student.module : "No course assigned",
+          status: guideAccount.eligibility || "Approved",
+          location: guideAccount.module && guideAccount.module !== "None" ? guideAccount.module : "Unassigned",
+          assignment: guideAccount.module && guideAccount.module !== "None" ? guideAccount.module : "No course assigned",
           accountNote: "Course assignment, Canvas progress, quiz attempts, and certificate readiness are managed here.",
           managementNote: "Guide account fields can be edited, but the generated User ID stays unique for this person.",
-          student,
+          guideAccount,
           identity,
         };
       }),
       ...demoStaffAccounts,
     ],
-    [students]
+    [guideAccounts]
   );
 
   const summary = useMemo(
@@ -277,10 +277,10 @@ const StudentManagement = () => {
       total: accountRecords.length,
       approved: accountRecords.filter((account) => account.status === "Approved").length,
       rejected: accountRecords.filter((account) => account.status === "Rejected").length,
-      assigned: students.filter(assignedToCourse).length,
+      assigned: guideAccounts.filter(assignedToCourse).length,
       rangers: accountRecords.filter((account) => account.roleLabel === "Park Ranger").length,
     }),
-    [accountRecords, students]
+    [accountRecords, guideAccounts]
   );
   const canvasTotals = canvasProgressSummary?.summary || {};
 
@@ -293,8 +293,8 @@ const StudentManagement = () => {
           account.status === filter ||
           account.assignment === filter ||
           account.location === filter ||
-          (filter === "assigned" && account.type === "guide" && assignedToCourse(account.student)) ||
-          (filter === "unassigned" && account.type === "guide" && !assignedToCourse(account.student));
+          (filter === "assigned" && account.type === "guide" && assignedToCourse(account.guideAccount)) ||
+          (filter === "unassigned" && account.type === "guide" && !assignedToCourse(account.guideAccount));
         const text = `${account.name || ""} ${account.email || ""} ${account.phone || ""} ${account.roleLabel || ""} ${account.status || ""} ${account.assignment || ""} ${account.location || ""} ${account.uniqueUserId || ""} ${account.secondaryId || ""}`.toLowerCase();
         return matchesFilter && text.includes(searchTerm.toLowerCase());
       }),
@@ -316,39 +316,39 @@ const StudentManagement = () => {
   ];
 
   const openCreateDialog = () => {
-    setStudentForm(emptyStudentForm);
+    setAccountForm(emptyAccountForm);
     setDialogOpen(true);
   };
 
-  const openEditDialog = (student) => {
-    setStudentForm({
-      id: student.id,
-      name: student.name || "",
-      phone: student.phone || "",
-      email: student.email || "",
-      module: student.module || "None",
-      eligibility: student.eligibility || "Approved",
+  const openEditDialog = (guideAccount) => {
+    setAccountForm({
+      id: guideAccount.id,
+      name: guideAccount.name || "",
+      phone: guideAccount.phone || "",
+      email: guideAccount.email || "",
+      module: guideAccount.module || "None",
+      eligibility: guideAccount.eligibility || "Approved",
     });
     setDialogOpen(true);
   };
 
-  const saveStudent = async () => {
-    if (!studentForm.name || !studentForm.email) {
+  const saveGuideAccount = async () => {
+    if (!accountForm.name || !accountForm.email) {
       showMessage("Name and email are required.", "warning");
       return;
     }
 
     setLoading(true);
     try {
-      const isEdit = Boolean(studentForm.id);
+      const isEdit = Boolean(accountForm.id);
       await requestJson(
         isEdit
-          ? `${API_BASE_URL}/api/students/${studentForm.id}`
+          ? `${API_BASE_URL}/api/students/${accountForm.id}`
           : `${API_BASE_URL}/api/students`,
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(studentForm),
+          body: JSON.stringify(accountForm),
         }
       );
       setDialogOpen(false);
@@ -361,10 +361,10 @@ const StudentManagement = () => {
     }
   };
 
-  const deleteStudent = async (studentId) => {
+  const deleteGuideAccount = async (accountId) => {
     if (!window.confirm("Delete this guide account?")) return;
     try {
-      await requestJson(`${API_BASE_URL}/api/students/${studentId}`, { method: "DELETE" });
+      await requestJson(`${API_BASE_URL}/api/students/${accountId}`, { method: "DELETE" });
       await loadData();
       showMessage("Guide account deleted.");
     } catch (error) {
@@ -372,16 +372,16 @@ const StudentManagement = () => {
     }
   };
 
-  const assignModule = async (student, moduleName) => {
+  const assignModule = async (guideAccount, moduleName) => {
     try {
       const course = courses.find((item) => item.course_name === moduleName);
-      await requestJson(`${API_BASE_URL}/api/students/${student.id}/module`, {
+      await requestJson(`${API_BASE_URL}/api/students/${guideAccount.id}/module`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ module: moduleName, courseId: course?.course_id || null }),
       });
       await loadData();
-      showMessage(`${student.name} assigned to ${moduleName}.`);
+      showMessage(`${guideAccount.name} assigned to ${moduleName}.`);
     } catch (error) {
       showMessage(error.message, "error");
     }
@@ -696,11 +696,11 @@ const StudentManagement = () => {
               </Box>
             );
           }
-          const student = account.student;
-          const isRejected = student.eligibility === "Rejected";
-          const assigned = assignedToCourse(student);
+          const guideAccount = account.guideAccount;
+          const isRejected = guideAccount.eligibility === "Rejected";
+          const assigned = assignedToCourse(guideAccount);
           const identity = account.identity;
-          const canvasProgress = normalizeCanvasProgress(student.canvasProgress);
+          const canvasProgress = normalizeCanvasProgress(guideAccount.canvasProgress);
           const latestQuizScore = canvasProgress.latestQuizScore;
           const latestQuizText = latestQuizScore === null || latestQuizScore === undefined
             ? "No quiz attempts"
@@ -738,19 +738,19 @@ const StudentManagement = () => {
                           boxShadow: "0 12px 24px rgba(63, 174, 90, 0.10)",
                         }}
                       >
-                        {(student.name || "G").slice(0, 1).toUpperCase()}
+                        {(guideAccount.name || "G").slice(0, 1).toUpperCase()}
                       </Avatar>
                       <Box sx={{ minWidth: 0 }}>
                         <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.08rem" }}>
-                          {student.name || "Unnamed guide"}
+                          {guideAccount.name || "Unnamed guide"}
                         </Typography>
                         <Typography sx={{ color: "#53685a", fontWeight: 800, wordBreak: "break-word" }}>
-                          {student.email || "No email recorded"}
+                          {guideAccount.email || "No email recorded"}
                         </Typography>
                       </Box>
                     </Stack>
                     <Chip
-                      label={student.eligibility || "Approved"}
+                      label={guideAccount.eligibility || "Approved"}
                       size="small"
                       sx={{
                         bgcolor: isRejected ? "#ffe0d8" : "#e8f8d9",
@@ -792,8 +792,8 @@ const StudentManagement = () => {
                         fontWeight: 900,
                       }}
                     />
-                    {student.phone && (
-                      <Chip label={student.phone} size="small" sx={{ bgcolor: "#fffaf0", color: "#173126", fontWeight: 900 }} />
+                    {guideAccount.phone && (
+                      <Chip label={guideAccount.phone} size="small" sx={{ bgcolor: "#fffaf0", color: "#173126", fontWeight: 900 }} />
                     )}
                   </Stack>
 
@@ -873,8 +873,8 @@ const StudentManagement = () => {
                     label="Assigned course"
                     select
                     size="small"
-                    value={student.module || "None"}
-                    onChange={(event) => assignModule(student, event.target.value)}
+                    value={guideAccount.module || "None"}
+                    onChange={(event) => assignModule(guideAccount, event.target.value)}
                     SelectProps={{ MenuProps: menuProps }}
                     fullWidth
                     sx={{
@@ -898,7 +898,7 @@ const StudentManagement = () => {
                     <Button
                       variant="outlined"
                       startIcon={<EditIcon />}
-                      onClick={() => openEditDialog(student)}
+                      onClick={() => openEditDialog(guideAccount)}
                       sx={{ ...buttonSx, flex: 1, borderColor: "#D8EAC7", color: "#173126", bgcolor: "#FFFFFF" }}
                     >
                       Edit
@@ -907,7 +907,7 @@ const StudentManagement = () => {
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteIcon />}
-                      onClick={() => deleteStudent(student.id)}
+                      onClick={() => deleteGuideAccount(guideAccount.id)}
                       sx={{ ...buttonSx, flex: 1, bgcolor: "#fff7ef", borderColor: "#ff9b7e", color: "#9d2c19" }}
                     >
                       Delete
@@ -955,18 +955,18 @@ const StudentManagement = () => {
             borderBottom: "1px solid rgba(234, 214, 167, 0.86)",
           }}
         >
-          {studentForm.id ? "Edit Guide Account" : "Add Guide Account"}
+          {accountForm.id ? "Edit Guide Account" : "Add Guide Account"}
         </DialogTitle>
         <DialogContent className="guide-account-dialog-content" sx={{ display: "grid", gap: 2, pt: "20px !important" }}>
-          <TextField className="guide-account-dialog-field" label="Name" value={studentForm.name} onChange={(event) => setStudentForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
-          <TextField className="guide-account-dialog-field" label="Phone" value={studentForm.phone} onChange={(event) => setStudentForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
-          <TextField className="guide-account-dialog-field" label="Email" value={studentForm.email} onChange={(event) => setStudentForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Name" value={accountForm.name} onChange={(event) => setAccountForm((prev) => ({ ...prev, name: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Phone" value={accountForm.phone} onChange={(event) => setAccountForm((prev) => ({ ...prev, phone: event.target.value }))} fullWidth />
+          <TextField className="guide-account-dialog-field" label="Email" value={accountForm.email} onChange={(event) => setAccountForm((prev) => ({ ...prev, email: event.target.value }))} fullWidth />
           <TextField
             className="guide-account-dialog-field"
             label="Assigned Course"
             select
-            value={studentForm.module}
-            onChange={(event) => setStudentForm((prev) => ({ ...prev, module: event.target.value }))}
+            value={accountForm.module}
+            onChange={(event) => setAccountForm((prev) => ({ ...prev, module: event.target.value }))}
             SelectProps={{ MenuProps: menuProps }}
             fullWidth
           >
@@ -980,8 +980,8 @@ const StudentManagement = () => {
             className="guide-account-dialog-field"
             label="Eligibility"
             select
-            value={studentForm.eligibility}
-            onChange={(event) => setStudentForm((prev) => ({ ...prev, eligibility: event.target.value }))}
+            value={accountForm.eligibility}
+            onChange={(event) => setAccountForm((prev) => ({ ...prev, eligibility: event.target.value }))}
             SelectProps={{ MenuProps: menuProps }}
             fullWidth
           >
@@ -995,7 +995,7 @@ const StudentManagement = () => {
           </Button>
           <Button
             variant="contained"
-            onClick={saveStudent}
+            onClick={saveGuideAccount}
             disabled={loading}
             sx={{ ...buttonSx, background: "linear-gradient(135deg, #FF7A1A, #FFD84D)", color: "#173126" }}
           >
@@ -1018,4 +1018,4 @@ const StudentManagement = () => {
   );
 };
 
-export default StudentManagement;
+export default AccountManagement;

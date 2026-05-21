@@ -61,7 +61,7 @@ const percent = (completed, total) => {
 
 const sameId = (left, right) => String(left || "") === String(right || "");
 
-const demoCertificateStudents = [
+const demoCertificateAccounts = [
   { id: 1, name: "Aiden Tan", email: "aiden.tan@example.com" },
   { id: 2, name: "Maya Ling", email: "maya.ling@example.com" },
   { id: 3, name: "Daniel Chai", email: "daniel.chai@example.com" },
@@ -112,9 +112,9 @@ const getGuideCourseProgress = (guide, course) => {
 };
 
 const CertificateManagement = () => {
-  const [students, setStudents] = useState([]);
+  const [guideAccounts, setGuideAccounts] = useState([]);
   const [progressSummary, setProgressSummary] = useState(null);
-  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [loading, setLoading] = useState(false);
   const [fallbackMessage, setFallbackMessage] = useState("");
@@ -134,15 +134,15 @@ const CertificateManagement = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [studentData, progressData] = await Promise.all([
+      const [accountData, progressData] = await Promise.all([
         requestJson(`${API_BASE_URL}/api/students`),
         requestJson(`${API_BASE_URL}/api/admin/canvas-progress-summary`),
       ]);
-      setStudents(studentData.students || []);
+      setGuideAccounts(accountData.students || []);
       setProgressSummary(progressData || null);
       setFallbackMessage("");
     } catch (error) {
-      setStudents(demoCertificateStudents);
+      setGuideAccounts(demoCertificateAccounts);
       setProgressSummary(demoCertificateProgress);
       setFallbackMessage("Demo fallback certificate records are displayed because the Admin training API is unavailable.");
       showMessage("Admin training API unavailable. Showing demo certificates.", "warning");
@@ -158,18 +158,18 @@ const CertificateManagement = () => {
   const courses = useMemo(() => progressSummary?.courses || [], [progressSummary]);
   const guides = useMemo(() => {
     const progressGuides = progressSummary?.guides || [];
-    if (students.length === 0) return progressGuides;
+    if (guideAccounts.length === 0) return progressGuides;
 
     const progressByUser = new Map(progressGuides.map((guide) => [String(guide.userId || guide.user_id), guide]));
-    return students.map((student) => ({
-      ...student,
-      ...(progressByUser.get(String(student.id)) || {}),
-      userId: student.id,
-      user_id: student.id,
-      name: student.name,
-      email: student.email,
+    return guideAccounts.map((guideAccount) => ({
+      ...guideAccount,
+      ...(progressByUser.get(String(guideAccount.id)) || {}),
+      userId: guideAccount.id,
+      user_id: guideAccount.id,
+      name: guideAccount.name,
+      email: guideAccount.email,
     }));
-  }, [students, progressSummary]);
+  }, [guideAccounts, progressSummary]);
 
   const certificateRows = useMemo(() => {
     return guides.flatMap((guide) =>
@@ -192,17 +192,17 @@ const CertificateManagement = () => {
   useEffect(() => {
     if (certificateRows.length === 0) return;
     const selectedStillExists = certificateRows.some(
-      (row) => sameId(row.userId, selectedStudentId) && sameId(row.courseId, selectedCourseId)
+      (row) => sameId(row.userId, selectedAccountId) && sameId(row.courseId, selectedCourseId)
     );
     if (selectedStillExists) return;
 
     const firstReady = certificateRows.find((row) => row.ready) || certificateRows[0];
-    setSelectedStudentId(String(firstReady.userId));
+    setSelectedAccountId(String(firstReady.userId));
     setSelectedCourseId(String(firstReady.courseId));
-  }, [certificateRows, selectedCourseId, selectedStudentId]);
+  }, [certificateRows, selectedCourseId, selectedAccountId]);
 
   const selectedRow = certificateRows.find(
-    (row) => sameId(row.userId, selectedStudentId) && sameId(row.courseId, selectedCourseId)
+    (row) => sameId(row.userId, selectedAccountId) && sameId(row.courseId, selectedCourseId)
   ) || certificateRows[0] || null;
 
   const summary = useMemo(() => {
@@ -372,8 +372,8 @@ const CertificateManagement = () => {
               <TextField
                 label="Guide"
                 select
-                value={selectedStudentId}
-                onChange={(event) => setSelectedStudentId(event.target.value)}
+                value={selectedAccountId}
+                onChange={(event) => setSelectedAccountId(event.target.value)}
                 SelectProps={{ MenuProps: menuProps }}
                 fullWidth
               >
@@ -476,7 +476,7 @@ const CertificateManagement = () => {
             <Grid item xs={12} md={6} xl={4} key={row.id}>
               <Paper
                 onClick={() => {
-                  setSelectedStudentId(String(row.userId));
+                  setSelectedAccountId(String(row.userId));
                   setSelectedCourseId(String(row.courseId));
                 }}
                 sx={{
@@ -503,7 +503,7 @@ const CertificateManagement = () => {
                     Issued date: {row.ready ? "2026-05-14" : "Pending"}
                   </Typography>
                   <Button size="small" onClick={() => {
-                    setSelectedStudentId(String(row.userId));
+                    setSelectedAccountId(String(row.userId));
                     setSelectedCourseId(String(row.courseId));
                   }}>
                     Preview

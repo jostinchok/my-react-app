@@ -90,7 +90,7 @@ const navTargets = [
   { label: "Manage Courses", path: "/admin/course", icon: <SchoolOutlinedIcon />, detail: "Create courses, modules, and items" },
   { label: "Training Modules", path: "/admin/training", icon: <ViewModuleOutlinedIcon />, detail: "Review Canvas-style course structure" },
   { label: "Course Requests", path: "/admin/course-requests", icon: <AssignmentTurnedInOutlinedIcon />, detail: "Approve or reject guide enrollment" },
-  { label: "User Management", path: "/admin/students", icon: <RouteOutlinedIcon />, detail: "Guides, rangers, roles, and progress" },
+  { label: "User Management", path: "/admin/accounts", icon: <RouteOutlinedIcon />, detail: "Guides, rangers, roles, and progress" },
   { label: "Certificates", path: "/admin/certificates", icon: <WorkspacePremiumOutlinedIcon />, detail: "Issue course-level certificates" },
   { label: "Incident Detection", path: "/admin/detection", icon: <CrisisAlertOutlinedIcon />, detail: "Official AI/IoT incident queue" },
   { label: "Ranger Review", path: "/admin/ranger-review", icon: <ReviewsOutlinedIcon />, detail: "Recommendation-only field workflow" },
@@ -553,10 +553,10 @@ export function AdminPrototypeDashboard() {
 
       if (ignore) return;
 
-      const [courseResult, requestResult, studentResult, progressResult, incidentResult, healthResult] = endpoints;
+      const [courseResult, requestResult, accountResult, progressResult, incidentResult, healthResult] = endpoints;
       const courses = courseResult.status === "fulfilled" ? courseResult.value.courses || [] : null;
       const requests = requestResult.status === "fulfilled" ? requestResult.value.requests || [] : null;
-      const students = studentResult.status === "fulfilled" ? studentResult.value.students || [] : null;
+      const guideAccounts = accountResult.status === "fulfilled" ? accountResult.value.students || [] : null;
       const progressGuides = progressResult.status === "fulfilled" && Array.isArray(progressResult.value.guides)
         ? progressResult.value.guides
         : null;
@@ -566,11 +566,11 @@ export function AdminPrototypeDashboard() {
       const issuedCertificates = progressGuides
         ? progressGuides.filter((guide) => Number(guide.completionPercent ?? guide.completion_percent ?? 0) >= 100).length
         : fallbackMetrics.certificatesIssued;
-      const guideCount = students ? students.length : fallbackMetrics.activeGuides;
+      const guideCount = guideAccounts ? guideAccounts.length : fallbackMetrics.activeGuides;
 
       setMetrics({
         trainingCourses: courses ? courses.length : fallbackMetrics.trainingCourses,
-        activeGuides: students ? students.filter((student) => student.eligibility !== "Rejected").length : fallbackMetrics.activeGuides,
+        activeGuides: guideAccounts ? guideAccounts.filter((account) => account.eligibility !== "Rejected").length : fallbackMetrics.activeGuides,
         openIncidents: incidents
           ? incidents.filter((incident) => !["Resolved", "False Alarm"].includes(incident.status)).length
           : fallbackMetrics.openIncidents,

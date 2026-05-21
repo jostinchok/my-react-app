@@ -52,7 +52,7 @@ const menuGroups = [
   {
     title: "Access",
     items: [
-      { id: "students", label: "User Management", icon: <ManageAccountsOutlinedIcon />, to: "/admin/students" },
+      { id: "accounts", label: "User Management", icon: <ManageAccountsOutlinedIcon />, to: "/admin/accounts" },
       { id: "permissions", label: "Permissions", icon: <AdminPanelSettingsOutlinedIcon />, to: "/admin/permissions" },
     ],
   },

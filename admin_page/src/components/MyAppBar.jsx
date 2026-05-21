@@ -206,6 +206,7 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304, collapsedSidebarW
       ["/admin/course-requests", "REQUESTS"],
       ["/admin/course", "COURSE"],
       ["/admin/training", "TRAINING"],
+      ["/admin/accounts", "USER MANAGEMENT"],
       ["/admin/students", "USER MANAGEMENT"],
       ["/admin/badge", "CERTIFICATES"],
       ["/admin/certificates", "CERTIFICATES"],

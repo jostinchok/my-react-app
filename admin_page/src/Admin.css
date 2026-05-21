@@ -5094,6 +5094,113 @@ body {
   }
 }
 
+/* V35 responsive cleanup: center admin pages and keep header actions inside their panels. */
+.admin-linked-page,
+.admin-dashboard-shell {
+  align-self: center !important;
+  width: min(100%, var(--admin-polish-wide, 1440px)) !important;
+  max-width: min(var(--admin-polish-wide, 1440px), calc(100vw - 32px)) !important;
+  box-sizing: border-box !important;
+}
+
+.admin-linked-page .MuiGrid-item,
+.admin-dashboard-shell .MuiGrid-item {
+  min-width: 0 !important;
+}
+
+.admin-linked-page > .MuiBox-root:first-child {
+  overflow: hidden;
+}
+
+.admin-linked-page > .MuiBox-root:first-child > .MuiStack-root {
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.admin-linked-page > .MuiBox-root:first-child .MuiButton-root {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.course-builder-hero-copy {
+  flex: 1 1 460px;
+  min-width: min(100%, 320px);
+}
+
+.course-builder-hero-actions {
+  flex: 0 1 620px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.course-builder-hero-actions .course-builder-hero-button.MuiButton-root {
+  flex: 1 1 170px;
+  min-width: min(100%, 150px);
+  max-width: 220px;
+  padding-inline: 14px;
+}
+
+.canvas-builder-page .MuiGrid-container {
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+@media (max-width: 1535px) {
+  .admin-linked-page > .MuiBox-root:first-child > .MuiStack-root {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .admin-linked-page > .MuiBox-root:first-child > .MuiStack-root > .MuiBox-root {
+    width: 100%;
+  }
+
+  .admin-linked-page > .MuiBox-root:first-child > .MuiStack-root > .MuiStack-root {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .admin-linked-page > .MuiBox-root:first-child .MuiButton-root {
+    flex: 1 1 180px;
+    max-width: none;
+  }
+
+  .course-builder-hero-stack {
+    flex-direction: column !important;
+  }
+
+  .course-builder-hero-copy,
+  .course-builder-hero-actions {
+    flex: 0 1 auto;
+  }
+
+  .course-builder-hero-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .course-builder-hero-actions .course-builder-hero-button.MuiButton-root {
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-linked-page,
+  .admin-dashboard-shell {
+    max-width: calc(100vw - 20px) !important;
+    padding: 12px !important;
+  }
+
+  .course-builder-hero-actions .course-builder-hero-button.MuiButton-root {
+    width: 100%;
+    flex-basis: auto;
+  }
+}
+
 /* V34 ranger-console-completion: make the standalone Ranger route scrollable, readable, and demo-ready. */
 .ranger-standalone-shell {
   height: 100vh !important;

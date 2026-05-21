@@ -6,7 +6,7 @@ import MyLayout from "./components/MyLayout";
 import CourseManagement from "./pages/course.jsx";
 import TrainingModuleSetup from "./pages/training_module.jsx";
 import CourseRequestsPage from "./pages/course_requests.jsx";
-import StudentManagement from "./pages/student_management.jsx";
+import AccountManagement from "./pages/account_management.jsx";
 import CertificateManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
 import {
@@ -30,12 +30,13 @@ function AdminPage() {
       <Resource name="course" list={CourseManagement} options={{ label: "Courses" }} />
       <Resource name="training" list={TrainingModuleSetup} options={{ label: "Training Modules" }} />
       <Resource name="course-requests" list={CourseRequestsPage} options={{ label: "Course Requests" }} />
-      <Resource name="students" list={StudentManagement} options={{ label: "User Management" }} />
+      <Resource name="accounts" list={AccountManagement} options={{ label: "User Management" }} />
+      <Resource name="students" list={AccountManagement} options={{ label: "User Management" }} />
       <Resource name="certificates" list={CertificateManagement} options={{ label: "Certificates" }} />
       <Resource name="badge" list={CertificateManagement} options={{ label: "Certificates" }} />
       <Resource name="detection" list={AIDetection} options={{ label: "Incident Detection" }} />
       <Resource name="analytics" list={AdminAnalyticsDashboard} options={{ label: "Analytics" }} />
-      <Resource name="users" list={StudentManagement} options={{ label: "User Management" }} />
+      <Resource name="users" list={AccountManagement} options={{ label: "User Management" }} />
       <Resource name="permissions" list={PermissionsMatrix} options={{ label: "Permissions" }} />
       <Resource name="ranger-review" list={RangerReviewWorkflow} options={{ label: "Ranger Review" }} />
       <Resource name="sensor-rules" list={SensorRulesWorkflow} options={{ label: "Sensor Rules" }} />

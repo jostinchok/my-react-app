@@ -44,7 +44,7 @@ const statusFilters = [
 const demoCourseRequests = [
   {
     id: "REQ-DEMO-001",
-    student_name: "Aiden Tan",
+    guide_name: "Aiden Tan",
     email: "aiden.tan@example.com",
     course_id: "SFC-FIELD-2026",
     course_name: "SFC Field Response Essentials",
@@ -53,7 +53,7 @@ const demoCourseRequests = [
   },
   {
     id: "REQ-DEMO-002",
-    student_name: "Maya Ling",
+    guide_name: "Maya Ling",
     email: "maya.ling@example.com",
     course_id: "SFC-WILDLIFE-2026",
     course_name: "Sarawak Protected Wildlife Awareness",
@@ -62,7 +62,7 @@ const demoCourseRequests = [
   },
   {
     id: "REQ-DEMO-003",
-    student_name: "Daniel Chai",
+    guide_name: "Daniel Chai",
     email: "daniel.chai@example.com",
     course_id: "SFC-ORIENTATION-2026",
     course_name: "SFC Park Guide Orientation",
@@ -349,7 +349,7 @@ const CourseRequestsPage = () => {
                       )}
                     </Stack>
                     <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1.1 }}>
-                      {request.student_name || "Unnamed guide"}
+                      {request.guide_name || request.student_name || "Unnamed guide"}
                     </Typography>
                     <Typography sx={{ mt: 0.7, color: "#53685a", fontWeight: 800, wordBreak: "break-word" }}>
                       {request.email || "No email recorded"}

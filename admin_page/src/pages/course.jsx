@@ -934,8 +934,8 @@ const CourseManagement = () => {
             "radial-gradient(circle at 88% 0%, rgba(167,233,87,0.40), transparent 18rem), linear-gradient(135deg, #FF8A1D 0%, #FFD84D 48%, #F3FFD4 100%)",
         }}
       >
-        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3}>
-          <Box>
+        <Stack className="course-builder-hero-stack" direction={{ xs: "column", lg: "row" }} justifyContent="space-between" gap={3}>
+          <Box className="course-builder-hero-copy">
             <Typography className="admin-dashboard-kicker">Canvas-style training builder</Typography>
             <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950, lineHeight: 1 }}>
               Course Builder
@@ -945,14 +945,15 @@ const CourseManagement = () => {
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", md: "center" }}>
-            <Button onClick={refreshAll} startIcon={<RefreshIcon />} sx={secondaryButtonSx}>
+          <Stack className="course-builder-hero-actions" direction={{ xs: "column", sm: "row" }} gap={1.2} alignSelf={{ xs: "stretch", lg: "center" }}>
+            <Button className="course-builder-hero-button" onClick={refreshAll} startIcon={<RefreshIcon />} sx={secondaryButtonSx}>
               Refresh
             </Button>
-            <Button onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={demoButtonSx}>
+            <Button className="course-builder-hero-button" onClick={seedTemplates} startIcon={<AutoAwesomeIcon />} sx={demoButtonSx}>
               Load Demo Course Records
             </Button>
             <Button
+              className="course-builder-hero-button"
               variant="contained"
               startIcon={<AddIcon />}
               onClick={openCreateCourse}
@@ -972,8 +973,8 @@ const CourseManagement = () => {
       )}
 
       <Grid container spacing={2.2} alignItems="flex-start">
-        <Grid item xs={12} md={3}>
-          <Box sx={{ ...panelSx, p: 2.2, position: { lg: "sticky" }, top: { lg: 18 } }}>
+        <Grid item xs={12} xl={3}>
+          <Box sx={{ ...panelSx, p: 2.2, position: { xl: "sticky" }, top: { xl: 18 } }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
               <Box>
                 <Typography className="admin-dashboard-kicker">Courses</Typography>
@@ -984,7 +985,7 @@ const CourseManagement = () => {
               <Chip label={String(courses.length).padStart(2, "0")} sx={{ ...statusChipSx, bgcolor: "#f3ffd4" }} />
             </Stack>
 
-            <Stack gap={1.1} sx={{ maxHeight: { lg: "calc(100vh - 310px)" }, overflow: "auto", pr: 0.3 }}>
+            <Stack gap={1.1} sx={{ maxHeight: { xl: "calc(100vh - 310px)" }, overflow: "auto", pr: 0.3 }}>
               {courses.map((course) => {
                 const active = selectedCourseId === course.course_id;
                 return (
@@ -1035,7 +1036,7 @@ const CourseManagement = () => {
           </Box>
         </Grid>
 
-        <Grid item xs={12} md={5.5}>
+        <Grid item xs={12} xl={5.5}>
           <Stack gap={2.2}>
             <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
@@ -1278,8 +1279,8 @@ const CourseManagement = () => {
           </Stack>
         </Grid>
 
-        <Grid item xs={12} md={3.5}>
-          <Stack gap={2.2} sx={{ position: { lg: "sticky" }, top: { lg: 18 } }}>
+        <Grid item xs={12} xl={3.5}>
+          <Stack gap={2.2} sx={{ position: { xl: "sticky" }, top: { xl: 18 } }}>
             <Box sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
               <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
@@ -1302,7 +1303,7 @@ const CourseManagement = () => {
             </Box>
 
             <Box sx={{ ...panelSx, p: 2.2 }}>
-              <Typography className="admin-dashboard-kicker">Park guide preview</Typography>
+              <Typography className="admin-dashboard-kicker">User Portal preview</Typography>
               <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1.6 }}>
                 Item preview
               </Typography>
