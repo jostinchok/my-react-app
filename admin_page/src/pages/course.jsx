@@ -973,7 +973,7 @@ const CourseManagement = () => {
       )}
 
       <Grid className="course-builder-layout-grid" container spacing={2.2} alignItems="flex-start">
-        <Grid className="course-builder-layout-item course-builder-list-cell" item xs={12} xl={3}>
+        <Grid size={{ xs: 12, xl: 3 }} className="course-builder-layout-item course-builder-list-cell">
           <Box className="course-builder-panel course-builder-list-panel" sx={{ ...panelSx, p: 2.2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
               <Box>
@@ -1036,7 +1036,7 @@ const CourseManagement = () => {
           </Box>
         </Grid>
 
-        <Grid className="course-builder-layout-item course-builder-main-cell" item xs={12} xl={5.5}>
+        <Grid size={{ xs: 12, xl: 5.5 }} className="course-builder-layout-item course-builder-main-cell">
           <Stack className="course-builder-main-stack" gap={2.2}>
             <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
@@ -1098,7 +1098,7 @@ const CourseManagement = () => {
                   ["Resources", totalResources],
                   ["Hours", selectedCourse?.total_contact_hours || 0],
                 ].map(([label, value]) => (
-                  <Grid item xs={6} md={3} key={label}>
+                  <Grid size={{ xs: 6, md: 3 }} key={label}>
                     <Box sx={{ p: 1.35, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
                       <Typography className="admin-dashboard-kicker">{label}</Typography>
                       <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.45rem" }}>{value}</Typography>
@@ -1279,7 +1279,7 @@ const CourseManagement = () => {
           </Stack>
         </Grid>
 
-        <Grid className="course-builder-layout-item course-builder-inspector-cell" item xs={12} xl={3.5}>
+        <Grid size={{ xs: 12, xl: 3.5 }} className="course-builder-layout-item course-builder-inspector-cell">
           <Stack className="course-builder-inspector-stack" gap={2.2}>
             <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
@@ -1328,22 +1328,22 @@ const CourseManagement = () => {
         />
         <DialogContent>
           <Grid container className="course-builder-form-grid" spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Course ID" value={courseForm.course_id} disabled={Boolean(editingCourseId)} onChange={(event) => setCourseForm({ ...courseForm, course_id: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={8} className="course-dialog-span-8">
+            <Grid size={{ xs: 12, md: 8 }} className="course-dialog-span-8">
               <TextField label="Course name" value={courseForm.course_name} onChange={(event) => setCourseForm({ ...courseForm, course_name: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} className="course-dialog-span-12">
+            <Grid size={{ xs: 12 }} className="course-dialog-span-12">
               <TextField label="Description" value={courseForm.description} onChange={(event) => setCourseForm({ ...courseForm, description: event.target.value })} fullWidth multiline minRows={3} />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Start date" type="date" value={courseForm.start_date} onChange={(event) => setCourseForm({ ...courseForm, start_date: event.target.value })} fullWidth InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="End date" type="date" value={courseForm.end_date} onChange={(event) => setCourseForm({ ...courseForm, end_date: event.target.value })} fullWidth InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Contact hours" type="number" value={courseForm.total_contact_hours} onChange={(event) => setCourseForm({ ...courseForm, total_contact_hours: event.target.value })} fullWidth />
             </Grid>
           </Grid>
@@ -1362,38 +1362,38 @@ const CourseManagement = () => {
         />
         <DialogContent>
           <Grid container className="course-builder-form-grid" spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={8} className="course-dialog-span-8">
+            <Grid size={{ xs: 12, md: 8 }} className="course-dialog-span-8">
               <TextField label="Module title" value={moduleForm.title} onChange={(event) => setModuleForm({ ...moduleForm, title: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Sort order" type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm({ ...moduleForm, sort_order: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} className="course-dialog-span-12">
+            <Grid size={{ xs: 12 }} className="course-dialog-span-12">
               <TextField label="Description" value={moduleForm.description} onChange={(event) => setModuleForm({ ...moduleForm, description: event.target.value })} fullWidth multiline minRows={3} />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Category" value={moduleForm.category} onChange={(event) => setModuleForm({ ...moduleForm, category: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Park" value={moduleForm.park} onChange={(event) => setModuleForm({ ...moduleForm, park: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Level" value={moduleForm.level} onChange={(event) => setModuleForm({ ...moduleForm, level: event.target.value })} fullWidth select>
                 {['Beginner', 'Intermediate', 'Advanced'].map((level) => <MenuItem key={level} value={level}>{level}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Duration" value={moduleForm.duration} onChange={(event) => setModuleForm({ ...moduleForm, duration: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Format" value={moduleForm.format} onChange={(event) => setModuleForm({ ...moduleForm, format: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Status" value={moduleForm.status} onChange={(event) => setModuleForm({ ...moduleForm, status: event.target.value })} fullWidth select>
                 {['Published', 'Draft', 'Archived'].map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6} className="course-dialog-span-6">
+            <Grid size={{ xs: 12, md: 6 }} className="course-dialog-span-6">
               <TextField
                 label="Hero image"
                 value={moduleForm.image_url}
@@ -1413,7 +1413,7 @@ const CourseManagement = () => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6} className="course-dialog-span-6">
+            <Grid size={{ xs: 12, md: 6 }} className="course-dialog-span-6">
               <Button
                 component="label"
                 variant="outlined"
@@ -1436,7 +1436,7 @@ const CourseManagement = () => {
               </Typography>
             </Grid>
             {resolveAdminImageUrl(moduleForm.image_url) && (
-              <Grid item xs={12} className="course-dialog-span-12">
+              <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                 <Box
                   component="img"
                   src={resolveAdminImageUrl(moduleForm.image_url)}
@@ -1445,10 +1445,10 @@ const CourseManagement = () => {
                 />
               </Grid>
             )}
-            <Grid item xs={12} md={6} className="course-dialog-span-6">
+            <Grid size={{ xs: 12, md: 6 }} className="course-dialog-span-6">
               <TextField label="Certificate title" value={moduleForm.badge_name} onChange={(event) => setModuleForm({ ...moduleForm, badge_name: event.target.value })} fullWidth helperText="Used as a course-completion credential label, not a module certificate." />
             </Grid>
-            <Grid item xs={12} md={6} className="course-dialog-span-6">
+            <Grid size={{ xs: 12, md: 6 }} className="course-dialog-span-6">
               <TextField label="Objectives" value={moduleForm.objectivesText} onChange={(event) => setModuleForm({ ...moduleForm, objectivesText: event.target.value })} fullWidth multiline minRows={3} helperText="One objective per line" />
             </Grid>
           </Grid>
@@ -1467,42 +1467,42 @@ const CourseManagement = () => {
         />
         <DialogContent>
           <Grid container className="course-builder-form-grid" spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={4} className="course-dialog-span-4">
+            <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
               <TextField label="Item type" value={itemForm.item_type} onChange={(event) => setItemForm({ ...itemForm, item_type: event.target.value })} fullWidth select>
                 {itemTypeOptions.map((type) => (
                   <MenuItem key={type} value={type}>{getItemTypeConfig(type).label}</MenuItem>
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6} className="course-dialog-span-6">
+            <Grid size={{ xs: 12, md: 6 }} className="course-dialog-span-6">
               <TextField label="Title" value={itemForm.title} onChange={(event) => setItemForm({ ...itemForm, title: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} md={2} className="course-dialog-span-2">
+            <Grid size={{ xs: 12, md: 2 }} className="course-dialog-span-2">
               <TextField label="Order" type="number" value={itemForm.sort_order} onChange={(event) => setItemForm({ ...itemForm, sort_order: event.target.value })} fullWidth />
             </Grid>
-            <Grid item xs={12} className="course-dialog-span-12">
+            <Grid size={{ xs: 12 }} className="course-dialog-span-12">
               <TextField label="Description" value={itemForm.description} onChange={(event) => setItemForm({ ...itemForm, description: event.target.value })} fullWidth />
             </Grid>
 
             {(itemForm.item_type === "page" || itemForm.item_type === "text") && (
-              <Grid item xs={12} className="course-dialog-span-12">
+              <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                 <TextField label="Content" value={itemForm.content} onChange={(event) => setItemForm({ ...itemForm, content: event.target.value })} fullWidth multiline minRows={6} />
               </Grid>
             )}
 
             {itemForm.item_type === "link" && (
               <>
-                <Grid item xs={12} className="course-dialog-span-12">
+                <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                   <TextField label="External URL" value={itemForm.external_url} onChange={(event) => setItemForm({ ...itemForm, external_url: event.target.value })} fullWidth />
                 </Grid>
-                <Grid item xs={12} className="course-dialog-span-12">
+                <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                   <TextField label="Link instructions" value={itemForm.content} onChange={(event) => setItemForm({ ...itemForm, content: event.target.value })} fullWidth multiline minRows={3} />
                 </Grid>
               </>
             )}
 
             {["file", "image", "video"].includes(itemForm.item_type) && (
-              <Grid item xs={12} className="course-dialog-span-12">
+              <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                 <Paper sx={{ ...softCardSx, p: 2 }}>
                   <Stack gap={1.2}>
                     <Button component="label" startIcon={<UploadFileIcon />} sx={{ ...secondaryButtonSx, alignSelf: "flex-start" }}>
@@ -1519,25 +1519,25 @@ const CourseManagement = () => {
 
             {itemForm.item_type === "quiz" && (
               <>
-                <Grid item xs={12} className="course-dialog-span-12">
+                <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                   <TextField label="Question" value={itemForm.question} onChange={(event) => setItemForm({ ...itemForm, question: event.target.value })} fullWidth multiline minRows={3} />
                 </Grid>
-                <Grid item xs={12} md={8} className="course-dialog-span-8">
+                <Grid size={{ xs: 12, md: 8 }} className="course-dialog-span-8">
                   <TextField label="Choices" value={itemForm.choicesText} onChange={(event) => setItemForm({ ...itemForm, choicesText: event.target.value })} fullWidth multiline minRows={4} helperText="One answer choice per line" />
                 </Grid>
-                <Grid item xs={12} md={4} className="course-dialog-span-4">
+                <Grid size={{ xs: 12, md: 4 }} className="course-dialog-span-4">
                   <TextField label="Correct answer index" type="number" value={itemForm.correctAnswer} onChange={(event) => setItemForm({ ...itemForm, correctAnswer: event.target.value })} fullWidth helperText="0 means first choice" />
                 </Grid>
               </>
             )}
 
             {itemForm.item_type === "checklist" && (
-              <Grid item xs={12} className="course-dialog-span-12">
+              <Grid size={{ xs: 12 }} className="course-dialog-span-12">
                 <TextField label="Checklist steps" value={itemForm.checklistText} onChange={(event) => setItemForm({ ...itemForm, checklistText: event.target.value })} fullWidth multiline minRows={5} helperText="One step per line" />
               </Grid>
             )}
 
-            <Grid item xs={12} md={6} className="course-dialog-span-6">
+            <Grid size={{ xs: 12, md: 6 }} className="course-dialog-span-6">
               <TextField label="Status" value={itemForm.status} onChange={(event) => setItemForm({ ...itemForm, status: event.target.value })} fullWidth select>
                 {['published', 'draft', 'archived'].map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
               </TextField>

@@ -309,7 +309,7 @@ const TrainingModuleSetup = () => {
           ["Resources", totals.resources, "Course-level downloadable resources"],
           ["Hours", totals.hours, "Total contact hours"],
         ].map(([label, value, desc]) => (
-          <Grid item xs={12} sm={6} xl={2.4} key={label}>
+          <Grid size={{ xs: 12, sm: 6, xl: 2.4 }} key={label}>
             <Box sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">{label}</Typography>
               <Typography variant="h3" sx={{ color: "#173126", fontWeight: 950 }}>
@@ -358,7 +358,7 @@ const TrainingModuleSetup = () => {
             ["Quiz Attempts", totalQuizAttempts, "Submitted quiz records"],
             ["Average", String(averageCompletion) + "%", "Average completion"],
           ].map(([label, value, desc]) => (
-            <Grid item xs={12} sm={6} lg={2.4} key={label}>
+            <Grid size={{ xs: 12, sm: 6, lg: 2.4 }} key={label}>
               <Box sx={{ p: 1.6, borderRadius: "16px", bgcolor: "#fffaf0", border: "1px solid #eadfbf" }}>
                 <Typography className="admin-dashboard-kicker">{label}</Typography>
                 <Typography sx={{ color: "#173126", fontWeight: 950, fontSize: "1.8rem" }}>{value}</Typography>
@@ -369,7 +369,7 @@ const TrainingModuleSetup = () => {
         </Grid>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} lg={7}>
+          <Grid size={{ xs: 12, lg: 7 }}>
             <Box sx={{ p: 2, borderRadius: "18px", bgcolor: "#fffdf5", border: "1px solid #eadfbf" }}>
               <Typography sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
                 Course completion snapshot
@@ -410,7 +410,7 @@ const TrainingModuleSetup = () => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} lg={5}>
+          <Grid size={{ xs: 12, lg: 5 }}>
             <Box sx={{ p: 2, borderRadius: "18px", bgcolor: "#fffdf5", border: "1px solid #eadfbf" }}>
               <Typography sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
                 Certificate review queue

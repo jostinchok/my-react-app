@@ -640,7 +640,7 @@ export function AdminPrototypeDashboard() {
       </Paper>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={4}>
+        <Grid size={{ xs: 12, lg: 4 }}>
           <DataPanel title="Presentation flow" subtitle="Start here during the final demo.">
             {[
               "Show the command center metrics and local API/fallback status.",
@@ -659,7 +659,7 @@ export function AdminPrototypeDashboard() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={8}>
+        <Grid size={{ xs: 12, lg: 8 }}>
           <DataPanel title="Quick actions" subtitle="One-click Admin routes for the screenshot-ready final demo.">
             <Box className="admin-action-fit-grid">
               {navTargets.map((item) => (
@@ -697,7 +697,7 @@ export function AdminAnalyticsDashboard() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <DataPanel title="Training funnel" subtitle="Shows where users may be blocked in the lifecycle.">
             {[
               ["Registered accounts", 4, 100],
@@ -717,7 +717,7 @@ export function AdminAnalyticsDashboard() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <DataPanel title="Operational risk snapshot" subtitle="Quick view of training, incident, and support pressure.">
             <Grid container spacing={2}>
               {[
@@ -730,7 +730,7 @@ export function AdminAnalyticsDashboard() {
                 ["Grouped sensor alerts", 2],
                 ["Resolved incidents", 0],
               ].map(([label, value]) => (
-                <Grid item xs={12} sm={6} key={label}>
+                <Grid size={{ xs: 12, sm: 6 }} key={label}>
                   <Paper sx={{ p: 2, borderRadius: 3, background: "#fffdf5" }}>
                     <Typography sx={mutedSx}>{label}</Typography>
                     <Typography variant="h5" sx={headingSx}>{value}</Typography>
@@ -741,7 +741,7 @@ export function AdminAnalyticsDashboard() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Location readiness">
             {locations.map((row) => (
               <RowGrid key={row.name} columns="2fr 0.7fr 0.8fr 1fr 0.9fr">
@@ -755,7 +755,7 @@ export function AdminAnalyticsDashboard() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="What Admin should watch">
             {["Approval bottleneck", "Incident overload", "Certificate gate", "Support load"].map((item) => (
               <Paper key={item} sx={{ p: 2, mb: 1.4, borderRadius: 3, background: "#fffdf5" }}>
@@ -795,7 +795,7 @@ export function UserManagementWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Account queue">
             <RowGrid columns="1.6fr 1fr 1.2fr 0.9fr 0.9fr 0.7fr">
               {["User", "Role", "Location", "Account", "Document", "Action"].map((label) => <Typography key={label} sx={tableHeaderSx}>{label}</Typography>)}
@@ -816,15 +816,15 @@ export function UserManagementWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Selected profile" subtitle="This simulates the admin account approval page.">
             <Typography sx={kickerSx}>Identity</Typography>
             <Typography variant="h4" sx={headingSx}>{selected.name}</Typography>
             <Typography sx={mutedSx}>{selected.email}</Typography>
 
             <Grid container spacing={2} sx={{ my: 2 }}>
-              <Grid item xs={6}><Paper sx={{ p: 2, borderRadius: 3 }}>Phone<br /><strong>{selected.phone}</strong></Paper></Grid>
-              <Grid item xs={6}><Paper sx={{ p: 2, borderRadius: 3 }}>Emergency<br /><strong>{selected.emergency}</strong></Paper></Grid>
+              <Grid size={{ xs: 6 }}><Paper sx={{ p: 2, borderRadius: 3 }}>Phone<br /><strong>{selected.phone}</strong></Paper></Grid>
+              <Grid size={{ xs: 6 }}><Paper sx={{ p: 2, borderRadius: 3 }}>Emergency<br /><strong>{selected.emergency}</strong></Paper></Grid>
             </Grid>
 
             <FormSelect
@@ -887,7 +887,7 @@ export function PermissionsMatrix() {
           ["Separation of duties", "Ranger can recommend incident closure, but Admin must make the official decision."],
           ["Auditability", "Sensitive actions such as approval, rejection, evidence review, and certificate release are logged."],
         ].map(([title, body]) => (
-          <Grid item xs={12} md={4} key={title}>
+          <Grid size={{ xs: 12, md: 4 }} key={title}>
             <Paper sx={{ ...panelSx, p: 2.5 }}>
               <Typography sx={{ color: "#173126", fontWeight: 950 }}>{title}</Typography>
               <Typography sx={mutedSx}>{body}</Typography>
@@ -929,7 +929,7 @@ export function IncidentOpsWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Incident queue">
             <RowGrid columns="1fr 1.1fr 0.8fr 1fr 1fr 0.9fr">
               {["Incident", "Source", "Severity", "Zone", "Status", "Action"].map((label) => <Typography key={label} sx={tableHeaderSx}>{label}</Typography>)}
@@ -950,17 +950,17 @@ export function IncidentOpsWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Selected incident" subtitle="Admin final decision panel.">
             <Typography sx={kickerSx}>{selected.source}</Typography>
             <Typography variant="h4" sx={headingSx}>{selected.title}</Typography>
             <Typography sx={mutedSx}>{selected.location} · {selected.zone}</Typography>
 
             <Grid container spacing={2} sx={{ mt: 2 }}>
-              <Grid item xs={6}><Paper sx={{ p: 2, borderRadius: 3 }}>Evidence<br /><strong>{selected.evidence}</strong></Paper></Grid>
-              <Grid item xs={6}><Paper sx={{ p: 2, borderRadius: 3 }}>Evidence hash<br /><strong>{selected.hash}</strong></Paper></Grid>
-              <Grid item xs={6}><Paper sx={{ p: 2, borderRadius: 3 }}>Ranger recommendation<br /><strong>{selected.rangerRecommendation}</strong></Paper></Grid>
-              <Grid item xs={6}><Paper sx={{ p: 2, borderRadius: 3 }}>Admin decision<br /><strong>{selected.adminDecision}</strong></Paper></Grid>
+              <Grid size={{ xs: 6 }}><Paper sx={{ p: 2, borderRadius: 3 }}>Evidence<br /><strong>{selected.evidence}</strong></Paper></Grid>
+              <Grid size={{ xs: 6 }}><Paper sx={{ p: 2, borderRadius: 3 }}>Evidence hash<br /><strong>{selected.hash}</strong></Paper></Grid>
+              <Grid size={{ xs: 6 }}><Paper sx={{ p: 2, borderRadius: 3 }}>Ranger recommendation<br /><strong>{selected.rangerRecommendation}</strong></Paper></Grid>
+              <Grid size={{ xs: 6 }}><Paper sx={{ p: 2, borderRadius: 3 }}>Admin decision<br /><strong>{selected.adminDecision}</strong></Paper></Grid>
             </Grid>
 
             <FormTextArea
@@ -1049,7 +1049,7 @@ export function RangerReviewWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <DataPanel title="Recommendation queue" subtitle="Ranger recommendation is advisory. It does not resolve the incident.">
             <Box className="ranger-review-card-list">
               {recommendationQueue.map((incident) => (
@@ -1075,19 +1075,19 @@ export function RangerReviewWorkflow() {
                   </Stack>
 
                   <Grid container spacing={1.4} sx={{ mt: 1.2 }}>
-                    <Grid item xs={12} sm={4} md={2.4}>
+                    <Grid size={{ xs: 12, sm: 4, md: 2.4 }}>
                       <Typography sx={tableHeaderSx}>Ranger</Typography>
                       <Typography sx={{ color: "#173126", fontWeight: 900 }}>{incident.assigned}</Typography>
                     </Grid>
-                    <Grid item xs={12} sm={4} md={2.6}>
+                    <Grid size={{ xs: 12, sm: 4, md: 2.6 }}>
                       <Typography sx={tableHeaderSx}>Recommendation</Typography>
                       <Chip label={incident.rangerRecommendation} color={statusColor(incident.rangerRecommendation)} size="small" />
                     </Grid>
-                    <Grid item xs={12} sm={4} md={2.2}>
+                    <Grid size={{ xs: 12, sm: 4, md: 2.2 }}>
                       <Typography sx={tableHeaderSx}>Official Status</Typography>
                       <Typography sx={{ color: "#173126", fontWeight: 900 }}>{incident.status}</Typography>
                     </Grid>
-                    <Grid item xs={12} md={4.8}>
+                    <Grid size={{ xs: 12, md: 4.8 }}>
                       <Typography sx={tableHeaderSx}>Note</Typography>
                       <Typography sx={{ color: "#56685d", fontWeight: 780 }}>{incident.note || "No field note yet."}</Typography>
                     </Grid>
@@ -1098,7 +1098,7 @@ export function RangerReviewWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Selected recommendation" subtitle="Ranger input stays separate from official Admin status.">
             <Paper sx={{ p: 3, borderRadius: 4, background: "linear-gradient(135deg, #0f5132, #173126)", color: "white", mb: 2 }}>
               <Typography sx={{ color: "#dffff0", fontWeight: 950, letterSpacing: "0.14em" }}>{selected.source.toUpperCase()}</Typography>
@@ -1131,7 +1131,7 @@ export function RangerReviewWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Admin decision panel" subtitle="This is where the advisory recommendation becomes an official Admin action.">
             <Typography sx={kickerSx}>Current recommendation</Typography>
             <Typography variant="h5" sx={headingSx}>{selected.rangerRecommendation}</Typography>
@@ -1180,7 +1180,7 @@ export function SensorRulesWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Rule list">
             <RowGrid columns="1.4fr 1fr 1.1fr 1fr 1.2fr 0.8fr">
               {["Rule", "Source", "Location", "Threshold", "Action", "Status"].map((label) => <Typography key={label} sx={tableHeaderSx}>{label}</Typography>)}
@@ -1201,7 +1201,7 @@ export function SensorRulesWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Selected rule" subtitle="Prototype rule editor.">
             {["name", "threshold", "window", "cooldown"].map((field) => (
               <FormInput
@@ -1312,7 +1312,7 @@ export function AnnouncementsWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Create announcement" subtitle="Broadcasts are read-only. Users should use Help Desk for follow-up.">
             {syncMessage ? (
               <Paper sx={{ p: 1.6, mb: 1.5, borderRadius: 3, background: "#fff7e0" }}>
@@ -1331,7 +1331,7 @@ export function AnnouncementsWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Announcement feed" subtitle="Role and location targeted notices.">
             {announcements.map((item) => (
               <Paper key={item.id} sx={{ p: 2.2, mb: 1.4, borderRadius: 3, background: "#fffdf5" }}>
@@ -1383,7 +1383,7 @@ export function InboxWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Inbox list">
             {messages.map((message) => (
               <Paper
@@ -1410,7 +1410,7 @@ export function InboxWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title={selected.title} subtitle={`From ${selected.from} · ${selected.type}`}>
             <Paper sx={{ p: 2, borderRadius: 3, background: "#fffdf5", mb: 2 }}>{selected.body}</Paper>
             {selected.type === "Announcement" ? (
@@ -1479,7 +1479,7 @@ export function HelpDeskWorkflow() {
       />
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <DataPanel title="Create help request">
             <FormInput label="Subject" value={form.subject} onChange={(value) => setForm({ ...form, subject: value })} />
             <FormSelect label="Category" value={form.category} onChange={(value) => setForm({ ...form, category: value })} options={["Announcement Clarification", "Course Access", "Incident Evidence", "Certificate Release"]} />
@@ -1490,7 +1490,7 @@ export function HelpDeskWorkflow() {
           </DataPanel>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <DataPanel title="Support queue" subtitle="Admin can triage, respond, and resolve tickets.">
             {tickets.map((ticket) => (
               <Paper key={ticket.id} onClick={() => setSelectedId(ticket.id)} sx={{ p: 2, mb: 1.2, borderRadius: 3, cursor: "pointer", background: ticket.id === selectedId ? "#f0ffe5" : "#fffdf5" }}>
@@ -1559,7 +1559,7 @@ export function BackendMappingWorkflow() {
       subtitle="Maps the prototype into MySQL tables, API routes, and role permissions so the UI can become a real system."
     >
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <DataPanel title="Recommended MySQL schema groups">
             {schemaGroups.map(([name, detail]) => (
               <Paper key={name} sx={{ p: 2, mb: 1.2, borderRadius: 3, background: "#fffdf5" }}>
@@ -1569,7 +1569,7 @@ export function BackendMappingWorkflow() {
             ))}
           </DataPanel>
         </Grid>
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <DataPanel title="API route map">
             {apiRoutes.map(([route, detail]) => (
               <Paper key={route} sx={{ p: 2, mb: 1.2, borderRadius: 3, background: "#fffdf5" }}>
@@ -1620,7 +1620,7 @@ export function AuditLogWorkflow() {
           ["Role-based access control", "Park Ranger can recommend incident closure, but cannot change official status."],
           ["Evidence integrity", "Evidence hash and timestamp should be stored with every incident and completion record."],
         ].map(([title, body]) => (
-          <Grid item xs={12} md={4} key={title}>
+          <Grid size={{ xs: 12, md: 4 }} key={title}>
             <Paper sx={{ ...panelSx, p: 2.5 }}>
               <Typography sx={{ color: "#173126", fontWeight: 950 }}>{title}</Typography>
               <Typography sx={mutedSx}>{body}</Typography>

@@ -247,7 +247,7 @@ const CourseRequestsPage = () => {
 
       <Grid container spacing={2} sx={{ mb: 2.4 }}>
         {statCards.map((card) => (
-          <Grid item xs={12} sm={6} lg={3} key={card.label}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={card.label}>
             <Card sx={{ ...panelSx, minHeight: 146, background: "#fffdf7" }}>
               <CardContent sx={{ height: "100%", display: "grid", gap: 1 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -424,7 +424,7 @@ const CourseRequestsPage = () => {
                 <Divider sx={{ my: 2, borderColor: "rgba(234, 214, 167, 0.86)" }} />
 
                 <Grid container spacing={1.2}>
-                  <Grid item xs={12} sm={6} lg={3}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                     <Box sx={{ p: 1.4, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid rgba(234, 214, 167, 0.82)" }}>
                       <Typography sx={{ color: "#8d4f12", fontSize: "0.74rem", fontWeight: 950, textTransform: "uppercase" }}>
                         Course ID
@@ -432,7 +432,7 @@ const CourseRequestsPage = () => {
                       <Typography sx={{ mt: 0.4, color: "#173126", fontWeight: 950 }}>{request.course_id || "Not set"}</Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={6} lg={4}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <Box sx={{ p: 1.4, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid rgba(234, 214, 167, 0.82)" }}>
                       <Typography sx={{ color: "#8d4f12", fontSize: "0.74rem", fontWeight: 950, textTransform: "uppercase" }}>
                         Course name
@@ -440,7 +440,7 @@ const CourseRequestsPage = () => {
                       <Typography sx={{ mt: 0.4, color: "#173126", fontWeight: 950 }}>{request.course_name || "Unnamed course"}</Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={6} lg={3}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                     <Box sx={{ p: 1.4, borderRadius: "14px", bgcolor: "#fffaf0", border: "1px solid rgba(234, 214, 167, 0.82)" }}>
                       <Typography sx={{ color: "#8d4f12", fontSize: "0.74rem", fontWeight: 950, textTransform: "uppercase" }}>
                         Requested date
@@ -450,7 +450,7 @@ const CourseRequestsPage = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={6} lg={2}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
                     <Box sx={{ p: 1.4, borderRadius: "14px", bgcolor: tone.bg, border: `1px solid ${tone.border}` }}>
                       <Typography sx={{ color: "#8d4f12", fontSize: "0.74rem", fontWeight: 950, textTransform: "uppercase" }}>
                         Current status

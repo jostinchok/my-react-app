@@ -329,7 +329,7 @@ const CertificateManagement = () => {
 
       <Grid container spacing={2} sx={{ mb: 2.4 }}>
         {statCards.map((card) => (
-          <Grid item xs={12} sm={6} lg={3} key={card.label}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={card.label}>
             <Card sx={{ ...panelSx, minHeight: 146, background: "#fffdf7" }}>
               <CardContent sx={{ height: "100%", display: "grid", gap: 1 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -362,7 +362,7 @@ const CertificateManagement = () => {
       </Grid>
 
       <Grid container spacing={2.4}>
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 }, height: "100%" }}>
             <Typography className="admin-dashboard-kicker">Certificate selector</Typography>
             <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 2 }}>
@@ -418,7 +418,7 @@ const CertificateManagement = () => {
           </Box>
         </Grid>
 
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 }, minHeight: 360 }}>
             <Typography className="admin-dashboard-kicker">Preview</Typography>
             <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 2 }}>
@@ -473,7 +473,7 @@ const CertificateManagement = () => {
         </Typography>
         <Grid container spacing={1.4}>
           {certificateRows.map((row) => (
-            <Grid item xs={12} md={6} xl={4} key={row.id}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }} key={row.id}>
               <Paper
                 onClick={() => {
                   setSelectedAccountId(String(row.userId));
