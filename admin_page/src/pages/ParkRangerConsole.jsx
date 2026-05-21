@@ -43,6 +43,26 @@ const rangerRecommendations = [
   { recommendation: "Recommend False Alarm", label: "Recommend False Alarm" },
 ];
 
+const demoRangerAccounts = [
+  { name: "Ranger 1", email: "ranger1@demo.local", assignedPark: "Bako National Park", callsign: "RGR-01" },
+  { name: "Ranger 2", email: "ranger2@demo.local", assignedPark: "Semenggoh Nature Reserve", callsign: "RGR-02" },
+  { name: "Ranger 3", email: "ranger3@demo.local", assignedPark: "Gunung Mulu National Park", callsign: "RGR-03" },
+];
+
+const queueFilters = [
+  { id: "active", label: "Active" },
+  { id: "escalated", label: "Escalated / High" },
+  { id: "recommended", label: "Recommended" },
+  { id: "all", label: "All" },
+];
+
+const fieldNoteTemplates = [
+  "Field review completed. Evidence matches the alert and Admin should continue review.",
+  "Location checked. No immediate public safety risk observed during ranger follow-up.",
+  "Evidence appears consistent with visitor interaction. Recommend Admin review before final status.",
+  "No protected flora or wildlife disturbance confirmed from the available evidence.",
+];
+
 const MAX_FIELD_NOTE_LENGTH = 1000;
 
 const responsePriority = {
@@ -176,6 +196,10 @@ const ParkRangerConsole = () => {
   const [fieldNotes, setFieldNotes] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
   const [recommendationError, setRecommendationError] = useState("");
+  const [loginMessage, setLoginMessage] = useState("");
+  const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
+  const [queueFilter, setQueueFilter] = useState("active");
+  const [queueSearch, setQueueSearch] = useState("");
   const rangerLoggedIn = isRangerRole(rangerSession?.role);
 
   useEffect(() => {
@@ -298,6 +322,37 @@ const ParkRangerConsole = () => {
       }))
     )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const filteredResponseQueue = useMemo(() => {
+    const query = queueSearch.trim().toLowerCase();
+
+    return responseQueue.filter((incident) => {
+      const hasRecommendation = (incident.rangerRecommendations || []).length > 0;
+      const isEscalatedOrHigh =
+        incident.severity === "high" || (incident.escalations || []).length > 0;
+      const isActive = ["New", "Acknowledged", "In Review"].includes(incident.status);
+      const filterMatch =
+        queueFilter === "all" ||
+        (queueFilter === "active" && isActive) ||
+        (queueFilter === "escalated" && isEscalatedOrHigh) ||
+        (queueFilter === "recommended" && hasRecommendation);
+
+      if (!filterMatch) return false;
+      if (!query) return true;
+
+      return [
+        incident.id,
+        incident.eventType,
+        incident.location,
+        incident.status,
+        incident.severity,
+        sourceLabel[incident.source] || incident.source,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [queueFilter, queueSearch, responseQueue]);
   const feedStatusLabel = backendOnline ? "Live backend connected" : "Demo fallback active";
   const feedStatusDetail = backendOnline
     ? `${responseQueue.length} incident records are syncing from the local monitoring API.`
@@ -340,6 +395,52 @@ const ParkRangerConsole = () => {
     }));
   };
 
+  const demoSignIn = async (account) => {
+    setIsDemoSigningIn(true);
+    setLoginMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: account.email, password: "1234" }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Login API returned ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const session = {
+        ...(payload.user || {}),
+        token: payload.token,
+        role: payload.user?.role || payload.user?.role_name || "ranger",
+      };
+      localStorage.setItem("sfc_token", payload.token || "");
+      localStorage.setItem("sfc_session", JSON.stringify(session));
+      setRangerSession(session);
+      setRangerProfile(readRangerProfile(session));
+    } catch (error) {
+      const fallbackSession = {
+        name: account.name,
+        email: account.email,
+        role: "ranger",
+        assignedPark: account.assignedPark,
+        demoFallback: true,
+      };
+      localStorage.setItem("sfc_session", JSON.stringify(fallbackSession));
+      setRangerSession(fallbackSession);
+      setRangerProfile({
+        ...readRangerProfile(fallbackSession),
+        patrolZone: account.assignedPark,
+        radioCallsign: account.callsign,
+      });
+      setLoginMessage(`Demo fallback sign-in used because the login API was unavailable: ${error.message}`);
+    } finally {
+      setIsDemoSigningIn(false);
+    }
+  };
+
   const logoutRanger = () => {
     clearStoredSession();
     setRangerSession(null);
@@ -376,6 +477,10 @@ const ParkRangerConsole = () => {
       ...current,
       [incidentId]: note.slice(0, MAX_FIELD_NOTE_LENGTH),
     }));
+  };
+
+  const applyFieldNoteTemplate = (incidentId, template) => {
+    updateFieldNote(incidentId, template);
   };
 
   const submitRangerRecommendation = async (incidentId, recommendation) => {
@@ -446,6 +551,9 @@ const ParkRangerConsole = () => {
       <RangerLoginGate
         session={rangerSession}
         onLogout={logoutRanger}
+        onDemoSignIn={demoSignIn}
+        isDemoSigningIn={isDemoSigningIn}
+        loginMessage={loginMessage}
       />
     );
   }
@@ -456,8 +564,8 @@ const ParkRangerConsole = () => {
         <Box className="ranger-standalone-brand">
           <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
           <Box>
-            <strong>SFC Ranger Portal</strong>
-            <span>{rangerProfile.name} / {rangerProfile.radioCallsign}</span>
+          <strong>SFC Ranger Portal</strong>
+          <span>{rangerProfile.name} / {rangerProfile.radioCallsign}</span>
           </Box>
         </Box>
         <Box className="ranger-standalone-links">
@@ -483,6 +591,12 @@ const ParkRangerConsole = () => {
             evidence, add field notes, and recommend outcomes for Admin review.
           </Typography>
 
+          <Box className="ranger-session-strip">
+            <span>Signed in as {rangerProfile.email}</span>
+            <strong>{rangerProfile.station}</strong>
+            <span>{rangerProfile.patrolZone}</span>
+          </Box>
+
           <Box className="ranger-identity-grid">
             <RangerIdentityCard
               title="Current Park Ranger"
@@ -502,6 +616,7 @@ const ParkRangerConsole = () => {
           <span>{feedStatusLabel}</span>
           <strong>{feedStatusDetail}</strong>
           <small>{feedStatusMeta}</small>
+          <small>Official status remains Admin-only.</small>
         </Box>
       </Box>
 
@@ -540,19 +655,41 @@ const ParkRangerConsole = () => {
               <Typography className="incident-eyebrow">Response queue</Typography>
               <Typography component="h2">AI / IoT incidents</Typography>
             </Box>
-            <Typography>{isLoading ? "Loading queue..." : `${responseQueue.length} visible records`}</Typography>
+            <Typography>{isLoading ? "Loading queue..." : `${filteredResponseQueue.length} visible records`}</Typography>
           </Box>
 
-          {responseQueue.length === 0 ? (
+          <Box className="ranger-queue-toolbar">
+            <TextField
+              label="Search incidents"
+              value={queueSearch}
+              onChange={(event) => setQueueSearch(event.target.value)}
+              size="small"
+            />
+            <Box className="ranger-filter-tabs" role="group" aria-label="Ranger response queue filters">
+              {queueFilters.map((filter) => (
+                <Box
+                  key={filter.id}
+                  component="button"
+                  type="button"
+                  className={queueFilter === filter.id ? "is-active" : ""}
+                  onClick={() => setQueueFilter(filter.id)}
+                >
+                  {filter.label}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {filteredResponseQueue.length === 0 ? (
             <Box className="incident-empty-state">
               <Typography component="h3">No incidents available</Typography>
               <Typography>
-                Start the backend and send an AI camera alert or IoT MQTT payload.
+                Try another filter, clear the search, or start the backend and send an AI camera alert or IoT MQTT payload.
               </Typography>
             </Box>
           ) : (
             <Box className="ranger-response-list">
-              {responseQueue.map((incident) => (
+              {filteredResponseQueue.map((incident) => (
                 <Box
                   key={incident.id}
                   component="button"
@@ -612,6 +749,7 @@ const ParkRangerConsole = () => {
           successMessage={successMessage}
           errorMessage={recommendationError}
           onFieldNoteChange={updateFieldNote}
+          onApplyTemplate={applyFieldNoteTemplate}
           onRecommendationSubmit={submitRangerRecommendation}
         />
       </Box>
@@ -620,7 +758,7 @@ const ParkRangerConsole = () => {
   );
 };
 
-const RangerLoginGate = ({ session, onLogout }) => (
+const RangerLoginGate = ({ session, onLogout, onDemoSignIn, isDemoSigningIn, loginMessage }) => (
   <Box className="ranger-standalone-shell">
     <Box className="ranger-login-gate">
       <Box className="ranger-login-brand">
@@ -644,6 +782,22 @@ const RangerLoginGate = ({ session, onLogout }) => (
         <Button href={rangerLoginUrl}>Open Ranger login</Button>
         {session?.role && <Button onClick={onLogout}>Logout current session</Button>}
       </Box>
+      <Box className="ranger-demo-login-grid">
+        {demoRangerAccounts.map((account) => (
+          <Box
+            component="button"
+            type="button"
+            key={account.email}
+            onClick={() => onDemoSignIn(account)}
+            disabled={isDemoSigningIn}
+          >
+            <span>{account.callsign}</span>
+            <strong>{account.name}</strong>
+            <small>{account.assignedPark}</small>
+          </Box>
+        ))}
+      </Box>
+      {loginMessage && <Alert severity="info">{loginMessage}</Alert>}
       <Box className="ranger-login-demo">
         <span>Demo Ranger accounts</span>
         <strong>ranger1@demo.local / 1234</strong>
@@ -787,6 +941,7 @@ const RangerIncidentDetail = ({
   successMessage,
   errorMessage,
   onFieldNoteChange,
+  onApplyTemplate,
   onRecommendationSubmit,
 }) => {
   if (!incident) {
@@ -896,6 +1051,19 @@ const RangerIncidentDetail = ({
         <Typography className="ranger-note-count">
           {fieldNote.length}/{MAX_FIELD_NOTE_LENGTH}
         </Typography>
+        <Box className="ranger-note-templates">
+          {fieldNoteTemplates.map((template) => (
+            <Box
+              component="button"
+              type="button"
+              key={template}
+              onClick={() => onApplyTemplate(incident.id, template)}
+              disabled={isSaving}
+            >
+              {template}
+            </Box>
+          ))}
+        </Box>
 
         <Box className="ranger-recommendation-actions">
           <Typography component="h3">Recommendation</Typography>
