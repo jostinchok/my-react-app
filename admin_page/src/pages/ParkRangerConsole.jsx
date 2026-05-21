@@ -564,8 +564,8 @@ const ParkRangerConsole = () => {
         <Box className="ranger-standalone-brand">
           <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
           <Box>
-          <strong>SFC Ranger Portal</strong>
-          <span>{rangerProfile.name} / {rangerProfile.radioCallsign}</span>
+            <strong>SFC Ranger Portal</strong>
+            <span>{rangerProfile.name} / {rangerProfile.radioCallsign}</span>
           </Box>
         </Box>
         <Box className="ranger-standalone-links">
@@ -576,26 +576,27 @@ const ParkRangerConsole = () => {
       </Box>
 
     <Box className="ranger-console">
-      <Box component="header" className="ranger-header">
-        <Box>
-          <Box className="incident-page-brand">
-            <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
-            <span>SFC Digital Portal</span>
+      <Box className="ranger-shell-layout">
+        <Box component="aside" className="ranger-sidebar">
+          <Box className="ranger-sidebar-card">
+            <Box className="ranger-sidebar-kicker">Ranger workspace</Box>
+            <Typography component="h2">Profile and review</Typography>
+            <Typography>
+              Account details, role boundary, and sent recommendation history are separated from the incident workspace.
+            </Typography>
           </Box>
-          <Typography className="incident-eyebrow">Park Ranger</Typography>
-          <Typography component="h1" className="ranger-title">
-            Field Response Console
-          </Typography>
-          <Typography className="ranger-subtitle">
-            Response-only view for live AI camera and IoT proximity incidents. Park Rangers can view
-            evidence, add field notes, and recommend outcomes for Admin review.
-          </Typography>
 
-          <Box className="ranger-session-strip">
-            <span>Signed in as {rangerProfile.email}</span>
-            <strong>{rangerProfile.station}</strong>
-            <span>{rangerProfile.patrolZone}</span>
+          <Box className="ranger-boundary-card">
+            <strong>Role boundary</strong>
+            <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
           </Box>
+
+          <RangerProfilePanel
+            profile={rangerProfile}
+            onProfileChange={updateRangerProfile}
+          />
+
+          <RangerRecommendationSummary recommendations={recommendationsSent} />
 
           <Box className="ranger-identity-grid">
             <RangerIdentityCard
@@ -612,146 +613,158 @@ const ParkRangerConsole = () => {
             />
           </Box>
         </Box>
-        <Box className="ranger-live-card">
-          <span>{feedStatusLabel}</span>
-          <strong>{feedStatusDetail}</strong>
-          <small>{feedStatusMeta}</small>
-          <small>Official status remains Admin-only.</small>
-        </Box>
-      </Box>
 
-      <Box className="ranger-boundary-card">
-        <strong>Role boundary</strong>
-        <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
-      </Box>
-
-      <RangerNotificationPanel
-        notifications={rangerNotifications}
-        onSelectIncident={(incidentId) => setSelectedIncidentId(incidentId)}
-      />
-
-      <Box className="ranger-stat-grid">
-        {statusCards.map((card) => (
-          <Paper className="ranger-stat-card" key={card.label}>
-            <span>{card.label}</span>
-            <strong>{String(card.value).padStart(2, "0")}</strong>
-            <p>{card.detail}</p>
-          </Paper>
-        ))}
-      </Box>
-
-      <Box className="ranger-support-grid">
-        <RangerProfilePanel
-          profile={rangerProfile}
-          onProfileChange={updateRangerProfile}
-        />
-        <RangerRecommendationSummary recommendations={recommendationsSent} />
-      </Box>
-
-      <Box className="ranger-workspace">
-        <Paper className="ranger-table-panel">
-          <Box className="incident-section-head">
+        <Box component="main" className="ranger-incident-main">
+          <Box component="header" className="ranger-header">
             <Box>
-              <Typography className="incident-eyebrow">Response queue</Typography>
-              <Typography component="h2">AI / IoT incidents</Typography>
-            </Box>
-            <Typography>{isLoading ? "Loading queue..." : `${filteredResponseQueue.length} visible records`}</Typography>
-          </Box>
-
-          <Box className="ranger-queue-toolbar">
-            <TextField
-              label="Search incidents"
-              value={queueSearch}
-              onChange={(event) => setQueueSearch(event.target.value)}
-              size="small"
-            />
-            <Box className="ranger-filter-tabs" role="group" aria-label="Ranger response queue filters">
-              {queueFilters.map((filter) => (
-                <Box
-                  key={filter.id}
-                  component="button"
-                  type="button"
-                  className={queueFilter === filter.id ? "is-active" : ""}
-                  onClick={() => setQueueFilter(filter.id)}
-                >
-                  {filter.label}
-                </Box>
-              ))}
-            </Box>
-          </Box>
-
-          {filteredResponseQueue.length === 0 ? (
-            <Box className="incident-empty-state">
-              <Typography component="h3">No incidents available</Typography>
-              <Typography>
-                Try another filter, clear the search, or start the backend and send an AI camera alert or IoT MQTT payload.
+              <Box className="incident-page-brand">
+                <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
+                <span>SFC Digital Portal</span>
+              </Box>
+              <Typography className="incident-eyebrow">Park Ranger</Typography>
+              <Typography component="h1" className="ranger-title">
+                Field Response Console
               </Typography>
-            </Box>
-          ) : (
-            <Box className="ranger-response-list">
-              {filteredResponseQueue.map((incident) => (
-                <Box
-                  key={incident.id}
-                  component="button"
-                  type="button"
-                  className={`ranger-response-card ${incident.status === "New" ? "is-urgent" : ""} ${
-                    selectedIncidentId === incident.id ? "is-selected" : ""
-                  }`}
-                  onClick={() => setSelectedIncidentId(incident.id)}
-                >
-                  <Box className="ranger-response-card-top">
-                    <Box className="ranger-response-id">
-                      <span>Incident ID</span>
-                      <strong>{incident.id}</strong>
-                    </Box>
-                    <Box className="ranger-response-chip-row">
-                      <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
-                        {sourceLabel[incident.source] || incident.source}
-                      </span>
-                      <span className={`status-chip ${statusClassName(incident.status)}`}>
-                        {displayValue(incident.status)}
-                      </span>
-                    </Box>
-                  </Box>
-                  <Typography className="ranger-response-event">
-                    {displayValue(incident.eventType)}
-                  </Typography>
-                  <Box className="ranger-response-grid">
-                    <Box>
-                      <span>Severity</span>
-                      <strong className={`severity-chip ${incident.severity}`}>
-                        {displayValue(incident.severity)}
-                      </strong>
-                    </Box>
-                    <Box>
-                      <span>Location</span>
-                      <strong>{displayValue(incident.location)}</strong>
-                    </Box>
-                    <Box>
-                      <span>Timestamp</span>
-                      <strong>{formatTableTime(incident.timestamp)}</strong>
-                    </Box>
-                    <Box>
-                      <span>Ranger Action</span>
-                      <strong>Open recommendation</strong>
-                    </Box>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Paper>
+              <Typography className="ranger-subtitle">
+                Response-only view for live AI camera and IoT proximity incidents. Park Rangers can view
+                evidence, add field notes, and recommend outcomes for Admin review.
+              </Typography>
 
-        <RangerIncidentDetail
-          incident={selectedIncident}
-          savingIncidentId={savingIncidentId}
-          fieldNote={fieldNotes[selectedIncident?.id] || ""}
-          successMessage={successMessage}
-          errorMessage={recommendationError}
-          onFieldNoteChange={updateFieldNote}
-          onApplyTemplate={applyFieldNoteTemplate}
-          onRecommendationSubmit={submitRangerRecommendation}
-        />
+              <Box className="ranger-session-strip">
+                <span>Signed in as {rangerProfile.email}</span>
+                <strong>{rangerProfile.station}</strong>
+                <span>{rangerProfile.patrolZone}</span>
+              </Box>
+            </Box>
+            <Box className="ranger-live-card">
+              <span>{feedStatusLabel}</span>
+              <strong>{feedStatusDetail}</strong>
+              <small>{feedStatusMeta}</small>
+              <small>Official status remains Admin-only.</small>
+            </Box>
+          </Box>
+
+          <RangerNotificationPanel
+            notifications={rangerNotifications}
+            onSelectIncident={(incidentId) => setSelectedIncidentId(incidentId)}
+          />
+
+          <Box className="ranger-stat-grid">
+            {statusCards.map((card) => (
+              <Paper className="ranger-stat-card" key={card.label}>
+                <span>{card.label}</span>
+                <strong>{String(card.value).padStart(2, "0")}</strong>
+                <p>{card.detail}</p>
+              </Paper>
+            ))}
+          </Box>
+
+          <Box className="ranger-workspace">
+            <Paper className="ranger-table-panel">
+              <Box className="incident-section-head">
+                <Box>
+                  <Typography className="incident-eyebrow">Response queue</Typography>
+                  <Typography component="h2">AI / IoT incidents</Typography>
+                </Box>
+                <Typography>{isLoading ? "Loading queue..." : `${filteredResponseQueue.length} visible records`}</Typography>
+              </Box>
+
+              <Box className="ranger-queue-toolbar">
+                <TextField
+                  label="Search incidents"
+                  value={queueSearch}
+                  onChange={(event) => setQueueSearch(event.target.value)}
+                  size="small"
+                />
+                <Box className="ranger-filter-tabs" role="group" aria-label="Ranger response queue filters">
+                  {queueFilters.map((filter) => (
+                    <Box
+                      key={filter.id}
+                      component="button"
+                      type="button"
+                      className={queueFilter === filter.id ? "is-active" : ""}
+                      onClick={() => setQueueFilter(filter.id)}
+                    >
+                      {filter.label}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              {filteredResponseQueue.length === 0 ? (
+                <Box className="incident-empty-state">
+                  <Typography component="h3">No incidents available</Typography>
+                  <Typography>
+                    Try another filter, clear the search, or start the backend and send an AI camera alert or IoT MQTT payload.
+                  </Typography>
+                </Box>
+              ) : (
+                <Box className="ranger-response-list">
+                  {filteredResponseQueue.map((incident) => (
+                    <Box
+                      key={incident.id}
+                      component="button"
+                      type="button"
+                      className={`ranger-response-card ${incident.status === "New" ? "is-urgent" : ""} ${
+                        selectedIncidentId === incident.id ? "is-selected" : ""
+                      }`}
+                      onClick={() => setSelectedIncidentId(incident.id)}
+                    >
+                      <Box className="ranger-response-card-top">
+                        <Box className="ranger-response-id">
+                          <span>Incident ID</span>
+                          <strong>{incident.id}</strong>
+                        </Box>
+                        <Box className="ranger-response-chip-row">
+                          <span className={`source-chip ${(incident.source || "").toLowerCase()}`}>
+                            {sourceLabel[incident.source] || incident.source}
+                          </span>
+                          <span className={`status-chip ${statusClassName(incident.status)}`}>
+                            {displayValue(incident.status)}
+                          </span>
+                        </Box>
+                      </Box>
+                      <Typography className="ranger-response-event">
+                        {displayValue(incident.eventType)}
+                      </Typography>
+                      <Box className="ranger-response-grid">
+                        <Box>
+                          <span>Severity</span>
+                          <strong className={`severity-chip ${incident.severity}`}>
+                            {displayValue(incident.severity)}
+                          </strong>
+                        </Box>
+                        <Box>
+                          <span>Location</span>
+                          <strong>{displayValue(incident.location)}</strong>
+                        </Box>
+                        <Box>
+                          <span>Timestamp</span>
+                          <strong>{formatTableTime(incident.timestamp)}</strong>
+                        </Box>
+                        <Box>
+                          <span>Ranger Action</span>
+                          <strong>Open recommendation</strong>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Paper>
+
+            <RangerIncidentDetail
+              incident={selectedIncident}
+              savingIncidentId={savingIncidentId}
+              fieldNote={fieldNotes[selectedIncident?.id] || ""}
+              successMessage={successMessage}
+              errorMessage={recommendationError}
+              onFieldNoteChange={updateFieldNote}
+              onApplyTemplate={applyFieldNoteTemplate}
+              onRecommendationSubmit={submitRangerRecommendation}
+            />
+          </Box>
+        </Box>
       </Box>
     </Box>
     </Box>

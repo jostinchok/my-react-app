@@ -6028,3 +6028,119 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* V36 ranger-sidebar: keep the incident console focused and move support panels aside. */
+.ranger-shell-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: clamp(18px, 2vw, 28px);
+  align-items: start;
+}
+
+.ranger-sidebar,
+.ranger-incident-main {
+  min-width: 0;
+  display: grid;
+  gap: clamp(16px, 1.6vw, 22px);
+}
+
+.ranger-sidebar {
+  align-self: start;
+}
+
+.ranger-sidebar-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid #eadfbf;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(167, 233, 87, 0.2), transparent 10rem),
+    #fffdf8;
+  box-shadow: 0 14px 32px rgba(11, 59, 40, 0.08);
+  color: #173126;
+}
+
+.ranger-sidebar-kicker {
+  color: #c65d00;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ranger-sidebar-card h2 {
+  margin: 0;
+  color: #173126;
+  font-size: 1.25rem;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.ranger-sidebar-card p {
+  margin: 0;
+  color: #56685d;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.ranger-sidebar .ranger-boundary-card {
+  grid-template-columns: 1fr !important;
+  gap: 8px;
+}
+
+.ranger-sidebar .incident-section-head {
+  align-items: start;
+  grid-template-columns: 1fr;
+}
+
+.ranger-sidebar .ranger-profile-form {
+  grid-template-columns: 1fr;
+}
+
+.ranger-sidebar .ranger-identity-grid {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.ranger-sidebar .ranger-identity-card {
+  min-height: auto;
+}
+
+.ranger-sidebar .ranger-sent-list {
+  max-height: none;
+}
+
+.ranger-incident-main .ranger-header {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px) !important;
+}
+
+.ranger-incident-main .ranger-workspace {
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr) !important;
+}
+
+@media (max-width: 1320px) {
+  .ranger-shell-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ranger-sidebar {
+    order: 2;
+  }
+
+  .ranger-incident-main {
+    order: 1;
+  }
+
+  .ranger-sidebar .ranger-profile-form,
+  .ranger-sidebar .ranger-identity-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .ranger-incident-main .ranger-header,
+  .ranger-incident-main .ranger-workspace {
+    grid-template-columns: 1fr !important;
+  }
+}
