@@ -5148,6 +5148,50 @@ body {
   margin-left: 0 !important;
 }
 
+.canvas-builder-page .course-builder-layout-grid.MuiGrid-container {
+  display: grid !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  box-sizing: border-box;
+}
+
+.canvas-builder-page .course-builder-layout-grid > .course-builder-layout-item.MuiGrid-item {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex-basis: auto !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.canvas-builder-page .course-builder-panel,
+.canvas-builder-page .course-builder-main-stack,
+.canvas-builder-page .course-builder-inspector-stack {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.canvas-builder-page .course-builder-panel {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1536px) {
+  .canvas-builder-page .course-builder-layout-grid.MuiGrid-container {
+    grid-template-columns: minmax(260px, 0.8fr) minmax(520px, 1.55fr) minmax(310px, 1fr);
+  }
+
+  .canvas-builder-page .course-builder-list-panel,
+  .canvas-builder-page .course-builder-inspector-stack {
+    position: sticky;
+    top: 18px;
+  }
+}
+
 @media (max-width: 1535px) {
   .admin-linked-page > .MuiBox-root:first-child > .MuiStack-root {
     flex-direction: column !important;

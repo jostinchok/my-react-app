@@ -972,9 +972,9 @@ const CourseManagement = () => {
         </Alert>
       )}
 
-      <Grid container spacing={2.2} alignItems="flex-start">
-        <Grid item xs={12} xl={3}>
-          <Box sx={{ ...panelSx, p: 2.2, position: { xl: "sticky" }, top: { xl: 18 } }}>
+      <Grid className="course-builder-layout-grid" container spacing={2.2} alignItems="flex-start">
+        <Grid className="course-builder-layout-item course-builder-list-cell" item xs={12} xl={3}>
+          <Box className="course-builder-panel course-builder-list-panel" sx={{ ...panelSx, p: 2.2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
               <Box>
                 <Typography className="admin-dashboard-kicker">Courses</Typography>
@@ -1036,9 +1036,9 @@ const CourseManagement = () => {
           </Box>
         </Grid>
 
-        <Grid item xs={12} xl={5.5}>
-          <Stack gap={2.2}>
-            <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+        <Grid className="course-builder-layout-item course-builder-main-cell" item xs={12} xl={5.5}>
+          <Stack className="course-builder-main-stack" gap={2.2}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
                 {selectedCourseHeroImage && (
                   <Box
@@ -1108,7 +1108,7 @@ const CourseManagement = () => {
               </Grid>
             </Box>
 
-            <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1.5} sx={{ mb: 2 }}>
                 <Box>
                   <Typography className="admin-dashboard-kicker">Module outline</Typography>
@@ -1179,7 +1179,7 @@ const CourseManagement = () => {
               </Stack>
             </Box>
 
-            <Box sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
                 {resolveAdminImageUrl(selectedModule?.image_url) && (
                   <Box
@@ -1279,9 +1279,9 @@ const CourseManagement = () => {
           </Stack>
         </Grid>
 
-        <Grid item xs={12} xl={3.5}>
-          <Stack gap={2.2} sx={{ position: { xl: "sticky" }, top: { xl: 18 } }}>
-            <Box sx={{ ...panelSx, p: 2.2 }}>
+        <Grid className="course-builder-layout-item course-builder-inspector-cell" item xs={12} xl={3.5}>
+          <Stack className="course-builder-inspector-stack" gap={2.2}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
               <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
                 Course structure
@@ -1302,7 +1302,7 @@ const CourseManagement = () => {
               </Typography>
             </Box>
 
-            <Box sx={{ ...panelSx, p: 2.2 }}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">User Portal preview</Typography>
               <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1.6 }}>
                 Item preview
@@ -1310,7 +1310,7 @@ const CourseManagement = () => {
               {renderPreview()}
             </Box>
 
-            <Box sx={{ ...panelSx, p: 2.2, bgcolor: "#fff3c4" }}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2, bgcolor: "#fff3c4" }}>
               <Typography className="admin-dashboard-kicker">Admin guardrail</Typography>
               <Typography sx={{ color: "#173126", fontWeight: 900 }}>
                 Course Builder controls course content only. Incident decisions, Ranger recommendations, and IoT grouping stay in their own Admin pages.
