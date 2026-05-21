@@ -161,6 +161,7 @@ export const normalizeActionHistory = (value) => {
       const rawContext = action.rawContext || action.raw_context || {}
       const recommendation = action.recommendation || rawContext.recommendation || null
       const comment = action.comment || action.note || ''
+      const escalation = rawContext.escalation || rawContext.escalatedTo || null
 
       return {
         id: action.id || action.actionId || action.action_id || null,
@@ -170,6 +171,8 @@ export const normalizeActionHistory = (value) => {
         actorRole: action.actorRole || action.actor_role || 'system',
         actorLabel: action.actorLabel || action.actor_label || null,
         recommendation,
+        escalation,
+        rawContext,
         comment,
         createdAt: normalizeTimestamp(action.createdAt || action.created_at),
       }

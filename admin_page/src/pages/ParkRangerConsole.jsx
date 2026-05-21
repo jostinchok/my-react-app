@@ -1,4 +1,4 @@
-import { authFetch } from "../utils/authFetch";
+import { authFetch, consumeAuthHandoff } from "../utils/authFetch";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -26,7 +26,10 @@ const adminBasePath = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
 const logoSrc = `${adminBasePath}sfc-citrus-logo.webp`;
+const loginUrl = import.meta.env.VITE_LOGIN_URL || "http://localhost:5176/login/";
+const rangerLoginUrl = `${loginUrl}${loginUrl.includes("?") ? "&" : "?"}role=ranger`;
 const NOT_AVAILABLE = "Not available";
+const RANGER_PROFILE_STORAGE_KEY = "sfc_ranger_profile";
 
 const sourceLabel = {
   AI_CAMERA: "AI Camera",
@@ -49,6 +52,49 @@ const responsePriority = {
   Reviewed: 4,
   Resolved: 5,
   "False Alarm": 6,
+};
+
+const isRangerRole = (role = "") => ["ranger", "park_ranger"].includes(String(role).toLowerCase());
+
+const readStoredSession = () => {
+  if (typeof window === "undefined") return null;
+  consumeAuthHandoff();
+
+  try {
+    return JSON.parse(localStorage.getItem("sfc_session") || "null");
+  } catch {
+    return null;
+  }
+};
+
+const clearStoredSession = () => {
+  try {
+    localStorage.removeItem("sfc_token");
+    localStorage.removeItem("sfc_session");
+    sessionStorage.removeItem("sfc_token");
+    sessionStorage.removeItem("sfc_session");
+  } catch {
+    // Storage can be unavailable in hardened browser modes; navigation still completes logout.
+  }
+};
+
+const readRangerProfile = (session) => {
+  let savedProfile = {};
+  try {
+    savedProfile = JSON.parse(localStorage.getItem(RANGER_PROFILE_STORAGE_KEY) || "{}");
+  } catch {
+    savedProfile = {};
+  }
+
+  return {
+    name: session?.name || parkRangerProfile.name,
+    email: session?.email || "ranger1@demo.local",
+    phone: savedProfile.phone || "+60 82 555 014",
+    station: savedProfile.station || parkRangerProfile.station,
+    patrolZone: savedProfile.patrolZone || parkRangerProfile.patrolZone,
+    shift: savedProfile.shift || parkRangerProfile.shift,
+    radioCallsign: savedProfile.radioCallsign || parkRangerProfile.radioCallsign,
+  };
 };
 
 const formatDateTime = (timestamp) => {
@@ -119,6 +165,8 @@ const resolveEvidenceImageUrl = (evidenceImage) => {
 };
 
 const ParkRangerConsole = () => {
+  const [rangerSession, setRangerSession] = useState(readStoredSession);
+  const [rangerProfile, setRangerProfile] = useState(() => readRangerProfile(readStoredSession()));
   const [incidents, setIncidents] = useState(seededIncidents);
   const [selectedIncidentId, setSelectedIncidentId] = useState(seededIncidents[0]?.id || null);
   const [apiError, setApiError] = useState("");
@@ -128,8 +176,30 @@ const ParkRangerConsole = () => {
   const [fieldNotes, setFieldNotes] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
   const [recommendationError, setRecommendationError] = useState("");
+  const rangerLoggedIn = isRangerRole(rangerSession?.role);
 
   useEffect(() => {
+    if (!rangerLoggedIn) return;
+
+    try {
+      localStorage.setItem(RANGER_PROFILE_STORAGE_KEY, JSON.stringify({
+        phone: rangerProfile.phone,
+        station: rangerProfile.station,
+        patrolZone: rangerProfile.patrolZone,
+        shift: rangerProfile.shift,
+        radioCallsign: rangerProfile.radioCallsign,
+      }));
+    } catch {
+      // Profile edits remain in memory if local storage is unavailable.
+    }
+  }, [rangerLoggedIn, rangerProfile]);
+
+  useEffect(() => {
+    if (!rangerLoggedIn) {
+      setIsLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
 
     const fetchIncidents = async () => {
@@ -173,7 +243,7 @@ const ParkRangerConsole = () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [rangerLoggedIn]);
 
   const responseQueue = useMemo(
     () =>
@@ -186,6 +256,30 @@ const ParkRangerConsole = () => {
   );
   const summary = useMemo(() => summarizeIncidents(incidents), [incidents]);
   const selectedIncident = incidents.find((incident) => incident.id === selectedIncidentId);
+  const escalatedIncidents = incidents.filter((incident) => incident.escalations?.length > 0);
+  const highSeverityIncidents = incidents.filter((incident) =>
+    incident.severity === "high" && !["Resolved", "False Alarm"].includes(incident.status)
+  );
+  const rangerNotifications = [
+    ...escalatedIncidents.map((incident) => ({
+      id: `escalated-${incident.id}`,
+      incident,
+      title: "Admin escalated incident",
+      detail: incident.escalations?.[0]?.note || "Admin requested Park Ranger field review.",
+      priority: incident.escalations?.[0]?.priority || "urgent",
+      createdAt: incident.escalations?.[0]?.createdAt || incident.timestamp,
+    })),
+    ...highSeverityIncidents
+      .filter((incident) => !escalatedIncidents.some((item) => item.id === incident.id))
+      .map((incident) => ({
+        id: `high-${incident.id}`,
+        incident,
+        title: "High severity incident",
+        detail: "High severity incidents appear here automatically for Ranger attention.",
+        priority: "urgent",
+        createdAt: incident.timestamp,
+      })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const activeResponseCount = incidents.filter((incident) =>
     ["New", "Acknowledged", "In Review"].includes(incident.status)
   ).length;
@@ -194,6 +288,16 @@ const ParkRangerConsole = () => {
     (total, incident) => total + (incident.rangerRecommendations?.length || 0),
     0
   );
+  const recommendationsSent = incidents
+    .flatMap((incident) =>
+      (incident.rangerRecommendations || []).map((item) => ({
+        ...item,
+        incidentId: incident.id,
+        eventType: incident.eventType,
+        officialStatus: incident.status,
+      }))
+    )
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const feedStatusLabel = backendOnline ? "Live backend connected" : "Demo fallback active";
   const feedStatusDetail = backendOnline
     ? `${responseQueue.length} incident records are syncing from the local monitoring API.`
@@ -205,11 +309,11 @@ const ParkRangerConsole = () => {
       : apiError || "Local seeded incidents loaded";
   const rangerIdentityRows = [
     ["Ranger ID", parkRangerProfile.rangerId],
-    ["Staff ID", parkRangerProfile.staffId],
+    ["Email", rangerProfile.email],
     ["Badge ID", parkRangerProfile.badgeId],
-    ["Station", parkRangerProfile.station],
-    ["Patrol zone", parkRangerProfile.patrolZone],
-    ["Shift", parkRangerProfile.shift],
+    ["Station", rangerProfile.station],
+    ["Patrol zone", rangerProfile.patrolZone],
+    ["Shift", rangerProfile.shift],
   ];
   const parkUserIdentityRows = [
     ["Guide ID", demoParkUserProfile.guideId],
@@ -225,8 +329,22 @@ const ParkRangerConsole = () => {
     { label: "Urgent / New", value: urgentCount, detail: "Needs field acknowledgement" },
     { label: "AI Camera", value: summary.ai, detail: "Image evidence available when captured" },
     { label: "IoT Sensor", value: summary.iot, detail: "Distance-threshold proximity alerts" },
+    { label: "Escalated / High", value: rangerNotifications.length, detail: "Ranger notifications needing attention" },
     { label: "Recommendations", value: recommendationCount, detail: "Advisory notes waiting for Admin review" },
   ];
+
+  const updateRangerProfile = (field, value) => {
+    setRangerProfile((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const logoutRanger = () => {
+    clearStoredSession();
+    setRangerSession(null);
+    window.location.assign(rangerLoginUrl);
+  };
 
   const appendLocalRecommendation = (incidentId, recommendation, note) => {
     const localRecommendation = {
@@ -323,6 +441,15 @@ const ParkRangerConsole = () => {
     }
   };
 
+  if (!rangerLoggedIn) {
+    return (
+      <RangerLoginGate
+        session={rangerSession}
+        onLogout={logoutRanger}
+      />
+    );
+  }
+
   return (
     <Box className="ranger-standalone-shell">
       <Box className="ranger-standalone-topbar">
@@ -330,13 +457,13 @@ const ParkRangerConsole = () => {
           <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
           <Box>
             <strong>SFC Ranger Portal</strong>
-            <span>{parkRangerProfile.rangerId} / {parkRangerProfile.radioCallsign}</span>
+            <span>{rangerProfile.name} / {rangerProfile.radioCallsign}</span>
           </Box>
         </Box>
         <Box className="ranger-standalone-links">
-          <Button href="/admin">Admin dashboard</Button>
-          <Button href="/admin/ranger-review">Admin review queue</Button>
-          <Button href="/admin/detection">Incident detection</Button>
+          <Button href="#ranger-profile">Profile</Button>
+          <Button href="#ranger-recommendations">Sent recommendations</Button>
+          <Button onClick={logoutRanger}>Logout</Button>
         </Box>
       </Box>
 
@@ -359,7 +486,7 @@ const ParkRangerConsole = () => {
           <Box className="ranger-identity-grid">
             <RangerIdentityCard
               title="Current Park Ranger"
-              name={parkRangerProfile.name}
+              name={rangerProfile.name}
               role={parkRangerProfile.roleLabel}
               rows={rangerIdentityRows}
             />
@@ -383,6 +510,11 @@ const ParkRangerConsole = () => {
         <span>Park Rangers can recommend outcomes. Admin remains responsible for official status updates.</span>
       </Box>
 
+      <RangerNotificationPanel
+        notifications={rangerNotifications}
+        onSelectIncident={(incidentId) => setSelectedIncidentId(incidentId)}
+      />
+
       <Box className="ranger-stat-grid">
         {statusCards.map((card) => (
           <Paper className="ranger-stat-card" key={card.label}>
@@ -391,6 +523,14 @@ const ParkRangerConsole = () => {
             <p>{card.detail}</p>
           </Paper>
         ))}
+      </Box>
+
+      <Box className="ranger-support-grid">
+        <RangerProfilePanel
+          profile={rangerProfile}
+          onProfileChange={updateRangerProfile}
+        />
+        <RangerRecommendationSummary recommendations={recommendationsSent} />
       </Box>
 
       <Box className="ranger-workspace">
@@ -479,6 +619,150 @@ const ParkRangerConsole = () => {
     </Box>
   );
 };
+
+const RangerLoginGate = ({ session, onLogout }) => (
+  <Box className="ranger-standalone-shell">
+    <Box className="ranger-login-gate">
+      <Box className="ranger-login-brand">
+        <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
+        <Box>
+          <span>Park Ranger Portal</span>
+          <strong>Login required</strong>
+        </Box>
+      </Box>
+      <Typography component="h1">Ranger access is separate from Admin.</Typography>
+      <Typography>
+        Sign in with a Park Ranger account to view escalated incidents, high-severity alerts,
+        manage your ranger profile, and review recommendations you have sent.
+      </Typography>
+      {session?.role && (
+        <Alert severity="warning">
+          Current session role is {session.role}. Log out and sign in as Park Ranger to submit live recommendations.
+        </Alert>
+      )}
+      <Box className="ranger-login-actions">
+        <Button href={rangerLoginUrl}>Open Ranger login</Button>
+        {session?.role && <Button onClick={onLogout}>Logout current session</Button>}
+      </Box>
+      <Box className="ranger-login-demo">
+        <span>Demo Ranger accounts</span>
+        <strong>ranger1@demo.local / 1234</strong>
+        <strong>ranger2@demo.local / 1234</strong>
+        <strong>ranger3@demo.local / 1234</strong>
+      </Box>
+    </Box>
+  </Box>
+);
+
+const RangerNotificationPanel = ({ notifications, onSelectIncident }) => (
+  <Paper className="ranger-notification-panel">
+    <Box className="incident-section-head">
+      <Box>
+        <Typography className="incident-eyebrow">Ranger notifications</Typography>
+        <Typography component="h2">Escalated and high-severity incidents</Typography>
+      </Box>
+      <Typography>{notifications.length ? `${notifications.length} active` : "No active alerts"}</Typography>
+    </Box>
+    {notifications.length ? (
+      <Box className="ranger-notification-list">
+        {notifications.slice(0, 4).map((notification) => (
+          <Box
+            component="button"
+            type="button"
+            className="ranger-notification-card"
+            key={notification.id}
+            onClick={() => onSelectIncident(notification.incident.id)}
+          >
+            <Box>
+              <span>{notification.title}</span>
+              <strong>{notification.incident.eventType}</strong>
+              <small>{notification.incident.id}</small>
+            </Box>
+            <Box>
+              <span>{notification.priority}</span>
+              <strong>{notification.incident.location}</strong>
+              <small>{formatDateTime(notification.createdAt)}</small>
+            </Box>
+            <p>{notification.detail}</p>
+          </Box>
+        ))}
+      </Box>
+    ) : (
+      <Box className="ranger-notification-empty">
+        <strong>No Ranger notifications right now</strong>
+        <span>High-severity incidents and Admin escalations will appear here.</span>
+      </Box>
+    )}
+  </Paper>
+);
+
+const RangerProfilePanel = ({ profile, onProfileChange }) => (
+  <Paper className="ranger-profile-panel" id="ranger-profile">
+    <Box className="incident-section-head">
+      <Box>
+        <Typography className="incident-eyebrow">Profile management</Typography>
+        <Typography component="h2">Ranger profile</Typography>
+      </Box>
+      <Typography>Local demo profile</Typography>
+    </Box>
+    <Box className="ranger-profile-form">
+      <TextField
+        label="Phone"
+        value={profile.phone}
+        onChange={(event) => onProfileChange("phone", event.target.value)}
+      />
+      <TextField
+        label="Station"
+        value={profile.station}
+        onChange={(event) => onProfileChange("station", event.target.value)}
+      />
+      <TextField
+        label="Patrol zone"
+        value={profile.patrolZone}
+        onChange={(event) => onProfileChange("patrolZone", event.target.value)}
+      />
+      <TextField
+        label="Shift"
+        value={profile.shift}
+        onChange={(event) => onProfileChange("shift", event.target.value)}
+      />
+      <TextField
+        label="Radio callsign"
+        value={profile.radioCallsign}
+        onChange={(event) => onProfileChange("radioCallsign", event.target.value)}
+      />
+    </Box>
+  </Paper>
+);
+
+const RangerRecommendationSummary = ({ recommendations }) => (
+  <Paper className="ranger-sent-panel" id="ranger-recommendations">
+    <Box className="incident-section-head">
+      <Box>
+        <Typography className="incident-eyebrow">Recommendation review</Typography>
+        <Typography component="h2">Recommendations sent</Typography>
+      </Box>
+      <Typography>{recommendations.length ? `${recommendations.length} sent` : "None sent"}</Typography>
+    </Box>
+    {recommendations.length ? (
+      <Box className="ranger-sent-list">
+        {recommendations.slice(0, 5).map((item) => (
+          <Box className="ranger-sent-item" key={item.id || `${item.incidentId}-${item.createdAt}`}>
+            <strong>{item.recommendation}</strong>
+            <span>{item.eventType} / {item.officialStatus}</span>
+            <p>{item.note || "No field note supplied."}</p>
+            <small>{formatDateTime(item.createdAt)}</small>
+          </Box>
+        ))}
+      </Box>
+    ) : (
+      <Box className="ranger-notification-empty">
+        <strong>No recommendations submitted yet</strong>
+        <span>Sent recommendations will stay visible here for the final demo.</span>
+      </Box>
+    )}
+  </Paper>
+);
 
 const RangerIdentityCard = ({ title, name, role, rows }) => (
   <Box className="ranger-identity-card">

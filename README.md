@@ -33,7 +33,7 @@ This consistency pass updated the Review Hub, Admin dashboard, Admin Incident De
 Image optimization status:
 
 - Shared generated logo: `images/sfc-citrus-logo.webp`, 17 KB, with app-local copies for Hub, Login, User, Admin/Ranger, and Mobile surfaces.
-- Park Ranger now routes through the Admin shell, so the same optimized sidebar logo is visible on `/admin/ranger`.
+- Park Ranger now has a standalone route at `/ranger`, with `/admin/ranger` kept as a compatibility redirect.
 - New generated hero: `images/citrus-rainforest-hero.webp`, 136 KB.
 - User training images are now WebP files in `user_page/public/training/`.
 - Optimized training images are below 100 KB each.
@@ -405,7 +405,7 @@ and serves it through:
 http://localhost:4000/evidence/iot/<filename>
 ```
 
-The browser posts this capture to `POST /api/incidents/iot-capture` with `X-Actor-Role: admin`, so the frontend does not expose `IOT_SENSOR_TOKEN`. The endpoint writes through the active memory/MySQL incident store. Admin and Park Ranger both read the same record from `GET /api/incidents` and render the same `/evidence/iot/<filename>` image. Admin makes official status decisions through `PATCH /api/incidents/:id/status`; Park Ranger submits field notes and recommended outcomes through `POST /api/incidents/:id/ranger-recommendation` without changing the official status.
+The browser posts this capture to `POST /api/incidents/iot-capture` with Admin authentication, so the frontend does not expose `IOT_SENSOR_TOKEN`. The endpoint writes through the active memory/MySQL incident store. Admin and Park Ranger both read the same record from `GET /api/incidents` and render the same `/evidence/iot/<filename>` image. Admin makes official status decisions through `PATCH /api/incidents/:id/status`, can send Ranger notifications through `POST /api/incidents/:id/escalate`, and Park Ranger submits field notes and recommended outcomes through `POST /api/incidents/:id/ranger-recommendation` without changing the official status.
 
 Duplicate handling: if browser MQTT and backend MQTT receive the same physical sensor trigger, the backend first matches by `public_id`. If no shared ID exists, it merges IoT triggers with the same source, event type, sensor ID, and timestamp within a 10-second window. Browser capture evidence attaches to the existing incident instead of creating a duplicate.
 
@@ -485,7 +485,7 @@ http://localhost:5173
 http://localhost:5175/user
 http://localhost:5174/admin
 http://localhost:5174/admin/detection
-http://localhost:5174/admin/ranger
+http://localhost:5174/ranger
 http://localhost:8081
 http://localhost:4000/api/health
 http://localhost:4000/api/incidents
@@ -614,7 +614,7 @@ Capture:
 4. Mobile preview at `http://localhost:8081`.
 5. Admin dashboard.
 6. Admin Incident Detection with AI and IoT rows, evidence image, metadata, ranger recommendations, filters, and official status update.
-7. Park Ranger Console with urgent/new incidents, field notes, and recommendation actions.
+7. Standalone Park Ranger Console at `/ranger` with login/logout, profile management, escalated/high-severity notifications, sent recommendation review, urgent/new incidents, field notes, and recommendation actions.
 8. `/api/health`, `/api/incidents`, and `/api/incidents/summary`.
 9. `alerts/ai` and `alerts/iot` folders showing curated AI and IoT evidence.
 10. MySQL query showing monitoring incidents, if running MySQL mode.

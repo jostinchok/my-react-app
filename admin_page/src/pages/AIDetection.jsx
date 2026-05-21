@@ -271,6 +271,7 @@ const AIDetection = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [savingIncidentId, setSavingIncidentId] = useState(null);
   const [deletingIncidentId, setDeletingIncidentId] = useState(null);
+  const [escalatingIncidentId, setEscalatingIncidentId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [mqttStatus, setMqttStatus] = useState("Connecting...");
   const [lastMqttMessage, setLastMqttMessage] = useState("No trigger received yet");
@@ -746,6 +747,99 @@ const AIDetection = () => {
     }
   };
 
+  const escalateIncident = async (incidentId) => {
+    const incident = incidents.find((item) => item.id === incidentId);
+    const escalationNote = incident?.severity === "high"
+      ? "High severity incident escalated for Park Ranger field review."
+      : "Admin escalated this incident for Park Ranger field review.";
+
+    const applyLocalEscalation = () => {
+      const localEscalation = {
+        id: `LOCAL-ESC-${Date.now()}`,
+        type: "escalated_to_ranger",
+        actorRole: "admin",
+        actorLabel: "Admin incident dashboard",
+        comment: escalationNote,
+        escalation: {
+          priority: incident?.severity === "high" ? "urgent" : "standard",
+          targetRole: "park_ranger",
+        },
+        createdAt: new Date().toISOString(),
+      };
+
+      setIncidents((current) =>
+        current.map((item) =>
+          item.id === incidentId
+            ? {
+                ...item,
+                actionHistory: [localEscalation, ...(item.actionHistory || [])],
+                escalations: [
+                  {
+                    id: localEscalation.id,
+                    priority: localEscalation.escalation.priority,
+                    targetRole: "park_ranger",
+                    note: localEscalation.comment,
+                    actorRole: "admin",
+                    actorLabel: "Admin incident dashboard",
+                    createdAt: localEscalation.createdAt,
+                  },
+                  ...(item.escalations || []),
+                ],
+              }
+            : item
+        )
+      );
+    };
+
+    if (!backendOnline) {
+      applyLocalEscalation();
+      showMessage("Backend offline; escalation is shown locally for this demo only.", "warning");
+      return;
+    }
+
+    setEscalatingIncidentId(incidentId);
+
+    try {
+      const response = await authFetch(
+        `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/escalate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            priority: incident?.severity === "high" ? "urgent" : "standard",
+            note: escalationNote,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Escalation failed with ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const updatedIncident = normalizeIncidentRecord(payload.incident);
+      if (!updatedIncident) {
+        applyLocalEscalation();
+        showMessage("Escalation response was unreadable; showing it locally only.", "warning");
+        return;
+      }
+
+      setIncidents((current) =>
+        current.map((item) => (item.id === updatedIncident.id ? updatedIncident : item))
+      );
+      showMessage(payload.message || "Incident escalated to Park Ranger notification queue.");
+    } catch (error) {
+      setBackendOnline(false);
+      setApiError(error.message);
+      applyLocalEscalation();
+      showMessage(`Escalation was not saved to the backend. Showing locally only: ${error.message}`, "error");
+    } finally {
+      setEscalatingIncidentId(null);
+    }
+  };
+
   const deleteIncident = async (incidentId) => {
     const incident = incidents.find((item) => item.id === incidentId);
     const incidentLabel = incident?.id || incidentId;
@@ -1051,7 +1145,9 @@ const AIDetection = () => {
           incident={selectedIncident}
           savingIncidentId={savingIncidentId}
           deletingIncidentId={deletingIncidentId}
+          escalatingIncidentId={escalatingIncidentId}
           onStatusChange={updateIncidentStatus}
+          onEscalateIncident={escalateIncident}
           onDeleteIncident={deleteIncident}
         />
       </Box>
@@ -1158,7 +1254,9 @@ const IncidentDetailPanel = ({
   incident,
   savingIncidentId,
   deletingIncidentId,
+  escalatingIncidentId,
   onStatusChange,
+  onEscalateIncident,
   onDeleteIncident,
 }) => {
   if (!incident) {
@@ -1176,7 +1274,10 @@ const IncidentDetailPanel = ({
   const bbox = Array.isArray(incident.ai?.bbox) ? incident.ai.bbox : [];
   const isSaving = savingIncidentId === incident.id;
   const isDeleting = deletingIncidentId === incident.id;
+  const isEscalating = escalatingIncidentId === incident.id;
   const recommendations = incident.rangerRecommendations || [];
+  const escalations = incident.escalations || [];
+  const needsRangerAttention = incident.severity === "high" || escalations.length > 0;
 
   return (
     <Paper className="incident-detail-panel">
@@ -1218,7 +1319,42 @@ const IncidentDetailPanel = ({
         <DetailItem label="Location" value={incident.location} />
         <DetailItem label="Timestamp" value={formatDateTime(incident.timestamp)} />
         <DetailItem label="Official Status" value={incident.status} />
+        <DetailItem
+          label="Ranger Escalation"
+          value={needsRangerAttention ? "Notify Ranger" : "Not escalated"}
+        />
       </Box>
+
+      <Box className={`incident-escalation-card ${needsRangerAttention ? "active" : ""}`}>
+        <Box>
+          <Typography component="h3">Admin Escalation</Typography>
+          <Typography>
+            {needsRangerAttention
+              ? "This incident is visible in the Ranger notification queue because it is high severity or has been escalated by Admin."
+              : "Escalate when Ranger field review is needed. This creates a Ranger notification but does not change official status."}
+          </Typography>
+        </Box>
+        <Button
+          className="incident-escalate-button"
+          disabled={isEscalating}
+          onClick={() => onEscalateIncident(incident.id)}
+        >
+          {isEscalating ? "Escalating..." : "Escalate to Ranger"}
+        </Button>
+      </Box>
+
+      {escalations.length > 0 && (
+        <Box className="incident-escalation-history">
+          <Typography component="h3">Escalation History</Typography>
+          {escalations.slice(0, 3).map((item) => (
+            <Box className="incident-escalation-item" key={item.id || `${item.priority}-${item.createdAt}`}>
+              <strong>{String(item.priority || "urgent").toUpperCase()} Ranger notification</strong>
+              <span>{formatDateTime(item.createdAt)}</span>
+              <p>{item.note || "Admin requested Park Ranger field review."}</p>
+            </Box>
+          ))}
+        </Box>
+      )}
 
       {incident.source === "AI_CAMERA" && incident.ai ? (
         <Box className="incident-metadata-card">

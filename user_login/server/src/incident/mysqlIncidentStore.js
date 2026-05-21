@@ -612,6 +612,57 @@ export const createMysqlIncidentStore = ({ pool } = {}) => {
       }
     },
 
+    async escalateIncident(publicId, escalationInput = {}) {
+      const connection = await pool.getConnection()
+      try {
+        await connection.beginTransaction()
+
+        const [rows] = await connection.query(
+          `SELECT incident_id, status
+           FROM monitoring_incidents
+           WHERE public_id = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [publicId]
+        )
+
+        if (!rows.length) {
+          await connection.rollback()
+          return null
+        }
+
+        const incidentId = rows[0].incident_id
+
+        await connection.query(
+          `INSERT INTO monitoring_incident_actions
+             (incident_id, action_type, from_status, actor_role, actor_label, comment, raw_context)
+           VALUES (?, 'note_added', ?, ?, ?, ?, ?)`,
+          [
+            incidentId,
+            rows[0].status,
+            safeActorRole(escalationInput.actorRole, 'admin'),
+            escalationInput.actorLabel || 'Admin incident dashboard',
+            escalationInput.note || null,
+            jsonValue({
+              publicId,
+              escalation: {
+                priority: escalationInput.priority || 'urgent',
+                targetRole: 'park_ranger',
+              },
+            }),
+          ]
+        )
+
+        await connection.commit()
+        return await fetchIncidentByPublicId(publicId, connection)
+      } catch (error) {
+        await connection.rollback()
+        throw error
+      } finally {
+        connection.release()
+      }
+    },
+
     summarizeIncidentList,
   }
 }

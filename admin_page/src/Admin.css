@@ -5373,9 +5373,275 @@ body {
   transform: translateY(-1px);
 }
 
+.ranger-login-gate {
+  width: min(100%, 760px);
+  margin: 8vh auto;
+  display: grid;
+  gap: 18px;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid #eadfbf;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(167, 233, 87, 0.28), transparent 14rem),
+    linear-gradient(135deg, #fffdf8 0%, #fff4d5 100%);
+  box-shadow: 0 28px 80px rgba(11, 59, 40, 0.16);
+  color: #173126;
+}
+
+.ranger-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ranger-login-brand img {
+  width: 52px;
+  height: 52px;
+  border: 1px solid #eadfbf;
+  border-radius: 16px;
+  background: #fffdf5;
+}
+
+.ranger-login-brand span,
+.ranger-login-brand strong {
+  display: block;
+}
+
+.ranger-login-brand span {
+  color: #c65d00;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ranger-login-brand strong,
+.ranger-login-gate h1 {
+  color: #173126 !important;
+}
+
+.ranger-login-gate h1 {
+  margin: 0 !important;
+  font-size: clamp(2rem, 4vw, 3.4rem) !important;
+  line-height: 1 !important;
+}
+
+.ranger-login-gate p {
+  margin: 0 !important;
+  color: #40584b !important;
+  font-weight: 800 !important;
+  line-height: 1.55 !important;
+}
+
+.ranger-login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ranger-login-actions .MuiButton-root {
+  min-width: 170px;
+  border: 1px solid #eadfbf !important;
+  background: #ffffff !important;
+  color: #173126 !important;
+}
+
+.ranger-login-actions .MuiButton-root:hover {
+  border-color: #ff9f1c !important;
+  background: linear-gradient(135deg, #ff8a1f, #ffd84d) !important;
+}
+
+.ranger-login-demo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #d8eac7;
+  border-radius: 16px;
+  background: #f6ffe8;
+}
+
+.ranger-login-demo span,
+.ranger-login-demo strong {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #173126;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.ranger-login-demo span {
+  color: #c65d00;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ranger-notification-panel,
+.ranger-profile-panel,
+.ranger-sent-panel,
+.incident-escalation-card,
+.incident-escalation-history {
+  border: 1px solid #eadfbf !important;
+  border-radius: 18px !important;
+  background: #fffdf8 !important;
+  box-shadow: 0 14px 32px rgba(11, 59, 40, 0.08) !important;
+  overflow: hidden;
+}
+
+.ranger-notification-list,
+.ranger-sent-list {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.ranger-notification-card,
+.ranger-sent-item,
+.incident-escalation-item {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #eadfbf;
+  border-radius: 15px;
+  background: #ffffff;
+  color: #173126;
+  text-align: left;
+}
+
+.ranger-notification-card {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  align-items: start;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ranger-notification-card:hover,
+.ranger-notification-card:focus-visible {
+  border-color: #ff9f1c;
+  background: #fff8e6;
+  box-shadow: 0 12px 28px rgba(255, 122, 26, 0.12);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.ranger-notification-card span,
+.ranger-sent-item span,
+.incident-escalation-item span {
+  color: #c65d00;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ranger-notification-card strong,
+.ranger-sent-item strong,
+.incident-escalation-item strong {
+  color: #173126;
+  font-weight: 950;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ranger-notification-card small,
+.ranger-sent-item small,
+.incident-escalation-item p,
+.ranger-notification-card p,
+.ranger-notification-empty span {
+  margin: 0;
+  color: #56685d;
+  font-weight: 760;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ranger-notification-empty {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+}
+
+.ranger-notification-empty strong {
+  color: #173126;
+  font-weight: 950;
+}
+
+.ranger-support-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.82fr);
+  gap: 20px;
+}
+
+.ranger-profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px;
+}
+
+.ranger-profile-form .MuiInputBase-root {
+  background: #ffffff !important;
+}
+
+.incident-escalation-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px !important;
+}
+
+.incident-escalation-card.active {
+  background: linear-gradient(135deg, #fff8e6 0%, #f0ffe0 100%) !important;
+  box-shadow: inset 4px 0 0 #ff9f1c, 0 14px 32px rgba(11, 59, 40, 0.08) !important;
+}
+
+.incident-escalation-card h3,
+.incident-escalation-history h3 {
+  margin: 0 0 6px !important;
+  color: #173126 !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+}
+
+.incident-escalation-card p {
+  margin: 0 !important;
+  color: #56685d !important;
+  font-weight: 760 !important;
+}
+
+.incident-escalate-button.MuiButton-root {
+  min-width: 168px;
+  border: 1px solid #ff9f1c !important;
+  background: linear-gradient(135deg, #ff8a1f, #ffd84d) !important;
+  color: #102419 !important;
+  box-shadow: 0 12px 24px rgba(255, 122, 26, 0.16) !important;
+}
+
+.incident-escalate-button.MuiButton-root:hover {
+  background: linear-gradient(135deg, #ffd84d, #a7e957) !important;
+  transform: translateY(-1px);
+}
+
+.incident-escalation-history {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 16px !important;
+}
+
 @media (max-width: 1180px) {
   .ranger-header,
-  .ranger-workspace {
+  .ranger-workspace,
+  .ranger-support-grid {
     grid-template-columns: 1fr !important;
   }
 
@@ -5408,5 +5674,11 @@ body {
 
   .ranger-response-chip-row {
     justify-content: flex-start;
+  }
+
+  .ranger-notification-card,
+  .ranger-profile-form,
+  .incident-escalation-card {
+    grid-template-columns: 1fr;
   }
 }

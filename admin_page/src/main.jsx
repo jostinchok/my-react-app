@@ -13,8 +13,9 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
     <Routes>
       <Route path="/" element={<Navigate to="/admin" />} />
-      <Route path="/admin/ranger/*" element={<ParkRangerConsole />} />
-      <Route path="/admin/park-ranger/*" element={<Navigate to="/admin/ranger" replace />} />
+      <Route path="/ranger/*" element={<ParkRangerConsole />} />
+      <Route path="/admin/ranger/*" element={<Navigate to="/ranger" replace />} />
+      <Route path="/admin/park-ranger/*" element={<Navigate to="/ranger" replace />} />
       <Route path="/admin/*" element={<AdminPage />} />
     </Routes>
     </BrowserRouter>

@@ -67,6 +67,30 @@ export const normalizeIncidentRecord = (incident) => {
           actorLabel: action.actorLabel || action.actor_label || "Park Ranger alert console",
           createdAt: action.createdAt || action.created_at || new Date().toISOString(),
         }));
+  const escalations = actionHistory
+    .filter((action) =>
+      (action.type || action.actionType || action.action_type) === "escalated_to_ranger" ||
+      action.escalation ||
+      action.rawContext?.escalation ||
+      action.raw_context?.escalation
+    )
+    .map((action) => ({
+      id: action.id || action.actionId || action.action_id || null,
+      priority:
+        action.escalation?.priority ||
+        action.rawContext?.escalation?.priority ||
+        action.raw_context?.escalation?.priority ||
+        "urgent",
+      targetRole:
+        action.escalation?.targetRole ||
+        action.rawContext?.escalation?.targetRole ||
+        action.raw_context?.escalation?.targetRole ||
+        "park_ranger",
+      note: action.comment || action.note || "",
+      actorRole: action.actorRole || action.actor_role || "admin",
+      actorLabel: action.actorLabel || action.actor_label || "Admin incident dashboard",
+      createdAt: action.createdAt || action.created_at || new Date().toISOString(),
+    }));
 
   return {
     id: incident.id || incident.incident_id,
@@ -102,6 +126,7 @@ export const normalizeIncidentRecord = (incident) => {
     notes: incident.notes || "",
     actionHistory,
     rangerRecommendations,
+    escalations,
   };
 };
 

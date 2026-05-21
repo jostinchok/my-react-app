@@ -204,5 +204,36 @@ export const createMemoryIncidentStore = ({
       await persistRuntimeIncidents()
       return incidents[incidentIndex]
     },
+
+    async escalateIncident(id, escalationInput = {}) {
+      const incidentIndex = incidents.findIndex((item) => item.id === id)
+      if (incidentIndex === -1) return null
+
+      const action = {
+        id: buildActionId(),
+        type: 'note_added',
+        fromStatus: incidents[incidentIndex].status,
+        toStatus: null,
+        actorRole: escalationInput.actorRole || 'admin',
+        actorLabel: escalationInput.actorLabel || 'Admin incident dashboard',
+        recommendation: null,
+        escalation: {
+          priority: escalationInput.priority || 'urgent',
+          targetRole: 'park_ranger',
+        },
+        comment: escalationInput.note || '',
+        rawContext: {
+          escalation: {
+            priority: escalationInput.priority || 'urgent',
+            targetRole: 'park_ranger',
+          },
+        },
+        createdAt: new Date().toISOString(),
+      }
+
+      incidents[incidentIndex] = appendAction(incidents[incidentIndex], action)
+      await persistRuntimeIncidents()
+      return incidents[incidentIndex]
+    },
   }
 }

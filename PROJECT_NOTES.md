@@ -144,7 +144,7 @@ This is the active team repository. The completed lecturer-demo work was synced 
 - Admin training API: `admin_page/adminServer.js`, Express, `http://localhost:4002`
 - Park Guide user API: `user_page/server/index.js`, Express, `http://localhost:4001`
 - Admin Incident Detection: `http://localhost:5174/admin/detection`
-- Park Ranger Alert Console: `http://localhost:5174/admin/ranger`
+- Park Ranger Alert Console: `http://localhost:5174/ranger`
 - Mobile preview: `mobile_app`, Expo web, `http://localhost:8081`
 - Backend API: `user_login/server`, Express, `http://localhost:4000`
 - AI camera script: `scripts/run_ai_camera_monitor.py`
@@ -236,8 +236,8 @@ Downloaded `artifacts`, `datasets`, `models`, `.asset-download-tmp`, real `.env`
 | Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
 | Admin Course / Training / Guide / Certificate Pages | Demo-ready | Admin can create/edit/delete Canvas-style courses, modules, and module items; supported item types are page, text, file, image, video, external link, quiz, and checklist. Admin can also select/upload module hero images, upload/download/delete course resources, review enrollment requests, manage guide accounts, view persisted Canvas learning progress, and issue course-level certificates through the admin API after full course completion. |
 | Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, ranger recommendations, and official status updates. Sends admin role header for optional role-check mode. |
-| Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Recommend Acknowledged/In Review/Resolved/False Alarm actions. Ranger recommendations do not change the official incident status. |
-| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, `PATCH /api/incidents/:id/status`, and `POST /api/incidents/:id/ranger-recommendation` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. Official status updates are Admin-only when role checks are enabled. |
+| Park Ranger Console | Demo-ready | Standalone `/ranger` page with Ranger login/logout, profile management, escalated/high-severity notifications, sent recommendation review, urgent/new incidents, evidence, metadata, field notes, and Recommend Acknowledged/In Review/Resolved/False Alarm actions. Ranger recommendations do not change the official incident status. |
+| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, `PATCH /api/incidents/:id/status`, `POST /api/incidents/:id/escalate`, and `POST /api/incidents/:id/ranger-recommendation` use MySQL by default for monitoring incidents and support validation, optional tokens, and optional role checks. Official status updates are Admin-only when role checks are enabled. |
 | AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, optional `--device-token`, automatic `AI_CAMERA_TOKEN` loading from `.env`, JPG/JSON evidence, backend POST, and safe shutdown. |
 | IoT simulation / physical sensor support | Partial / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant payloads to `ctip/sensor/plant-zone-01/proximity` and supports token mode. Physical sensor deployment is environment-dependent. |
 | MySQL incident persistence | Demo-ready | Default `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment`, `ctip_user`, and monitoring tables for AI/IoT incidents only. Memory mode remains an emergency/testing fallback only. |

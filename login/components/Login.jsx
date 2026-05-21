@@ -10,7 +10,7 @@ const EyeIcon = ({ open }) => open ? (
 const ROLE_REDIRECTS = {
   guide: import.meta.env.VITE_USER_URL || 'http://localhost:5175/user',
   admin: import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174/admin',
-  ranger: `${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174/admin'}/ranger`,
+  ranger: import.meta.env.VITE_RANGER_URL || 'http://localhost:5174/ranger',
 };
 
 const DEMO_ACCOUNTS = [
@@ -26,7 +26,10 @@ const DEMO_ACCOUNTS = [
 const Login = ({ onRegister, onForgot }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('guide');
+  const [role, setRole] = useState(() => {
+    const requestedRole = new URLSearchParams(window.location.search).get('role');
+    return ['guide', 'admin', 'ranger'].includes(requestedRole) ? requestedRole : 'guide';
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   const [showPassword, setShowPassword] = useState(false);

@@ -81,6 +81,13 @@ function proxyRequest(req, res, proxy) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || `localhost:${port}`}`)
+
+  if (url.pathname === '/ranger' || url.pathname.startsWith('/ranger/')) {
+    res.writeHead(302, { location: `http://localhost:5174${url.pathname}${url.search}` })
+    res.end()
+    return
+  }
+
   const proxy = proxies.find((item) => url.pathname === item.prefix || url.pathname.startsWith(`${item.prefix}/`))
 
   if (proxy) {
@@ -98,5 +105,5 @@ const server = http.createServer((req, res) => {
 
 server.listen(port, host, () => {
   console.log(`Review hub available at http://localhost:${port}`)
-  console.log('Proxy routes: /api -> 4000, /user -> 5175, /admin -> 5174')
+  console.log('Proxy routes: /api -> 4000, /user -> 5175, /admin -> 5174; /ranger redirects to 5174')
 })

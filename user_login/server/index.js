@@ -582,6 +582,25 @@ const validateRangerRecommendationInput = (incidentId, payload = {}) => {
   return { valid: true, incidentId: id, recommendation, note }
 }
 
+const validateEscalationInput = (incidentId, payload = {}) => {
+  const id = String(incidentId || '').trim()
+  if (!id) {
+    return { valid: false, message: 'Incident id is required.' }
+  }
+
+  const priority = String(payload.priority || 'urgent').trim().toLowerCase()
+  if (!['urgent', 'high', 'standard'].includes(priority)) {
+    return { valid: false, message: 'Escalation priority must be urgent, high, or standard.' }
+  }
+
+  const note = String(payload.note || '').trim()
+  if (note.length > MAX_RANGER_NOTE_LENGTH) {
+    return { valid: false, message: `Escalation note must be ${MAX_RANGER_NOTE_LENGTH} characters or fewer.` }
+  }
+
+  return { valid: true, incidentId: id, priority, note }
+}
+
 const initializeIncidentStore = async () => {
   await memoryIncidentStore.init()
 
@@ -928,6 +947,51 @@ app.post('/api/incidents/:id/ranger-recommendation', requireAuth(['ranger', 'par
     })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to record ranger recommendation.', error: error.message })
+  }
+})
+
+app.post('/api/incidents/:id/escalate', requireAuth(['admin']), async (req, res) => {
+  const validation = validateEscalationInput(req.params.id, req.body)
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.message })
+  }
+
+  const actor = statusActorFromRequest(req)
+  if (!actor.allowed) {
+    return res.status(actor.status).json({ message: actor.message })
+  }
+
+  try {
+    const incident = await runIncidentStoreOperation(async (store) => {
+      const escalationInput = {
+        priority: validation.priority,
+        note: validation.note,
+        actorRole: actor.actorRole,
+        actorLabel: actor.actorLabel,
+      }
+
+      const escalatedIncident = await store.escalateIncident?.(validation.incidentId, escalationInput)
+      if (escalatedIncident) return escalatedIncident
+
+      const alertIncidents = await loadAlertFolderIncidents()
+      const alertIncident = alertIncidents.find((item) => item.id === validation.incidentId)
+      if (!alertIncident) return null
+
+      const storedIncident = await store.addIncident(alertIncident)
+      return store.escalateIncident?.(storedIncident.id, escalationInput) || storedIncident
+    })
+
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found.' })
+    }
+
+    console.log(`[incidents] Escalated ${validation.incidentId} to Park Ranger (${validation.priority})`)
+    return res.status(201).json({
+      incident,
+      message: 'Incident escalated to Park Ranger notification queue.',
+    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Unable to escalate incident.', error: error.message })
   }
 })
 
