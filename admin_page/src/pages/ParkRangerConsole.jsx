@@ -569,25 +569,9 @@ const ParkRangerConsole = () => {
 
   return (
     <Box className="ranger-standalone-shell">
-      <Box className="ranger-standalone-topbar">
-        <Box className="ranger-standalone-brand">
-          <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
-          <Box>
-            <strong>SFC Ranger Portal</strong>
-            <span>{rangerProfile.name} / {rangerProfile.radioCallsign}</span>
-          </Box>
-        </Box>
-        <Box className="ranger-standalone-links">
-          <Button onClick={() => setActiveRangerView("incidents")}>Incidents</Button>
-          <Button onClick={() => setActiveRangerView("profile")}>Profile</Button>
-          <Button onClick={() => setActiveRangerView("recommendations")}>Sent recommendations</Button>
-          <Button onClick={logoutRanger}>Logout</Button>
-        </Box>
-      </Box>
-
-    <Box className="ranger-console">
-      <Box className="ranger-shell-layout">
-        <Box component="nav" className="ranger-sidebar" aria-label="Ranger portal navigation">
+      <Box className="ranger-console">
+        <Box className="ranger-shell-layout">
+          <Box component="nav" className="ranger-sidebar" aria-label="Ranger portal navigation">
           <Box className="ranger-nav-brand">
             <Box component="img" src={logoSrc} alt="SFC Digital Portal logo" />
             <Box>

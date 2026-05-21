@@ -2850,78 +2850,6 @@ body {
   box-sizing: border-box;
 }
 
-.ranger-standalone-topbar {
-  width: min(100%, 1440px);
-  min-height: 74px;
-  margin: 0 auto 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 14px 18px;
-  border: 1px solid #eadfbf;
-  border-radius: 22px;
-  background: rgba(255, 253, 245, 0.94);
-  box-shadow: 0 18px 45px rgba(255, 122, 26, 0.10);
-  backdrop-filter: blur(18px);
-  box-sizing: border-box;
-}
-
-.ranger-standalone-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.ranger-standalone-brand img {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid #eadfbf;
-  background: #fffdf5;
-  object-fit: cover;
-}
-
-.ranger-standalone-brand strong,
-.ranger-standalone-brand span {
-  display: block;
-}
-
-.ranger-standalone-brand strong {
-  color: #173126;
-  font-size: 1.02rem;
-  font-weight: 950;
-}
-
-.ranger-standalone-brand span {
-  color: #56685d;
-  font-size: 0.82rem;
-  font-weight: 850;
-}
-
-.ranger-standalone-links {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.ranger-standalone-links .MuiButton-root {
-  border: 1px solid #eadfbf;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #173126;
-  font-weight: 900;
-  text-transform: none;
-}
-
-.ranger-standalone-links .MuiButton-root:hover {
-  border-color: #ff9f1c;
-  background: linear-gradient(135deg, #ff7a1a, #ffd84d);
-  color: #173126;
-}
-
 .ranger-identity-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3192,18 +3120,8 @@ body {
     padding: 14px;
   }
 
-  .ranger-standalone-topbar,
   .ranger-identity-grid {
     grid-template-columns: 1fr;
-  }
-
-  .ranger-standalone-topbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .ranger-standalone-links {
-    justify-content: flex-start;
   }
 }
 
@@ -5267,21 +5185,6 @@ body {
   scroll-behavior: smooth;
 }
 
-.ranger-standalone-topbar {
-  position: sticky;
-  top: 12px;
-  z-index: 30;
-  width: min(100%, 1480px) !important;
-  margin-inline: auto !important;
-  border-radius: 20px !important;
-}
-
-.ranger-standalone-links .MuiButton-root {
-  min-width: 142px;
-  min-height: 42px;
-  white-space: normal;
-}
-
 .ranger-console {
   width: min(100%, 1480px) !important;
   max-width: 1480px !important;
@@ -6001,16 +5904,8 @@ body {
 }
 
 @media (max-width: 720px) {
-  .ranger-standalone-topbar {
-    top: 8px;
-  }
-
   .ranger-boundary-card {
     grid-template-columns: 1fr;
-  }
-
-  .ranger-standalone-links .MuiButton-root {
-    width: 100%;
   }
 
   .ranger-response-card-top,
