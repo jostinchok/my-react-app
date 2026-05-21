@@ -5154,7 +5154,7 @@ body {
   max-width: 100% !important;
   margin: 0 !important;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: clamp(18px, 2vw, 26px);
   align-items: start;
   box-sizing: border-box;
 }
@@ -5180,16 +5180,28 @@ body {
   overflow-wrap: anywhere;
 }
 
-@media (min-width: 1536px) {
-  .canvas-builder-page .course-builder-layout-grid.MuiGrid-container {
-    grid-template-columns: minmax(260px, 0.8fr) minmax(520px, 1.55fr) minmax(310px, 1fr);
-  }
+.canvas-builder-page .course-builder-course-cards {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
 
-  .canvas-builder-page .course-builder-list-panel,
-  .canvas-builder-page .course-builder-inspector-stack {
-    position: sticky;
-    top: 18px;
-  }
+.canvas-builder-page .course-builder-course-cards > .MuiPaper-root {
+  min-height: 168px;
+}
+
+.canvas-builder-page .course-builder-inspector-stack {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(16px, 1.6vw, 22px) !important;
+  align-items: stretch;
+}
+
+.canvas-builder-page .course-builder-inspector-stack > .course-builder-panel {
+  height: 100%;
 }
 
 @media (max-width: 1535px) {

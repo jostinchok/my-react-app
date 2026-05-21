@@ -985,7 +985,7 @@ const CourseManagement = () => {
               <Chip label={String(courses.length).padStart(2, "0")} sx={{ ...statusChipSx, bgcolor: "#f3ffd4" }} />
             </Stack>
 
-            <Stack gap={1.1} sx={{ maxHeight: { xl: "calc(100vh - 310px)" }, overflow: "auto", pr: 0.3 }}>
+            <Stack className="course-builder-course-cards" gap={1.1} sx={{ maxHeight: { xl: "calc(100vh - 310px)" }, overflow: "auto", pr: 0.3 }}>
               {courses.map((course) => {
                 const active = selectedCourseId === course.course_id;
                 return (
