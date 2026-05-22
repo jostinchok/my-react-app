@@ -4879,7 +4879,7 @@ body {
   align-items: start;
 }
 
-.course-builder-dialog-paper .course-builder-form-grid > .MuiGrid-item {
+.course-builder-dialog-paper .course-builder-form-grid > .MuiGrid-root {
   width: auto !important;
   max-width: none !important;
   flex-basis: auto !important;
@@ -5077,7 +5077,7 @@ body {
   box-sizing: border-box;
 }
 
-.canvas-builder-page .course-builder-layout-grid > .course-builder-layout-item.MuiGrid-item {
+.canvas-builder-page .course-builder-layout-grid > .course-builder-layout-item {
   width: 100% !important;
   max-width: 100% !important;
   flex-basis: auto !important;

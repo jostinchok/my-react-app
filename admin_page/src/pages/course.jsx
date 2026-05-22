@@ -973,7 +973,7 @@ const CourseManagement = () => {
       )}
 
       <Grid className="course-builder-layout-grid" container spacing={2.2} alignItems="flex-start">
-        <Grid size={{ xs: 12, xl: 3 }} className="course-builder-layout-item course-builder-list-cell">
+        <Grid size={{ xs: 12 }} className="course-builder-layout-item course-builder-list-cell">
           <Box className="course-builder-panel course-builder-list-panel" sx={{ ...panelSx, p: 2.2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.6 }}>
               <Box>
@@ -1036,7 +1036,7 @@ const CourseManagement = () => {
           </Box>
         </Grid>
 
-        <Grid size={{ xs: 12, xl: 5.5 }} className="course-builder-layout-item course-builder-main-cell">
+        <Grid size={{ xs: 12 }} className="course-builder-layout-item course-builder-main-cell">
           <Stack className="course-builder-main-stack" gap={2.2}>
             <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
@@ -1279,7 +1279,7 @@ const CourseManagement = () => {
           </Stack>
         </Grid>
 
-        <Grid size={{ xs: 12, xl: 3.5 }} className="course-builder-layout-item course-builder-inspector-cell">
+        <Grid size={{ xs: 12 }} className="course-builder-layout-item course-builder-inspector-cell">
           <Stack className="course-builder-inspector-stack" gap={2.2}>
             <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2 }}>
               <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
