@@ -755,6 +755,10 @@
 .incident-detail-panel {
   position: sticky;
   top: 108px;
+  max-height: min(920px, calc(100dvh - 260px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 20px;
   background: #ffffff !important;
 }
@@ -4121,6 +4125,8 @@ body {
   .incident-detail-panel,
   .ranger-detail-panel {
     position: static !important;
+    max-height: none;
+    overflow: visible;
   }
 }
 
