@@ -1109,6 +1109,27 @@ const CourseManagement = () => {
             </Box>
 
             <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
+              <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
+              <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
+                Course structure
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mb: 1.5 }}>
+                {itemTypeOptions.map((type) => (
+                  <Chip
+                    key={type}
+                    icon={getItemTypeConfig(type).icon}
+                    label={`${getItemTypeConfig(type).label}: ${itemTypeCounts[type] || 0}`}
+                    sx={{ bgcolor: itemTypeCounts[type] ? "#dcf8c6" : "#fffaf0", color: "#173126", fontWeight: 850 }}
+                  />
+                ))}
+              </Stack>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography sx={{ color: "#607166", fontWeight: 800 }}>
+                This builder reads the same MySQL course records that the User Portal displays. Keep the demo data in SQL, not hardcoded frontend arrays.
+              </Typography>
+            </Box>
+
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1.5} sx={{ mb: 2 }}>
                 <Box>
                   <Typography className="admin-dashboard-kicker">Module outline</Typography>
@@ -1276,45 +1297,13 @@ const CourseManagement = () => {
                 )}
               </Stack>
             </Box>
-          </Stack>
-        </Grid>
 
-        <Grid size={{ xs: 12 }} className="course-builder-layout-item course-builder-inspector-cell">
-          <Stack className="course-builder-inspector-stack" gap={2.2}>
-            <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2 }}>
-              <Typography className="admin-dashboard-kicker">Builder inspector</Typography>
-              <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1 }}>
-                Course structure
-              </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={0.8} sx={{ mb: 1.5 }}>
-                {itemTypeOptions.map((type) => (
-                  <Chip
-                    key={type}
-                    icon={getItemTypeConfig(type).icon}
-                    label={`${getItemTypeConfig(type).label}: ${itemTypeCounts[type] || 0}`}
-                    sx={{ bgcolor: itemTypeCounts[type] ? "#dcf8c6" : "#fffaf0", color: "#173126", fontWeight: 850 }}
-                  />
-                ))}
-              </Stack>
-              <Divider sx={{ my: 1.5 }} />
-              <Typography sx={{ color: "#607166", fontWeight: 800 }}>
-                This builder reads the same MySQL course records that the User Portal displays. Keep the demo data in SQL, not hardcoded frontend arrays.
-              </Typography>
-            </Box>
-
-            <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2 }}>
+            <Box className="course-builder-panel" sx={{ ...panelSx, p: { xs: 2.2, md: 3 } }}>
               <Typography className="admin-dashboard-kicker">User Portal preview</Typography>
               <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 1.6 }}>
                 Item preview
               </Typography>
               {renderPreview()}
-            </Box>
-
-            <Box className="course-builder-panel" sx={{ ...panelSx, p: 2.2, bgcolor: "#fff3c4" }}>
-              <Typography className="admin-dashboard-kicker">Admin guardrail</Typography>
-              <Typography sx={{ color: "#173126", fontWeight: 900 }}>
-                Course Builder controls course content only. Incident decisions, Ranger recommendations, and IoT grouping stay in their own Admin pages.
-              </Typography>
             </Box>
           </Stack>
         </Grid>
