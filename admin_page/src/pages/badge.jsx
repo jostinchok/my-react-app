@@ -392,13 +392,11 @@ const CertificateManagement = () => {
           </Box>
         </Grid>
 
-        {/* 🔹 证书预览区域：Download 按钮已移到右上角 */}
         <Grid size={{ xs: 12, lg: 7 }} ref={previewRef}>
           <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 }, minHeight: 360, position: "relative" }}>
             <Typography className="admin-dashboard-kicker">Preview</Typography>
             <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 2 }}>SFC certificate</Typography>
-            
-            {/* 🔹 可截图的证书内容容器 */}
+
             <Box
               ref={certificateContentRef}
               sx={{
@@ -417,7 +415,6 @@ const CertificateManagement = () => {
                 bgcolor: "#fff",
               }}
             >
-              {/* 🔹 Download 按钮：绝对定位到右上角 */}
               <Button
                 variant="contained"
                 startIcon={downloading ? null : <DownloadIcon />}
@@ -452,7 +449,6 @@ const CertificateManagement = () => {
                 {downloading ? "..." : "Download"}
               </Button>
 
-              {/* 证书内容 */}
               <Box component="img" src={logoSrc} alt="" sx={{ position: "absolute", top: 24, left: 28, width: 64, height: 64, borderRadius: "18px" }} />
               <Box sx={{ mt: 6 }}>
                 <Typography sx={{ color: "#17452f", fontWeight: 950, letterSpacing: "0.14em", textTransform: "uppercase", fontSize: "0.82rem" }}>Sarawak Forestry Corporation</Typography>
@@ -467,7 +463,6 @@ const CertificateManagement = () => {
         </Grid>
       </Grid>
 
-      {/* 搜索 + 筛选 + 分组列表 */}
       <Box sx={{ ...panelSx, p: { xs: 2.4, md: 3 }, mt: 2.4 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 2 }}>
           <Box>
