@@ -348,7 +348,7 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_field_ai, 'SFC-FIELD-2026', 'image', 'Bounding-box review example', 'Visual metadata reference', 'Use this training image to explain why the model prediction still needs human review.', 'http://localhost:5175/user/training/plucking-plants-evidence.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+  (@m_field_ai, 'SFC-FIELD-2026', 'image', 'Bounding-box review example', 'Visual metadata reference', 'Use this training image to explain why the model prediction still needs human review.', 'http://localhost:5175/user/training/incident-ai-monitoring.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
 
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
@@ -393,7 +393,7 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_field_iot, 'SFC-FIELD-2026', 'image', 'Sensor zone example', 'Visual sensor-zone reference', 'Use this visual placeholder to explain how a physical zone maps into a grouped alert.', 'http://localhost:5175/user/training/sensor-zone-map.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+  (@m_field_iot, 'SFC-FIELD-2026', 'image', 'Sensor zone example', 'Visual sensor-zone reference', 'Use this visual placeholder to explain how a physical zone maps into a grouped alert.', 'http://localhost:5175/user/training/rules-compliance.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
 
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
@@ -570,7 +570,7 @@ VALUES
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'image', 'Visitor-wildlife distance example', 'Visual scenario', 'Use this scenario image to discuss when a visitor reminder becomes an incident record.', 'http://localhost:5175/user/training/wildlife-distance.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+  (@m_wild_risk, 'SFC-WILDLIFE-2026', 'image', 'Visitor-wildlife distance example', 'Visual scenario', 'Use this scenario image to discuss when a visitor reminder becomes an incident record.', 'http://localhost:5175/user/training/visitor-safety.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
 
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
@@ -661,7 +661,7 @@ Recommended Admin action:', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'publishe
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
 VALUES
-  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'image', 'Wildlife evidence frame', 'Visual evidence example', 'Use this image placeholder to explain evidence clarity and false-alarm risk.', 'http://localhost:5175/user/training/wildlife-evidence.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
+  (@m_wild_evidence, 'SFC-WILDLIFE-2026', 'image', 'Wildlife evidence frame', 'Visual evidence example', 'Use this image placeholder to explain evidence clarity and false-alarm risk.', 'http://localhost:5175/user/training/biodiversity-basics.webp', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'published', 3);
 
 INSERT INTO course_module_items
   (module_id, course_id, item_type, title, description, content, external_url, file_name, stored_name, mime_type, size_bytes, file_url, quiz_json, checklist_json, status, sort_order)
