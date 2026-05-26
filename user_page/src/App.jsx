@@ -58,6 +58,14 @@ const TRAINING_IMAGE_FILES = [
 
 const trainingAsset = (fileName) => `${userBasePath}training/${fileName}`
 
+const staleTrainingImageReplacements = {
+  'protected-areas.png': 'protected-areas.webp',
+  'plucking-plants-evidence.webp': 'incident-ai-monitoring.webp',
+  'sensor-zone-map.webp': 'rules-compliance.webp',
+  'wildlife-distance.webp': 'visitor-safety.webp',
+  'wildlife-evidence.webp': 'biodiversity-basics.webp',
+}
+
 const stableTrainingImage = (...values) => {
   const seed = cleanText(...values, 'training image')
   let hash = 0
@@ -71,8 +79,9 @@ const stableTrainingImage = (...values) => {
 const readInitialShell = () => {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
-  const requestedSection = cleanText(params.get('section'), 'overview')
+  const requestedSection = cleanText(params.get('section'))
   const sectionToTab = {
+    courses: 'courses',
     overview: 'modules',
     modules: 'modules',
     item: 'module',
@@ -81,7 +90,7 @@ const readInitialShell = () => {
     completion: 'certificates',
   }
   const requestedTab = cleanText(params.get('tab'), sectionToTab[requestedSection], 'dashboard')
-  const allowedTabs = new Set(['dashboard', 'modules', 'module', 'progress', 'files', 'certificates', 'notifications', 'schedule', 'profile'])
+  const allowedTabs = new Set(['dashboard', 'courses', 'modules', 'module', 'progress', 'files', 'certificates', 'notifications', 'schedule', 'profile'])
   const allowedSections = new Set(['overview', 'modules'])
   return {
     activeTab: allowedTabs.has(requestedTab) ? requestedTab : 'dashboard',
@@ -125,6 +134,28 @@ const cleanText = (...values) => {
 }
 
 const validImageSrc = (value) => Boolean(cleanText(value))
+
+const getImageFileName = (value) => {
+  const text = cleanText(value).split(/[?#]/)[0].replace(/\\/g, '/')
+  return text.slice(text.lastIndexOf('/') + 1).toLowerCase()
+}
+
+const resolveTrainingImageSrc = (value, ...fallbackSeeds) => {
+  const text = cleanText(value)
+  const replacement = staleTrainingImageReplacements[getImageFileName(text)]
+  if (replacement) return trainingAsset(replacement)
+  return text || stableTrainingImage(...fallbackSeeds)
+}
+
+const applyImageFallback = (event, ...fallbackSeeds) => {
+  const target = event.currentTarget
+  if (target.dataset.fallbackApplied) {
+    target.classList.add('is-broken')
+    return
+  }
+  target.dataset.fallbackApplied = 'true'
+  target.src = stableTrainingImage(...fallbackSeeds)
+}
 
 const initials = (name = 'User') =>
   cleanText(name, 'User')
@@ -363,22 +394,19 @@ const getQuizFromItem = (item, module) => {
 
 const isResourceLikeItem = (item) => ['file', 'image', 'video', 'link'].includes(normalizeItemType(item?.type))
 
-const isLegacyMissingTrainingImage = (value) =>
-  cleanText(value).replace(/\\/g, '/').endsWith('/training/protected-areas.png')
-
 const moduleImageSrc = (module) => {
   const explicitImage = cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
-  if (explicitImage && !isLegacyMissingTrainingImage(explicitImage)) return explicitImage
+  if (explicitImage) return resolveTrainingImageSrc(explicitImage, module?.id, module?.title, module?.category, module?.park)
   return stableTrainingImage(module?.id, module?.title, module?.category, module?.park)
 }
 
 const courseImageSrc = (course) => {
   const explicitImage = cleanText(course?.image, course?.imageUrl, course?.image_url, course?.coverImage, course?.cover_image)
-  if (explicitImage && !isLegacyMissingTrainingImage(explicitImage)) return explicitImage
+  if (explicitImage) return resolveTrainingImageSrc(explicitImage, course?.id, course?.name, course?.description)
 
   const firstModuleWithImage = course?.modules?.find((module) => {
     const image = cleanText(module?.image, module?.imageUrl, module?.image_url, module?.coverImage, module?.cover_image)
-    return image && !isLegacyMissingTrainingImage(image)
+    return Boolean(image)
   })
 
   if (firstModuleWithImage) return moduleImageSrc(firstModuleWithImage)
@@ -1008,6 +1036,17 @@ function App() {
     return active || trainingModules.find((module) => !isEnrolled(module)) || null
   }, [currentUser, enrolledModules, trainingModules, canvasProgressRecords, canvasQuizAttempts])
 
+  const dashboardSwitchModules = selectedCourseModules.length > 0 ? selectedCourseModules : trainingModules
+  const dashboardActiveModules = (
+    enrolledModules.length > 0
+      ? enrolledModules
+      : dashboardSwitchModules.length > 0
+        ? dashboardSwitchModules
+        : trainingModules
+  ).slice(0, 8)
+  const dashboardTotalModules = dashboardSwitchModules.length || trainingModules.length
+  const dashboardCompletedModules = dashboardSwitchModules.filter((module) => getProgress(module) === 100).length
+
   const categories = useMemo(
     () => ['all', ...new Set(selectedCourseModules.map((module) => module.category))],
     [selectedCourseModules]
@@ -1623,7 +1662,8 @@ function App() {
   }
 
   const navItems = [
-    { id: 'dashboard', label: 'Courses', icon: 'C' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'D' },
+    { id: 'courses', label: 'Courses', icon: 'C' },
     { id: 'modules', label: 'Course Overview', icon: 'O' },
     { id: 'certificates', label: 'Completion', icon: 'C' },
     { id: 'notifications', label: 'Notifications', icon: 'N' },
@@ -1633,7 +1673,8 @@ function App() {
 
   const courseAwareTabs = new Set(['modules', 'module', 'progress', 'files', 'certificates'])
   const tabLabelMap = {
-    dashboard: 'Courses',
+    dashboard: 'Dashboard',
+    courses: 'Courses',
     modules: courseSubView === 'overview' ? 'Course Overview' : 'Course Modules',
     module: 'Item Detail',
     progress: 'Progress',
@@ -1717,6 +1758,123 @@ function App() {
 
         <div className="page-scroll">
           {activeTab === 'dashboard' && (
+            <section className="page-stack dashboard-page">
+              <section
+                className="dashboard-hero"
+                style={{ '--dashboard-hero-image': `url("${courseImageSrc(selectedCourse)}")` }}
+              >
+                <div className="dashboard-hero-copy">
+                  <span className="kicker">Citrus Learning Path</span>
+                  <h2>Fresh field training for Sarawak park guides.</h2>
+                  <p>Continue assigned modules, pass scenario quizzes, and prepare certification milestones.</p>
+                  <div className="hero-actions dashboard-hero-actions">
+                    <button
+                      type="button"
+                      disabled={!selectedModule}
+                      onClick={() => (selectedModule ? openModule(selectedModule.id) : setActiveTab('courses'))}
+                    >
+                      {selectedModule ? `Continue ${selectedModule.title}` : 'Waiting for modules'}
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => setActiveTab('courses')}>
+                      Browse courses
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <section className="panel dashboard-switch-panel">
+                <div className="dashboard-panel-head">
+                  <span className="kicker">Switch module</span>
+                  <strong>{dashboardTotalModules} modules available</strong>
+                </div>
+                {dashboardSwitchModules.length === 0 ? (
+                  <EmptyFrame title="No modules available" body="Run the Canvas demo seed after the Admin API is running, then refresh this page." />
+                ) : (
+                  <>
+                    <div className="dashboard-module-switcher">
+                      {dashboardSwitchModules.map((module) => {
+                        const progress = getProgress(module)
+                        return (
+                          <button
+                            key={module.id}
+                            type="button"
+                            className={String(selectedModule?.id) === String(module.id) ? 'active' : ''}
+                            onClick={() => {
+                              const courseId = cleanText(module.courseId, module.course_id)
+                              if (courseId) setSelectedCourseId(courseId)
+                              setSelectedModuleId(module.id)
+                            }}
+                          >
+                            <strong>{module.title}</strong>
+                            <small>{module.park} - {module.duration}</small>
+                            <span>{progress}% complete</span>
+                            <ProgressBar value={progress} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {selectedModule && (
+                      <div className="dashboard-selected-module">
+                        <span>
+                          <strong>{selectedModule.title}</strong>
+                          <small>{selectedModule.park} - {getCanvasItems(selectedModule).length} items</small>
+                        </span>
+                        <b>{getProgress(selectedModule)}%</b>
+                        <ProgressBar value={getProgress(selectedModule)} />
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+
+              <div className="stat-grid dashboard-stat-grid">
+                <StatCard label="Overall progress" value={`${overallProgress}%`} detail="Across enrolled modules" />
+                <StatCard label="Completed modules" value={`${dashboardCompletedModules}/${dashboardTotalModules}`} detail="Lessons and quizzes" />
+                <StatCard label="Certificates" value={`${certificates.length}`} detail="Ready or approved" />
+                <StatCard label="Unread updates" value={`${unreadCount}`} detail="Notifications pending" />
+              </div>
+
+              <section className="panel wide dashboard-active-panel">
+                <PanelTitle kicker="Active modules" title="Keep learning" />
+                <div className="dashboard-active-list">
+                  {dashboardActiveModules.length === 0 && (
+                    <EmptyFrame title="No active modules yet" body="Open Courses to find a module and start your learning path." />
+                  )}
+                  {dashboardActiveModules.map((module) => (
+                    <button key={module.id} type="button" className="dashboard-active-row" onClick={() => openModule(module.id)}>
+                      <ModuleThumb module={module} />
+                      <span>
+                        <strong>{module.title}</strong>
+                        <small>{module.park} - {module.duration}</small>
+                      </span>
+                      <b>{getProgress(module)}%</b>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <div className="dashboard-role-grid">
+                <section className="panel dashboard-role-panel can">
+                  <PanelTitle kicker="What user can do" title="Park Guide access" />
+                  <ul className="permission-list can">
+                    {roleBoundaries.can.slice(0, 4).map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="panel dashboard-role-panel cannot">
+                  <PanelTitle kicker="Admin-only actions" title="Locked controls" />
+                  <ul className="permission-list cannot">
+                    {roleBoundaries.cannot.slice(0, 4).map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'courses' && (
             <section className="page-stack course-list-page">
               <PageIntro
                 kicker="Course List"
@@ -2729,7 +2887,7 @@ function CourseVisual({ course, className = '', asButton = false, onClick }) {
   const src = courseImageSrc(course)
   const content = (
     <>
-      <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} />
+      <img src={src} alt="" onError={(event) => applyImageFallback(event, course?.id, course?.name, course?.description)} />
       <span>{cleanText(course?.name, 'Course')}</span>
     </>
   )
@@ -2749,7 +2907,11 @@ function ModuleVisual({ module, className = '', asButton = false, onClick }) {
   const src = moduleImageSrc(module)
   const content = (
     <>
-      {src ? <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} /> : <div className="module-image-pattern" />}
+      {src ? (
+        <img src={src} alt="" onError={(event) => applyImageFallback(event, module?.id, module?.title, module?.category, module?.park)} />
+      ) : (
+        <div className="module-image-pattern" />
+      )}
       <span style={{ background: cleanText(module?.accent, '#ff7a1a') }}>{cleanText(module?.category, 'Training')}</span>
     </>
   )
@@ -2769,7 +2931,11 @@ function ModuleThumb({ module }) {
   const src = moduleImageSrc(module)
   return (
     <span className="module-thumb" style={{ '--module-accent': cleanText(module?.accent, '#ff7a1a') }}>
-      {src ? <img src={src} alt="" onError={(event) => event.currentTarget.classList.add('is-broken')} /> : initials(module?.title || 'Module')}
+      {src ? (
+        <img src={src} alt="" onError={(event) => applyImageFallback(event, module?.id, module?.title, module?.category, module?.park)} />
+      ) : (
+        initials(module?.title || 'Module')
+      )}
     </span>
   )
 }
@@ -2785,6 +2951,7 @@ function GuidedCanvasItemReader({ item, module, saved, onSaveResource }) {
     .map(toPlainText)
     .filter(Boolean)
   const hasExternalUrl = Boolean(cleanText(item.url))
+  const mediaSrc = resolveTrainingImageSrc(item.url, item.id, item.title, module?.title)
   const contentText = cleanText(
     item.content,
     item.description,
@@ -2809,7 +2976,11 @@ function GuidedCanvasItemReader({ item, module, saved, onSaveResource }) {
 
       {type === 'image' && (
         <div className="canvas-media-frame image-frame">
-          {hasExternalUrl ? <img src={item.url} alt={item.title} /> : <span>Image content will appear here after Admin attaches it.</span>}
+          {hasExternalUrl ? (
+            <img src={mediaSrc} alt={item.title} onError={(event) => applyImageFallback(event, item.id, item.title, module?.title)} />
+          ) : (
+            <span>Image content will appear here after Admin attaches it.</span>
+          )}
         </div>
       )}
 
@@ -2967,6 +3138,7 @@ function CanvasItemPreview({
     .map(toPlainText)
     .filter(Boolean)
   const hasExternalUrl = Boolean(cleanText(item.url))
+  const mediaSrc = resolveTrainingImageSrc(item.url, item.id, item.title, module?.title)
 
   return (
     <div className="canvas-preview-content">
@@ -2988,7 +3160,11 @@ function CanvasItemPreview({
 
       {item.type === 'image' && (
         <div className="canvas-media-frame image-frame">
-          {hasExternalUrl ? <img src={item.url} alt={item.title} /> : <span>Image placeholder</span>}
+          {hasExternalUrl ? (
+            <img src={mediaSrc} alt={item.title} onError={(event) => applyImageFallback(event, item.id, item.title, module?.title)} />
+          ) : (
+            <span>Image placeholder</span>
+          )}
         </div>
       )}
 
