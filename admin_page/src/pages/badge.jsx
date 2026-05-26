@@ -159,6 +159,16 @@ const CertificateManagement = () => {
 
   useEffect(() => { loadData(); }, []);
 
+  // 🔹 新增：自动轮询同步进度（仅页面可见时）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && !loading) {
+        loadData().catch(() => {}); // 静默失败，不打断用户
+      }
+    }, 20000); // 20 秒同步一次
+    return () => clearInterval(interval);
+  }, [loading]);
+
   const courses = useMemo(() => progressSummary?.courses || [], [progressSummary]);
   const guides = useMemo(() => {
     const progressGuides = progressSummary?.guides || [];
@@ -225,6 +235,7 @@ const CertificateManagement = () => {
     }, 50);
   };
 
+  // 🔹 修复：PDF 下载时隐藏 Download 按钮
   const downloadCertificate = async () => {
     if (!selectedRow || !certificateContentRef.current) {
       showMessage("Please select a certificate to download.", "warning");
@@ -233,6 +244,11 @@ const CertificateManagement = () => {
 
     setDownloading(true);
     try {
+      // 🔹 1. 临时隐藏按钮（避免截图进去）
+      const btn = certificateContentRef.current.querySelector('.cert-download-btn');
+      if (btn) btn.style.visibility = 'hidden';
+
+      // 2. 截图生成 PDF
       const canvas = await html2canvas(certificateContentRef.current, {
         scale: 2,
         useCORS: true,
@@ -274,6 +290,9 @@ const CertificateManagement = () => {
       console.error("Download error:", error);
       showMessage("Failed to download certificate. Please try again.", "error");
     } finally {
+      // 🔹 3. 恢复按钮显示
+      const btn = certificateContentRef.current.querySelector('.cert-download-btn');
+      if (btn) btn.style.visibility = 'visible';
       setDownloading(false);
     }
   };
@@ -397,68 +416,76 @@ const CertificateManagement = () => {
             <Typography className="admin-dashboard-kicker">Preview</Typography>
             <Typography variant="h5" sx={{ color: "#173126", fontWeight: 950, mb: 2 }}>SFC certificate</Typography>
 
-            <Box
-              ref={certificateContentRef}
-              sx={{
-                position: "relative",
-                minHeight: { xs: 260, md: 340 },
-                borderRadius: "18px",
-                overflow: "hidden",
-                border: "1px solid #D9B85F",
-                backgroundImage: `url(${certificateBackgroundSrc})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                display: "grid",
-                placeItems: "center",
-                px: { xs: 3, md: 8 },
-                textAlign: "center",
-                bgcolor: "#fff",
-              }}
-            >
-              <Button
-                variant="contained"
-                startIcon={downloading ? null : <DownloadIcon />}
-                onClick={downloadCertificate}
-                disabled={!selectedRow?.ready || downloading}
+            {/* 🔹 新增：空状态提示 */}
+            {!selectedRow ? (
+              <Box sx={{ display: "grid", placeItems: "center", minHeight: 260, color: "#607166", fontWeight: 800 }}>
+                Select a guide and course to preview the certificate.
+              </Box>
+            ) : (
+              <Box
+                ref={certificateContentRef}
                 sx={{
-                  position: "absolute",
-                  top: 16,
-                  right: 16,
-                  zIndex: 10,
-                  minWidth: 120,
-                  borderRadius: "10px",
-                  textTransform: "none",
-                  fontWeight: 900,
-                  background: selectedRow?.ready 
-                    ? "linear-gradient(135deg, #FF7A1A, #FFD84D)" 
-                    : "#dfe6d8",
-                  color: "#173126",
-                  boxShadow: "0 8px 24px rgba(255, 122, 26, 0.25)",
-                  "&:hover": {
-                    background: selectedRow?.ready 
-                      ? "linear-gradient(135deg, #FF6A0A, #FFC83D)" 
-                      : "#dfe6d8",
-                    transform: "translateY(-1px)",
-                  },
-                  "&:disabled": {
-                    opacity: 0.6,
-                    cursor: "not-allowed",
-                  },
+                  position: "relative",
+                  minHeight: { xs: 260, md: 340 },
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                  border: "1px solid #D9B85F",
+                  backgroundImage: `url(${certificateBackgroundSrc})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  display: "grid",
+                  placeItems: "center",
+                  px: { xs: 3, md: 8 },
+                  textAlign: "center",
+                  bgcolor: "#fff",
                 }}
               >
-                {downloading ? "..." : "Download"}
-              </Button>
+                <Button
+                  className="cert-download-btn"  // 🔹 新增类名用于隐藏
+                  variant="contained"
+                  startIcon={downloading ? null : <DownloadIcon />}
+                  onClick={downloadCertificate}
+                  disabled={!selectedRow?.ready || downloading}
+                  sx={{
+                    position: "absolute",
+                    top: 16,
+                    right: 16,
+                    zIndex: 10,
+                    minWidth: 120,
+                    borderRadius: "10px",
+                    textTransform: "none",
+                    fontWeight: 900,
+                    background: selectedRow?.ready 
+                      ? "linear-gradient(135deg, #FF7A1A, #FFD84D)" 
+                      : "#dfe6d8",
+                    color: "#173126",
+                    boxShadow: "0 8px 24px rgba(255, 122, 26, 0.25)",
+                    "&:hover": {
+                      background: selectedRow?.ready 
+                        ? "linear-gradient(135deg, #FF6A0A, #FFC83D)" 
+                        : "#dfe6d8",
+                      transform: "translateY(-1px)",
+                    },
+                    "&:disabled": {
+                      opacity: 0.6,
+                      cursor: "not-allowed",
+                    },
+                  }}
+                >
+                  {downloading ? "..." : "Download"}
+                </Button>
 
-              <Box component="img" src={logoSrc} alt="" sx={{ position: "absolute", top: 24, left: 28, width: 64, height: 64, borderRadius: "18px" }} />
-              <Box sx={{ mt: 6 }}>
-                <Typography sx={{ color: "#17452f", fontWeight: 950, letterSpacing: "0.14em", textTransform: "uppercase", fontSize: "0.82rem" }}>Sarawak Forestry Corporation</Typography>
-                <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950, mt: 1 }}>Course Completion Certificate</Typography>
-                <Typography sx={{ color: "#53685a", fontWeight: 900, mt: 2 }}>Presented to</Typography>
-                <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>{selectedRow?.guideName || "Park Guide"}</Typography>
-                <Typography sx={{ color: "#53685a", fontWeight: 900, mt: 2 }}>for completing</Typography>
-                <Typography variant="h5" sx={{ color: "#8d4f12", fontWeight: 950 }}>{selectedRow?.courseName || "Selected Course"}</Typography>
+                <Box component="img" src={logoSrc} alt="" sx={{ position: "absolute", top: 24, left: 28, width: 64, height: 64, borderRadius: "18px" }} />
+                <Box sx={{ mt: 6 }}>
+                  <Typography sx={{ color: "#17452f", fontWeight: 950, letterSpacing: "0.14em", textTransform: "uppercase", fontSize: "0.82rem" }}>Sarawak Forestry Corporation</Typography>
+                  <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950, mt: 1 }}>Course Completion Certificate</Typography>
+                  <Typography sx={{ color: "#53685a", fontWeight: 900, mt: 2 }}>Presented to</Typography>
+                  <Typography variant="h4" sx={{ color: "#173126", fontWeight: 950 }}>{selectedRow?.guideName || "Park Guide"}</Typography>
+                  <Typography sx={{ color: "#53685a", fontWeight: 900, mt: 2 }}>for completing</Typography>
+                  <Typography variant="h5" sx={{ color: "#8d4f12", fontWeight: 950 }}>{selectedRow?.courseName || "Selected Course"}</Typography>
+                </Box>
               </Box>
-            </Box>
+            )}
           </Box>
         </Grid>
       </Grid>
