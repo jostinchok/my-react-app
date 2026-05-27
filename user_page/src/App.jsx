@@ -847,11 +847,14 @@ function App() {
     const courses = new Map()
 
     trainingModules.forEach((module, index) => {
-      const courseId = cleanText(module.courseId, module.course_id, module.courseName, `course-${index + 1}`)
+      const adminCourseId = cleanText(module.courseId, module.course_id)
+      const courseId = cleanText(adminCourseId, module.courseName, `course-${index + 1}`)
       const moduleEnrollmentStatus = normalizeEnrollmentStatus(module.enrollmentStatus || module.enrollment_status)
       const existing = courses.get(courseId) || {
         id: courseId,
         courseId,
+        adminCourseId,
+        requiresApproval: Boolean(adminCourseId),
         name: cleanText(module.courseName, module.courseTitle, module.course_name, courseId),
         description: cleanText(module.courseDescription, module.course_description, 'Course overview will appear after Admin adds a description.'),
         startDate: cleanText(module.courseStartDate, module.course_start_date),
@@ -864,6 +867,8 @@ function App() {
         resources: new Map(),
       }
 
+      existing.adminCourseId = cleanText(existing.adminCourseId, adminCourseId)
+      existing.requiresApproval = Boolean(existing.requiresApproval || adminCourseId)
       existing.enrollmentStatus = mergeEnrollmentStatus(existing.enrollmentStatus, moduleEnrollmentStatus)
       existing.decisionNote = cleanText(existing.decisionNote, module.decisionNote, module.decision_note)
       existing.image = cleanText(
@@ -935,7 +940,10 @@ function App() {
     trainingModules.find((module) => String(module.id) === String(selectedModuleId)) ||
     selectedCourseModules[0] ||
     null
-  const getRawCourseEnrollmentStatus = (course) => normalizeEnrollmentStatus(course?.enrollmentStatus || course?.enrollment_status)
+  const getRawCourseEnrollmentStatus = (course) => {
+    if (course && course.requiresApproval === false) return 'approved'
+    return normalizeEnrollmentStatus(course?.enrollmentStatus || course?.enrollment_status)
+  }
   const getModuleCourse = (module) => {
     const courseId = cleanText(module?.courseId, module?.course_id)
     return courseList.find((course) => String(course.id) === String(courseId)) || null
@@ -1286,6 +1294,7 @@ function App() {
 
   const requestCourseAccess = async (course) => {
     if (!course?.id) return false
+    if (course.requiresApproval === false) return true
     const currentStatus = getCourseEnrollmentStatus(course)
     if (currentStatus === 'approved') return true
     if (currentStatus === 'pending') {
