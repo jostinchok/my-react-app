@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
@@ -16,6 +16,7 @@ dotenv.config({ path: path.resolve(appRoot, '..', '.env') })
 
 const avatarUploadDir = path.join(appRoot, 'public', 'uploads', 'avatars')
 const courseFileUploadDir = path.join(appRoot, 'public', 'uploads', 'course-files')
+const adminPublicRoot = path.resolve(appRoot, '..', 'admin_page', 'public')
 
 const port = Number(process.env.API_PORT || 4001)
 const host = process.env.API_HOST || '0.0.0.0'
@@ -63,22 +64,47 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
 
-const apiLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => req.method === 'OPTIONS',
-})
-app.use('/api', apiLimiter)
-
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
 
 const getBearerToken = (req) => {
   const authHeader = String(req.get('Authorization') || '').trim()
   if (authHeader.startsWith('Bearer ')) return authHeader.slice(7).trim()
+
+  // Mobile certificate download opens in the device browser via Linking.openURL,
+  // which cannot send Authorization headers — allow a short-lived JWT in the query string.
+  const queryToken = String(req.query.access_token || req.query.token || '').trim()
+  if (queryToken) return queryToken
+
   return ''
 }
+
+const configuredApiRateLimit = Number.parseInt(process.env.API_RATE_LIMIT_MAX || '', 10)
+const apiRateLimitMax = Number.isFinite(configuredApiRateLimit) && configuredApiRateLimit > 0
+  ? configuredApiRateLimit
+  : 2000
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: apiRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
+  keyGenerator: (req) => {
+    const token = getBearerToken(req)
+    if (token) {
+      try {
+        const user = jwt.verify(token, JWT_SECRET)
+        const userKey = user.user_id ?? user.userId ?? user.sub ?? user.email
+        if (userKey) return `user:${userKey}`
+      } catch {
+        // fall through to IP-based limiting for invalid tokens
+      }
+    }
+    return ipKeyGenerator(req.ip ?? '')
+  },
+  message: { message: 'Too many requests, please try again later.' },
+})
+app.use('/api', apiLimiter)
 
 const requireAuth = (allowedRoles = []) => {
   const normalizedAllowedRoles = allowedRoles.map((role) => String(role || '').toLowerCase())
@@ -126,6 +152,8 @@ const pool = mysql.createPool({
 
 app.use(express.json({ limit: '50mb' }))
 app.use('/uploads', express.static(path.join(appRoot, 'public', 'uploads')))
+// Admin course builder stores module media under admin_page/public/uploads.
+app.use('/uploads', express.static(path.join(adminPublicRoot, 'uploads')))
 
 const asyncRoute = (handler) => async (req, res) => {
   try {
@@ -257,9 +285,150 @@ const formatUserProfileResponse = (profile) => ({
 
 const ensureCertificationCourseColumn = async () => {
   if (!await tableExists('certifications')) return
-  if (await columnExists('certifications', 'course_id')) return
-  await pool.query('ALTER TABLE certifications ADD COLUMN course_id VARCHAR(50) NULL AFTER user_id')
+  if (!(await columnExists('certifications', 'course_id'))) {
+    await pool.query('ALTER TABLE certifications ADD COLUMN course_id VARCHAR(50) NULL AFTER user_id')
+  }
+  if (!(await columnExists('certifications', 'certificate_code'))) {
+    await pool.query('ALTER TABLE certifications ADD COLUMN certificate_code VARCHAR(120) NULL AFTER status')
+  }
+  if (!(await columnExists('certifications', 'certificate_file_url'))) {
+    await pool.query('ALTER TABLE certifications ADD COLUMN certificate_file_url VARCHAR(512) NULL AFTER certificate_code')
+  }
 }
+
+const resolveAdminCertificateFilePath = (fileUrl) => {
+  const normalized = String(fileUrl || '').trim()
+  if (!normalized.startsWith('/uploads/')) return null
+  const relativePath = normalized.replace(/^\/+/, '')
+  const absolutePath = path.resolve(adminPublicRoot, relativePath)
+  if (!absolutePath.startsWith(adminPublicRoot)) return null
+  return absolutePath
+}
+
+const MOBILE_CERTIFICATE_VIEWPORT =
+  '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, viewport-fit=cover" />'
+
+const MOBILE_CERTIFICATE_STYLE_BLOCK = `<style id="sfc-mobile-certificate-view">
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    -webkit-text-size-adjust: 100%;
+    background: #fffdf5 !important;
+  }
+  .page {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    padding: 8px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .certificate {
+    position: relative !important;
+    box-sizing: border-box !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+    min-height: unset !important;
+    height: auto !important;
+    aspect-ratio: 920 / 620 !important;
+    margin: 0 auto !important;
+    padding: 15% 7% 17% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    overflow: hidden !important;
+  }
+  .logo {
+    top: 5% !important;
+    left: 4% !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .content {
+    width: 90% !important;
+    max-width: 90% !important;
+    margin-top: 8% !important;
+    flex-shrink: 0 !important;
+  }
+  .org {
+    font-size: 0.62rem !important;
+    letter-spacing: 0.06em !important;
+    line-height: 1.35 !important;
+  }
+  h1 {
+    margin-top: 8px !important;
+    font-size: 1.2rem !important;
+    line-height: 1.2 !important;
+  }
+  .label {
+    margin-top: 10px !important;
+    font-size: 0.78rem !important;
+  }
+  .recipient {
+    margin-top: 4px !important;
+    font-size: 1.2rem !important;
+    line-height: 1.15 !important;
+    word-break: break-word !important;
+  }
+  .course {
+    margin-top: 4px !important;
+    font-size: 0.98rem !important;
+    line-height: 1.25 !important;
+    word-break: break-word !important;
+  }
+  .meta {
+    margin-top: 12px !important;
+    font-size: 0.7rem !important;
+    line-height: 1.45 !important;
+    word-break: break-word !important;
+    padding-bottom: 2px !important;
+  }
+</style>`
+
+const isMobileCertificateRequest = (req) => {
+  const display = String(req.query.display || req.query.mobile || '').toLowerCase()
+  if (['mobile', '1', 'true', 'yes'].includes(display)) return true
+  const ua = String(req.get('user-agent') || '').toLowerCase()
+  return /iphone|ipad|ipod|android|mobile/.test(ua)
+}
+
+const injectMobileCertificateStyles = (html) => {
+  let output = String(html || '')
+  if (output.includes('id="sfc-mobile-certificate-view"')) return output
+
+  output = output.replace(/<meta[^>]*name=["']viewport["'][^>]*>/i, MOBILE_CERTIFICATE_VIEWPORT)
+  if (!/name=["']viewport["']/i.test(output)) {
+    output = output.replace(/<head>/i, `<head>\n  ${MOBILE_CERTIFICATE_VIEWPORT}`)
+  }
+  return output.replace(/<\/head>/i, `${MOBILE_CERTIFICATE_STYLE_BLOCK}\n</head>`)
+}
+
+const resolveAuthenticatedUserId = async (req) => {
+  const token = getBearerToken(req) || String(req.query.access_token || '').trim()
+  if (token) {
+    try {
+      const user = jwt.verify(token, JWT_SECRET)
+      const userId = Number(user?.user_id)
+      if (Number.isInteger(userId) && userId > 0) return userId
+    } catch {
+      // Fall back to query/body userId resolution below.
+    }
+  }
+  return resolveUserId(req)
+}
+
 
 // The mobile/web client computes an overall module completion percentage from completed
 // lessons + quiz score. We persist the result so the value survives refresh / re-login.
@@ -431,10 +600,39 @@ const parseMaybeJson = (value, fallback) => {
   }
 }
 
-const normalizeCanvasCourseItem = (row = {}) => {
+const resolvePublicUploadUrl = (fileUrl, req) => {
+  const normalized = String(fileUrl || '').trim()
+  if (!normalized) return ''
+
+  let relative = normalized
+  if (/^https?:\/\//i.test(normalized)) {
+    try {
+      const parsed = new URL(normalized)
+      if (parsed.pathname.startsWith('/uploads/')) {
+        relative = `${parsed.pathname}${parsed.search}${parsed.hash}`
+      } else {
+        return normalized
+      }
+    } catch {
+      return normalized
+    }
+  }
+
+  if (!relative.startsWith('/uploads/')) return normalized
+
+  const host = req?.get?.('host')
+  if (host) {
+    const proto = req?.protocol || 'http'
+    return `${proto}://${host}${relative}`
+  }
+
+  return relative
+}
+
+const normalizeCanvasCourseItem = (row = {}, req) => {
   const quiz = parseMaybeJson(row.quiz_json, null)
   const checklist = parseMaybeJson(row.checklist_json, [])
-  const directFileUrl = row.file_url ? `${adminApiPublicUrl}${row.file_url}` : ''
+  const directFileUrl = resolvePublicUploadUrl(row.file_url, req)
 
   return {
     id: row.item_id,
@@ -730,7 +928,7 @@ const normalizeCourseResource = (row = {}) => ({
   url: `${adminApiPublicUrl}/api/courses/${encodeURIComponent(row.course_id)}/resources/${row.resource_id}/download`,
 })
 
-const buildModules = async (userId) => {
+const buildModules = async (userId, req) => {
   const hasCourseId = await columnExists('training_modules', 'course_id')
   const hasModuleSortOrder = await columnExists('training_modules', 'sort_order')
   const hasCoursesTable = hasCourseId ? await tableExists('courses') : false
@@ -895,7 +1093,7 @@ const buildModules = async (userId) => {
 
   for (const item of canvasItemRows) {
     const list = itemsByModule.get(item.module_id) || []
-    list.push(normalizeCanvasCourseItem(item))
+    list.push(normalizeCanvasCourseItem(item, req))
     itemsByModule.set(item.module_id, list)
   }
 
@@ -964,7 +1162,7 @@ app.use('/api', requireAuth(['guide']))
 
 app.get('/api/training-modules', asyncRoute(async (req, res) => {
   const userId = await resolveUserIdForTraining(req)
-  const modules = await buildModules(userId)
+  const modules = await buildModules(userId, req)
   res.json({ modules })
 }))
 
@@ -1240,9 +1438,9 @@ const syncModuleCanvasProgress = async (
 
   const items = await rowsOf(
     `SELECT item_id, item_type, sort_order
-     FROM course_module_items
-     WHERE module_id = ? AND course_id = ? AND ${publishedCanvasItemClause()}
-     ORDER BY sort_order ASC, item_id ASC`,
+     FROM course_module_items cmi
+     WHERE cmi.module_id = ? AND cmi.course_id = ? AND ${publishedCanvasItemClause('cmi')}
+     ORDER BY cmi.sort_order ASC, cmi.item_id ASC`,
     [moduleIdValue, courseIdValue]
   )
   if (items.length === 0) return { syncedItems: 0 }
@@ -1530,6 +1728,8 @@ app.get('/api/certifications', asyncRoute(async (req, res) => {
        c.module_id,
        c.title,
        c.status,
+       c.certificate_code,
+       c.certificate_file_url,
        c.issue_date,
        c.expiry_date,
        COALESCE(c.course_id, tm.course_id) AS course_id,
@@ -1541,6 +1741,80 @@ app.get('/api/certifications', asyncRoute(async (req, res) => {
     [userId]
   )
   res.json({ certifications })
+}))
+
+app.get('/api/certifications/:certId/download', asyncRoute(async (req, res) => {
+  const userId = await resolveAuthenticatedUserId(req)
+  await ensureCertificationCourseColumn()
+
+  const certId = positiveInt(req.params.certId)
+  if (!certId) {
+    res.status(400).json({ message: 'A valid certificate id is required.' })
+    return
+  }
+
+  const certification = await rowOf(
+    `SELECT
+       c.cert_id,
+       c.user_id,
+       c.course_id,
+       c.title,
+       c.status,
+       c.certificate_code,
+       c.certificate_file_url,
+       c.issue_date,
+       COALESCE(c.course_id, tm.course_id) AS resolved_course_id,
+       COALESCE(co.course_name, c.title) AS course_name,
+       u.name AS guide_name
+     FROM certifications c
+     LEFT JOIN training_modules tm ON tm.module_id = c.module_id
+     LEFT JOIN courses co ON co.course_id = COALESCE(c.course_id, tm.course_id)
+     LEFT JOIN users u ON u.user_id = c.user_id
+     WHERE c.cert_id = ? AND c.user_id = ?
+     LIMIT 1`,
+    [certId, userId]
+  )
+
+  if (!certification) {
+    res.status(404).json({ message: 'Certificate not found.' })
+    return
+  }
+
+  const status = String(certification.status || '').toLowerCase()
+  if (!['issued', 'approved'].includes(status)) {
+    res.status(403).json({ message: 'Certificate is not issued yet.' })
+    return
+  }
+
+  const filePath = resolveAdminCertificateFilePath(certification.certificate_file_url)
+  if (!filePath) {
+    res.status(404).json({
+      message: 'Certificate file is not available yet. Ask Admin to click Issue Certificate again for this course.',
+    })
+    return
+  }
+
+  try {
+    await fs.access(filePath)
+  } catch {
+    res.status(404).json({
+      message: 'Certificate file is missing on the server. Ask Admin to click Issue Certificate again for this course.',
+    })
+    return
+  }
+
+  const courseName = String(certification.course_name || certification.title || 'Course').replace(/ Certificate$/i, '')
+  const safeFileStem = courseName.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'course-certificate'
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.setHeader('Content-Disposition', `inline; filename="${safeFileStem}-certificate.html"`)
+
+  if (isMobileCertificateRequest(req)) {
+    const html = await fs.readFile(filePath, 'utf8')
+    res.send(injectMobileCertificateStyles(html))
+    return
+  }
+
+  res.sendFile(filePath)
 }))
 
 // Park Guide self-service certificate request. Creates a course-level (module_id = NULL)

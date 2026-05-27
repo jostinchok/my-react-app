@@ -106,6 +106,8 @@ The main backend seeds these presentation accounts on startup when the MySQL aut
 
 If Login shows `Unable to connect to server` after repeated account switching, restart `npm run dev` so the backend loads the latest auth limiter settings. The source default is `AUTH_RATE_LIMIT_MAX=60`, CORS is applied before auth rate limiting, and `OPTIONS` preflight requests are not counted.
 
+If the mobile app shows `Refresh failed` with `[429]` on `/api/training-modules`, the user API rate limit was hit. Restart `npm run dev` so port `4001` picks up the higher default (`API_RATE_LIMIT_MAX=2000` per hour, per logged-in user). Avoid rapid pull-to-refresh; wait a few seconds between refreshes.
+
 ## 5. Demo Order
 
 1. Open the hub and state that Sprint #2 is a prototype demo, not a production release.

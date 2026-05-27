@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import AuthScreens from './AuthScreens'
 import { API_BASE_URL_STORAGE_KEY, getApiBaseUrl, normalizeAuthApiBaseUrl } from './apiConfig'
 import { mobileContentApi, persistableCanvasItemId } from './mobileApi'
+import { prepareMobileCertificateHtml } from './certificateMobileView'
 
 const palette = {
   // Website colors synced from `user_page/src/App.css`
@@ -122,6 +123,8 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   })
   const navTranslate = useRef(new Animated.Value(-NAV_WIDTH)).current
   const navOpacity = useRef(new Animated.Value(0)).current
+  const lastRefreshAtRef = useRef(0)
+  const REFRESH_COOLDOWN_MS = 4000
 
   useEffect(() => {
     if (!sessionUser?.name && !sessionUser?.email) return
@@ -380,7 +383,13 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
           )
           return
         }
-        Alert.alert('Sync error', message)
+        const isRateLimited = /\[429\]|429|too many requests/i.test(message)
+        Alert.alert(
+          isRateLimited ? 'Please wait' : 'Sync error',
+          isRateLimited
+            ? 'The server is receiving requests too quickly. Wait about a minute, then reopen the app or pull to refresh.'
+            : message
+        )
       } finally {
         if (!cancelled) setIsDataLoading(false)
       }
@@ -465,11 +474,23 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   }
 
   const handleRefresh = async () => {
+    const now = Date.now()
+    if (now - lastRefreshAtRef.current < REFRESH_COOLDOWN_MS) {
+      return
+    }
+    lastRefreshAtRef.current = now
     setIsRefreshing(true)
     try {
       await refreshMobileData()
     } catch (e) {
-      Alert.alert('Refresh failed', e.message || 'Unable to fetch latest updates.')
+      const message = e?.message || 'Unable to fetch latest updates.'
+      const isRateLimited = /\[429\]|429|too many requests/i.test(message)
+      Alert.alert(
+        isRateLimited ? 'Please wait' : 'Refresh failed',
+        isRateLimited
+          ? 'The server is receiving requests too quickly. Wait about a minute, then pull to refresh again.'
+          : message
+      )
     } finally {
       setIsRefreshing(false)
     }
@@ -631,8 +652,15 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
 
   const mediaUrl = (url) => {
     if (!url) return ''
-    if (/^https?:\/\//i.test(url)) return url
-    return `${api.base}${url.startsWith('/') ? '' : '/'}${url}`
+    const value = String(url).trim()
+    const userBase = String(api?.base || '').replace(/\/$/, '')
+    if (/^https?:\/\//i.test(value)) {
+      const legacyAdmin = value.match(/^https?:\/\/(?:localhost|127\.0\.0\.1):4002(\/uploads\/.*)$/i)
+      if (legacyAdmin && userBase) return `${userBase}${legacyAdmin[1]}`
+      return value
+    }
+    if (!userBase) return value
+    return `${userBase}${value.startsWith('/') ? '' : '/'}${value}`
   }
 //related to the database
   const moveModuleItem = (moduleId, delta) => {
@@ -995,7 +1023,6 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     }
     Alert.alert('Saved', 'Profile updated successfully.')
   }
-/**Download Certificate*/
   const requestCertificate = async (courseId) => {
     if (!courseId || !sessionUser?.user_id) return
     setCertificateActionLoading(courseId)
@@ -1005,6 +1032,44 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       Alert.alert('Request sent', 'Your certificate request has been sent to admin for approval.')
     } catch (e) {
       Alert.alert('Request failed', e.message || 'Unable to submit certificate request.')
+    } finally {
+      setCertificateActionLoading(null)
+    }
+  }
+
+  const downloadCertificate = async (certId, courseName) => {
+    if (!certId || !sessionUser?.user_id) return
+    const loadingKey = `download-${certId}`
+    setCertificateActionLoading(loadingKey)
+    try {
+      const downloadUrl = api.getCertificateDownloadUrl(sessionUser.user_id, certId, sessionUser?.token)
+
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const html = prepareMobileCertificateHtml(await api.fetchCertificateHtml(sessionUser.user_id, certId))
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+        const blobUrl = window.URL.createObjectURL(blob)
+        window.open(blobUrl, '_blank', 'noopener,noreferrer')
+        window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000)
+        return
+      }
+
+      const urlSupported = await Linking.canOpenURL(downloadUrl)
+      if (urlSupported) {
+        await Linking.openURL(downloadUrl)
+        return
+      }
+
+      const html = prepareMobileCertificateHtml(await api.fetchCertificateHtml(sessionUser.user_id, certId))
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
+      const dataSupported = await Linking.canOpenURL(dataUrl)
+      if (dataSupported) {
+        await Linking.openURL(dataUrl)
+        return
+      }
+
+      throw new Error('No browser is available to open the certificate.')
+    } catch (e) {
+      Alert.alert('Download failed', e.message || `Unable to open the certificate for ${courseName || 'this course'}.`)
     } finally {
       setCertificateActionLoading(null)
     }
@@ -1590,6 +1655,9 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                 const isApproved = status === 'approved' && Boolean(course.certId)
                 const isPending = status === 'pending'
                 const canRequest = course.allModulesDone && !isApproved && !isPending
+                const downloadLoadingKey = `download-${course.certId}`
+                const isDownloadLoading = certificateActionLoading === downloadLoadingKey
+                const isRequestLoading = certificateActionLoading === course.courseId
                 return (
                 <View key={course.courseId} style={[styles.certificateCard, !course.allModulesDone && styles.certificateCardLocked]}>
                   <View style={styles.rowBody}>
@@ -1601,20 +1669,35 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                     </Text>
                     <View style={styles.certificateMetaRow}>
                       <Text style={[styles.certificateBadge, isApproved ? styles.certificateBadgeUnlocked : styles.certificateBadgeLocked]}>
-                        {isApproved ? 'Approved' : isPending ? 'Pending approval' : course.allModulesDone ? 'Ready to request' : 'Locked'}
+                        {isApproved ? 'Issued' : isPending ? 'Pending approval' : course.allModulesDone ? 'Ready to request' : 'Locked'}
                       </Text>
                       <Text style={styles.rowMeta}>{course.certificateCode || `Course ID: ${course.courseId}`}</Text>
                     </View>
+                    {isApproved && course.issueDate ? (
+                      <Text style={styles.rowMeta}>Issued on {new Date(course.issueDate).toLocaleDateString()}</Text>
+                    ) : null}
                   </View>
-                  <Pressable
-                    style={[styles.primaryButton, !canRequest && styles.disabledButton]}
-                    onPress={() => requestCertificate(course.courseId)}
-                    disabled={!canRequest || certificateActionLoading === course.courseId}
-                  >
-                    <Text style={styles.primaryText}>
-                      {certificateActionLoading === course.courseId ? 'Sending...' : isApproved ? 'Issued' : isPending ? 'Pending' : canRequest ? 'Request Certificate' : 'Locked'}
-                    </Text>
-                  </Pressable>
+                  {isApproved ? (
+                    <Pressable
+                      style={[styles.primaryButton, isDownloadLoading && styles.disabledButton]}
+                      onPress={() => downloadCertificate(course.certId, course.courseName)}
+                      disabled={isDownloadLoading}
+                    >
+                      <Text style={styles.primaryText}>
+                        {isDownloadLoading ? 'Opening...' : 'Download'}
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      style={[styles.primaryButton, !canRequest && styles.disabledButton]}
+                      onPress={() => requestCertificate(course.courseId)}
+                      disabled={!canRequest || isRequestLoading}
+                    >
+                      <Text style={styles.primaryText}>
+                        {isRequestLoading ? 'Sending...' : isPending ? 'Pending' : canRequest ? 'Request Certificate' : 'Locked'}
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
               )})}
               {visibleCourseCertificates.length === 0 && (

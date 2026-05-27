@@ -341,12 +341,19 @@ const buildCertificateSummaries = ({ courses, modules, certifications, canvasPay
         : 0;
     }
 
-    const matchingCert = certifications.find((certificate) => {
-      const certModuleId = firstValue(certificate.module_id, certificate.moduleId);
-      const moduleMatch = certModuleId && courseModules.some((module) => String(module.id) === String(certModuleId));
-      const title = `${certificate.title || ""} ${certificate.course_id || ""}`.toLowerCase();
-      return moduleMatch || title.includes(String(course.course_id).toLowerCase()) || title.includes(String(course.course_name).toLowerCase());
+    const courseCerts = certifications.filter((certificate) => {
+      const certCourseId = asText(firstValue(certificate.course_id, certificate.courseId));
+      return certCourseId && String(certCourseId) === String(course.course_id);
     });
+    const matchingCert =
+      courseCerts.find((certificate) => !firstValue(certificate.module_id, certificate.moduleId)) ||
+      courseCerts[0] ||
+      certifications.find((certificate) => {
+        const certModuleId = firstValue(certificate.module_id, certificate.moduleId);
+        const moduleMatch = certModuleId && courseModules.some((module) => String(module.id) === String(certModuleId));
+        const title = `${certificate.title || ""} ${certificate.course_id || ""}`.toLowerCase();
+        return moduleMatch || title.includes(String(course.course_id).toLowerCase()) || title.includes(String(course.course_name).toLowerCase());
+      });
 
     return {
       courseId: course.course_id,
@@ -367,6 +374,8 @@ const buildCertificateSummaries = ({ courses, modules, certifications, canvasPay
       cert_id: firstValue(matchingCert?.cert_id, matchingCert?.id, null),
       certificateCode: asText(firstValue(matchingCert?.certificate_code, matchingCert?.certificateCode)),
       certificate_code: asText(firstValue(matchingCert?.certificate_code, matchingCert?.certificateCode)),
+      issueDate: firstValue(matchingCert?.issue_date, matchingCert?.issueDate, null),
+      issue_date: firstValue(matchingCert?.issue_date, matchingCert?.issueDate, null),
     };
   });
 
@@ -668,6 +677,32 @@ export const mobileContentApi = (authBaseUrl, tokenSource) => {
         body: JSON.stringify({ userId, user_id: userId, courseId, course_id: courseId }),
       });
       return toJson(res);
+    },
+    getCertificateDownloadUrl: (userId, certId, tokenOverride) => {
+      const token = tokenOverride || resolveToken();
+      const params = new URLSearchParams({
+        userId: String(userId || ""),
+        display: "mobile",
+      });
+      if (token) params.set("access_token", token);
+      return `${base}/api/certifications/${encodeURIComponent(String(certId))}/download?${params.toString()}`;
+    },
+    fetchCertificateHtml: async (userId, certId) => {
+      const url = withUserId(
+        `${base}/api/certifications/${encodeURIComponent(String(certId))}/download?display=mobile`,
+        userId
+      );
+      const res = await authedFetch(url);
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok) {
+        if (contentType.includes("application/json")) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `Certificate download failed (${res.status})`);
+        }
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Certificate download failed (${res.status})`);
+      }
+      return res.text();
     },
     getNotifications: async (userId) => {
       const res = await authedFetch(withUserId(`${base}/api/notifications`, userId));

@@ -2815,12 +2815,18 @@ function GuidedCanvasItemReader({ item, module, saved, onSaveResource }) {
 
       {type === 'video' && (
         <div className="canvas-media-frame video-frame">
-          <span>Play</span>
-          <strong>{hasExternalUrl ? 'Video link ready' : 'Video content pending'}</strong>
-          <small>{hasExternalUrl ? item.url : 'Admin can attach an MP4, YouTube, or reference link.'}</small>
+          {hasExternalUrl ? (
+            <video src={item.url} controls playsInline style={{ width: '100%', maxHeight: '320px', borderRadius: '12px' }} />
+          ) : (
+            <>
+              <span>Play</span>
+              <strong>Video content pending</strong>
+              <small>Admin can attach an MP4 or reference link.</small>
+            </>
+          )}
           {hasExternalUrl && (
             <button type="button" onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}>
-              Open video
+              Open video in new tab
             </button>
           )}
         </div>

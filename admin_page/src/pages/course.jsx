@@ -192,8 +192,10 @@ const resolveAdminImageUrl = (value) => {
 
 const getItemFileUrl = (item) => {
   if (!item) return "";
+  const directUrl = resolveAdminImageUrl(item.file_url);
+  if (directUrl) return directUrl;
   if (item.download_url) return `${API_BASE_URL}${item.download_url}`;
-  return item.file_url || "";
+  return "";
 };
 
 const CourseManagement = () => {
@@ -672,6 +674,14 @@ const CourseManagement = () => {
                 src={fileUrl}
                 alt={selectedItem.title}
                 sx={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: "14px", border: "1px solid #eadfbf", mb: 1.5 }}
+              />
+            )}
+            {type === "video" && fileUrl && (
+              <Box
+                component="video"
+                src={fileUrl}
+                controls
+                sx={{ width: "100%", maxHeight: 280, borderRadius: "14px", border: "1px solid #eadfbf", mb: 1.5, bgcolor: "#000" }}
               />
             )}
             <Stack direction="row" justifyContent="space-between" gap={1.5} alignItems="center">
