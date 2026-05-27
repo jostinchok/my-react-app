@@ -1400,6 +1400,19 @@ app.post('/api/enrollments/requests', asyncRoute(async (req, res) => {
     return
   }
 
+  if (await tableExists('courses')) {
+    const course = await rowOf('SELECT course_id FROM courses WHERE course_id = ? LIMIT 1', [resolvedCourseId])
+    if (!course) {
+      res.status(202).json({
+        ok: true,
+        message: 'Legacy course is available locally. No linked admin course was found for Admin approval.',
+        courseId: resolvedCourseId,
+        enrollment_status: 'approved',
+      })
+      return
+    }
+  }
+
   const courseResourcesReady = await tableExists('course_enrollments')
   if (!courseResourcesReady) {
     res.status(202).json({ ok: true, message: 'Module enrollment saved locally. Admin enrollment table has not been migrated yet.' })
