@@ -339,6 +339,8 @@ export const normalizeModuleRow = (row, index = 0) => {
     courseStartDate: asText(firstValue(row.courseStartDate, row.course_start_date), ''),
     courseEndDate: asText(firstValue(row.courseEndDate, row.course_end_date), ''),
     courseContactHours: Number(firstValue(row.courseContactHours, row.course_contact_hours, 0)) || 0,
+    enrollmentStatus: asText(firstValue(row.enrollmentStatus, row.enrollment_status), 'none').toLowerCase(),
+    decisionNote: asText(firstValue(row.decisionNote, row.decision_note, row.remarks), ''),
     sortOrder: Number(firstValue(row.sortOrder, row.sort_order, row.moduleSortOrder, row.module_sort_order, index + 1)) || index + 1,
     sort_order: Number(firstValue(row.sortOrder, row.sort_order, row.moduleSortOrder, row.module_sort_order, index + 1)) || index + 1,
     title,
@@ -399,6 +401,8 @@ export const normalizeCertificateRow = (row = {}) => ({
   status: asText(row.status, row.issue_date ? 'Issued' : 'Pending'),
   issueDate: asText(firstValue(row.issueDate, row.issue_date), 'Pending'),
   expiryDate: asText(firstValue(row.expiryDate, row.expiry_date), 'Not set'),
+  certificateCode: asText(firstValue(row.certificateCode, row.certificate_code), ''),
+  downloadUrl: asText(firstValue(row.downloadUrl, row.download_url), ''),
 })
 
 export const normalizeNotificationRow = (row = {}) => ({
