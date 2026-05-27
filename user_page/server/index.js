@@ -22,15 +22,8 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
 
-const apiLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-})
-app.use('/api', apiLimiter)
-
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+const userApiRateLimitMax = Number(process.env.USER_API_RATE_LIMIT_MAX || process.env.API_RATE_LIMIT_MAX || 1200)
 
 const requireAuth = (allowedRoles = []) => {
   return (req, res, next) => {
@@ -97,6 +90,15 @@ const pool = mysql.createPool({
 })
 
 app.use(cors({ origin: corsOrigin }))
+const apiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: userApiRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS' || req.path === '/health' || req.originalUrl === '/api/health',
+  message: { message: 'Too many requests, please try again later.' },
+})
+app.use('/api', apiLimiter)
 app.use(express.json({ limit: '50mb' }))
 app.use('/uploads', express.static(path.join(appRoot, 'public', 'uploads')))
 
@@ -151,8 +153,12 @@ const ensureUserBirthdayColumn = async () => {
 
 const ensureCertificationCourseColumn = async () => {
   if (!await tableExists('certifications')) return
-  if (await columnExists('certifications', 'course_id')) return
-  await pool.query('ALTER TABLE certifications ADD COLUMN course_id VARCHAR(50) NULL AFTER user_id')
+  if (!await columnExists('certifications', 'course_id')) {
+    await pool.query('ALTER TABLE certifications ADD COLUMN course_id VARCHAR(50) NULL AFTER user_id')
+  }
+  if (!await columnExists('certifications', 'certificate_code')) {
+    await pool.query('ALTER TABLE certifications ADD COLUMN certificate_code VARCHAR(120) NULL')
+  }
 }
 
 const ensureRole = async (roleName) => {
@@ -615,6 +621,33 @@ const buildModules = async (userId) => {
   const hasCourseId = await columnExists('training_modules', 'course_id')
   const hasModuleSortOrder = await columnExists('training_modules', 'sort_order')
   const hasCoursesTable = hasCourseId ? await tableExists('courses') : false
+  const hasCourseEnrollments = hasCourseId ? await tableExists('course_enrollments') : false
+  const hasEnrollmentDecisionNote = hasCourseEnrollments ? await columnExists('course_enrollments', 'decision_note') : false
+  const hasCanvasItemProgress = hasCourseId ? await tableExists('canvas_item_progress') : false
+  const hasCanvasQuizAttempts = hasCourseId ? await tableExists('canvas_quiz_attempts') : false
+  const legacyAccessChecks = [
+    hasCanvasItemProgress
+      ? 'EXISTS (SELECT 1 FROM canvas_item_progress cip WHERE cip.user_id = ? AND cip.course_id = tm.course_id LIMIT 1)'
+      : null,
+    hasCanvasQuizAttempts
+      ? 'EXISTS (SELECT 1 FROM canvas_quiz_attempts cqa WHERE cqa.user_id = ? AND cqa.course_id = tm.course_id LIMIT 1)'
+      : null,
+    'p.progress_id IS NOT NULL',
+  ].filter(Boolean)
+  const legacyAccessExpression = `(${legacyAccessChecks.join(' OR ')})`
+  const enrollmentStatusExpression = hasCourseEnrollments
+    ? `CASE
+         WHEN ce.status = 'approved' THEN 'approved'
+         WHEN COALESCE(ce.status, 'none') <> 'rejected' AND ${legacyAccessExpression} THEN 'approved'
+         ELSE COALESCE(ce.status, 'none')
+       END`
+    : `CASE WHEN ${legacyAccessExpression} THEN 'approved' ELSE 'none' END`
+  const moduleQueryValues = [
+    ...(hasCanvasItemProgress ? [userId] : []),
+    ...(hasCanvasQuizAttempts ? [userId] : []),
+    ...(hasCourseEnrollments ? [userId] : []),
+    userId,
+  ]
   const moduleOrderClause = [
     hasCourseId ? 'tm.course_id ASC' : null,
     hasModuleSortOrder ? 'tm.sort_order ASC' : null,
@@ -643,15 +676,18 @@ const buildModules = async (userId) => {
        tm.objectives,
        ${hasModuleSortOrder ? 'tm.sort_order' : '0'} AS sort_order,
        tm.created_at,
+       ${enrollmentStatusExpression} AS enrollment_status,
+       ${hasEnrollmentDecisionNote ? 'ce.decision_note' : 'NULL'} AS decision_note,
        p.completed_lessons,
        p.quiz_passed,
        p.quiz_score,
        p.status AS progress_status
      FROM training_modules tm
      ${hasCoursesTable ? 'LEFT JOIN courses c ON c.course_id = tm.course_id' : ''}
+     ${hasCourseEnrollments ? 'LEFT JOIN course_enrollments ce ON ce.course_id = tm.course_id AND ce.user_id = ?' : ''}
      LEFT JOIN progress p ON p.module_id = tm.module_id AND p.user_id = ?
      ORDER BY ${moduleOrderClause}`,
-    [userId]
+    moduleQueryValues
   )
 
   if (modules.length === 0) return []
@@ -793,6 +829,10 @@ const buildModules = async (userId) => {
       course_end_date: formatDateOnly(module.course_end_date),
       courseContactHours: Number(module.course_contact_hours || 0),
       course_contact_hours: Number(module.course_contact_hours || 0),
+      enrollmentStatus: module.enrollment_status || 'none',
+      enrollment_status: module.enrollment_status || 'none',
+      decisionNote: module.decision_note || '',
+      decision_note: module.decision_note || '',
       sortOrder: Number(module.sort_order || 0),
       sort_order: Number(module.sort_order || 0),
       image: module.image_url,
@@ -1167,7 +1207,8 @@ app.get('/api/certifications', asyncRoute(async (req, res) => {
        c.status,
        c.issue_date,
        c.expiry_date,
-       tm.course_id,
+       COALESCE(c.course_id, tm.course_id) AS course_id,
+       c.certificate_code,
        tm.title AS module_title
      FROM certifications c
      LEFT JOIN training_modules tm ON tm.module_id = c.module_id
