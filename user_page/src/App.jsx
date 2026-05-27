@@ -37,7 +37,9 @@ const userBasePath = import.meta.env.BASE_URL.endsWith('/')
   : `${import.meta.env.BASE_URL}/`
 const logoSrc = `${userBasePath}sfc-citrus-logo.webp`
 const certificateLogoSrc = `${userBasePath}sfc-citrus-logo.png`
-const certificateBackgroundSrc = `${userBasePath}certificates/sfc-course-certificate.webp`
+const adminPublicBasePath = (import.meta.env.VITE_ADMIN_PUBLIC_BASE_URL || 'http://localhost:5174/admin').replace(/\/+$/, '')
+const certificateTemplateSrc = `${adminPublicBasePath}/certificates/sfc-course-certificate.webp`
+const certificateTemplateFallbackSrc = `${userBasePath}certificates/sfc-course-certificate.webp`
 const editableProfileFields = new Set(['displayName', 'birthday', 'email', 'phone', 'yearsExperience', 'address'])
 const TRAINING_IMAGE_FILES = [
   'conservation-law.webp',
@@ -133,6 +135,25 @@ const cleanText = (...values) => {
   return ''
 }
 
+const normalizeEnrollmentStatus = (value) => {
+  const status = cleanText(value, 'none').toLowerCase()
+  return ['approved', 'pending', 'rejected'].includes(status) ? status : 'none'
+}
+
+const mergeEnrollmentStatus = (currentStatus, nextStatus) => {
+  const rank = { approved: 3, pending: 2, rejected: 1, none: 0 }
+  const current = normalizeEnrollmentStatus(currentStatus)
+  const next = normalizeEnrollmentStatus(nextStatus)
+  return rank[next] > rank[current] ? next : current
+}
+
+const courseEnrollmentLabel = (status) => ({
+  approved: 'Approved',
+  pending: 'Pending admin approval',
+  rejected: 'Rejected',
+  none: 'Registration required',
+}[normalizeEnrollmentStatus(status)] || 'Registration required')
+
 const validImageSrc = (value) => Boolean(cleanText(value))
 
 const getImageFileName = (value) => {
@@ -157,6 +178,13 @@ const applyImageFallback = (event, ...fallbackSeeds) => {
   target.src = stableTrainingImage(...fallbackSeeds)
 }
 
+const applyCertificateTemplateFallback = (event) => {
+  const target = event.currentTarget
+  if (target.dataset.fallbackApplied) return
+  target.dataset.fallbackApplied = 'true'
+  target.src = certificateTemplateFallbackSrc
+}
+
 const initials = (name = 'User') =>
   cleanText(name, 'User')
     .split(' ')
@@ -164,6 +192,120 @@ const initials = (name = 'User') =>
     .join('')
     .slice(0, 2)
     .toUpperCase()
+
+const loadCanvasImage = (src) =>
+  new Promise((resolve, reject) => {
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error(`Unable to load certificate asset: ${src}`))
+    image.src = src
+  })
+
+const drawCoverImage = (ctx, image, width, height) => {
+  const scale = Math.max(width / image.width, height / image.height)
+  const drawWidth = image.width * scale
+  const drawHeight = image.height * scale
+  ctx.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight)
+}
+
+const wrapCanvasText = (ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) => {
+  const words = cleanText(text).split(/\s+/).filter(Boolean)
+  const lines = []
+  let line = ''
+
+  for (const word of words) {
+    const nextLine = line ? `${line} ${word}` : word
+    if (ctx.measureText(nextLine).width <= maxWidth || !line) {
+      line = nextLine
+    } else {
+      lines.push(line)
+      line = word
+    }
+    if (lines.length === maxLines) break
+  }
+
+  if (line && lines.length < maxLines) lines.push(line)
+  lines.forEach((lineText, index) => ctx.fillText(lineText, x, y + index * lineHeight))
+}
+
+const canvasToBlob = (canvas) =>
+  new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error('Unable to render certificate image.'))
+      }, 'image/png', 0.96)
+    } catch (error) {
+      reject(error)
+    }
+  })
+
+const createCertificateBlob = async ({ certificate, course, user, templateSrc }) => {
+  const [templateImage, logoImage] = await Promise.all([
+    loadCanvasImage(templateSrc),
+    loadCanvasImage(certificateLogoSrc),
+  ])
+  const canvas = document.createElement('canvas')
+  canvas.width = 1600
+  canvas.height = 1100
+  const ctx = canvas.getContext('2d')
+
+  ctx.fillStyle = '#fffdf5'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  drawCoverImage(ctx, templateImage, canvas.width, canvas.height)
+  ctx.fillStyle = 'rgba(255, 253, 245, 0.72)'
+  ctx.fillRect(210, 245, 1180, 610)
+  ctx.strokeStyle = 'rgba(23, 95, 62, 0.32)'
+  ctx.lineWidth = 4
+  ctx.strokeRect(230, 265, 1140, 570)
+
+  ctx.drawImage(logoImage, 126, 92, 110, 110)
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#17452f'
+  ctx.font = '700 30px Georgia, serif'
+  ctx.fillText('Sarawak Forestry Corporation', 800, 332)
+  ctx.font = '900 58px Georgia, serif'
+  ctx.fillStyle = '#173126'
+  ctx.fillText('Course Completion Certificate', 800, 420)
+  ctx.font = '700 28px Arial, sans-serif'
+  ctx.fillStyle = '#53685a'
+  ctx.fillText('Presented to', 800, 502)
+  ctx.font = '900 56px Georgia, serif'
+  ctx.fillStyle = '#173126'
+  wrapCanvasText(ctx, cleanText(user?.displayName, user?.username, 'Park Guide'), 800, 582, 970, 62, 2)
+  ctx.font = '700 28px Arial, sans-serif'
+  ctx.fillStyle = '#53685a'
+  ctx.fillText('for completing', 800, 710)
+  ctx.font = '900 40px Georgia, serif'
+  ctx.fillStyle = '#8d4f12'
+  wrapCanvasText(ctx, cleanText(course?.name, certificate?.title, 'SFC Training Course'), 800, 770, 1010, 48, 2)
+  ctx.textAlign = 'left'
+  ctx.font = '700 22px Arial, sans-serif'
+  ctx.fillStyle = '#173126'
+  ctx.fillText(`Issued: ${cleanText(certificate?.issueDate, new Date().toISOString().slice(0, 10))}`, 290, 908)
+  ctx.textAlign = 'right'
+  ctx.fillText(cleanText(certificate?.certificateCode, certificate?.id, 'SFC Certificate'), 1310, 908)
+
+  return canvasToBlob(canvas)
+}
+
+const sanitizeDownloadPart = (value) =>
+  cleanText(value, 'certificate')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'certificate'
+
+const downloadBlob = (blob, fileName) => {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}
 
 const parseJsonMaybe = (value) => {
   if (Array.isArray(value)) return value
@@ -706,6 +848,7 @@ function App() {
 
     trainingModules.forEach((module, index) => {
       const courseId = cleanText(module.courseId, module.course_id, module.courseName, `course-${index + 1}`)
+      const moduleEnrollmentStatus = normalizeEnrollmentStatus(module.enrollmentStatus || module.enrollment_status)
       const existing = courses.get(courseId) || {
         id: courseId,
         courseId,
@@ -715,10 +858,14 @@ function App() {
         endDate: cleanText(module.courseEndDate, module.course_end_date),
         contactHours: Number(module.courseContactHours ?? module.course_contact_hours ?? 0) || 0,
         image: cleanText(module.courseImage, module.course_image, module.courseImageUrl, module.course_image_url),
+        enrollmentStatus: moduleEnrollmentStatus,
+        decisionNote: cleanText(module.decisionNote, module.decision_note),
         modules: [],
         resources: new Map(),
       }
 
+      existing.enrollmentStatus = mergeEnrollmentStatus(existing.enrollmentStatus, moduleEnrollmentStatus)
+      existing.decisionNote = cleanText(existing.decisionNote, module.decisionNote, module.decision_note)
       existing.image = cleanText(
         existing.image,
         module.courseImage,
@@ -788,6 +935,37 @@ function App() {
     trainingModules.find((module) => String(module.id) === String(selectedModuleId)) ||
     selectedCourseModules[0] ||
     null
+  const getRawCourseEnrollmentStatus = (course) => normalizeEnrollmentStatus(course?.enrollmentStatus || course?.enrollment_status)
+  const getModuleCourse = (module) => {
+    const courseId = cleanText(module?.courseId, module?.course_id)
+    return courseList.find((course) => String(course.id) === String(courseId)) || null
+  }
+  const hasSavedModuleProgress = (module, user = currentUser) => {
+    if (!module?.id) return false
+    const moduleId = String(module.id)
+    const localCompleted = user?.completedLessons?.[module.id] || []
+    return (
+      user?.enrolledModuleIds?.includes(module.id) ||
+      localCompleted.length > 0 ||
+      Boolean(user?.quizResults?.[module.id]?.passed) ||
+      canvasProgressRecords.some((record) => String(record.moduleId) === moduleId) ||
+      canvasQuizAttempts.some((attempt) => String(attempt.moduleId) === moduleId)
+    )
+  }
+  const hasSavedCourseProgress = (course, user = currentUser) =>
+    (course?.modules || []).some((module) => hasSavedModuleProgress(module, user))
+  const getCourseEnrollmentStatus = (course) => {
+    const status = getRawCourseEnrollmentStatus(course)
+    if (status !== 'approved' && hasSavedCourseProgress(course)) return 'approved'
+    return status
+  }
+  const isCourseApproved = (course) => getCourseEnrollmentStatus(course) === 'approved'
+  const canAccessModule = (module) => {
+    const courseId = cleanText(module?.courseId, module?.course_id)
+    if (!courseId) return true
+    const course = getModuleCourse(module)
+    return isCourseApproved(course) || normalizeEnrollmentStatus(module?.enrollmentStatus || module?.enrollment_status) === 'approved' || hasSavedModuleProgress(module)
+  }
   const selectedModuleItems = useMemo(() => getCanvasItems(selectedModule), [selectedModule])
   const selectedModuleContentItems = useMemo(
     () => selectedModuleItems.filter((item) => item.type !== 'quiz'),
@@ -923,8 +1101,8 @@ function App() {
 
   const isEnrolled = (module, user = currentUser) =>
     !!module &&
-    (user.enrolledModuleIds?.includes(module.id) ||
-      canvasProgressRecords.some((record) => String(record.moduleId) === String(module.id)))
+    canAccessModule(module) &&
+    hasSavedModuleProgress(module, user)
 
   const completedItemIdsFor = (module, user = currentUser) => {
     const localCompleted = (user.completedLessons?.[module?.id] || []).map((item) => String(item))
@@ -1006,19 +1184,23 @@ function App() {
   const courseCertificates = useMemo(() => {
     return courseList.map((course) => {
       const progress = getCourseProgress(course)
-      const unlocked = progress === 100
+      const unlocked = isCourseApproved(course) && progress === 100
       const savedCertificate = databaseCertificates.find((certificate) =>
         String(certificate.courseId) === String(course.id) && !certificate.moduleId
       )
+      const savedIssued = cleanText(savedCertificate?.status).toLowerCase() === 'issued'
       return {
         id: savedCertificate?.id || `${currentUser.id}-${course.id}-course-certificate`,
         courseId: course.id,
         title: savedCertificate?.title || `${course.name} Certificate`,
-        status: unlocked ? savedCertificate?.status || 'Ready for admin review' : 'Locked',
-        issueDate: unlocked ? savedCertificate?.issueDate || 'Pending' : 'Locked',
-        expiryDate: unlocked ? savedCertificate?.expiryDate || '1 year after approval' : 'Complete course to unlock',
+        status: unlocked ? savedIssued ? savedCertificate.status : 'Ready to download' : 'Locked',
+        issueDate: unlocked ? savedIssued ? savedCertificate.issueDate : new Date().toISOString().slice(0, 10) : 'Locked',
+        expiryDate: unlocked ? savedIssued ? savedCertificate.expiryDate : 'Not set' : 'Complete course to unlock',
+        certificateCode: savedCertificate?.certificateCode || `SFC-DIRECT-${currentUser.id}-${course.id}`,
         progress,
         unlocked,
+        issued: savedIssued,
+        downloadReady: unlocked,
       }
     })
   }, [currentUser, courseList, databaseCertificates, canvasProgressRecords, canvasQuizAttempts])
@@ -1085,6 +1267,90 @@ function App() {
     ...(currentUser.personalFiles || []),
   ]
 
+  const applyCourseEnrollmentStatus = (courseId, status, note = '') => {
+    const normalizedStatus = normalizeEnrollmentStatus(status)
+    setTrainingModules((modules) =>
+      modules.map((module) =>
+        String(cleanText(module.courseId, module.course_id)) === String(courseId)
+          ? {
+              ...module,
+              enrollmentStatus: normalizedStatus,
+              enrollment_status: normalizedStatus,
+              decisionNote: note,
+              decision_note: note,
+            }
+          : module
+      )
+    )
+  }
+
+  const requestCourseAccess = async (course) => {
+    if (!course?.id) return false
+    const currentStatus = getCourseEnrollmentStatus(course)
+    if (currentStatus === 'approved') return true
+    if (currentStatus === 'pending') {
+      addNotification('Course request pending', `${course.name} is waiting for Admin approval.`, 'training')
+      return false
+    }
+
+    applyCourseEnrollmentStatus(course.id, 'pending', 'Waiting for Admin approval.')
+    try {
+      const response = await authFetch(API_LINKS.enrollmentRequests, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          courseId: course.id,
+        }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(payload.message || 'Unable to request course registration.')
+      const nextStatus = normalizeEnrollmentStatus(payload.enrollment_status || payload.status || 'pending')
+      applyCourseEnrollmentStatus(course.id, nextStatus, payload.message || '')
+      addNotification(
+        nextStatus === 'approved' ? 'Course access approved' : 'Course registration sent',
+        payload.message || `${course.name} registration is waiting for Admin approval.`,
+        'training'
+      )
+      return nextStatus === 'approved'
+    } catch (error) {
+      applyCourseEnrollmentStatus(course.id, currentStatus, course.decisionNote || '')
+      addNotification('Course request failed', error.message, 'training')
+      return false
+    }
+  }
+
+  const downloadCertificate = async (certificate, course) => {
+    if (!certificate?.downloadReady) {
+      alert('Complete every course item and required quiz before downloading this certificate.')
+      return
+    }
+
+    try {
+      let blob
+      try {
+        blob = await createCertificateBlob({
+          certificate,
+          course,
+          user: currentUser,
+          templateSrc: certificateTemplateSrc,
+        })
+      } catch {
+        blob = await createCertificateBlob({
+          certificate,
+          course,
+          user: currentUser,
+          templateSrc: certificateTemplateFallbackSrc,
+        })
+      }
+      const fileName = `SFC-Certificate-${sanitizeDownloadPart(currentUser.displayName)}-${sanitizeDownloadPart(course?.name)}.png`
+      downloadBlob(blob, fileName)
+      addNotification('Certificate downloaded', `${course?.name || 'Course'} certificate downloaded.`, 'certificate')
+    } catch (error) {
+      alert(`Unable to download certificate. ${error.message}`)
+    }
+  }
+
   const switchUser = (userId) => {
     const nextUser = users.find((user) => user.id === userId)
     setCurrentUserId(userId)
@@ -1096,6 +1362,12 @@ function App() {
     const nextCourse = courseList.find((course) => String(course.id) === String(courseId)) || selectedCourse
     if (nextCourse?.id) {
       setSelectedCourseId(nextCourse.id)
+      if (!isCourseApproved(nextCourse) && section !== 'overview') {
+        requestCourseAccess(nextCourse)
+        setActiveTab('courses')
+        setSidebarOpen(false)
+        return
+      }
       const moduleStillInCourse = nextCourse.modules.some((module) => String(module.id) === String(selectedModuleId))
       const nextModule = moduleStillInCourse
         ? nextCourse.modules.find((module) => String(module.id) === String(selectedModuleId))
@@ -1119,12 +1391,28 @@ function App() {
   }
 
   const openCourse = (courseId, section = 'overview') => {
+    const course = courseList.find((item) => String(item.id) === String(courseId))
+    if (course && !isCourseApproved(course)) {
+      setSelectedCourseId(course.id)
+      requestCourseAccess(course)
+      setActiveTab('courses')
+      setSidebarOpen(false)
+      return
+    }
     goToCourseSection(section, courseId)
   }
 
   const openModule = (moduleId) => {
     if (!moduleId) return
     const module = trainingModules.find((item) => item.id === moduleId)
+    const course = getModuleCourse(module)
+    if (course && !isCourseApproved(course)) {
+      setSelectedCourseId(course.id)
+      requestCourseAccess(course)
+      setActiveTab('courses')
+      setSidebarOpen(false)
+      return
+    }
     const firstItem = getCanvasItems(module).find((item) => item.type !== 'quiz')
     const courseId = cleanText(module?.courseId, module?.course_id)
     if (courseId) setSelectedCourseId(courseId)
@@ -1137,6 +1425,13 @@ function App() {
 
   const enrollModule = (module) => {
     if (!module) return
+    const course = getModuleCourse(module)
+    if (course && !isCourseApproved(course)) {
+      setSelectedCourseId(course.id)
+      requestCourseAccess(course)
+      setActiveTab('courses')
+      return
+    }
     if (isEnrolled(module)) {
       openModule(module.id)
       return
@@ -1148,20 +1443,7 @@ function App() {
     }))
     setSelectedModuleId(module.id)
     setActiveTab('module')
-    addNotification('Module enrolled', `${module.title} is now in your learning path.`, 'training')
-    if (module.courseId) {
-      authFetch(API_LINKS.enrollmentRequests, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          moduleId: module.id,
-          courseId: module.courseId,
-        }),
-      }).catch((error) => {
-        console.warn('Unable to send admin enrollment request:', error)
-      })
-    }
+    addNotification('Module started', `${module.title} is now in your learning path.`, 'training')
   }
 
   const toggleLesson = (module, lessonIndex) => {
@@ -1405,16 +1687,26 @@ function App() {
 
   const beginGuidedModule = () => {
     if (!selectedModule) return
+    if (!canAccessModule(selectedModule)) {
+      enrollModule(selectedModule)
+      return
+    }
     if (!isEnrolled(selectedModule)) {
       enrollModule(selectedModule)
+      return
     }
     setModuleDetailStep('items')
   }
 
   const startGuidedItems = () => {
     if (!selectedModule) return
+    if (!canAccessModule(selectedModule)) {
+      enrollModule(selectedModule)
+      return
+    }
     if (!isEnrolled(selectedModule)) {
       enrollModule(selectedModule)
+      return
     }
     const firstUnreadItem =
       selectedModuleContentItems.find((item) => !isCanvasItemDone(selectedModule, item)) ||
@@ -1897,9 +2189,18 @@ function App() {
                 {courseList.length === 0 && (
                   <EmptyFrame title="No backend courses yet" body="Run the Canvas demo seed after the Admin API is running, then refresh this page." />
                 )}
-                {courseList.map((course) => (
+                {courseList.map((course) => {
+                  const enrollmentStatus = getCourseEnrollmentStatus(course)
+                  const approved = isCourseApproved(course)
+                  const requestLocked = enrollmentStatus === 'pending'
+                  return (
                   <article key={course.id} className={`course-card ${selectedCourse?.id === course.id ? 'selected' : ''}`}>
-                    <CourseVisual course={course} className="course-card-image" asButton onClick={() => openCourse(course.id, 'overview')} />
+                    <CourseVisual
+                      course={course}
+                      className="course-card-image"
+                      asButton
+                      onClick={() => (approved ? openCourse(course.id, 'overview') : requestCourseAccess(course))}
+                    />
                     <div className="course-card-topline">
                       <span>{course.id}</span>
                       <b>{course.contactHours || course.modules.length}h</b>
@@ -1910,18 +2211,20 @@ function App() {
                       <span>{course.modules.length} modules</span>
                       <span>{course.itemCount} items</span>
                       <span>{course.resources.length} resources</span>
+                      <span>{courseEnrollmentLabel(enrollmentStatus)}</span>
                     </div>
-                    <ProgressBar value={getCourseProgress(course)} />
+                    <ProgressBar value={approved ? getCourseProgress(course) : 0} />
                     <div className="course-card-actions">
-                      <button type="button" onClick={() => openCourse(course.id, 'overview')}>
-                        Open course
+                      <button type="button" onClick={() => (approved ? openCourse(course.id, 'overview') : requestCourseAccess(course))} disabled={requestLocked}>
+                        {approved ? 'Open course' : requestLocked ? 'Pending approval' : 'Register course'}
                       </button>
-                      <button type="button" className="secondary-form-button" onClick={() => openCourse(course.id, 'modules')}>
+                      <button type="button" className="secondary-form-button" onClick={() => openCourse(course.id, 'modules')} disabled={!approved}>
                         Modules
                       </button>
                     </div>
                   </article>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="content-grid">
@@ -1930,13 +2233,13 @@ function App() {
                   {selectedCourse ? (
                     <div className="compact-module-list">
                       {selectedCourse.modules.map((module) => (
-                        <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                        <button key={module.id} type="button" onClick={() => openModule(module.id)} disabled={!isCourseApproved(selectedCourse)}>
                           <ModuleThumb module={module} />
                           <span>
                             <strong>{module.title}</strong>
-                            <small>{module.park} - {getCanvasItems(module).length} items</small>
+                            <small>{isCourseApproved(selectedCourse) ? `${module.park} - ${getCanvasItems(module).length} items` : courseEnrollmentLabel(getCourseEnrollmentStatus(selectedCourse))}</small>
                           </span>
-                          <b>{getProgress(module)}%</b>
+                          <b>{isCourseApproved(selectedCourse) ? `${getProgress(module)}%` : 'LOCK'}</b>
                         </button>
                       ))}
                     </div>
@@ -1998,10 +2301,16 @@ function App() {
                       <span>{selectedCourse?.contactHours || 0} contact hours</span>
                     </div>
                     <p>{selectedCourse?.description || 'Course description will appear here after Admin publishes the course.'}</p>
-                    <ProgressBar value={getCourseProgress(selectedCourse)} />
+                    <ProgressBar value={isCourseApproved(selectedCourse) ? getCourseProgress(selectedCourse) : 0} />
                     <div className="course-card-actions">
-                      <button type="button" onClick={() => goToCourseSection('modules')}>View modules</button>
-                      <button type="button" className="secondary-form-button" onClick={() => goToCourseSection('item')}>
+                      <button
+                        type="button"
+                        onClick={() => (isCourseApproved(selectedCourse) ? goToCourseSection('modules') : requestCourseAccess(selectedCourse))}
+                        disabled={getCourseEnrollmentStatus(selectedCourse) === 'pending'}
+                      >
+                        {isCourseApproved(selectedCourse) ? 'View modules' : getCourseEnrollmentStatus(selectedCourse) === 'pending' ? 'Pending admin approval' : 'Register course'}
+                      </button>
+                      <button type="button" className="secondary-form-button" onClick={() => goToCourseSection('item')} disabled={!isCourseApproved(selectedCourse)}>
                         Open item detail
                       </button>
                     </div>
@@ -2023,13 +2332,13 @@ function App() {
                         <EmptyFrame title="No modules yet" body="Admin can add modules from the Course Builder." />
                       )}
                       {selectedCourseModules.map((module) => (
-                        <button key={module.id} type="button" onClick={() => openModule(module.id)}>
+                        <button key={module.id} type="button" onClick={() => openModule(module.id)} disabled={!isCourseApproved(selectedCourse)}>
                           <ModuleThumb module={module} />
                           <span>
                             <strong>{module.title}</strong>
-                            <small>{module.level} - {getCanvasItems(module).length} items</small>
+                            <small>{isCourseApproved(selectedCourse) ? `${module.level} - ${getCanvasItems(module).length} items` : courseEnrollmentLabel(getCourseEnrollmentStatus(selectedCourse))}</small>
                           </span>
-                          <b>{getProgress(module)}%</b>
+                          <b>{isCourseApproved(selectedCourse) ? `${getProgress(module)}%` : 'LOCK'}</b>
                         </button>
                       ))}
                     </div>
@@ -2084,6 +2393,9 @@ function App() {
                     {filteredModules.map((module) => {
                       const progress = getProgress(module)
                       const enrolled = isEnrolled(module)
+                      const moduleCourse = getModuleCourse(module)
+                      const moduleCourseStatus = getCourseEnrollmentStatus(moduleCourse)
+                      const moduleCourseApproved = !moduleCourse || isCourseApproved(moduleCourse)
                       return (
                         <article key={module.id} className="module-card">
                           <ModuleVisual module={module} className="module-image" asButton onClick={() => openModule(module.id)} />
@@ -2097,8 +2409,18 @@ function App() {
                             <p>{module.subtitle}</p>
                             <ProgressBar value={progress} />
                             <div className="module-actions">
-                              <button type="button" onClick={() => (enrolled ? openModule(module.id) : enrollModule(module))}>
-                                {enrolled ? 'Open module' : 'Enroll'}
+                              <button
+                                type="button"
+                                onClick={() => (enrolled ? openModule(module.id) : enrollModule(module))}
+                                disabled={!moduleCourseApproved && moduleCourseStatus === 'pending'}
+                              >
+                                {enrolled
+                                  ? 'Open module'
+                                  : moduleCourseApproved
+                                    ? 'Start module'
+                                    : moduleCourseStatus === 'pending'
+                                      ? 'Pending approval'
+                                      : 'Register course'}
                               </button>
                               <span>{progress}%</span>
                             </div>
@@ -2112,7 +2434,35 @@ function App() {
             </section>
           )}
 
-          {activeTab === 'module' && selectedModule && (
+          {activeTab === 'module' && selectedModule && !canAccessModule(selectedModule) && (
+            <section className="page-stack guided-module-page">
+              <CourseShellNav
+                courses={courseList}
+                selectedCourse={selectedCourse}
+                activeKey="item"
+                onCourseChange={(courseId) => openCourse(courseId, 'item')}
+                onSectionChange={goToCourseSection}
+              />
+              <section className="panel wide">
+                <PanelTitle kicker="Course registration" title={selectedCourse?.name || 'Course access'} />
+                <p>{courseEnrollmentLabel(getCourseEnrollmentStatus(selectedCourse))}</p>
+                <div className="course-card-actions">
+                  <button
+                    type="button"
+                    onClick={() => requestCourseAccess(selectedCourse)}
+                    disabled={getCourseEnrollmentStatus(selectedCourse) === 'pending'}
+                  >
+                    {getCourseEnrollmentStatus(selectedCourse) === 'pending' ? 'Pending admin approval' : 'Register course'}
+                  </button>
+                  <button type="button" className="secondary-form-button" onClick={() => setActiveTab('courses')}>
+                    Back to courses
+                  </button>
+                </div>
+              </section>
+            </section>
+          )}
+
+          {activeTab === 'module' && selectedModule && canAccessModule(selectedModule) && (
             <section className="page-stack guided-module-page">
               <CourseShellNav
                 courses={courseList}
@@ -2289,7 +2639,7 @@ function App() {
                   <ProgressBar value={getProgress(selectedModule)} />
                   <div className="hero-actions">
                     <button type="button" onClick={() => enrollModule(selectedModule)}>
-                      {isEnrolled(selectedModule) ? 'Continue module' : 'Enroll module'}
+                      {isEnrolled(selectedModule) ? 'Continue module' : 'Start module'}
                     </button>
                     <button type="button" className="secondary-button" onClick={() => goToCourseSection('modules')}>
                       Back to modules
@@ -2309,7 +2659,7 @@ function App() {
                   </div>
 
                   {!isEnrolled(selectedModule) && (
-                    <EmptyFrame title="Enroll first" body="Park Guides must enroll before completing Canvas items and quiz attempts." />
+                    <EmptyFrame title="Start this module first" body="Park Guides can complete Canvas items after the course is approved and the module is started." />
                   )}
 
                   <div className="objective-grid canvas-objective-grid">
@@ -2508,7 +2858,7 @@ function App() {
                   return (
                     <article key={certificate.id} className={`certificate-card ${certificate.unlocked ? 'unlocked' : 'locked'}`}>
                       <div className="certificate-art" aria-hidden="true">
-                        <img src={certificateBackgroundSrc} alt="" />
+                        <img src={certificateTemplateSrc} alt="" onError={applyCertificateTemplateFallback} />
                         <img className="certificate-logo" src={certificateLogoSrc} alt="" />
                       </div>
                       <div className="certificate-stamp">{certificate.unlocked ? initials(course?.name || 'SFC') : 'LOCK'}</div>
@@ -2531,10 +2881,10 @@ function App() {
                       </dl>
                       <button
                         type="button"
-                        disabled={!certificate.unlocked}
-                        onClick={() => alert('Connect this button to your course certificate file endpoint.')}
+                        disabled={!certificate.downloadReady}
+                        onClick={() => downloadCertificate(certificate, course)}
                       >
-                        {certificate.unlocked ? 'Download certificate' : 'Locked'}
+                        {certificate.downloadReady ? 'Download certificate' : 'Locked'}
                       </button>
                     </article>
                   )
