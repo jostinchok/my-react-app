@@ -82,6 +82,7 @@ const Sidebar = () => {
       }}
     >
       <Box
+        id="admin-sidebar"
         className={`admin-sidebar admin-command-rail ${open ? "is-open" : "is-collapsed"}`}
         sx={{
           width: open ? `${SIDEBAR_WIDTH}px` : `${COLLAPSED_SIDEBAR_WIDTH}px`,

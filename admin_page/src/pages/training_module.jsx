@@ -481,7 +481,12 @@ const TrainingModuleSetup = () => {
                 <Box key={module.module_id} className="canvas-module-card">
                   <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1.2}>
                     <Stack direction="row" alignItems="center" gap={1.2}>
-                      <IconButton onClick={() => toggleModule(module.module_id)} className="canvas-module-toggle">
+                      <IconButton
+                        onClick={() => toggleModule(module.module_id)}
+                        className="canvas-module-toggle"
+                        aria-label={`${expanded[module.module_id] ? "Collapse" : "Expand"} ${module.title}`}
+                        aria-expanded={Boolean(expanded[module.module_id])}
+                      >
                         {expanded[module.module_id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                       </IconButton>
                       <Box>

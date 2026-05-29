@@ -35,6 +35,8 @@
 }
 
 .sidebar-backdrop {
+  border: 0;
+  padding: 0;
   display: none;
   position: fixed;
   inset: 0;
@@ -1558,7 +1560,8 @@
   text-decoration: none;
 }
 
-.file-card-actions a {
+.file-card-actions a,
+.file-card-actions .download-button {
   background: var(--forest);
   color: var(--white);
 }

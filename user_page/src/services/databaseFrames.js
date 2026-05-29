@@ -383,6 +383,8 @@ export const normalizeProfileRow = (row = {}) => ({
 
 export const normalizeCourseFileRow = (row = {}) => ({
   id: asText(firstValue(row.id, row.file_id)),
+  source: asText(row.source, 'user_upload'),
+  readOnly: asBoolean(firstValue(row.readOnly, row.read_only, row.source === 'admin_resource', false)),
   moduleId: asText(firstValue(row.moduleId, row.module_id)),
   course: asText(firstValue(row.course, row.course_key, row.module_title), 'Saved Resources'),
   name: asText(firstValue(row.name, row.original_name, row.file_name), 'Course file'),
@@ -664,6 +666,20 @@ export const deleteCourseFile = async ({ userId, fileId }) => {
   }
 
   return payload
+}
+
+export const downloadCourseFile = async (url) => {
+  const response = await authFetch(url, { cache: 'no-store' })
+  const contentType = response.headers.get('Content-Type') || ''
+
+  if (!response.ok) {
+    const payload = contentType.includes('application/json')
+      ? await response.json().catch(() => ({}))
+      : {}
+    throw new Error(payload.message || 'Unable to download course file.')
+  }
+
+  return response.blob()
 }
 
 export const loadCanvasProgress = async (userId) => {

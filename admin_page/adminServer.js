@@ -8,6 +8,15 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mysql from 'mysql2/promise'
+import { getDemoCourseResource } from '../shared/demoCourseResources.js'
+import {
+  assertSafeUpload,
+  createCorsOptions,
+  createSafeStaticOptions,
+  defaultBlockedUploadExtensions,
+  getJwtSecret,
+  parseBase64DataUrl,
+} from '../shared/security.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const appRoot = path.resolve(__dirname, '..')
@@ -26,20 +35,11 @@ const defaultCorsOrigins = [
   'http://127.0.0.1:5176',
 ]
 
-const configuredCorsOrigins = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
-  ? []
-  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
-
-const corsOriginSetting = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
-  ? true
-  : [...new Set([...configuredCorsOrigins, ...defaultCorsOrigins])]
-
-const corsOptions = {
-  origin: corsOriginSetting,
+const corsOptions = createCorsOptions({
+  defaultOrigins: defaultCorsOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}
+})
+const safeStaticOptions = createSafeStaticOptions()
 
 app.use(cors(corsOptions))
 app.options(/.*/, cors(corsOptions))
@@ -56,7 +56,7 @@ const apiLimiter = rateLimit({
 })
 app.use('/api', apiLimiter)
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+const JWT_SECRET = getJwtSecret('Admin API')
 
 const getBearerToken = (req) => {
   const authHeader = String(req.get('Authorization') || '').trim()
@@ -106,11 +106,30 @@ const moduleHeroDir = path.join(uploadRoot, 'module-heroes')
 const certificateUploadDir = path.join(uploadRoot, 'certificates')
 const adminPublicDir = path.join(__dirname, 'public')
 const adminFrontendPublicUrl = String(process.env.ADMIN_FRONTEND_PUBLIC_URL || 'http://localhost:5174/admin').replace(/\/$/, '')
-const blockedUploadExtensions = new Set(['.exe', '.bat', '.cmd', '.com', '.msi', '.ps1', '.sh'])
+const blockedUploadExtensions = defaultBlockedUploadExtensions
 const allowedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const allowedAdminUploadMimeTypes = new Set([
+  'application/msword',
+  'application/octet-stream',
+  'application/pdf',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'text/csv',
+  'text/plain',
+])
+const adminJsonBodyLimit = process.env.ADMIN_JSON_BODY_LIMIT || '16mb'
+const maxAdminUploadBytes = Number(process.env.ADMIN_UPLOAD_MAX_BYTES || 10 * 1024 * 1024)
+const maxModuleHeroBytes = Number(process.env.ADMIN_HERO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024)
 
-app.use(express.json({ limit: '50mb' }))
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')))
+app.use(express.json({ limit: adminJsonBodyLimit }))
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), safeStaticOptions))
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -127,8 +146,8 @@ const asyncRoute = (handler) => async (req, res) => {
   try {
     await handler(req, res)
   } catch (error) {
-    console.error(error)
     const statusCode = error.statusCode || 500
+    if (statusCode >= 500) console.error(error)
     res.status(statusCode).json({
       message: statusCode < 500 ? error.message : 'Admin training API request failed. Check MySQL and database migrations.',
       error: process.env.NODE_ENV === 'production' ? undefined : error.message,
@@ -185,12 +204,7 @@ const formatBytes = (sizeBytes = 0) => {
 }
 
 const parseDataUrl = (dataUrl) => {
-  const match = /^data:([^;,]+)(?:;[^;,]+)*;base64,([a-zA-Z0-9+/=\s]+)$/i.exec(String(dataUrl || '').trim())
-  if (!match) return null
-  return {
-    mimeType: match[1],
-    buffer: Buffer.from(match[2].replace(/\s+/g, ''), 'base64'),
-  }
+  return parseBase64DataUrl(dataUrl)
 }
 
 const saveModuleHeroImage = async ({ moduleId, fileName = 'module-hero', dataUrl = '' }) => {
@@ -206,11 +220,15 @@ const saveModuleHeroImage = async ({ moduleId, fileName = 'module-hero', dataUrl
   const extension = path.extname(safeOriginalName).toLowerCase()
   const originalBase = path.basename(safeOriginalName, extension).slice(0, 96) || 'module-hero'
   const originalName = `${originalBase}${extension}`.slice(0, 120)
-  if (blockedUploadExtensions.has(extension)) {
-    const error = new Error('This file type is blocked for demo safety.')
-    error.statusCode = 400
-    throw error
-  }
+  assertSafeUpload({
+    fileName: originalName,
+    mimeType: parsed.mimeType,
+    sizeBytes: parsed.buffer.length,
+    maxBytes: maxModuleHeroBytes,
+    allowedMimeTypes: allowedImageMimeTypes,
+    allowedMimePrefixes: [],
+    blockedExtensions: blockedUploadExtensions,
+  })
 
   const storedName = `module-${moduleId}-hero-${Date.now()}-${originalName}`
   await fs.writeFile(path.join(moduleHeroDir, storedName), parsed.buffer)
@@ -849,11 +867,13 @@ app.delete('/api/courses/:courseId', asyncRoute(async (req, res) => {
 
   const [result] = await pool.query('DELETE FROM courses WHERE course_id = ?', [courseId])
   await Promise.all(
-    resources.map((resource) =>
-      fs.unlink(path.join(resourceUploadDir, resource.stored_name)).catch((error) => {
+    resources.map(async (resource) => {
+      const storedName = path.basename(resource.stored_name || '')
+      if (!storedName) return
+      await fs.unlink(path.join(resourceUploadDir, storedName)).catch((error) => {
         if (error?.code !== 'ENOENT') throw error
       })
-    )
+    })
   )
 
   if (result.affectedRows === 0) {
@@ -1244,10 +1264,14 @@ app.post('/api/modules/:moduleId/items', asyncRoute(async (req, res) => {
     }
 
     originalName = safeFileName(fileName || `${type}-item`)
-    if (blockedUploadExtensions.has(path.extname(originalName).toLowerCase())) {
-      res.status(400).json({ message: 'This file type is blocked for demo safety.' })
-      return
-    }
+    assertSafeUpload({
+      fileName: originalName,
+      mimeType: parsed.mimeType,
+      sizeBytes: parsed.buffer.length,
+      maxBytes: maxAdminUploadBytes,
+      allowedMimeTypes: allowedAdminUploadMimeTypes,
+      blockedExtensions: blockedUploadExtensions,
+    })
 
     storedName = `module-item-${moduleId}-${Date.now()}-${originalName}`
     fileUrl = `/uploads/module-media/${storedName}`
@@ -1335,16 +1359,20 @@ app.put('/api/modules/:moduleId/items/:itemId', asyncRoute(async (req, res) => {
       return
     }
 
+    originalName = safeFileName(fileName || `${type}-item`)
+    assertSafeUpload({
+      fileName: originalName,
+      mimeType: parsed.mimeType,
+      sizeBytes: parsed.buffer.length,
+      maxBytes: maxAdminUploadBytes,
+      allowedMimeTypes: allowedAdminUploadMimeTypes,
+      blockedExtensions: blockedUploadExtensions,
+    })
+
     if (storedName) {
-      await fs.unlink(path.join(moduleMediaDir, storedName)).catch((error) => {
+      await fs.unlink(path.join(moduleMediaDir, path.basename(storedName))).catch((error) => {
         if (error?.code !== 'ENOENT') throw error
       })
-    }
-
-    originalName = safeFileName(fileName || `${type}-item`)
-    if (blockedUploadExtensions.has(path.extname(originalName).toLowerCase())) {
-      res.status(400).json({ message: 'This file type is blocked for demo safety.' })
-      return
     }
 
     storedName = `module-item-${moduleId}-${Date.now()}-${originalName}`
@@ -1405,7 +1433,7 @@ app.delete('/api/modules/:moduleId/items/:itemId', asyncRoute(async (req, res) =
   await pool.query('DELETE FROM course_module_items WHERE item_id = ?', [itemId])
 
   if (existing.stored_name) {
-    await fs.unlink(path.join(moduleMediaDir, existing.stored_name)).catch((error) => {
+    await fs.unlink(path.join(moduleMediaDir, path.basename(existing.stored_name))).catch((error) => {
       if (error?.code !== 'ENOENT') throw error
     })
   }
@@ -1424,7 +1452,20 @@ app.get('/api/module-items/:itemId/download', asyncRoute(async (req, res) => {
     return
   }
 
-  res.download(path.join(moduleMediaDir, item.stored_name), item.file_name || item.stored_name)
+  const storedName = path.basename(item.stored_name)
+  const filePath = path.join(moduleMediaDir, storedName)
+
+  try {
+    await fs.access(filePath)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      res.status(404).json({ message: 'Module item file is missing from the server.' })
+      return
+    }
+    throw error
+  }
+
+  res.download(filePath, item.file_name || storedName)
 }))
 
 app.post('/api/demo/canvas-seed', asyncRoute(async (_req, res) => {
@@ -1747,10 +1788,14 @@ app.post('/api/courses/:courseId/resources', asyncRoute(async (req, res) => {
   }
 
   const originalName = safeFileName(fileName)
-  if (blockedUploadExtensions.has(path.extname(originalName).toLowerCase())) {
-    res.status(400).json({ message: 'This file type is blocked for demo safety.' })
-    return
-  }
+  assertSafeUpload({
+    fileName: originalName,
+    mimeType: parsed.mimeType,
+    sizeBytes: parsed.buffer.length,
+    maxBytes: maxAdminUploadBytes,
+    allowedMimeTypes: allowedAdminUploadMimeTypes,
+    blockedExtensions: blockedUploadExtensions,
+  })
 
   const storedName = `${courseId}-${Date.now()}-${originalName}`
   const filePath = path.join(resourceUploadDir, storedName)
@@ -1769,16 +1814,43 @@ app.post('/api/courses/:courseId/resources', asyncRoute(async (req, res) => {
 }))
 
 app.get('/api/courses/:courseId/resources/:resourceId/download', asyncRoute(async (req, res) => {
+  const resourceId = Number(req.params.resourceId)
+  if (!Number.isInteger(resourceId)) {
+    res.status(400).json({ message: 'A numeric resource id is required.' })
+    return
+  }
+
   const resource = await rowOf(
     'SELECT * FROM course_resources WHERE course_id = ? AND resource_id = ?',
-    [req.params.courseId, Number(req.params.resourceId)]
+    [req.params.courseId, resourceId]
   )
-  if (!resource) {
+  if (!resource?.stored_name) {
     res.status(404).json({ message: 'Resource not found.' })
     return
   }
 
-  res.download(path.join(resourceUploadDir, resource.stored_name), resource.file_name)
+  const storedName = path.basename(resource.stored_name)
+  const filePath = path.join(resourceUploadDir, storedName)
+  const seedResource = getDemoCourseResource(storedName)
+
+  try {
+    await fs.access(filePath)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      if (seedResource) {
+        res.type(resource.mime_type || seedResource.mimeType || 'text/plain')
+        res.attachment(resource.file_name || storedName)
+        res.send(seedResource.content)
+        return
+      }
+
+      res.status(404).json({ message: 'Resource file is missing from the server.' })
+      return
+    }
+    throw error
+  }
+
+  res.download(filePath, resource.file_name || storedName)
 }))
 
 app.delete('/api/courses/:courseId/resources/:resourceId', asyncRoute(async (req, res) => {
@@ -1792,9 +1864,12 @@ app.delete('/api/courses/:courseId/resources/:resourceId', asyncRoute(async (req
   }
 
   await pool.query('DELETE FROM course_resources WHERE resource_id = ?', [resource.resource_id])
-  await fs.unlink(path.join(resourceUploadDir, resource.stored_name)).catch((error) => {
-    if (error?.code !== 'ENOENT') throw error
-  })
+  const storedName = path.basename(resource.stored_name || '')
+  if (storedName) {
+    await fs.unlink(path.join(resourceUploadDir, storedName)).catch((error) => {
+      if (error?.code !== 'ENOENT') throw error
+    })
+  }
   res.json({ message: 'Resource deleted successfully.' })
 }))
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { deleteCourseFile, uploadCourseFile } from '../services/databaseFrames'
+import { deleteCourseFile, downloadCourseFile, uploadCourseFile } from '../services/databaseFrames'
 
 const USER_API_BASE_URL = import.meta.env.VITE_USER_API_BASE_URL || ''
 
@@ -23,6 +23,7 @@ const FileManager = ({
   const [selectedModuleId, setSelectedModuleId] = useState(modules[0]?.id || '')
   const [uploadingFileName, setUploadingFileName] = useState('')
   const [deletingFileId, setDeletingFileId] = useState('')
+  const [downloadingFileId, setDownloadingFileId] = useState('')
 
   const courseOptions = useMemo(
     () => modules.map((module) => ({
@@ -76,6 +77,31 @@ const FileManager = ({
       onError?.(error.message)
     } finally {
       setDeletingFileId('')
+    }
+  }
+
+  const handleDownload = async (file) => {
+    const downloadUrl = resolveDownloadUrl(file.url)
+    if (!downloadUrl || downloadUrl === '#') {
+      onError?.('Download URL is missing for this file.')
+      return
+    }
+
+    setDownloadingFileId(file.id)
+    try {
+      const blob = await downloadCourseFile(downloadUrl)
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = file.name || 'course-file'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(objectUrl)
+    } catch (error) {
+      onError?.(error.message)
+    } finally {
+      setDownloadingFileId('')
     }
   }
 
@@ -146,7 +172,14 @@ const FileManager = ({
                     </div>
                   </dl>
                   <div className="file-card-actions">
-                    <a href={resolveDownloadUrl(file.url)} download={file.name}>Download</a>
+                    <button
+                      type="button"
+                      className="download-button"
+                      disabled={downloadingFileId === file.id}
+                      onClick={() => handleDownload(file)}
+                    >
+                      {downloadingFileId === file.id ? 'Downloading' : 'Download'}
+                    </button>
                     {file.readOnly ? (
                       <span className="resource-pill">Admin resource</span>
                     ) : (

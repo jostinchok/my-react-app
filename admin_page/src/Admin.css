@@ -5047,6 +5047,15 @@ body {
   overflow-wrap: anywhere;
 }
 
+.admin-linked-page > .MuiBox-root:first-child .course-requests-refresh-button.MuiButton-root {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 128px;
+  max-width: max-content;
+  align-self: flex-start !important;
+  white-space: nowrap !important;
+}
+
 .course-builder-hero-copy {
   flex: 1 1 460px;
   min-width: min(100%, 320px);
@@ -5147,6 +5156,12 @@ body {
   .admin-linked-page > .MuiBox-root:first-child .MuiButton-root {
     flex: 1 1 180px;
     max-width: none;
+  }
+
+  .admin-linked-page > .MuiBox-root:first-child .course-requests-refresh-button.MuiButton-root {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: max-content;
   }
 
   .course-builder-hero-stack {

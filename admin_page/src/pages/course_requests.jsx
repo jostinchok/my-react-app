@@ -217,6 +217,7 @@ const CourseRequestsPage = () => {
             </Typography>
           </Box>
           <Button
+            className="course-requests-refresh-button"
             variant="contained"
             startIcon={<RefreshIcon />}
             onClick={loadRequests}

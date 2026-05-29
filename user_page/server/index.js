@@ -8,24 +8,46 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mysql from 'mysql2/promise'
+import { getDemoCourseResource } from '../../shared/demoCourseResources.js'
+import {
+  assertSafeUpload,
+  createCorsOptions,
+  createSafeStaticOptions,
+  defaultAllowedUploadMimeTypes,
+  defaultBlockedUploadExtensions,
+  getJwtSecret,
+  parseBase64DataUrl,
+} from '../../shared/security.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const appRoot = path.resolve(__dirname, '..')
-dotenv.config({ path: path.resolve(appRoot, '..', '.env') })
+const repoRoot = path.resolve(appRoot, '..')
+dotenv.config({ path: path.resolve(repoRoot, '.env') })
 
 const avatarUploadDir = path.join(appRoot, 'public', 'uploads', 'avatars')
 const courseFileUploadDir = path.join(appRoot, 'public', 'uploads', 'course-files')
+const adminCourseResourceUploadDir = path.join(repoRoot, 'admin_page', 'public', 'uploads', 'course-resources')
 
 const app = express()
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+const JWT_SECRET = getJwtSecret('User API')
 const userApiRateLimitMax = Number(process.env.USER_API_RATE_LIMIT_MAX || process.env.API_RATE_LIMIT_MAX || 1200)
+const userJsonBodyLimit = process.env.USER_JSON_BODY_LIMIT || '12mb'
+const maxAvatarBytes = Number(process.env.USER_AVATAR_MAX_BYTES || 2 * 1024 * 1024)
+const maxCourseFileBytes = Number(process.env.USER_COURSE_FILE_MAX_BYTES || 8 * 1024 * 1024)
+const allowedAvatarMimeTypes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'])
+const allowedCourseFileMimeTypes = new Set([
+  ...defaultAllowedUploadMimeTypes,
+  'application/octet-stream',
+])
 
 const requireAuth = (allowedRoles = []) => {
+  const normalizedAllowedRoles = allowedRoles.map((role) => String(role || '').toLowerCase())
+
   return (req, res, next) => {
     const authHeader = req.get('Authorization') || ''
     const token = authHeader.startsWith('Bearer ')
@@ -38,12 +60,22 @@ const requireAuth = (allowedRoles = []) => {
 
     try {
       const user = jwt.verify(token, JWT_SECRET)
+      const userRole = String(user.role || '').toLowerCase()
+      const userId = Number(user.user_id)
 
-      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(401).json({ message: 'Login token is missing a valid user id.' })
+      }
+
+      if (normalizedAllowedRoles.length > 0 && !normalizedAllowedRoles.includes(userRole)) {
         return res.status(403).json({ message: 'You are not allowed to access this API.' })
       }
 
-      req.user = user
+      req.user = {
+        ...user,
+        user_id: userId,
+        role: userRole,
+      }
       next()
     } catch {
       return res.status(401).json({ message: 'Invalid or expired login token.' })
@@ -54,7 +86,9 @@ const port = Number(process.env.API_PORT || 4001)
 const host = process.env.API_HOST || '127.0.0.1'
 const defaultUserEmail = process.env.DEFAULT_USER_EMAIL || 'guide@test.com'
 const databaseName = process.env.DB_NAME || process.env.DB_DATABASE || 'park_guide_database'
-const adminApiPublicUrl = process.env.ADMIN_API_PUBLIC_URL || 'http://localhost:4002'
+const trimTrailingSlash = (value) => String(value || '').replace(/\/+$/, '')
+const userApiPublicUrl = trimTrailingSlash(process.env.USER_API_PUBLIC_URL || process.env.VITE_USER_API_BASE_URL || `http://localhost:${port}`)
+const adminApiPublicUrl = trimTrailingSlash(process.env.ADMIN_API_PUBLIC_URL || 'http://localhost:4002')
 const defaultCorsOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -70,13 +104,8 @@ const defaultCorsOrigins = [
   'http://127.0.0.1:8082',
 ]
 
-const configuredCorsOrigins = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
-  ? []
-  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
-
-const corsOrigin = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
-  ? true
-  : [...new Set([...configuredCorsOrigins, ...defaultCorsOrigins])]
+const corsOptions = createCorsOptions({ defaultOrigins: defaultCorsOrigins })
+const safeStaticOptions = createSafeStaticOptions()
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
@@ -89,7 +118,7 @@ const pool = mysql.createPool({
   namedPlaceholders: true,
 })
 
-app.use(cors({ origin: corsOrigin }))
+app.use(cors(corsOptions))
 const apiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: userApiRateLimitMax,
@@ -99,16 +128,19 @@ const apiLimiter = rateLimit({
   message: { message: 'Too many requests, please try again later.' },
 })
 app.use('/api', apiLimiter)
-app.use(express.json({ limit: '50mb' }))
-app.use('/uploads', express.static(path.join(appRoot, 'public', 'uploads')))
+app.use(express.json({ limit: userJsonBodyLimit }))
+app.use('/uploads', express.static(path.join(appRoot, 'public', 'uploads'), safeStaticOptions))
 
 const asyncRoute = (handler) => async (req, res) => {
   try {
     await handler(req, res)
   } catch (error) {
-    console.error(error)
-    res.status(500).json({
-      message: 'Database request failed. Check that XAMPP MySQL is running and database/db.sql has been imported.',
+    const statusCode = error.statusCode || 500
+    if (statusCode >= 500) console.error(error)
+    res.status(statusCode).json({
+      message: statusCode < 500
+        ? error.message
+        : 'Database request failed. Check that XAMPP MySQL is running and database/db.sql has been imported.',
       detail: process.env.NODE_ENV === 'production' ? undefined : error.message,
     })
   }
@@ -188,7 +220,13 @@ const ensureDemoUser = async (userId) => {
 const resolveUserId = async (req) => {
   if (req.user?.user_id) return Number(req.user.user_id)
 
-  const requestedUserId = Number(req.query.userId || req.body?.userId || req.body?.user_id || process.env.DEFAULT_USER_ID)
+  if (process.env.ALLOW_DEMO_USER_FALLBACK !== 'true') {
+    const error = new Error('Authenticated guide id is required.')
+    error.statusCode = 401
+    throw error
+  }
+
+  const requestedUserId = Number(process.env.DEFAULT_USER_ID)
   if (Number.isInteger(requestedUserId) && requestedUserId > 0) return requestedUserId
 
   const user = await rowOf('SELECT user_id FROM users WHERE email = ? LIMIT 1', [defaultUserEmail])
@@ -298,6 +336,9 @@ const normalizeCourseFile = (row = {}) => ({
   uploadedAt: row.uploaded_at,
   url: row.file_url,
 })
+
+const courseResourceDownloadUrl = (courseId, resourceId) =>
+  `${userApiPublicUrl}/api/courses/${encodeURIComponent(courseId)}/resources/${resourceId}/download`
 
 const normalizeCourseRow = (row = {}) => ({
   ...row,
@@ -614,7 +655,7 @@ const normalizeCourseResource = (row = {}) => ({
   size: formatBytes(row.size_bytes),
   uploaded: formatDateOnly(row.uploaded_at),
   uploadedAt: row.uploaded_at,
-  url: `${adminApiPublicUrl}/api/courses/${encodeURIComponent(row.course_id)}/resources/${row.resource_id}/download`,
+  url: courseResourceDownloadUrl(row.course_id, row.resource_id),
 })
 
 const buildModules = async (userId) => {
@@ -798,7 +839,7 @@ const buildModules = async (userId) => {
       type: resource.mime_type || 'Admin resource',
       size: formatBytes(resource.size_bytes),
       uploaded: formatDateOnly(resource.uploaded_at),
-      url: `${adminApiPublicUrl}/api/courses/${encodeURIComponent(resource.course_id)}/resources/${resource.resource_id}/download`,
+      url: courseResourceDownloadUrl(resource.course_id, resource.resource_id),
     })
     resourcesByCourse.set(resource.course_id, list)
   }
@@ -944,6 +985,57 @@ app.get('/api/courses', asyncRoute(async (req, res) => {
   )
 
   res.json({ courses: courses.map(normalizeCourseRow) })
+}))
+
+app.get('/api/courses/:courseId/resources/:resourceId/download', asyncRoute(async (req, res) => {
+  const courseId = String(req.params.courseId || '').trim()
+  const resourceId = Number(req.params.resourceId)
+
+  if (!courseId || !Number.isInteger(resourceId)) {
+    res.status(400).json({ message: 'A course id and numeric resource id are required.' })
+    return
+  }
+
+  const hasCourseResources = await tableExists('course_resources')
+  if (!hasCourseResources) {
+    res.status(404).json({ message: 'Resource not found.' })
+    return
+  }
+
+  const resource = await rowOf(
+    `SELECT resource_id, course_id, file_name, stored_name, mime_type
+     FROM course_resources
+     WHERE course_id = ? AND resource_id = ?`,
+    [courseId, resourceId]
+  )
+
+  if (!resource?.stored_name) {
+    res.status(404).json({ message: 'Resource not found.' })
+    return
+  }
+
+  const storedName = path.basename(resource.stored_name)
+  const filePath = path.join(adminCourseResourceUploadDir, storedName)
+  const seedResource = getDemoCourseResource(storedName)
+
+  try {
+    await fs.access(filePath)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      if (seedResource) {
+        res.type(resource.mime_type || seedResource.mimeType || 'text/plain')
+        res.attachment(resource.file_name || storedName)
+        res.send(seedResource.content)
+        return
+      }
+
+      res.status(404).json({ message: 'Resource file is missing from the server.' })
+      return
+    }
+    throw error
+  }
+
+  res.download(filePath, resource.file_name || storedName)
 }))
 
 app.get('/api/canvas-progress', asyncRoute(async (req, res) => {
@@ -1157,19 +1249,22 @@ app.patch('/api/user-profile', asyncRoute(async (req, res) => {
 app.post('/api/user-profile/avatar', asyncRoute(async (req, res) => {
   const userId = await resolveUserId(req)
   const { fileName = 'avatar.png', dataUrl } = req.body || {}
-  const match = /^data:(image\/(?:png|jpe?g|webp|gif));base64,([a-zA-Z0-9+/=]+)$/.exec(dataUrl || '')
-  const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
+  const parsed = parseBase64DataUrl(dataUrl)
 
-  const buffer = Buffer.from(match[2], 'base64')
-
-  if (buffer.length > MAX_AVATAR_SIZE) {
-    res.status(400).json({ message: 'Avatar file is too large. Maximum size is 2MB.' })
-    return
-  }
-  if (!match) {
+  if (!parsed || !allowedAvatarMimeTypes.has(parsed.mimeType)) {
     res.status(400).json({ message: 'Send an image data URL as dataUrl.' })
     return
   }
+
+  const originalName = safeFileName(fileName)
+  assertSafeUpload({
+    fileName: originalName,
+    mimeType: parsed.mimeType,
+    sizeBytes: parsed.buffer.length,
+    maxBytes: maxAvatarBytes,
+    allowedMimeTypes: allowedAvatarMimeTypes,
+    allowedMimePrefixes: [],
+  })
 
   const extensionByType = {
     'image/png': 'png',
@@ -1178,13 +1273,13 @@ app.post('/api/user-profile/avatar', asyncRoute(async (req, res) => {
     'image/webp': 'webp',
     'image/gif': 'gif',
   }
-  const extension = extensionByType[match[1]] || path.extname(fileName).slice(1) || 'png'
+  const extension = extensionByType[parsed.mimeType] || path.extname(originalName).slice(1) || 'png'
   const avatarFileName = `user-${userId}-${Date.now()}.${extension}`
   const avatarPath = path.join(avatarUploadDir, avatarFileName)
   const avatarUrl = `/uploads/avatars/${avatarFileName}`
 
   await fs.mkdir(avatarUploadDir, { recursive: true })
-  await fs.writeFile(avatarPath, buffer)
+  await fs.writeFile(avatarPath, parsed.buffer)
   await pool.query(
     `INSERT INTO guide_profiles (guide_id, avatar_url)
      VALUES (?, ?)
@@ -1337,9 +1432,9 @@ app.post('/api/course-files', asyncRoute(async (req, res) => {
     module_id = null,
     course = null,
   } = req.body || {}
-  const match = /^data:([^;,]+);base64,([a-zA-Z0-9+/=]+)$/.exec(dataUrl || '')
+  const parsed = parseBase64DataUrl(dataUrl)
 
-  if (!match) {
+  if (!parsed) {
     res.status(400).json({ message: 'Send the uploaded file as a base64 dataUrl.' })
     return
   }
@@ -1351,11 +1446,19 @@ app.post('/api/course-files', asyncRoute(async (req, res) => {
   const storedName = `user-${userId}-${Date.now()}-${originalName}`
   const filePath = path.join(courseFileUploadDir, storedName)
   const fileUrl = `/uploads/course-files/${storedName}`
-  const buffer = Buffer.from(match[2], 'base64')
   const numericModuleId = Number(moduleId || module_id)
   const savedModuleId = Number.isInteger(numericModuleId) && numericModuleId > 0 ? numericModuleId : null
 
-  await fs.writeFile(filePath, buffer)
+  assertSafeUpload({
+    fileName: originalName,
+    mimeType: parsed.mimeType,
+    sizeBytes: parsed.buffer.length,
+    maxBytes: maxCourseFileBytes,
+    allowedMimeTypes: allowedCourseFileMimeTypes,
+    blockedExtensions: defaultBlockedUploadExtensions,
+  })
+
+  await fs.writeFile(filePath, parsed.buffer)
   const [result] = await pool.query(
     `INSERT INTO course_files
        (user_id, module_id, course_key, original_name, stored_name, mime_type, size_bytes, file_url)
@@ -1366,8 +1469,8 @@ app.post('/api/course-files', asyncRoute(async (req, res) => {
       course || null,
       originalName,
       storedName,
-      mimeType || match[1],
-      Number(sizeBytes) || buffer.length,
+      parsed.mimeType || mimeType,
+      parsed.buffer.length,
       fileUrl,
     ]
   )
@@ -1461,7 +1564,7 @@ app.delete('/api/course-files/:fileId', asyncRoute(async (req, res) => {
   }
 
   await pool.query('DELETE FROM course_files WHERE file_id = ? AND user_id = ?', [fileId, userId])
-  await fs.unlink(path.join(courseFileUploadDir, file.stored_name)).catch((error) => {
+  await fs.unlink(path.join(courseFileUploadDir, path.basename(file.stored_name))).catch((error) => {
     if (error?.code !== 'ENOENT') throw error
   })
   res.json({ ok: true })

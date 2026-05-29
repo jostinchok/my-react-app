@@ -13,10 +13,16 @@
     "dev:mobile": "npm --prefix mobile_app run web -- --port 8081",
     "dev:server": "npm --prefix user_login/server start",
     "seed:canvas-demo": "node scripts/seed-canvas-demo.mjs",
+    "build": "npm run build:user && npm run build:admin && npm run check:mobile",
     "build:user": "npm --prefix user_page run build",
     "build:admin": "npm --prefix admin_page run build",
+    "check:syntax": "node --check user_login/server/index.js && node --check user_page/server/index.js && node --check admin_page/adminServer.js && node --check scripts/dev-all.mjs && node --check scripts/hub-server.mjs && node --check shared/security.js && node --check shared/demoCourseResources.js",
     "check:assets": "python3 scripts/check_required_assets.py",
+    "check:assets:win": "python scripts/check_required_assets.py",
     "download:assets": "python3 scripts/download_assets_gdrive.py",
+    "download:assets:win": "python scripts/download_assets_gdrive.py",
+    "check:python": "python3 -m py_compile scripts/run_ai_camera_monitor.py",
+    "check:python:win": "python -m py_compile scripts/run_ai_camera_monitor.py",
     "check:mobile": "npm --prefix mobile_app exec expo config -- --type public"
   },
   "dependencies": {

@@ -27,6 +27,8 @@ Desktop.ini
 # Node.js dependencies
 # =========================================================
 node_modules/
+.npm/
+.pnpm-store/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -38,8 +40,15 @@ pnpm-debug.log*
 # =========================================================
 dist/
 build/
+out/
 .vite/
 .cache/
+.next/
+.turbo/
+.parcel-cache/
+coverage/
+.nyc_output/
+*.tsbuildinfo
 .expo/
 .expo-shared/
 
@@ -50,6 +59,7 @@ build/
 .env
 .env.*
 !.env.example
+arduino_secrets.h
 
 
 # =========================================================
@@ -70,6 +80,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+.tox/
 
 
 # =========================================================
@@ -98,6 +111,11 @@ outputs
 Outputs/
 Outputs
 .asset-download-tmp/
+
+# Local asset archives copied from shared drives
+artifacts*.zip
+datasets*.zip
+models*.zip
 
 
 # Trained model files
@@ -129,7 +147,11 @@ alerts/iot/*.png
 alerts/iot/*.webp
 alerts/iot/*.json
 user_login/server/data/*.runtime.json
+user_login/server/data/*.deleted.json
 admin_page/public/uploads/
+login/public/uploads/
+mobile_app/uploads/
+mobile_app/public/uploads/
 
 
 # =========================================================
@@ -137,8 +159,19 @@ admin_page/public/uploads/
 # =========================================================
 logs/
 *.log
+*.pid
 *.tmp
 *.temp
+
+
+# =========================================================
+# Local databases
+# =========================================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
 
 
 # =========================================================

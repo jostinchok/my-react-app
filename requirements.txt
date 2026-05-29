@@ -1,3 +1,18 @@
+# Python 3.10+ is recommended.
+# macOS:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   python -m pip install --upgrade pip
+#   python -m pip install -r requirements.txt
+# Windows PowerShell:
+#   py -3 -m venv .venv
+#   .\.venv\Scripts\Activate.ps1
+#   python -m pip install --upgrade pip
+#   python -m pip install -r requirements.txt
+#
+# If OpenCV camera windows fail on a locked-down Windows machine, install
+# Microsoft Visual C++ Redistributable and retry inside the activated venv.
+
 # Core notebook support
 jupyter
 ipykernel

@@ -1,12 +1,12 @@
 # COS30049 SFC Digital Training and AI/IoT Monitoring Demo
 
-Team repository working folder:
+Repository root after cloning:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/my-react-app
+my-react-app/
 ```
 
-This is the active team repository. The completed demo was synced from the local stable source copy `my-react-app1` onto a review branch so it can be tested before merging to `main`.
+This is the active team repository for the SFC digital training and AI/IoT monitoring demo.
 
 ## Current Status
 
@@ -42,7 +42,7 @@ Image optimization status:
 ## Local Structure
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/my-react-app/
+my-react-app/
 ├── .venv/
 ├── artifacts/clip_2class_touching_species.pt
 ├── datasets/<plant-class dataset folder>/
@@ -57,35 +57,99 @@ Image optimization status:
 └── user_login/
 ```
 
-Local-only folders such as `.venv/`, `artifacts/`, `datasets/`, `models/`, `node_modules/`, `dist/`, and `.expo/` should not be committed. `alerts/ai/` and `alerts/iot/` are intentionally available for curated demo evidence.
+Local-only folders such as `.venv/`, `artifacts/`, `datasets/`, `models/`, `node_modules/`, `dist/`, `.expo/`, `alerts/ai/`, and `alerts/iot/` should not be committed. Share curated demo evidence separately if it is needed for presentation.
 
-## Setup
+## New User Quick Start
 
-Install JavaScript dependencies:
+Prerequisites:
+
+- Git
+- Node.js 20 or newer
+- npm 10 or newer
+- Python 3.10 or newer
+- MySQL or MariaDB. XAMPP MySQL is acceptable for local demos.
+- Optional: Expo Go or a browser for the mobile web preview
+- Optional AI camera assets: model files under `artifacts/`, `models/`, and `datasets/`
+
+Clone and install JavaScript dependencies:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+git clone https://github.com/jostinchok/my-react-app.git
+cd my-react-app
 npm install
 ```
 
-Create the Python environment inside this folder:
+Create local environment files:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+# macOS / Linux
+cp .env.example .env
+
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+Edit `.env` only on your machine. Do not commit real `.env` files.
+
+Create the Python environment:
+
+```bash
+# macOS / Linux
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Prepare backend environment values from the example file:
+```powershell
+# Windows PowerShell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Create the local MySQL databases and import the schemas. On Windows, run the same SQL commands from MySQL Shell, XAMPP Shell, Git Bash, or a terminal where `mysql` is on `PATH`.
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-cp .env.example .env
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
+mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
+mysql -u root -p park_guide_database < database/db.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
+mysql -u root -p park_guide_database < user_login/server/migrations/004_canvas_learning_progress.sql
+mysql -u root -p park_guide_database < database/demo_canvas_courses.sql
 ```
 
-Do not commit real `.env` files.
+Start everything:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+Hub:        http://localhost:5173
+Login:      http://localhost:5176/login/
+Park Guide: http://localhost:5175/user
+Admin:      http://localhost:5174/admin
+Ranger:     http://localhost:5174/ranger
+Mobile web: http://localhost:8081
+```
+
+Demo accounts use password `1234`:
+
+```text
+admin@example.com
+user1@demo.local
+user2@demo.local
+user3@demo.local
+ranger1@demo.local
+ranger2@demo.local
+ranger3@demo.local
+```
 
 ## Local Asset Setup
 
@@ -111,66 +175,85 @@ my-react-app/
 Install the Google Drive helper:
 
 ```bash
-python3 -m pip install gdown
+python -m pip install gdown
 ```
 
 Download local assets. Replace the placeholder with the shared Google Drive folder link:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-python3 scripts/download_assets_gdrive.py \
-  --url "<GOOGLE_DRIVE_FOLDER_URL>"
+# macOS / Linux
+python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
+
+# Windows PowerShell
+python scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
 ```
 
 Verify local assets:
 
 ```bash
-python3 scripts/check_required_assets.py
+# macOS / Linux
+npm run check:assets
+
+# Windows PowerShell
+npm run check:assets:win
 ```
 
 If the Google Drive folder is private, set it to "Anyone with the link can view" or download manually. Manual fallback: download `artifacts/`, `models/`, and `datasets/` from Google Drive and place those folders directly inside `my-react-app`.
 
-Do not commit downloaded `artifacts/`, `datasets/`, `models/`, `.asset-download-tmp/`, `.venv/`, `node_modules/`, real `.env`, or personal alert images. Curated AI evidence already tracked in Git can remain; personal `alerts/iot` camera captures should stay local unless explicitly approved.
+Do not commit downloaded `artifacts/`, `datasets/`, `models/`, `.asset-download-tmp/`, `.venv/`, `node_modules/`, real `.env`, or alert images from `alerts/ai/` and `alerts/iot/`.
 
-Teammate quick-start after this branch is merged:
+Short macOS/Linux refresh command list:
 
 ```bash
-cd /path/to/my-react-app
 git checkout main
 git pull origin main
 npm install
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
-python3 -m pip install gdown
+python -m pip install -r requirements.txt
+python -m pip install gdown
 python3 scripts/download_assets_gdrive.py --url "<GOOGLE_DRIVE_FOLDER_URL>"
 python3 scripts/check_required_assets.py
 cp .env.example .env
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS cos30049_assignment;"
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 mysql -u root -p park_guide_database < database/db.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/003_canvas_module_items.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/004_canvas_learning_progress.sql
+mysql -u root -p park_guide_database < database/demo_canvas_courses.sql
 npm run dev
-# In a second terminal after the Admin API at :4002 is healthy:
-npm run seed:canvas-demo
 ```
-
-AI dataset improvement remains future work and is not part of this merge.
 
 ## Run The Full Demo
 
 The standard demo run uses MySQL for AI/IoT incidents. Start MySQL first, confirm `cos30049_assignment` exists, then run:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+npm run dev
+```
+
+The values in `.env` are loaded automatically. If you need to override values for one terminal session, use:
+
+```bash
+# macOS / Linux
 INCIDENT_STORAGE=mysql \
 INCIDENT_MYSQL_FALLBACK=none \
 DB_DATABASE=cos30049_assignment \
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
-IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/iot" \
+AI_EVIDENCE_DIR="alerts/ai" \
+IOT_EVIDENCE_DIR="alerts/iot" \
+npm run dev
+```
+
+```powershell
+# Windows PowerShell
+$env:INCIDENT_STORAGE="mysql"
+$env:INCIDENT_MYSQL_FALLBACK="none"
+$env:DB_DATABASE="cos30049_assignment"
+$env:AI_EVIDENCE_DIR="alerts/ai"
+$env:IOT_EVIDENCE_DIR="alerts/iot"
 npm run dev
 ```
 
@@ -211,7 +294,6 @@ mysql -u root -p -e "ALTER USER 'ctip_user'@'localhost' IDENTIFIED BY 'user'; GR
 Apply the monitoring migration:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p cos30049_assignment < user_login/server/migrations/001_create_monitoring_incident_tables.sql
 ```
 
@@ -223,7 +305,7 @@ The three presentation courses are stored as real MySQL records through `databas
 Preferred setup path:
 
 ~~~bash
-mysql -u root -p cos30049_assignment < database/demo_canvas_courses.sql
+mysql -u root -p park_guide_database < database/demo_canvas_courses.sql
 ~~~
 
 This inserts records into `courses`, `training_modules`, `lessons`, and `course_module_items`.
@@ -251,7 +333,6 @@ page, text, file, image, video, link, quiz, checklist
 Apply the base training schema, the selective training-platform migration, the Canvas module item migration, and the Canvas learning-progress migration:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS park_guide_database;"
 mysql -u root -p park_guide_database < database/db.sql
 mysql -u root -p park_guide_database < user_login/server/migrations/002_training_platform_tables.sql
@@ -285,10 +366,7 @@ http://localhost:4002/api/admin/canvas-progress-summary
 Preferred presentation setup: insert the Canvas demo courses directly into MySQL:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-npm run dev
-# In a second terminal after http://localhost:4002/api/health is online:
-npm run seed:canvas-demo
+mysql -u root -p park_guide_database < database/demo_canvas_courses.sql
 ```
 
 The SQL insert file creates these course records:
@@ -327,27 +405,34 @@ AI/IoT monitoring incidents use the monitoring MySQL database and remain separat
 
 ## AI Camera Runtime
 
-On Chia's Mac, use the project Conda Python for the local camera demo:
+Activate the local Python environment first:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0
+# macOS / Linux
+source .venv/bin/activate
 ```
 
-Generic teammate fallback: activate the local venv first:
-
-```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-source .venv/bin/activate
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
 ```
 
 Run the realtime monitor:
 
 ```bash
-python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app \
-  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai \
-  --backend-url http://localhost:4000
+# macOS / Linux
+python scripts/run_ai_camera_monitor.py --project-dir . --evidence-dir alerts/ai --backend-url http://localhost:4000
+```
+
+```powershell
+# Windows PowerShell
+python scripts/run_ai_camera_monitor.py --project-dir . --evidence-dir alerts/ai --backend-url http://localhost:4000
+```
+
+If you keep a separate Conda environment, run the same script with that Python executable:
+
+```bash
+python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0
 ```
 
 When backend token auth is enabled, the script automatically reads `AI_CAMERA_TOKEN` from `.env` if `--device-token` is not provided.
@@ -365,7 +450,7 @@ Expected behavior:
 Evidence output goes to:
 
 ```text
-/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai
+alerts/ai/
 ```
 
 The backend serves evidence as browser-safe URLs:
@@ -379,7 +464,7 @@ http://localhost:4000/evidence/ai/<filename>
 Run the full app or backend first, then publish a test IoT incident:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+cd user_login/server
 npm run publish:test-iot
 ```
 
@@ -392,6 +477,28 @@ ctip/sensor/plant-zone-01/proximity
 ```
 
 The expected simulated incident is `source=IOT_SENSOR`, `event_type=ObjectCloseToPlant`, `sensor_id=plant-zone-01`, `location=Plant Zone 01`, `severity=low`, and incident status `New`.
+
+For the physical ESP32 proximity monitor, keep local WiFi and token values out of Git:
+
+```bash
+# macOS / Linux
+cp arduino_secrets.example.h arduino_secrets.h
+```
+
+```powershell
+# Windows PowerShell
+Copy-Item arduino_secrets.example.h arduino_secrets.h
+```
+
+Edit `arduino_secrets.h` on your own machine:
+
+```c
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define IOT_SENSOR_DEVICE_TOKEN "YOUR_IOT_SENSOR_TOKEN"
+```
+
+`arduino_secrets.h` is ignored by Git and should never be committed. Open `CTIP_IoT_Plant_Proximity_Monitor.ino` in Arduino IDE, install ESP32 board support and the `PubSubClient` library, select the correct ESP32 board and serial port, then upload the sketch. If `DEVICE_TOKEN_AUTH_ENABLED=false`, the token placeholder can stay unchanged for local demos.
 
 Admin Incident Detection can also listen to the browser MQTT websocket. A real sensor reading opens the browser camera and saves one delayed, compressed JPEG when the payload has `status=triggered` or `distance_cm <= threshold_cm`. The backend stores the image under:
 
@@ -413,39 +520,55 @@ Camera note: stop the browser preview before running `scripts/run_ai_camera_moni
 
 ## Cybersecurity Tutor Check
 
-Detailed cybersecurity evidence is in:
-
-```text
-CYBERSECURITY_REVIEW.md
-```
-
 Generate local demo tokens. These are printed only; they are not written into `.env` automatically:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+cd user_login/server
 npm run generate:tokens
+cd ../..
 ```
 
 Enable optional cybersecurity demo mode by copying generated token values into your local shell or local `.env`:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
+# macOS / Linux
 DEVICE_TOKEN_AUTH_ENABLED=true \
 ROLE_CHECK_ENABLED=true \
 AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
 IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
-AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app/alerts/ai" \
+AI_EVIDENCE_DIR="alerts/ai" \
+npm run dev
+```
+
+```powershell
+# Windows PowerShell
+$env:DEVICE_TOKEN_AUTH_ENABLED="true"
+$env:ROLE_CHECK_ENABLED="true"
+$env:AI_CAMERA_TOKEN="<copy-generated-ai-token>"
+$env:IOT_SENSOR_TOKEN="<copy-generated-iot-token>"
+$env:AI_EVIDENCE_DIR="alerts/ai"
 npm run dev
 ```
 
 Run the smoke test from another terminal with the same token values:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+# macOS / Linux
+cd user_login/server
 DEVICE_TOKEN_AUTH_ENABLED=true \
 ROLE_CHECK_ENABLED=true \
 AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
 IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+npm run security:smoke
+```
+
+```powershell
+# Windows PowerShell
+cd user_login/server
+$env:DEVICE_TOKEN_AUTH_ENABLED="true"
+$env:ROLE_CHECK_ENABLED="true"
+$env:AI_CAMERA_TOKEN="<copy-generated-ai-token>"
+$env:IOT_SENSOR_TOKEN="<copy-generated-iot-token>"
 npm run security:smoke
 ```
 
@@ -461,10 +584,7 @@ Security controls now available for demonstration:
 AI camera token mode:
 
 ```bash
-/opt/homebrew/Caskroom/miniconda/base/envs/cos30049/bin/python scripts/run_ai_camera_monitor.py \
-  --backend-url http://localhost:4000 \
-  --camera-index 0 \
-  --device-token "<copy-generated-ai-token>"
+python scripts/run_ai_camera_monitor.py --backend-url http://localhost:4000 --camera-index 0 --device-token "<copy-generated-ai-token>"
 ```
 
 `--device-token` is only needed when overriding the token from `.env` or from the shell `AI_CAMERA_TOKEN` variable.
@@ -472,8 +592,16 @@ AI camera token mode:
 IoT token mode:
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app/user_login/server
+# macOS / Linux
+cd user_login/server
 IOT_SENSOR_TOKEN="<copy-generated-iot-token>" npm run publish:test-iot
+```
+
+```powershell
+# Windows PowerShell
+cd user_login/server
+$env:IOT_SENSOR_TOKEN="<copy-generated-iot-token>"
+npm run publish:test-iot
 ```
 
 ## Demo URLs
@@ -564,16 +692,18 @@ Start the backend server, then open the login page at `http://localhost:5173/log
 ## Build And Syntax Checks
 
 ```bash
-cd /Users/chiayuenkai/Desktop/GitHub/my-react-app
-npm --prefix user_page run build
-npm --prefix admin_page run build
-node --check user_login/server/index.js
-node --check scripts/dev-all.mjs
-node --check scripts/hub-server.mjs
-node --check user_login/server/scripts/publish-test-iot.js
-node --check user_login/server/scripts/security-smoke-test.js
-node --check user_login/server/scripts/generate-demo-tokens.js
+# macOS / Linux
+npm run build
+npm run check:syntax
 source .venv/bin/activate
+python -m py_compile scripts/run_ai_camera_monitor.py
+```
+
+```powershell
+# Windows PowerShell
+npm run build
+npm run check:syntax
+.\.venv\Scripts\Activate.ps1
 python -m py_compile scripts/run_ai_camera_monitor.py
 ```
 
@@ -602,7 +732,6 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 - The IoT test publisher includes a local API fallback for lecturer-demo reliability when the public MQTT broker times out.
 - Browser IoT capture uses the Admin page camera preview and should not be run at the same time as the standalone Python AI camera on the same physical camera.
 - MySQL mode requires the local `cos30049_assignment` database and migration.
-- This duplicate copy is for local demo review, not Git publishing.
 
 ## Screenshot Checklist
 
@@ -620,6 +749,5 @@ Capture:
 10. MySQL query showing monitoring incidents, if running MySQL mode.
 11. Citrus Energetic visual consistency across Hub, User, Admin, Ranger, and Mobile surfaces.
 12. Shared logo appears in the Review Hub, Park Guide portal, Admin shell, Park Ranger route through the Admin shell, and Mobile preview.
-13. `CYBERSECURITY_REVIEW.md` vulnerability assessment table.
-14. `npm run security:smoke` output with token and role checks.
-15. `/api/health` showing optional security-control state.
+13. `npm run security:smoke` output with token and role checks.
+14. `/api/health` showing optional security-control state.

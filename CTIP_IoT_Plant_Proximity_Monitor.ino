@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "arduino_secrets.h"
 
 // =========================================================
 // CTIP IoT Proximity Sensor Prototype
@@ -13,11 +14,12 @@
 
 // ---------------------------------------------------------
 // WiFi configuration
-// Replace these before local testing.
-// Do NOT commit real WiFi credentials into GitHub.
+// Copy arduino_secrets.example.h to arduino_secrets.h.
+// Put real WiFi credentials and device token in arduino_secrets.h only.
+// arduino_secrets.h is ignored by Git and must not be committed.
 // ---------------------------------------------------------
-const char* ssid = "ChiasiPhone";
-const char* password = "ChiasiPhone";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
 
 // ---------------------------------------------------------
 // MQTT configuration
@@ -32,7 +34,7 @@ const char* mqtt_topic = "ctip/sensor/plant-zone-01/proximity";
 // Required when DEVICE_TOKEN_AUTH_ENABLED=true on the backend.
 // Use the same value as IOT_SENSOR_TOKEN in your local .env.
 // Do NOT commit a real token into GitHub.
-const char* device_token = "YOUR_IOT_SENSOR_TOKEN";
+const char* device_token = IOT_SENSOR_DEVICE_TOKEN;
 
 // ---------------------------------------------------------
 // Sensor metadata

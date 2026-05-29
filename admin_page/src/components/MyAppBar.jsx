@@ -251,7 +251,11 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304, collapsedSidebarW
         <Box sx={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <Box
             component="button"
+            type="button"
             onClick={onToggleSidebar}
+            aria-label={open ? "Collapse admin sidebar" : "Expand admin sidebar"}
+            aria-controls="admin-sidebar"
+            aria-expanded={open}
             sx={{
               width: "50px",
               height: "50px",
@@ -294,7 +298,9 @@ const MyAppBar = ({ open, onToggleSidebar, sidebarWidth = 304, collapsedSidebarW
 
           <Box
             component="button"
+            type="button"
             className="admin-top-user-btn"
+            aria-label="Open admin account menu"
             onClick={(e) => setUserAnchor(e.currentTarget)}
           >
             U

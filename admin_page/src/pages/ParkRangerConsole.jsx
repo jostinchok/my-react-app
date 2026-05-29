@@ -212,6 +212,14 @@ const ParkRangerConsole = () => {
   const rangerLoggedIn = isRangerRole(rangerSession?.role);
 
   useEffect(() => {
+    const previousTitle = document.title;
+    document.title = rangerLoggedIn ? "SFC Ranger Portal" : "SFC Ranger Login";
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [rangerLoggedIn]);
+
+  useEffect(() => {
     if (!rangerLoggedIn) return;
 
     try {
@@ -362,6 +370,24 @@ const ParkRangerConsole = () => {
         .includes(query);
     });
   }, [queueFilter, queueSearch, responseQueue]);
+
+  useEffect(() => {
+    if (activeRangerView !== "incidents") return;
+
+    setSelectedIncidentId((currentId) =>
+      filteredResponseQueue.some((incident) => incident.id === currentId)
+        ? currentId
+        : filteredResponseQueue[0]?.id || null
+    );
+  }, [activeRangerView, filteredResponseQueue]);
+
+  const selectIncidentFromNotification = (incidentId) => {
+    setActiveRangerView("incidents");
+    setQueueFilter("all");
+    setQueueSearch("");
+    setSelectedIncidentId(incidentId);
+  };
+
   const feedStatusLabel = backendOnline ? "Live backend connected" : "Demo fallback active";
   const feedStatusDetail = backendOnline
     ? `${responseQueue.length} incident records are syncing from the local monitoring API.`
@@ -640,10 +666,7 @@ const ParkRangerConsole = () => {
             <>
               <RangerNotificationPanel
                 notifications={rangerNotifications}
-                onSelectIncident={(incidentId) => {
-                  setActiveRangerView("incidents");
-                  setSelectedIncidentId(incidentId);
-                }}
+                onSelectIncident={selectIncidentFromNotification}
               />
 
               <Box className="ranger-stat-grid">

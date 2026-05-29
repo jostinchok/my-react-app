@@ -635,6 +635,11 @@ function App() {
   const [selectedCanvasItemId, setSelectedCanvasItemId] = useState(null)
   const [moduleDetailStep, setModuleDetailStep] = useState('intro')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const closeSidebarForCompactView = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1180px)').matches) {
+      setSidebarOpen(false)
+    }
+  }
   const [moduleSearch, setModuleSearch] = useState('')
   const [moduleStatus, setModuleStatus] = useState('all')
   const [moduleCategory, setModuleCategory] = useState('all')
@@ -1374,7 +1379,7 @@ function App() {
       if (!isCourseApproved(nextCourse) && section !== 'overview') {
         requestCourseAccess(nextCourse)
         setActiveTab('courses')
-        setSidebarOpen(false)
+        closeSidebarForCompactView()
         return
       }
       const moduleStillInCourse = nextCourse.modules.some((module) => String(module.id) === String(selectedModuleId))
@@ -1396,7 +1401,7 @@ function App() {
     } else {
       setActiveTab(section)
     }
-    setSidebarOpen(false)
+    closeSidebarForCompactView()
   }
 
   const openCourse = (courseId, section = 'overview') => {
@@ -1405,7 +1410,7 @@ function App() {
       setSelectedCourseId(course.id)
       requestCourseAccess(course)
       setActiveTab('courses')
-      setSidebarOpen(false)
+      closeSidebarForCompactView()
       return
     }
     goToCourseSection(section, courseId)
@@ -1419,7 +1424,7 @@ function App() {
       setSelectedCourseId(course.id)
       requestCourseAccess(course)
       setActiveTab('courses')
-      setSidebarOpen(false)
+      closeSidebarForCompactView()
       return
     }
     const firstItem = getCanvasItems(module).find((item) => item.type !== 'quiz')
@@ -1429,7 +1434,7 @@ function App() {
     setSelectedCanvasItemId(firstItem?.id || null)
     setModuleDetailStep('intro')
     setActiveTab('module')
-    setSidebarOpen(false)
+    closeSidebarForCompactView()
   }
 
   const enrollModule = (module) => {
@@ -1989,10 +1994,11 @@ function App() {
   const topbarTitle = courseAwareTabs.has(activeTab) && selectedCourse
     ? selectedCourse.name
     : cleanText(currentUser.assignedPark, currentUser.displayName, 'SFC Guide Center')
+  const activeNavId = courseAwareTabs.has(activeTab) ? 'modules' : activeTab
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+      <aside id="user-portal-sidebar" className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="brand-block">
           <img className="brand-logo" src={logoSrc} alt="SFC Digital Portal logo" />
           <div>
@@ -2006,11 +2012,11 @@ function App() {
             <button
               key={item.id}
               type="button"
-              className={activeTab === item.id ? 'active' : ''}
+              className={activeNavId === item.id ? 'active' : ''}
               onClick={() => {
                 if (item.id === 'modules') setCourseSubView('overview')
                 setActiveTab(item.id)
-                setSidebarOpen(false)
+                closeSidebarForCompactView()
               }}
             >
               <span>{item.icon}</span>
@@ -2026,11 +2032,23 @@ function App() {
           <p>Training access only. Admin controls stay locked.</p>
         </div>
       </aside>
-      <div className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)} />
+      <button
+        type="button"
+        className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`}
+        aria-label="Close sidebar"
+        onClick={() => setSidebarOpen(false)}
+      />
 
       <main className={`workspace ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <header className="topbar">
-          <button className="menu-button" type="button" onClick={() => setSidebarOpen((value) => !value)}>
+          <button
+            className="menu-button"
+            type="button"
+            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            aria-controls="user-portal-sidebar"
+            aria-expanded={sidebarOpen}
+            onClick={() => setSidebarOpen((value) => !value)}
+          >
             <span />
             <span />
             <span />

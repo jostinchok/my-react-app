@@ -352,6 +352,19 @@ const formatTrainingImageLabel = (fileName) =>
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+const fallbackTrainingImageUrl = `${adminBasePath}training/protected-areas.webp`;
+
+const applyAdminImageFallback = (event) => {
+  const image = event.currentTarget;
+  if (image.dataset.fallbackApplied === "true") {
+    image.style.display = "none";
+    return;
+  }
+
+  image.dataset.fallbackApplied = "true";
+  image.src = fallbackTrainingImageUrl;
+};
+
 const resolveAdminImageUrl = (value) => {
   const imageUrl = String(value || "").trim();
   if (!imageUrl) return "";
@@ -858,6 +871,7 @@ const CourseManagement = () => {
                 component="img"
                 src={fileUrl}
                 alt={selectedItem.title}
+                onError={applyAdminImageFallback}
                 sx={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: "14px", border: "1px solid #eadfbf", mb: 1.5 }}
               />
             )}
@@ -871,7 +885,13 @@ const CourseManagement = () => {
                 </Typography>
               </Box>
               {fileUrl && (
-                <IconButton component="a" href={fileUrl} target="_blank" rel="noreferrer">
+                <IconButton
+                  component="a"
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${selectedItem.file_name || selectedItem.title || "uploaded file"}`}
+                >
                   <FileDownloadIcon />
                 </IconButton>
               )}
@@ -1003,10 +1023,19 @@ const CourseManagement = () => {
                     <Stack direction="row" justifyContent="space-between" gap={1}>
                       <Chip label={course.course_id} size="small" sx={{ bgcolor: "#f3ffd4", color: "#173126", fontWeight: 950 }} />
                       <Stack direction="row">
-                        <IconButton size="small" onClick={(event) => { event.stopPropagation(); openEditCourse(course); }}>
+                        <IconButton
+                          size="small"
+                          aria-label={`Edit ${course.course_name}`}
+                          onClick={(event) => { event.stopPropagation(); openEditCourse(course); }}
+                        >
                           <EditIcon fontSize="small" />
                         </IconButton>
-                        <IconButton size="small" color="error" onClick={(event) => { event.stopPropagation(); deleteCourse(course.course_id); }}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          aria-label={`Delete ${course.course_name}`}
+                          onClick={(event) => { event.stopPropagation(); deleteCourse(course.course_id); }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Stack>
@@ -1045,6 +1074,7 @@ const CourseManagement = () => {
                     component="img"
                     src={selectedCourseHeroImage}
                     alt=""
+                    onError={applyAdminImageFallback}
                     sx={{
                       width: { xs: "100%", sm: 156 },
                       height: 116,
@@ -1163,6 +1193,7 @@ const CourseManagement = () => {
                               component="img"
                               src={moduleImage}
                               alt=""
+                              onError={applyAdminImageFallback}
                               sx={{ width: 54, height: 42, borderRadius: "14px", objectFit: "cover", border: "1px solid #eadfbf", flexShrink: 0 }}
                             />
                           ) : (
@@ -1180,10 +1211,19 @@ const CourseManagement = () => {
                           </Box>
                         </Stack>
                         <Stack direction="row" gap={0.4} onClick={(event) => event.stopPropagation()}>
-                          <IconButton size="small" onClick={() => openEditModule(module)}>
+                          <IconButton
+                            size="small"
+                            aria-label={`Edit ${module.title}`}
+                            onClick={() => openEditModule(module)}
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
-                          <IconButton size="small" color="error" onClick={() => deleteModule(module.module_id)}>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            aria-label={`Delete ${module.title}`}
+                            onClick={() => deleteModule(module.module_id)}
+                          >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Stack>
@@ -1207,6 +1247,7 @@ const CourseManagement = () => {
                     component="img"
                     src={resolveAdminImageUrl(selectedModule?.image_url)}
                     alt=""
+                    onError={applyAdminImageFallback}
                     sx={{
                       width: { xs: "100%", sm: 150 },
                       height: 104,
@@ -1275,13 +1316,26 @@ const CourseManagement = () => {
                           </Box>
                         </Stack>
                         <Stack direction="row" gap={0.4} onClick={(event) => event.stopPropagation()}>
-                          <IconButton size="small" onClick={() => setSelectedItemId(item.item_id)}>
+                          <IconButton
+                            size="small"
+                            aria-label={`View ${item.title}`}
+                            onClick={() => setSelectedItemId(item.item_id)}
+                          >
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
-                          <IconButton size="small" onClick={() => openEditItem(selectedModule, item)}>
+                          <IconButton
+                            size="small"
+                            aria-label={`Edit ${item.title}`}
+                            onClick={() => openEditItem(selectedModule, item)}
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
-                          <IconButton size="small" color="error" onClick={() => deleteItem(selectedModule, item)}>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            aria-label={`Delete ${item.title}`}
+                            onClick={() => deleteItem(selectedModule, item)}
+                          >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Stack>
@@ -1430,6 +1484,7 @@ const CourseManagement = () => {
                   component="img"
                   src={resolveAdminImageUrl(moduleForm.image_url)}
                   alt=""
+                  onError={applyAdminImageFallback}
                   sx={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: "18px", border: "1px solid #eadfbf" }}
                 />
               </Grid>

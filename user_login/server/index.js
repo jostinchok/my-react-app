@@ -24,6 +24,11 @@ import {
   normalizeIncident,
   sortIncidents,
 } from './src/incident/incidentUtils.js'
+import {
+  createCorsOptions,
+  createSafeStaticOptions,
+  getJwtSecret,
+} from '../../shared/security.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -46,7 +51,24 @@ const app = express()
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
-app.use(cors())
+
+const defaultCorsOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
+  'http://localhost:8081',
+  'http://127.0.0.1:8081',
+  'http://localhost:8082',
+  'http://127.0.0.1:8082',
+]
+const corsOptions = createCorsOptions({ defaultOrigins: defaultCorsOrigins })
+const safeStaticOptions = createSafeStaticOptions()
+app.use(cors(corsOptions))
 
 const configuredAuthRateLimit = Number.parseInt(process.env.AUTH_RATE_LIMIT_MAX || '', 10)
 const authRateLimitMax = Number.isFinite(configuredAuthRateLimit) && configuredAuthRateLimit > 0
@@ -67,8 +89,8 @@ app.use('/api/auth/register', authLimiter)
 app.use('/api/auth/forgot-password', authLimiter)
 app.use('/api/auth/reset-password', authLimiter)
 app.use(express.json({ limit: '2mb' }))
-app.use('/evidence/ai', express.static(aiEvidenceDir))
-app.use('/evidence/iot', express.static(iotEvidenceDir))
+app.use('/evidence/ai', express.static(aiEvidenceDir, safeStaticOptions))
+app.use('/evidence/iot', express.static(iotEvidenceDir, safeStaticOptions))
 
 const MQTT_TOPIC = process.env.MQTT_TOPIC || DEFAULT_MQTT_TOPIC
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
@@ -654,7 +676,7 @@ const runIncidentStoreOperation = async (operation) => {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
+const JWT_SECRET = getJwtSecret('Auth and monitoring API')
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h'
 
 const createLoginToken = (user) => {
@@ -1040,7 +1062,7 @@ app.post('/api/auth/register', async (req, res) => {
       message: 'User registered successfully.',
     })
   } catch (error) {
-    return res.status(500).json({ message: 'Registration failed.', error: error.message })
+    return res.status(500).json({ message: 'Registration failed.', error: process.env.NODE_ENV === 'production' ? undefined : error.message })
   }
 })
 
@@ -1082,7 +1104,7 @@ app.post('/api/auth/login', async (req, res) => {
       },
     })
   } catch (error) {
-    return res.status(500).json({ message: 'Login failed.', error: error.message })
+    return res.status(500).json({ message: 'Login failed.', error: process.env.NODE_ENV === 'production' ? undefined : error.message })
   }
 })
 
@@ -1123,7 +1145,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       message: 'If that email is registered, a 6-digit OTP has been sent to your inbox.',
     })
   } catch (error) {
-    return res.status(500).json({ message: 'Unable to process forgot password request.', error: error.message })
+    return res.status(500).json({ message: 'Unable to process forgot password request.', error: process.env.NODE_ENV === 'production' ? undefined : error.message })
   }
 })
 
@@ -1132,6 +1154,11 @@ app.post('/api/auth/reset-password', async (req, res) => {
     const { email, token, newPassword } = req.body
     if (!email || !token || !newPassword) {
       return res.status(400).json({ message: 'Email, token and new password are required.' })
+    }
+
+    const passwordError = validateStrongPassword(newPassword)
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError })
     }
 
     const [users] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email])
@@ -1161,7 +1188,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
     return res.json({ message: 'Password reset successful. Please login with your new password.' })
   } catch (error) {
-    return res.status(500).json({ message: 'Unable to reset password.', error: error.message })
+    return res.status(500).json({ message: 'Unable to reset password.', error: process.env.NODE_ENV === 'production' ? undefined : error.message })
   }
 })
 
