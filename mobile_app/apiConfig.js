@@ -4,6 +4,8 @@ import Constants from 'expo-constants'
 /** AsyncStorage key for a user-saved API base URL (see App.js login screen). */
 export const API_BASE_URL_STORAGE_KEY = 'sfc_api_base_url'
 
+const EXPO_WEB_DEV_PORTS = new Set(['8081', '19006'])
+
 function isUnusableRelayHost(host) {
   if (!host) return true
   const h = String(host).toLowerCase()
@@ -14,10 +16,15 @@ function isUnusableRelayHost(host) {
   )
 }
 
+export function isExpoWebDevServer() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false
+  return EXPO_WEB_DEV_PORTS.has(String(window.location.port || ''))
+}
+
 /**
- * Backend URL for Expo Go / emulator / web.
- * Physical phone: Metro passes your PC IP via Constants — we reuse it for port 4000.
- * Override anytime: EXPO_PUBLIC_API_URL=http://YOUR_PC_IP:4000 (restart Expo after changing).
+ * Auth/login API base URL.
+ * - Expo web (:8081): same origin — Metro proxies /api/auth → :4000
+ * - Expo Go / device: PC LAN IP on :4000 (or EXPO_PUBLIC_API_URL)
  */
 export function getApiBaseUrl() {
   const env =
@@ -29,11 +36,14 @@ export function getApiBaseUrl() {
   }
 
   if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && window.location?.hostname) {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      if (isExpoWebDevServer()) {
+        return window.location.origin.replace(/\/$/, '')
+      }
       const { protocol, hostname } = window.location
       return `${protocol}//${hostname}:4000`
     }
-    return 'http://localhost:4000'
+    return 'http://localhost:8081'
   }
 
   const debuggerHost =
@@ -57,4 +67,32 @@ export function getApiBaseUrl() {
   }
 
   return 'http://localhost:4000'
+}
+
+/**
+ * Park Guide data API (:4001). On Expo web dev, same origin as auth (Metro proxy).
+ */
+export function getUserApiBaseUrl(authBaseUrl = getApiBaseUrl()) {
+  const authBase = String(authBaseUrl || '').replace(/\/$/, '')
+  if (!authBase) return 'http://localhost:4001'
+
+  if (Platform.OS === 'web' && isExpoWebDevServer() && typeof window !== 'undefined') {
+    return window.location.origin.replace(/\/$/, '')
+  }
+
+  return authBase.replace(/:4000(?=\/|$)/, ':4001')
+}
+
+/**
+ * Auth/login API must be on port 4000. Stored overrides sometimes point at :4001/:4002 by mistake.
+ */
+export function normalizeAuthApiBaseUrl(url) {
+  const trimmed = String(url || '').trim().replace(/\/$/, '')
+  if (!trimmed) return getApiBaseUrl()
+  if (Platform.OS === 'web' && isExpoWebDevServer()) {
+    return getApiBaseUrl()
+  }
+  return trimmed
+    .replace(/:4001(?=\/|$)/, ':4000')
+    .replace(/:4002(?=\/|$)/, ':4000')
 }

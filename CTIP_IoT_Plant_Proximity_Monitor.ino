@@ -16,8 +16,8 @@
 // Replace these before local testing.
 // Do NOT commit real WiFi credentials into GitHub.
 // ---------------------------------------------------------
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "ChiasiPhone";
+const char* password = "ChiasiPhone";
 
 // ---------------------------------------------------------
 // MQTT configuration
@@ -28,6 +28,11 @@ const char* mqtt_server = "broker.hivemq.com";
 const int mqtt_port = 1883;
 const char* mqtt_client_id = "CTIP-PlantZone01-ESP32";
 const char* mqtt_topic = "ctip/sensor/plant-zone-01/proximity";
+
+// Required when DEVICE_TOKEN_AUTH_ENABLED=true on the backend.
+// Use the same value as IOT_SENSOR_TOKEN in your local .env.
+// Do NOT commit a real token into GitHub.
+const char* device_token = "YOUR_IOT_SENSOR_TOKEN";
 
 // ---------------------------------------------------------
 // Sensor metadata
@@ -45,7 +50,9 @@ bool ultrasonicEnabled = false;
 bool lastButtonState = HIGH;
 
 unsigned long lastTriggerTime = 0;
-unsigned long triggerCooldown = 5000; // milliseconds
+// Demo cooldown: publish at most once every 5 seconds.
+// Production can increase this to 300000 ms, which is 5 minutes.
+unsigned long triggerCooldown = 5000;
 
 // =========================================================
 // WiFi and MQTT helpers
@@ -123,7 +130,7 @@ float getAverageDistance(int samples = 5) {
 // Publish incident payload
 // =========================================================
 void publishProximityAlert(float distance_cm) {
-  char payload[512];
+  char payload[768];
 
   snprintf(
     payload,
@@ -135,12 +142,14 @@ void publishProximityAlert(float distance_cm) {
     "\"distance_cm\":%.2f,"
     "\"threshold_cm\":%.2f,"
     "\"status\":\"triggered\","
-    "\"severity\":\"low\"}",
+    "\"severity\":\"low\","
+    "\"device_token\":\"%s\"}",
     event_type,
     sensor_id,
     location_name,
     distance_cm,
-    threshold_cm
+    threshold_cm,
+    device_token
   );
 
   bool ok = client.publish(mqtt_topic, payload);

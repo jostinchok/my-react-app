@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
-"""Standalone CTIP realtime AI camera monitor.
+"""
+conda activate cos30049
 
-This script mirrors the realtime camera section from
-training-notebook.ipynb so the demo can run
-outside VS Code Jupyter.
+python scripts/run_ai_camera_monitor.py \
+  --model-path artifacts/ctip_activity_v2/best_ctip_activity_v2_mobilenet.pt \
+  --hand-model-path models/hand_landmarker.task \
+  --backend-url http://localhost:4000
 """
 
 from __future__ import annotations
@@ -20,18 +21,23 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 import torch
-import torch.nn as nn
 from mediapipe.tasks.python import vision
 from PIL import Image
-from transformers import AutoProcessor, CLIPVisionModelWithProjection
+from torchvision import models, transforms
 
-
-MODEL_NAME = "openai/clip-vit-base-patch32"
-CLASS_NAMES = ["TouchingPlants", "TouchingWildlife"]
+CLASS_NAMES = ["negative", "plucking_plant", "touching_wildlife"]
+ALERT_CLASSES = {"plucking_plant", "touching_wildlife"}
 FRIENDLY_LABELS = {
-    "TouchingPlants": "Plucking Plants",
-    "TouchingWildlife": "Touching Wildlife",
+    "negative": "No Alert",
+    "plucking_plant": "Plucking Plants",
+    "touching_wildlife": "Touching Wildlife",
     "Unknown": "Unknown / No Alert",
+}
+
+BACKEND_EVENT_TYPES = {
+    "plucking_plant": "PluckingPlants",
+    "touching_wildlife": "TouchingWildlife",
+    "ManualSnapshot": "ManualSnapshot",
 }
 
 FRAME_SKIP = 3
@@ -39,41 +45,24 @@ ROLLING_WINDOW = 5
 ALERT_MIN_TOUCHING = 3
 COOLDOWN_SECONDS = 5
 
-HAND_BOX_PADDING = 30
-MIN_HAND_BOX_SIZE = 100
+#
+# Use a wider hand-context crop because the classifier needs to see what the
+# hand is interacting with, not only the hand itself. This is important for
+# separating plant plucking from wildlife contact during the live demo.
+HAND_BOX_PADDING = 90
+MIN_HAND_BOX_SIZE = 260
 
-CLASS_CONF_THRESHOLD = 0.75
-MIN_MARGIN = 0.15
+CLASS_CONF_THRESHOLD = 0.80
+MIN_MARGIN = 0.20
 
 MIN_BOX_AREA_RATIO = 0.01
-MAX_BOX_AREA_RATIO = 0.35
+MAX_BOX_AREA_RATIO = 0.60
 
 CAMERA_LOCATION = "Demo Camera Zone"
 INCIDENT_STATUS_NEW = "New"
 INCIDENT_SEVERITY_MEDIUM = "medium"
-WINDOW_NAME = "CTIP Realtime 2-Class Touching Monitor"
+WINDOW_NAME = "CTIP Realtime AI Activity Monitor"
 REPO_ROOT = Path(__file__).resolve().parents[1]
-
-
-class CLIPClassifier(nn.Module):
-    def __init__(self, model_name: str, num_classes: int):
-        super().__init__()
-        self.clip = CLIPVisionModelWithProjection.from_pretrained(
-            model_name,
-            use_safetensors=True,
-        )
-
-        for parameter in self.clip.parameters():
-            parameter.requires_grad = False
-
-        embed_dim = self.clip.config.projection_dim
-        self.classifier = nn.Linear(embed_dim, num_classes)
-
-    def forward(self, pixel_values):
-        outputs = self.clip(pixel_values=pixel_values)
-        image_embeds = outputs.image_embeds
-        image_embeds = image_embeds / image_embeds.norm(dim=-1, keepdim=True)
-        return self.classifier(image_embeds)
 
 
 def choose_device() -> str:
@@ -82,6 +71,23 @@ def choose_device() -> str:
     if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         return "mps"
     return "cpu"
+
+
+def build_model(num_classes: int):
+    model = models.mobilenet_v3_small(weights=None)
+    in_features = model.classifier[-1].in_features
+    model.classifier[-1] = torch.nn.Linear(in_features, num_classes)
+    return model
+
+
+def build_transform(image_size: int):
+    return transforms.Compose(
+        [
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
 
 def draw_fullscreen_border(frame, color=(0, 0, 255), thickness=18):
@@ -111,14 +117,19 @@ def get_bbox_from_landmarks(landmarks, frame_w, frame_h, padding=30):
 
 
 def get_box_color(pred_class: str):
-    if pred_class in ("TouchingPlants", "PluckingPlants"):
+    if pred_class == "plucking_plant":
         return (0, 165, 255)
-    if pred_class == "TouchingWildlife":
+    if pred_class == "touching_wildlife":
         return (0, 0, 255)
+    if pred_class == "negative":
+        return (0, 180, 0)
     return (180, 180, 180)
 
 
-def is_valid_touch_detection(det, frame_w, frame_h):
+def is_valid_alert_detection(det, frame_w, frame_h):
+    if det["pred_class"] not in ALERT_CLASSES:
+        return False
+
     x1, y1, x2, y2 = det["bbox"]
     area_ratio = ((x2 - x1) * (y2 - y1)) / float(frame_w * frame_h)
 
@@ -129,15 +140,16 @@ def is_valid_touch_detection(det, frame_w, frame_h):
     )
 
 
-def classify_crop(crop_bgr, processor, model, device):
+def classify_crop(crop_bgr, image_transform, model, device):
     rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
     image = Image.fromarray(rgb)
-    pixel_values = processor(images=image, return_tensors="pt")["pixel_values"].to(device)
+    tensor = image_transform(image).unsqueeze(0).to(device)
 
     with torch.no_grad():
-        logits = model(pixel_values)
-        probs = torch.softmax(logits, dim=1)[0].cpu().tolist()
-        pred_idx = int(torch.argmax(logits, dim=1).item())
+        logits = model(tensor)
+        probs_tensor = torch.softmax(logits, dim=1)[0].detach().cpu()
+        probs = probs_tensor.tolist()
+        pred_idx = int(torch.argmax(probs_tensor).item())
 
     probs_dict = {name: float(probability) for name, probability in zip(CLASS_NAMES, probs)}
     pred_class = CLASS_NAMES[pred_idx]
@@ -166,6 +178,7 @@ def build_ai_incident_payload(
     if strongest is not None:
         ai_details = {
             "predictedClass": strongest.get("pred_class"),
+            "displayClass": strongest.get("display_class"),
             "confidence": float(strongest.get("top1", 0.0)),
             "margin": float(strongest.get("margin", 0.0)),
             "bbox": list(strongest.get("bbox", [])),
@@ -175,10 +188,12 @@ def build_ai_incident_payload(
             },
         }
 
+    backend_event_type = BACKEND_EVENT_TYPES.get(event_class, event_class)
+
     return {
-        "id": f"AI-{timestamp_file}-{prefix}-{event_class}",
+        "id": f"AI-{timestamp_file}-{prefix}-{backend_event_type}",
         "source": "AI_CAMERA",
-        "eventType": event_class,
+        "eventType": backend_event_type,
         "severity": INCIDENT_SEVERITY_MEDIUM if event_class != "ManualSnapshot" else "low",
         "timestamp": timestamp_iso,
         "location": CAMERA_LOCATION,
@@ -189,11 +204,12 @@ def build_ai_incident_payload(
         "iot": None,
         "runtime": {
             "history": list(history),
-            "touch_votes": int(touch_votes),
+            "alert_votes": int(touch_votes),
             "rolling_window": int(ROLLING_WINDOW),
             "alert_min_touching": int(ALERT_MIN_TOUCHING),
             "class_conf_threshold": float(CLASS_CONF_THRESHOLD),
             "min_margin": float(MIN_MARGIN),
+            "class_names": list(CLASS_NAMES),
         },
         "detections": [
             {
@@ -209,7 +225,7 @@ def build_ai_incident_payload(
             }
             for item in detections
         ],
-        "notes": "AI camera detected human interaction with protected plant or wildlife. Review evidence before action.",
+        "notes": "AI camera detected potential plucking of protected plants or touching wildlife. Review evidence before action.",
     }
 
 
@@ -253,6 +269,7 @@ def resolve_device_token(args, project_dir: Path) -> tuple[str | None, str]:
 
     return None, "not found"
 
+
 def post_incident_to_backend(payload, incident_api_url, device_token=None):
     try:
         body = json.dumps(payload).encode("utf-8")
@@ -270,10 +287,13 @@ def post_incident_to_backend(payload, incident_api_url, device_token=None):
             response.read()
             print(f"[SYNC] Posted incident to backend: HTTP {response.status}")
         return True
+    except urllib.error.HTTPError as exc:
+        print(f"[SYNC WARNING] Backend incident POST failed: HTTP {exc.code}. Local evidence saved.")
+        if exc.code == 401:
+            print("[SYNC WARNING] Backend token auth rejected this camera post. Pass --device-token or set AI_CAMERA_TOKEN in .env.")
+        return False
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         print(f"[SYNC WARNING] Backend incident POST failed: {exc}. Local evidence saved.")
-        if isinstance(exc, urllib.error.HTTPError) and exc.code == 401:
-            print("[SYNC WARNING] Backend token auth rejected this camera post. Pass --device-token or set AI_CAMERA_TOKEN in .env.")
         return False
 
 
@@ -398,16 +418,31 @@ def resolve_incident_api_url(args):
 
 
 def load_model(model_path, device):
-    processor = AutoProcessor.from_pretrained(MODEL_NAME)
-    model = CLIPClassifier(MODEL_NAME, len(CLASS_NAMES)).to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    checkpoint = torch.load(model_path, map_location="cpu")
+    class_names = checkpoint.get("class_names", CLASS_NAMES)
+    image_size = int(checkpoint.get("image_size", 224))
+
+    if list(class_names) != CLASS_NAMES:
+        raise ValueError(
+            f"Model class_names {class_names} do not match expected {CLASS_NAMES}. "
+            "Retrain or update the monitor mapping before demo."
+        )
+
+    model = build_model(num_classes=len(CLASS_NAMES))
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.to(device)
     model.eval()
-    return processor, model
+
+    image_transform = build_transform(image_size)
+    return image_transform, model, checkpoint
 
 
 def run_monitor(args):
     project_dir = args.project_dir.expanduser().resolve()
-    model_path = (args.model_path or project_dir / "artifacts" / "clip_2class_touching_species.pt").expanduser().resolve()
+    model_path = (
+        args.model_path
+        or project_dir / "artifacts" / "ctip_activity_v2" / "best_ctip_activity_v2_mobilenet.pt"
+    ).expanduser().resolve()
     hand_model_path = (args.hand_model_path or project_dir / "models" / "hand_landmarker.task").expanduser().resolve()
     evidence_dir_arg = args.alert_dir or args.evidence_dir
     alert_dir = evidence_dir_arg.expanduser().resolve()
@@ -422,13 +457,17 @@ def run_monitor(args):
 
     device = choose_device()
     print("===================================================")
-    print("Standalone realtime 2-class monitor starting...")
+    print("Standalone realtime MobileNetV3 monitor starting...")
     print("Using device:", device)
     print("CUDA available:", torch.cuda.is_available())
     if torch.cuda.is_available():
         print("GPU:", torch.cuda.get_device_name(0))
     print("Model path:", model_path)
     print("Hand model:", hand_model_path)
+    print("Classes:", CLASS_NAMES)
+    print("Alert classes:", sorted(ALERT_CLASSES))
+    print("Class confidence threshold:", CLASS_CONF_THRESHOLD)
+    print("Minimum margin:", MIN_MARGIN)
     print("Evidence dir:", alert_dir)
     print("Backend URL:", args.backend_url.rstrip("/"))
     print("Incident API:", incident_api_url)
@@ -436,7 +475,16 @@ def run_monitor(args):
     print("Press 'q' or ESC to quit | Press 's' to save snapshot")
     print("===================================================")
 
-    processor, model = load_model(model_path, device)
+    image_transform, model, checkpoint = load_model(model_path, device)
+    print(
+        "Loaded model metrics:",
+        {
+            "architecture": checkpoint.get("architecture"),
+            "val_macro_f1": checkpoint.get("val_macro_f1"),
+            "val_accuracy": checkpoint.get("val_accuracy"),
+        },
+    )
+
     hand_landmarker = None
     cap = None
 
@@ -471,7 +519,7 @@ def run_monitor(args):
                 hand_result = hand_landmarker.detect_for_video(mp_image, timestamp_ms)
                 last_hand_result = hand_result
                 last_predictions = []
-                valid_touch_dets = []
+                valid_alert_dets = []
 
                 if hand_result.hand_landmarks:
                     for landmarks in hand_result.hand_landmarks:
@@ -487,7 +535,7 @@ def run_monitor(args):
 
                         pred_class, probs_dict, top1, margin = classify_crop(
                             crop,
-                            processor,
+                            image_transform,
                             model,
                             device,
                         )
@@ -499,19 +547,20 @@ def run_monitor(args):
                             "probs": probs_dict,
                         }
 
-                        if is_valid_touch_detection(det, frame_w, frame_h):
+                        if is_valid_alert_detection(det, frame_w, frame_h):
                             det["display_class"] = pred_class
-                            valid_touch_dets.append(det)
+                            valid_alert_dets.append(det)
                         else:
-                            det["display_class"] = "Unknown"
+                            det["display_class"] = "Unknown" if pred_class in ALERT_CLASSES else "negative"
 
                         last_predictions.append(det)
 
-                history.append("Touching" if valid_touch_dets else "NotTouching")
+                history.append("Alert" if valid_alert_dets else "NoAlert")
 
             for item in last_predictions:
                 x1, y1, x2, y2 = item["bbox"]
                 display_class = item["display_class"]
+                pred_class = item["pred_class"]
                 top1 = item["top1"]
                 margin = item["margin"]
                 probs_dict = item["probs"]
@@ -519,15 +568,15 @@ def run_monitor(args):
 
                 cv2.rectangle(display_frame, (x1, y1), (x2, y2), box_color, 3)
                 y_text = max(30, y1 - 10)
-                cv2.putText(display_frame, FRIENDLY_LABELS[display_class], (x1, y_text), cv2.FONT_HERSHEY_SIMPLEX, 0.60, box_color, 2)
-                cv2.putText(display_frame, f"Top1: {top1:.2f}", (x1, y_text + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
-                cv2.putText(display_frame, f"Margin: {margin:.2f}", (x1, y_text + 44), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+                cv2.putText(display_frame, FRIENDLY_LABELS.get(display_class, display_class), (x1, y_text), cv2.FONT_HERSHEY_SIMPLEX, 0.60, box_color, 2)
+                cv2.putText(display_frame, f"Pred: {pred_class}", (x1, y_text + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+                cv2.putText(display_frame, f"Top1: {top1:.2f}  Margin: {margin:.2f}", (x1, y_text + 44), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
                 cv2.putText(
                     display_frame,
-                    f"PP:{probs_dict['TouchingPlants']:.2f}  TW:{probs_dict['TouchingWildlife']:.2f}",
+                    f"NEG:{probs_dict['negative']:.2f}  PP:{probs_dict['plucking_plant']:.2f}  TW:{probs_dict['touching_wildlife']:.2f}",
                     (x1, y_text + 66),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.50,
+                    0.48,
                     (255, 255, 255),
                     2,
                 )
@@ -535,26 +584,26 @@ def run_monitor(args):
             counts = Counter(history)
             now = time.time()
             alert_triggered = False
-            valid_touch_dets = [
+            valid_alert_dets = [
                 item
                 for item in last_predictions
-                if item["display_class"] in ("TouchingPlants", "TouchingWildlife")
+                if item["display_class"] in ALERT_CLASSES
             ]
 
-            if counts["Touching"] >= ALERT_MIN_TOUCHING and (now - last_alert_time) > COOLDOWN_SECONDS and valid_touch_dets:
+            if counts["Alert"] >= ALERT_MIN_TOUCHING and (now - last_alert_time) > COOLDOWN_SECONDS and valid_alert_dets:
                 alert_triggered = True
                 last_alert_time = now
-                strongest = max(valid_touch_dets, key=lambda item: item["top1"])
+                strongest = max(valid_alert_dets, key=lambda item: item["top1"])
                 event_class = strongest["pred_class"]
                 alert_frame = display_frame.copy()
                 draw_fullscreen_border(alert_frame, color=(0, 0, 255), thickness=18)
 
-                print(f"[ALERT] Triggered | votes={counts['Touching']}/{ROLLING_WINDOW} | event={event_class}")
+                print(f"[ALERT] Triggered | votes={counts['Alert']}/{ROLLING_WINDOW} | event={event_class}")
                 save_alert_frame(
                     frame=alert_frame,
-                    detections=valid_touch_dets,
+                    detections=valid_alert_dets,
                     history=history,
-                    touch_votes=counts["Touching"],
+                    touch_votes=counts["Alert"],
                     event_class=event_class,
                     alert_dir=alert_dir,
                     incident_api_url=incident_api_url,
@@ -562,8 +611,9 @@ def run_monitor(args):
                     device_token=device_token,
                     prefix="alert",
                 )
+                history.clear()
 
-            cv2.putText(display_frame, f"Touch votes: {counts['Touching']}/{ROLLING_WINDOW}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
+            cv2.putText(display_frame, f"Alert votes: {counts['Alert']}/{ROLLING_WINDOW}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
             cv2.putText(display_frame, f"Class conf: {CLASS_CONF_THRESHOLD:.2f}", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
             cv2.putText(display_frame, f"Min margin: {MIN_MARGIN:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
             cv2.putText(display_frame, f"Cooldown: {COOLDOWN_SECONDS}s", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
@@ -584,7 +634,7 @@ def run_monitor(args):
                     frame=display_frame.copy(),
                     detections=last_predictions,
                     history=history,
-                    touch_votes=counts["Touching"],
+                    touch_votes=counts["Alert"],
                     event_class="ManualSnapshot",
                     alert_dir=alert_dir,
                     incident_api_url=incident_api_url,

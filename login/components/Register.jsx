@@ -25,7 +25,7 @@ const Register = ({ onBack }) => {
   const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword || !birthday || !phone || !address || !assignedPark) {
+    if (!name || !email || !password || !confirmPassword || !phone || !address || !assignedPark) {
       setMessage({ text: 'All fields are required.', type: 'error' });
       return;
     }
@@ -49,7 +49,9 @@ const Register = ({ onBack }) => {
       const response = await fetch(`${apiBase}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, birthday, phone, yearsExperience: yearsExperience !== '' ? Number(yearsExperience) : 0, address, assignedPark }),
+        // The current demo database schema does not include a birthday column.
+        // Keep the field visible in the form, but do not send it to the backend registration payload.
+        body: JSON.stringify({ name, email, password, phone, yearsExperience: yearsExperience !== '' ? Number(yearsExperience) : 0, address, assignedPark }),
       });
 
       const data = await response.json();

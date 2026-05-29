@@ -6,8 +6,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Animated, Image, Linking, Modal, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import AuthScreens from './AuthScreens'
-import { API_BASE_URL_STORAGE_KEY, getApiBaseUrl } from './apiConfig'
-import { mobileContentApi } from './mobileApi'
+import { API_BASE_URL_STORAGE_KEY, getApiBaseUrl, normalizeAuthApiBaseUrl } from './apiConfig'
+import { mobileContentApi, persistableCanvasItemId } from './mobileApi'
+import { prepareMobileCertificateHtml } from './certificateMobileView'
 
 const palette = {
   // Website colors synced from `user_page/src/App.css`
@@ -45,6 +46,9 @@ const scheduleTypeOptions = ['Reminder', 'Field', 'Quiz', 'Certificate']
 const NAV_WIDTH = 284
 const SESSION_KEY = 'sfc_guide_session'
 
+const firstValue = (...values) =>
+  values.find((value) => value !== undefined && value !== null && value !== '')
+
 const getTodayIsoDate = () => {
   const now = new Date()
   const year = now.getFullYear()
@@ -54,7 +58,10 @@ const getTodayIsoDate = () => {
 }
 /** Main guide shell after login (your orange sidebar UI). */
 function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
-  const api = useMemo(() => mobileContentApi(apiBaseUrl), [apiBaseUrl])
+  const api = useMemo(
+    () => mobileContentApi(apiBaseUrl, () => sessionUser?.token || ''),
+    [apiBaseUrl, sessionUser?.token]
+  )
   const [isDataLoading, setIsDataLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -116,6 +123,8 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   })
   const navTranslate = useRef(new Animated.Value(-NAV_WIDTH)).current
   const navOpacity = useRef(new Animated.Value(0)).current
+  const lastRefreshAtRef = useRef(0)
+  const REFRESH_COOLDOWN_MS = 4000
 
   useEffect(() => {
     if (!sessionUser?.name && !sessionUser?.email) return
@@ -170,6 +179,22 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   )
   const currentModuleItem = selectedModuleDisplayItems[currentModuleItemIndex] || null
   const isCurrentModuleQuizItem = currentModuleItem?.kind === 'quiz'
+  const currentModuleBlock = useMemo(() => {
+    if (!currentModuleItem) return null
+    if (currentModuleItem.kind === 'canvas' && currentModuleItem.canvasItem) {
+      const canvasItem = currentModuleItem.canvasItem
+      const type = String(firstValue(canvasItem.item_type, canvasItem.itemType, canvasItem.type, 'text')).toLowerCase()
+      const media = firstValue(canvasItem.media_url, canvasItem.mediaUrl, canvasItem.file_url, canvasItem.url, canvasItem.href)
+      return {
+        type: ['image', 'video', 'file'].includes(type) ? type : 'text',
+        title: firstValue(canvasItem.title, 'Learning item'),
+        content: firstValue(canvasItem.content, canvasItem.description),
+        media_url: media,
+        caption: firstValue(canvasItem.description, canvasItem.caption),
+      }
+    }
+    return currentModuleItem.block || null
+  }, [currentModuleItem])
   const modulesWithState = useMemo(
     () =>
       modules.map((m) => {
@@ -347,7 +372,24 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       try {
         await refreshMobileData()
       } catch (e) {
-        if (!cancelled) Alert.alert('Sync error', e.message || 'Failed to load app data from database.')
+        if (cancelled) return
+        const message = e?.message || 'Failed to load app data from database.'
+        const needsReLogin = /\[401\]|401|login token|unauthorized/i.test(message)
+        if (needsReLogin) {
+          Alert.alert(
+            'Session expired',
+            'Your login session is missing or expired. Please sign in again to sync with the database.',
+            [{ text: 'OK', onPress: () => onRequestLogout() }]
+          )
+          return
+        }
+        const isRateLimited = /\[429\]|429|too many requests/i.test(message)
+        Alert.alert(
+          isRateLimited ? 'Please wait' : 'Sync error',
+          isRateLimited
+            ? 'The server is receiving requests too quickly. Wait about a minute, then reopen the app or pull to refresh.'
+            : message
+        )
       } finally {
         if (!cancelled) setIsDataLoading(false)
       }
@@ -432,11 +474,23 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
   }
 
   const handleRefresh = async () => {
+    const now = Date.now()
+    if (now - lastRefreshAtRef.current < REFRESH_COOLDOWN_MS) {
+      return
+    }
+    lastRefreshAtRef.current = now
     setIsRefreshing(true)
     try {
       await refreshMobileData()
     } catch (e) {
-      Alert.alert('Refresh failed', e.message || 'Unable to fetch latest updates.')
+      const message = e?.message || 'Unable to fetch latest updates.'
+      const isRateLimited = /\[429\]|429|too many requests/i.test(message)
+      Alert.alert(
+        isRateLimited ? 'Please wait' : 'Refresh failed',
+        isRateLimited
+          ? 'The server is receiving requests too quickly. Wait about a minute, then pull to refresh again.'
+          : message
+      )
     } finally {
       setIsRefreshing(false)
     }
@@ -447,7 +501,55 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     return blocks.filter((b) => b.type !== 'quiz')
   }
 
+  function getSortedCanvasItems(module) {
+    return (Array.isArray(module?.items) ? module.items : [])
+      .filter((item) => String(item?.status || 'published').toLowerCase() !== 'draft')
+      .sort(
+        (a, b) =>
+          Number(firstValue(a.sort_order, a.sortOrder, 0)) - Number(firstValue(b.sort_order, b.sortOrder, 0))
+      )
+  }
+
+  const canvasPersistencePayload = (module, displayItem) => {
+    const source = displayItem?.canvasItem || displayItem
+    const itemId = persistableCanvasItemId(source)
+    const moduleId = Number(module?.module_id || module?.id)
+    const courseId = String(module?.course_id || module?.courseId || '').trim()
+    const itemType = String(
+      firstValue(source?.item_type, source?.itemType, source?.type, 'page')
+    ).toLowerCase()
+    if (!itemId || !moduleId || !courseId) return null
+    return { courseId, moduleId, itemId, itemType }
+  }
+
   function getModuleDisplayItems(module) {
+    const canvasItems = getSortedCanvasItems(module)
+    const nonQuizCanvasItems = canvasItems.filter(
+      (item) => String(firstValue(item.item_type, item.itemType, item.type)).toLowerCase() !== 'quiz'
+    )
+    const quizCanvasItems = canvasItems.filter(
+      (item) => String(firstValue(item.item_type, item.itemType, item.type)).toLowerCase() === 'quiz'
+    )
+
+    if (nonQuizCanvasItems.length > 0 || quizCanvasItems.length > 0) {
+      const contentItems = nonQuizCanvasItems.map((canvasItem, index) => ({
+        kind: 'canvas',
+        canvasItem,
+        blockIndex: index,
+        id: `canvas-${module?.id}-${persistableCanvasItemId(canvasItem) || index}`,
+      }))
+      if (quizCanvasItems.length > 0) {
+        contentItems.push({
+          kind: 'quiz',
+          canvasItem: quizCanvasItems[0],
+          id: `quiz-${module?.id}-${persistableCanvasItemId(quizCanvasItems[0])}`,
+        })
+      } else if (Array.isArray(module?.quiz) && module.quiz.length > 0) {
+        contentItems.push({ kind: 'quiz', id: `quiz-${module?.id}` })
+      }
+      return contentItems
+    }
+
     const contentItems = getTrackableBlocks(module).map((block, index) => ({
       kind: 'content',
       blockIndex: index,
@@ -460,10 +562,40 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     return contentItems
   }
 
-  const persistModuleProgress = (moduleId, nextCompletedSteps) => {
+  const getCompletedCanvasItemIds = (module, completedIndexes = []) => {
+    const canvasContentItems = getSortedCanvasItems(module).filter(
+      (item) => String(firstValue(item.item_type, item.itemType, item.type)).toLowerCase() !== 'quiz'
+    )
+    return (Array.isArray(completedIndexes) ? completedIndexes : [])
+      .map((index) => persistableCanvasItemId(canvasContentItems[index]))
+      .filter(Boolean)
+  }
+
+  const syncCanvasProgressForModule = async (module, displayItem, status = 'completed') => {
+    const userId = sessionUser?.user_id
+    const payload = canvasPersistencePayload(module, displayItem)
+    if (!userId || !payload) return
+    try {
+      await api.saveCanvasItemProgress({
+        userId,
+        ...payload,
+        status,
+      })
+    } catch {
+      // sync-module below is the authoritative Admin-facing write path.
+    }
+  }
+
+  const persistModuleProgress = async (moduleId, nextCompletedSteps) => {
     const module = modules.find((m) => m.id === moduleId)
     if (!module) return
-    const trackableTotal = getTrackableBlocks(module).length || 1
+    const userId = sessionUser?.user_id
+    if (!userId) return
+
+    const canvasContentItems = getSortedCanvasItems(module).filter(
+      (item) => String(firstValue(item.item_type, item.itemType, item.type)).toLowerCase() !== 'quiz'
+    )
+    const trackableTotal = canvasContentItems.length || getTrackableBlocks(module).length || 1
     const uniqueValidSteps = Array.from(
       new Set(
         (Array.isArray(nextCompletedSteps) ? nextCompletedSteps : [])
@@ -471,28 +603,64 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
           .filter((n) => Number.isInteger(n) && n >= 0 && n < trackableTotal)
       )
     ).sort((a, b) => a - b)
+    const completedItemIds = getCompletedCanvasItemIds(module, uniqueValidSteps)
     const lessonRatio = (uniqueValidSteps.length / trackableTotal) * 70
     const quizScore = Number(quizScores[moduleId]?.score || 0)
     const quizRatio = quizScore * 0.3
     let progress = Number(Math.max(0, Math.min(100, lessonRatio + quizRatio)).toFixed(2))
-    // Enforce: module can only reach 100% when quiz is fully correct.
     if (quizScore < 100 && progress >= 100) {
       progress = 99.99
     }
+    const quizPassed = quizScore === 100
+
     setModuleProgress((state) => ({ ...state, [moduleId]: progress }))
-    api.saveProgress(moduleId, {
-      userId: sessionUser?.user_id,
-      progressPercent: progress,
-      completedLessons: uniqueValidSteps,
-      quizScore,
-      quizPassed: quizScore === 100,
-    }).catch(() => {})
+
+    try {
+      await api.saveProgress(moduleId, {
+        userId,
+        progressPercent: progress,
+        completedLessons: uniqueValidSteps,
+        quizScore,
+        quizPassed,
+        courseId: module.course_id || module.courseId,
+        completedItemIds,
+      })
+      const syncResult = await api.syncModuleCanvasProgress({
+        userId,
+        moduleId,
+        courseId: module.course_id || module.courseId,
+        completedLessons: uniqueValidSteps,
+        completedItemIds,
+        quizScore,
+        quizPassed,
+        progressPercent: progress,
+        markAllItems: progress >= 100,
+      })
+      if (syncResult?.summary?.modules) {
+        const summary = syncResult.summary.modules.find(
+          (row) => String(firstValue(row.module_id, row.moduleId)) === String(moduleId)
+        )
+        if (summary) {
+          const canvasProgress = Number(firstValue(summary.progress_percent, summary.progressPercent, 0)) || 0
+          setModuleProgress((state) => ({ ...state, [moduleId]: canvasProgress }))
+        }
+      }
+    } catch {
+      // Keep local UI progress even if the network write fails.
+    }
   }
 
   const mediaUrl = (url) => {
     if (!url) return ''
-    if (/^https?:\/\//i.test(url)) return url
-    return `${api.base}${url.startsWith('/') ? '' : '/'}${url}`
+    const value = String(url).trim()
+    const userBase = String(api?.base || '').replace(/\/$/, '')
+    if (/^https?:\/\//i.test(value)) {
+      const legacyAdmin = value.match(/^https?:\/\/(?:localhost|127\.0\.0\.1):4002(\/uploads\/.*)$/i)
+      if (legacyAdmin && userBase) return `${userBase}${legacyAdmin[1]}`
+      return value
+    }
+    if (!userBase) return value
+    return `${userBase}${value.startsWith('/') ? '' : '/'}${value}`
   }
 //related to the database
   const moveModuleItem = (moduleId, delta) => {
@@ -512,7 +680,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     const currentIndex = currentItemIndexByModule[moduleId] || 0
     const currentItem = items[currentIndex]
     if (!currentItem) return
-    if (currentItem.kind === 'content') {
+    if (currentItem.kind === 'content' || currentItem.kind === 'canvas') {
       setCompletedSteps((prev) => {
         const current = Array.isArray(prev[moduleId]) ? prev[moduleId] : []
         const alreadyCompleted = current.includes(currentItem.blockIndex)
@@ -520,7 +688,10 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
           ? current
           : Array.from(new Set([...current, currentItem.blockIndex])).sort((a, b) => a - b)
         if (!alreadyCompleted) {
-          persistModuleProgress(moduleId, next)
+          if (currentItem.kind === 'canvas') {
+            syncCanvasProgressForModule(module, currentItem, 'completed')
+          }
+          persistModuleProgress(moduleId, next).catch(() => {})
         }
         return alreadyCompleted ? prev : { ...prev, [moduleId]: next }
       })
@@ -586,7 +757,10 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
     setQuizResults((prev) => ({ ...prev, [module.id]: { submitted: true, correctByQuestion } }))
     setQuizScores((prev) => ({ ...prev, [module.id]: { score, passed: score === 100 } }))
     const lessonsDone = (completedSteps[module.id] || []).length
-    const trackableTotal = getTrackableBlocks(module).length || 1
+    const canvasContentCount = getSortedCanvasItems(module).filter(
+      (item) => String(firstValue(item.item_type, item.itemType, item.type)).toLowerCase() !== 'quiz'
+    ).length
+    const trackableTotal = canvasContentCount || getTrackableBlocks(module).length || 1
     const lessonRatio = (lessonsDone / trackableTotal) * 70
     const quizRatio = score * 0.3
     let progress = Number(Math.max(0, Math.min(100, lessonRatio + quizRatio)).toFixed(2))
@@ -598,13 +772,34 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       ? Math.max(progress, persisted)
       : Math.min(99.99, Math.max(progress, Math.min(persisted, 99.99)))
     setModuleProgress((prev) => ({ ...prev, [module.id]: safeProgress }))
-    api.saveProgress(module.id, {
-      userId: sessionUser?.user_id,
-      progressPercent: safeProgress,
-      completedLessons: completedSteps[module.id] || [],
-      quizScore: score,
-      quizPassed: score === 100,
-    }).catch(() => {})
+    const quizDisplayItem = getModuleDisplayItems(module).find((item) => item.kind === 'quiz')
+    const completedItemIds = getCompletedCanvasItemIds(module, completedSteps[module.id] || [])
+    if (quizDisplayItem?.canvasItem) {
+      const quizItemId = persistableCanvasItemId(quizDisplayItem.canvasItem)
+      if (quizItemId) completedItemIds.push(quizItemId)
+    }
+
+    persistModuleProgress(module.id, completedSteps[module.id] || []).catch(() => {})
+
+    const quizPayload = canvasPersistencePayload(module, quizDisplayItem)
+    if (quizPayload && sessionUser?.user_id) {
+      const lastIndex = Math.max(0, module.quiz.length - 1)
+      const lastQuestion = module.quiz[lastIndex]
+      const picked = Number(answers[lastIndex])
+      const expected = getCorrectIndex(lastQuestion)
+      const choices = lastQuestion?.options || []
+      api.saveCanvasQuizAttempt({
+        userId: sessionUser.user_id,
+        courseId: quizPayload.courseId,
+        moduleId: quizPayload.moduleId,
+        itemId: quizPayload.itemId,
+        selectedAnswer: String(choices[picked] ?? picked),
+        correctAnswer: String(choices[expected] ?? expected),
+        isCorrect: score === 100,
+        scorePercent: score,
+      }).catch(() => {})
+    }
+
     setNotifications((prev) => [{ id: Date.now(), type: 'training', title: score === 100 ? 'Quiz passed' : 'Quiz needs review', body: `${module.title} quiz score: ${score}%`, read: false }, ...prev])
   }
 /**Add Reminder*/
@@ -820,15 +1015,14 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       imageUri: profileForm.imageUri,
     }
     try {
-      await api.updateProfile(sessionUser?.user_id, nextProfile)
+      const result = await api.updateProfile(sessionUser?.user_id, nextProfile)
+      setProfile(result?.profile || nextProfile)
     } catch (e) {
       Alert.alert('Save failed', e.message || 'Profile update failed.')
       return
     }
-    setProfile(nextProfile)
     Alert.alert('Saved', 'Profile updated successfully.')
   }
-/**Download Certificate*/
   const requestCertificate = async (courseId) => {
     if (!courseId || !sessionUser?.user_id) return
     setCertificateActionLoading(courseId)
@@ -838,6 +1032,44 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
       Alert.alert('Request sent', 'Your certificate request has been sent to admin for approval.')
     } catch (e) {
       Alert.alert('Request failed', e.message || 'Unable to submit certificate request.')
+    } finally {
+      setCertificateActionLoading(null)
+    }
+  }
+
+  const downloadCertificate = async (certId, courseName) => {
+    if (!certId || !sessionUser?.user_id) return
+    const loadingKey = `download-${certId}`
+    setCertificateActionLoading(loadingKey)
+    try {
+      const downloadUrl = api.getCertificateDownloadUrl(sessionUser.user_id, certId, sessionUser?.token)
+
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const html = prepareMobileCertificateHtml(await api.fetchCertificateHtml(sessionUser.user_id, certId))
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+        const blobUrl = window.URL.createObjectURL(blob)
+        window.open(blobUrl, '_blank', 'noopener,noreferrer')
+        window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000)
+        return
+      }
+
+      const urlSupported = await Linking.canOpenURL(downloadUrl)
+      if (urlSupported) {
+        await Linking.openURL(downloadUrl)
+        return
+      }
+
+      const html = prepareMobileCertificateHtml(await api.fetchCertificateHtml(sessionUser.user_id, certId))
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
+      const dataSupported = await Linking.canOpenURL(dataUrl)
+      if (dataSupported) {
+        await Linking.openURL(dataUrl)
+        return
+      }
+
+      throw new Error('No browser is available to open the certificate.')
+    } catch (e) {
+      Alert.alert('Download failed', e.message || `Unable to open the certificate for ${courseName || 'this course'}.`)
     } finally {
       setCertificateActionLoading(null)
     }
@@ -1252,31 +1484,31 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                     ) : (
                       <Text style={styles.rowMeta}>No quiz is available for this module yet.</Text>
                     )
-                  ) : (
+                  ) : currentModuleBlock ? (
                     <>
                       <Text style={styles.rowTitle}>
-                        {currentModuleItem.block.title ||
-                          (currentModuleItem.block.type === 'video'
+                        {currentModuleBlock.title ||
+                          (currentModuleBlock.type === 'video'
                             ? 'Video lesson'
-                            : currentModuleItem.block.type === 'image'
+                            : currentModuleBlock.type === 'image'
                               ? 'Image lesson'
                               : 'Lesson')}
                       </Text>
-                      {!!currentModuleItem.block.content && (
-                        <Text style={styles.moduleContentText}>{currentModuleItem.block.content}</Text>
+                      {!!currentModuleBlock.content && (
+                        <Text style={styles.moduleContentText}>{currentModuleBlock.content}</Text>
                       )}
-                      {currentModuleItem.block.type === 'image' && !!currentModuleItem.block.media_url && (
+                      {currentModuleBlock.type === 'image' && !!currentModuleBlock.media_url && (
                         <View style={styles.lessonMediaFrame}>
-                          <Image source={{ uri: mediaUrl(currentModuleItem.block.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
+                          <Image source={{ uri: mediaUrl(currentModuleBlock.media_url) }} style={styles.lessonMediaImage} resizeMode="contain" />
                         </View>
                       )}
-                      {currentModuleItem.block.type === 'video' && !!currentModuleItem.block.media_url && (
+                      {currentModuleBlock.type === 'video' && !!currentModuleBlock.media_url && (
                         Platform.OS === 'web' ? (
-                          <video src={mediaUrl(currentModuleItem.block.media_url)} controls style={{ width: '100%', borderRadius: 10, marginTop: 6 }} />
+                          <video src={mediaUrl(currentModuleBlock.media_url)} controls style={{ width: '100%', borderRadius: 10, marginTop: 6 }} />
                         ) : (
                           <View style={styles.lessonMediaFrame}>
                             <Video
-                              source={{ uri: mediaUrl(currentModuleItem.block.media_url) }}
+                              source={{ uri: mediaUrl(currentModuleBlock.media_url) }}
                               useNativeControls
                               resizeMode={ResizeMode.CONTAIN}
                               style={styles.lessonMediaVideo}
@@ -1285,10 +1517,12 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
                           </View>
                         )
                       )}
-                      {!!currentModuleItem.block.caption && (
-                        <Text style={styles.moduleCaptionText}>{currentModuleItem.block.caption}</Text>
+                      {!!currentModuleBlock.caption && (
+                        <Text style={styles.moduleCaptionText}>{currentModuleBlock.caption}</Text>
                       )}
                     </>
+                  ) : (
+                    <Text style={styles.rowMeta}>This learning item could not be rendered.</Text>
                   )}
                   <View style={styles.quizNavRow}>
                     <Pressable
@@ -1415,33 +1649,55 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
           <View style={styles.stack}>
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Certificates</Text>
-              <Text style={styles.rowMeta}>Certificate requests are available only after all modules in a course are completed. Admin approval is required before certificate issuance.</Text>
+              <Text style={styles.rowMeta}>Certificate requests unlock when every published Canvas item in the course is completed (same rule as Admin). Admin approval is required before issuance.</Text>
               {visibleCourseCertificates.map((course) => {
                 const status = String(course.requestStatus || '').toLowerCase()
                 const isApproved = status === 'approved' && Boolean(course.certId)
                 const isPending = status === 'pending'
                 const canRequest = course.allModulesDone && !isApproved && !isPending
+                const downloadLoadingKey = `download-${course.certId}`
+                const isDownloadLoading = certificateActionLoading === downloadLoadingKey
+                const isRequestLoading = certificateActionLoading === course.courseId
                 return (
                 <View key={course.courseId} style={[styles.certificateCard, !course.allModulesDone && styles.certificateCardLocked]}>
                   <View style={styles.rowBody}>
                     <Text style={styles.rowTitle}>{course.courseName}</Text>
-                    <Text style={styles.rowMeta}>{course.doneModules}/{course.totalModules} modules completed</Text>
+                    <Text style={styles.rowMeta}>
+                      {typeof course.courseProgressPercent === 'number'
+                        ? `${course.courseProgressPercent}% course items complete (matches Admin)`
+                        : `${course.doneModules}/${course.totalModules} modules completed`}
+                    </Text>
                     <View style={styles.certificateMetaRow}>
                       <Text style={[styles.certificateBadge, isApproved ? styles.certificateBadgeUnlocked : styles.certificateBadgeLocked]}>
-                        {isApproved ? 'Approved' : isPending ? 'Pending approval' : course.allModulesDone ? 'Ready to request' : 'Locked'}
+                        {isApproved ? 'Issued' : isPending ? 'Pending approval' : course.allModulesDone ? 'Ready to request' : 'Locked'}
                       </Text>
                       <Text style={styles.rowMeta}>{course.certificateCode || `Course ID: ${course.courseId}`}</Text>
                     </View>
+                    {isApproved && course.issueDate ? (
+                      <Text style={styles.rowMeta}>Issued on {new Date(course.issueDate).toLocaleDateString()}</Text>
+                    ) : null}
                   </View>
-                  <Pressable
-                    style={[styles.primaryButton, !canRequest && styles.disabledButton]}
-                    onPress={() => requestCertificate(course.courseId)}
-                    disabled={!canRequest || certificateActionLoading === course.courseId}
-                  >
-                    <Text style={styles.primaryText}>
-                      {certificateActionLoading === course.courseId ? 'Sending...' : isApproved ? 'Issued' : isPending ? 'Pending' : canRequest ? 'Request Certificate' : 'Locked'}
-                    </Text>
-                  </Pressable>
+                  {isApproved ? (
+                    <Pressable
+                      style={[styles.primaryButton, isDownloadLoading && styles.disabledButton]}
+                      onPress={() => downloadCertificate(course.certId, course.courseName)}
+                      disabled={isDownloadLoading}
+                    >
+                      <Text style={styles.primaryText}>
+                        {isDownloadLoading ? 'Opening...' : 'Download'}
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      style={[styles.primaryButton, !canRequest && styles.disabledButton]}
+                      onPress={() => requestCertificate(course.courseId)}
+                      disabled={!canRequest || isRequestLoading}
+                    >
+                      <Text style={styles.primaryText}>
+                        {isRequestLoading ? 'Sending...' : isPending ? 'Pending' : canRequest ? 'Request Certificate' : 'Locked'}
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
               )})}
               {visibleCourseCertificates.length === 0 && (
@@ -1793,7 +2049,7 @@ function GuideMainApp({ onRequestLogout, sessionUser, apiBaseUrl }) {
 export default function App() {
   const [session, setSession] = useState(null)
   const [booting, setBooting] = useState(true)
-  const [apiBaseUrl, setApiBaseUrl] = useState(() => getApiBaseUrl())
+  const [apiBaseUrl, setApiBaseUrl] = useState(() => normalizeAuthApiBaseUrl(getApiBaseUrl()))
 
   useEffect(() => {
     let cancelled = false
@@ -1804,11 +2060,13 @@ export default function App() {
           AsyncStorage.getItem(SESSION_KEY),
         ])
         if (cancelled) return
-        if (storedUrl?.trim()) setApiBaseUrl(storedUrl.trim().replace(/\/$/, ''))
+        if (storedUrl?.trim()) setApiBaseUrl(normalizeAuthApiBaseUrl(storedUrl.trim()))
         if (raw) {
           try {
             const parsed = JSON.parse(raw)
-            if (parsed?.user_id) setSession(parsed)
+            // Sessions saved before tokenized auth was added won't have a `token` field; drop
+            // them so the user is forced to re-login and obtain a valid Bearer token.
+            if (parsed?.user_id && parsed?.token) setSession(parsed)
             else await AsyncStorage.removeItem(SESSION_KEY)
           } catch {
             await AsyncStorage.removeItem(SESSION_KEY)

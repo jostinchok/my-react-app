@@ -34,7 +34,8 @@ const LOCAL_MQTT_INCIDENT_TTL_MS = 30000;
 const CAPTURE_MAX_WIDTH = 1280;
 const CAPTURE_MAX_HEIGHT = 720;
 const CAPTURE_JPEG_QUALITY = 0.72;
-const CAPTURE_WARMUP_DELAY_MS = 2000;
+const CAPTURE_WARMUP_DELAY_MS = 1000;
+const IOT_CAPTURE_COOLDOWN_MS = 5000;
 const MAX_LOCAL_CAPTURE_URLS = 5;
 const DELETED_INCIDENT_IDS_STORAGE_KEY = "sfc-admin-hidden-incident-ids";
 
@@ -255,6 +256,7 @@ const AIDetection = () => {
   const cameraStreamRef = useRef(null);
   const localMqttIncidentsRef = useRef([]);
   const localCaptureUrlsRef = useRef([]);
+  const lastIotCaptureAtRef = useRef(0);
   const deletedIncidentIdsRef = useRef(readDeletedIncidentIds());
   const initialIncidents = useMemo(
     () => withoutDeletedIncidents(seededIncidents, deletedIncidentIdsRef.current),
@@ -345,9 +347,13 @@ const AIDetection = () => {
 
       const video = videoRef.current;
       await waitForVideoFrame(video);
-      setCaptureStatus("Camera ready. Capturing in 2 seconds...");
-      await delay(CAPTURE_WARMUP_DELAY_MS);
-      await waitForVideoFrame(video);
+      if (CAPTURE_WARMUP_DELAY_MS > 0) {
+        setCaptureStatus(`Camera ready. Capturing in ${CAPTURE_WARMUP_DELAY_MS / 1000} seconds...`);
+        await delay(CAPTURE_WARMUP_DELAY_MS);
+        await waitForVideoFrame(video);
+      } else {
+        setCaptureStatus("Camera ready. Capturing now...");
+      }
 
       const sourceWidth = video.videoWidth;
       const sourceHeight = video.videoHeight;
@@ -613,6 +619,13 @@ const AIDetection = () => {
 
       const iotPayload = normalizeBrowserIotPayload(data, topic);
       if (!iotPayload) return;
+
+      const now = Date.now();
+      if (now - lastIotCaptureAtRef.current < IOT_CAPTURE_COOLDOWN_MS) {
+        setCaptureStatus("IoT trigger received, but capture skipped during 5-second demo cooldown.");
+        return;
+      }
+      lastIotCaptureAtRef.current = now;
 
       const capture = await captureOneShot("IoT trigger evidence");
       const localIncident = buildLocalIotIncident(iotPayload, topic, capture);
@@ -996,7 +1009,7 @@ const AIDetection = () => {
             </Typography>
 
             <Button variant="outlined" size="small" onClick={testTrigger}>
-              Test Trigger
+              Browser Test Trigger
             </Button>
 
             <Button variant="outlined" size="small" onClick={startCamera}>
@@ -1029,7 +1042,7 @@ const AIDetection = () => {
             Live Camera Preview
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            This browser preview opens on IoT triggers and captures one compressed 720p JPEG for local review. Stop it before running the standalone Python AI camera on the same physical camera.
+            This browser preview opens on IoT triggers, waits 1 second for the camera to wake up, and captures one compressed 720p JPEG with a 5-second demo cooldown between captures. Stop it before running the standalone Python AI camera on the same physical camera.
           </Typography>
           <video
             ref={videoRef}

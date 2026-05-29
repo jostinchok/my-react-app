@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getUserApiBaseUrl, isExpoWebDevServer, normalizeAuthApiBaseUrl } from './apiConfig'
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 
 const palette = {
@@ -16,6 +17,7 @@ const palette = {
 }
 
 export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
+  const authBaseUrl = normalizeAuthApiBaseUrl(apiBaseUrl)
   const [activeView, setActiveView] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,7 +40,7 @@ export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
     setMessage({ text: '', type: '' })
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+      const response = await fetch(`${authBaseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -55,7 +57,8 @@ export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
       }
 
       const user = data?.user
-      if (!user?.user_id) {
+      const token = data?.token
+      if (!user?.user_id || !token) {
         setMessage({ text: 'Login response is incomplete. Please try again.', type: 'error' })
         return
       }
@@ -74,6 +77,7 @@ export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
         name: user.name || '',
         email: user.email || email.trim(),
         role_name: user.role_name,
+        token,
         loginAt: new Date().toISOString(),
       })
     } catch {
@@ -91,7 +95,7 @@ export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
 
     setIsRegistering(true)
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
+      const response = await fetch(`${authBaseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -129,7 +133,7 @@ export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
 
     setIsSendingForgot(true)
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password`, {
+      const response = await fetch(`${authBaseUrl}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail.trim() }),
@@ -163,7 +167,10 @@ export default function AuthScreens({ apiBaseUrl, onAuthenticated }) {
           <Text style={styles.title}>
             {activeView === 'login' ? 'Park Guide Login' : activeView === 'register' ? 'Create Park Guide Account' : 'Forgot Password'}
           </Text>
-          <Text style={styles.note}>API: {apiBaseUrl}</Text>
+          <Text style={styles.note}>
+            Auth: {authBaseUrl}
+            {isExpoWebDevServer() ? ' (web proxy → :4000 / :4001)' : ` · Data: ${getUserApiBaseUrl(authBaseUrl)}`}
+          </Text>
         </View>
 
         {activeView === 'login' ? (

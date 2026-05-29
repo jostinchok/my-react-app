@@ -14,33 +14,65 @@ const appRoot = path.resolve(__dirname, '..')
 dotenv.config({ path: path.resolve(appRoot, '.env') })
 
 const app = express()
+
+const defaultCorsOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
+]
+
+const configuredCorsOrigins = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
+  ? []
+  : process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+
+const corsOriginSetting = !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === '*'
+  ? true
+  : [...new Set([...configuredCorsOrigins, ...defaultCorsOrigins])]
+
+const corsOptions = {
+  origin: corsOriginSetting,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}
+
+app.use(cors(corsOptions))
+app.options(/.*/, cors(corsOptions))
+
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }))
 
-const configuredApiRateLimit = Number(process.env.ADMIN_API_RATE_LIMIT_MAX)
-const apiRateLimitMax =
-  Number.isFinite(configuredApiRateLimit) && configuredApiRateLimit > 0
-    ? configuredApiRateLimit
-    : 5000
-
 const apiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  limit: apiRateLimitMax,
+  limit: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.method === 'OPTIONS',
 })
 app.use('/api', apiLimiter)
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this'
 
+const getBearerToken = (req) => {
+  const authHeader = String(req.get('Authorization') || '').trim()
+  if (authHeader.startsWith('Bearer ')) return authHeader.slice(7).trim()
+  return ''
+}
+
 const requireAuth = (allowedRoles = []) => {
+  const normalizedAllowedRoles = allowedRoles.map((role) => String(role || '').toLowerCase())
+
   return (req, res, next) => {
-    const authHeader = req.get('Authorization') || ''
-    const token = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7)
-      : ''
+    if (req.method === 'OPTIONS') {
+      return next()
+    }
+
+    const token = getBearerToken(req)
 
     if (!token) {
       return res.status(401).json({ message: 'Login token is required.' })
@@ -48,12 +80,16 @@ const requireAuth = (allowedRoles = []) => {
 
     try {
       const user = jwt.verify(token, JWT_SECRET)
+      const userRole = String(user.role || '').toLowerCase()
 
-      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+      if (normalizedAllowedRoles.length > 0 && !normalizedAllowedRoles.includes(userRole)) {
         return res.status(403).json({ message: 'You are not allowed to access this API.' })
       }
 
-      req.user = user
+      req.user = {
+        ...user,
+        role: userRole,
+      }
       next()
     } catch {
       return res.status(401).json({ message: 'Invalid or expired login token.' })
@@ -67,10 +103,12 @@ const uploadRoot = path.join(__dirname, 'public', 'uploads')
 const resourceUploadDir = path.join(uploadRoot, 'course-resources')
 const moduleMediaDir = path.join(uploadRoot, 'module-media')
 const moduleHeroDir = path.join(uploadRoot, 'module-heroes')
+const certificateUploadDir = path.join(uploadRoot, 'certificates')
+const adminPublicDir = path.join(__dirname, 'public')
+const adminFrontendPublicUrl = String(process.env.ADMIN_FRONTEND_PUBLIC_URL || 'http://localhost:5174/admin').replace(/\/$/, '')
 const blockedUploadExtensions = new Set(['.exe', '.bat', '.cmd', '.com', '.msi', '.ps1', '.sh'])
 const allowedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 
-app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')))
 
@@ -147,11 +185,11 @@ const formatBytes = (sizeBytes = 0) => {
 }
 
 const parseDataUrl = (dataUrl) => {
-  const match = /^data:([^;,]+);base64,([a-zA-Z0-9+/=]+)$/.exec(dataUrl || '')
+  const match = /^data:([^;,]+)(?:;[^;,]+)*;base64,([a-zA-Z0-9+/=\s]+)$/i.exec(String(dataUrl || '').trim())
   if (!match) return null
   return {
     mimeType: match[1],
-    buffer: Buffer.from(match[2], 'base64'),
+    buffer: Buffer.from(match[2].replace(/\s+/g, ''), 'base64'),
   }
 }
 
@@ -429,6 +467,7 @@ const ensureAdminTrainingSchema = async () => {
   await ensureColumn('progress', 'progress_percent', 'progress_percent INT DEFAULT 0')
   await ensureColumn('certifications', 'course_id', 'course_id VARCHAR(50) NULL')
   await ensureColumn('certifications', 'certificate_code', 'certificate_code VARCHAR(120) NULL')
+  await ensureColumn('certifications', 'certificate_file_url', 'certificate_file_url VARCHAR(512) NULL')
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS course_resources (
@@ -1892,7 +1931,7 @@ app.get('/api/admin/canvas-progress-summary', async (_req, res) => {
       FROM course_module_items cmi
       LEFT JOIN courses c ON c.course_id = cmi.course_id
       LEFT JOIN training_modules tm ON tm.module_id = cmi.module_id
-      WHERE cmi.status = 'published'
+      WHERE LOWER(TRIM(IFNULL(cmi.status, 'published'))) = 'published'
       GROUP BY cmi.course_id, c.course_name, cmi.module_id, tm.title, tm.sort_order
       ORDER BY c.course_name ASC, module_sort_order ASC, tm.title ASC, cmi.module_id ASC
     `)
@@ -1954,7 +1993,7 @@ app.get('/api/admin/canvas-progress-summary', async (_req, res) => {
           LEFT JOIN courses c ON c.course_id = cip.course_id
           LEFT JOIN training_modules tm ON tm.module_id = cip.module_id
           WHERE cip.status = 'completed'
-            AND cmi.status = 'published'
+            AND LOWER(TRIM(IFNULL(cmi.status, 'published'))) = 'published'
           GROUP BY cip.user_id, cip.course_id, c.course_name, cip.module_id, tm.title
         `)
         : Promise.resolve([]),
@@ -2243,7 +2282,7 @@ const getCourseCompletionForUser = async (userId, courseId) => {
   const total = await rowOf(
     `SELECT COUNT(*) AS total_items
      FROM course_module_items
-     WHERE course_id = ? AND status = 'published'`,
+     WHERE course_id = ? AND LOWER(TRIM(IFNULL(status, 'published'))) = 'published'`,
     [courseId]
   )
   const completed = await rowOf(
@@ -2256,7 +2295,7 @@ const getCourseCompletionForUser = async (userId, courseId) => {
      WHERE cip.user_id = ?
        AND cip.course_id = ?
        AND cip.status = 'completed'
-       AND cmi.status = 'published'`,
+       AND LOWER(TRIM(IFNULL(cmi.status, 'published'))) = 'published'`,
     [userId, courseId]
   )
 
@@ -2268,6 +2307,254 @@ const getCourseCompletionForUser = async (userId, courseId) => {
     completionPercent: percent(completedItems, totalItems),
     complete: totalItems > 0 && completedItems >= totalItems,
   }
+}
+
+const escapeCertificateHtml = (value) => String(value || '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const formatCertificateIssueDate = (value) => {
+  if (!value) return new Date().toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' })
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+const mimeForPublicAsset = (filePath) => {
+  const ext = path.extname(filePath).toLowerCase()
+  if (ext === '.webp') return 'image/webp'
+  if (ext === '.png') return 'image/png'
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg'
+  return 'application/octet-stream'
+}
+
+const embedAdminPublicAsset = async (relativePath) => {
+  try {
+    const fullPath = path.join(adminPublicDir, relativePath)
+    const data = await fs.readFile(fullPath)
+    return `data:${mimeForPublicAsset(fullPath)};base64,${data.toString('base64')}`
+  } catch {
+    return null
+  }
+}
+
+const buildIssuedCertificateHtml = async ({
+  guideName,
+  courseName,
+  certificateCode,
+  issueDate,
+}) => {
+  const certificateBackgroundSrc =
+    (await embedAdminPublicAsset('certificates/sfc-course-certificate.webp')) ||
+    `${adminFrontendPublicUrl}/certificates/sfc-course-certificate.webp`
+  const logoSrc =
+    (await embedAdminPublicAsset('sfc-citrus-logo.png')) ||
+    `${adminFrontendPublicUrl}/sfc-citrus-logo.png`
+
+  const recipient = escapeCertificateHtml(guideName || 'Park Guide')
+  const course = escapeCertificateHtml(courseName || 'Selected Course')
+  const code = escapeCertificateHtml(certificateCode || 'SFC-CERT')
+  const issuedOn = escapeCertificateHtml(formatCertificateIssueDate(issueDate))
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeCertificateHtml(`${courseName || 'Course'} Certificate`)}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #fffdf5;
+      color: #173126;
+    }
+    /* Desktop / web / Admin-issued default — matches Admin certificate preview */
+    .page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .certificate {
+      position: relative;
+      width: min(920px, 100%);
+      min-height: 620px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #d9b85f;
+      background-image: url("${certificateBackgroundSrc}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 48px 56px;
+      box-shadow: 0 18px 45px rgba(255, 122, 26, 0.10);
+    }
+    .logo {
+      position: absolute;
+      top: 24px;
+      left: 28px;
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      box-shadow: 0 16px 32px rgba(23, 49, 38, 0.16);
+      object-fit: cover;
+    }
+    .content { margin-top: 48px; }
+    .org {
+      color: #17452f;
+      font-weight: 950;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h1 {
+      margin: 12px 0 0;
+      color: #173126;
+      font-weight: 950;
+      font-size: 2.2rem;
+      line-height: 1.15;
+    }
+    .label {
+      margin-top: 24px;
+      color: #53685a;
+      font-weight: 900;
+      font-size: 0.95rem;
+    }
+    .recipient {
+      margin-top: 8px;
+      color: #173126;
+      font-weight: 950;
+      font-size: 2rem;
+      line-height: 1.15;
+    }
+    .course {
+      margin-top: 8px;
+      color: #8d4f12;
+      font-weight: 950;
+      font-size: 1.6rem;
+      line-height: 1.2;
+    }
+    .meta {
+      margin-top: 28px;
+      color: #607166;
+      font-weight: 800;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+    /* Mobile phone browsers only — does not affect Admin preview or desktop web */
+    @media (max-width: 640px), (max-device-width: 640px) {
+      html, body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      .page {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        width: 100%;
+        max-width: 100vw;
+        padding: 8px;
+      }
+      .certificate {
+        width: calc(100vw - 16px);
+        max-width: calc(100vw - 16px);
+        min-height: unset;
+        aspect-ratio: 920 / 620;
+        max-height: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15% 7% 17%;
+        background-size: cover;
+        background-position: center center;
+      }
+      .logo {
+        top: 6%;
+        left: 5%;
+        width: 48px;
+        height: 48px;
+      }
+      .content {
+        width: 100%;
+        max-width: 90%;
+        margin-top: 8%;
+      }
+      .org {
+        letter-spacing: 0.08em;
+        font-size: 0.68rem;
+        line-height: 1.35;
+      }
+      h1 {
+        margin-top: 10px;
+        font-size: 1.35rem;
+      }
+      .label {
+        margin-top: 14px;
+        font-size: 0.85rem;
+      }
+      .recipient {
+        font-size: 1.35rem;
+        word-break: break-word;
+      }
+      .course {
+        font-size: 1.05rem;
+        word-break: break-word;
+      }
+      .meta {
+        margin-top: 16px;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        word-break: break-word;
+        padding-bottom: 2px;
+      }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { padding: 0; }
+      .certificate {
+        width: 920px;
+        min-height: 620px;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="certificate">
+      <img class="logo" src="${logoSrc}" alt="SFC Digital Portal logo" />
+      <div class="content">
+        <div class="org">Sarawak Forestry Corporation</div>
+        <h1>Course Completion Certificate</h1>
+        <div class="label">Presented to</div>
+        <div class="recipient">${recipient}</div>
+        <div class="label">for completing</div>
+        <div class="course">${course}</div>
+        <div class="meta">
+          Certificate code: ${code}<br />
+          Issued on ${issuedOn}
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+const persistIssuedCertificateFile = async (certId, html) => {
+  await fs.mkdir(certificateUploadDir, { recursive: true })
+  const storedName = `cert-${certId}.html`
+  await fs.writeFile(path.join(certificateUploadDir, storedName), html, 'utf8')
+  return `/uploads/certificates/${storedName}`
 }
 
 const issueCourseCertificate = async (req, res) => {
@@ -2297,6 +2584,7 @@ const issueCourseCertificate = async (req, res) => {
 
   const certificateTitle = title || `${course.course_name} Certificate`
   const certificateCode = `SFC-CERT-${Date.now()}-${numericUserId}`
+  const guide = await rowOf('SELECT name FROM users WHERE user_id = ? LIMIT 1', [numericUserId])
   const existing = await rowOf(
     `SELECT cert_id
      FROM certifications
@@ -2306,6 +2594,7 @@ const issueCourseCertificate = async (req, res) => {
     [numericUserId, courseIdValue]
   )
 
+  let certId = existing?.cert_id
   if (existing) {
     await pool.query(
       `UPDATE certifications
@@ -2313,25 +2602,40 @@ const issueCourseCertificate = async (req, res) => {
        WHERE cert_id = ?`,
       [certificateTitle, certificateCode, existing.cert_id]
     )
-    res.json({
-      message: 'Course certificate refreshed successfully.',
-      certification: { cert_id: existing.cert_id, course_id: courseIdValue, certificate_code: certificateCode },
-      completion,
-    })
-    return
+  } else {
+    const [result] = await pool.query(
+      `INSERT INTO certifications (user_id, course_id, module_id, title, status, issue_date, certificate_code)
+       VALUES (?, ?, NULL, ?, 'Issued', NOW(), ?)`,
+      [numericUserId, courseIdValue, certificateTitle, certificateCode]
+    )
+    certId = result.insertId
   }
 
-  const [result] = await pool.query(
-    `INSERT INTO certifications (user_id, course_id, module_id, title, status, issue_date, certificate_code)
-     VALUES (?, ?, NULL, ?, 'Issued', NOW(), ?)`,
-    [numericUserId, courseIdValue, certificateTitle, certificateCode]
+  const issueDate = new Date()
+  const certificateHtml = await buildIssuedCertificateHtml({
+    guideName: guide?.name,
+    courseName: course.course_name,
+    certificateCode,
+    issueDate,
+  })
+  const certificateFileUrl = await persistIssuedCertificateFile(certId, certificateHtml)
+  await pool.query(
+    'UPDATE certifications SET certificate_file_url = ? WHERE cert_id = ?',
+    [certificateFileUrl, certId]
   )
 
-  res.status(201).json({
-    message: 'Course certificate issued successfully.',
-    certification: { cert_id: result.insertId, course_id: courseIdValue, certificate_code: certificateCode },
+  const payload = {
+    message: existing ? 'Course certificate refreshed successfully.' : 'Course certificate issued successfully.',
+    certification: {
+      cert_id: certId,
+      course_id: courseIdValue,
+      certificate_code: certificateCode,
+      certificate_file_url: certificateFileUrl,
+    },
     completion,
-  })
+  }
+
+  res.status(existing ? 200 : 201).json(payload)
 }
 
 app.get('/api/admin/badges', asyncRoute(async (_req, res) => {
