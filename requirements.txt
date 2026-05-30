@@ -1,39 +1,47 @@
 # Python 3.10+ is recommended.
+#
 # macOS:
 #   python3 -m venv .venv
 #   source .venv/bin/activate
 #   python -m pip install --upgrade pip
 #   python -m pip install -r requirements.txt
+#
 # Windows PowerShell:
 #   py -3 -m venv .venv
 #   .\.venv\Scripts\Activate.ps1
 #   python -m pip install --upgrade pip
 #   python -m pip install -r requirements.txt
 #
-# If OpenCV camera windows fail on a locked-down Windows machine, install
-# Microsoft Visual C++ Redistributable and retry inside the activated venv.
+# If OpenCV camera windows fail on Windows, install the Microsoft Visual C++
+# Redistributable and retry inside the activated virtual environment.
 
-# Core notebook support
-jupyter
-ipykernel
-ipywidgets
+# Google Drive asset download helper
+gdown
 
-# Deep learning / model loading
+# AI model runtime
 torch
 torchvision
-transformers
-safetensors
 
-# Image and CV
+# Image and computer vision runtime
 pillow
 opencv-python
 mediapipe
 
-# Data / metrics / utilities
+# Data processing, metrics, and utilities
 numpy
 scikit-learn
 tqdm
 matplotlib
+
+# Optional notebook / experiment support
+jupyter
+ipykernel
+ipywidgets
+
+# Legacy / experiment support
+# Keep these only if older CLIP or transformer-based experiment scripts are still used.
+transformers
+safetensors
 
 # HTTP posting in scripts/run_ai_camera_monitor.py uses Python standard library urllib.
 # MySQL persistence is handled by the Node/Express backend, not Python.
